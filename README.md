@@ -17,7 +17,15 @@ pyqt-3d-printer-app
 │   ├── main.py                # Entry point of the application
 │   ├── ui
 │   │   ├── main_window.py     # Main user interface definition
-│   │   └── controls.py        # Controls for managing the printer
+│   │   ├── home_screen.py     # Home screen UI
+│   │   ├── loading_screen.py  # Loading screen UI
+│   │   ├── ui_files
+│   │   │   ├── home_screen.ui # Home screen UI file
+│   │   │   ├── home_screen_ui.py # Generated Python file from home_screen.ui
+│   │   │   ├── loading_screen.ui # Loading screen UI file
+│   │   │   ├── loading_screen_ui.py # Generated Python file from loading_screen.ui
+│   │   │   └── resources
+│   │   │       └── resource_rc.py # Resource file
 │   ├── octoprint_client
 │   │   ├── __init__.py        # Package marker for octoprint_client
 │   │   └── client.py          # OctoPrint API client
@@ -61,4 +69,4 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 
 - Download QT Designer from: [QT Designer Download](https://build-system.fman.io/qt-designer-download)
 - You can refer to the readme file at [Julia-Touch-UI-Documentation](https://github.com/FracktalWorks/Julia-Touch-UI-Documentation). For this project, I'm using VSCode and Copilot to develop, so taking a slightly different approach to the toolchain.
-- REfer this to understand how to properly use images inside a QT project: [text](https://www.youtube.com/watch?v=LceWgvYSVkQ)
+- Refer to this to understand how to properly use images inside a QT project: [text](https://www.youtube.com/watch?v=LceWgvYSVkQ)
