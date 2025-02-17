@@ -1,9 +1,11 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget
 
+
 class HomeScreen(QWidget):
-    def __init__(self):
+    def __init__(self, main_window):
         super(HomeScreen, self).__init__()
+        self.main_window = main_window
         uic.loadUi('src/ui/ui_files/home_screen.ui', self)
 
         # Connect buttons to their respective functions
@@ -18,7 +20,8 @@ class HomeScreen(QWidget):
         print("Toggle Door Lock button clicked")
 
     def open_menu(self):
-        # Placeholder for open menu logic
+        # Logic to open the menu screen
+        self.main_window.switch_screen(self.main_window.menu_screen)
         print("Menu button clicked")
 
     def stop_print(self):

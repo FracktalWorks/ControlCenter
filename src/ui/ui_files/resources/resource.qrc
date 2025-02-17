@@ -57,8 +57,6 @@
     <file>img/icons/Motion_Selected.png</file>
     <file>img/icons/motor.png</file>
     <file>img/icons/network.png</file>
-    <file>img/icons/next.png</file>
-    <file>img/icons/next-1.png</file>
     <file>img/icons/Nozzle Offset Icon.png</file>
     <file>img/icons/Nozzle Offset.png</file>
     <file>img/icons/Nozzle.png</file>
@@ -90,5 +88,15 @@
     <file>img/icons/video-player-stop-button.png</file>
     <file>img/icons/wrench.png</file>
     <file>img/icons/wrench_selected.png</file>
+  </qresource>
+  <qresource prefix="Navigation">
+    <file>img/Navigation/add.png</file>
+    <file>img/Navigation/arrows.png</file>
+    <file>img/Navigation/arrows-2.png</file>
+    <file>img/Navigation/arrows-4.png</file>
+    <file>img/Navigation/arrows-5.png</file>
+    <file>img/Navigation/back-arrow.png</file>
+    <file>img/Navigation/next.png</file>
+    <file>img/Navigation/remove.png</file>
   </qresource>
 </RCC>
