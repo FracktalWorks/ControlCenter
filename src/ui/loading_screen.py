@@ -22,4 +22,5 @@ class LoadingScreen(QWidget):
 
     def stop_movie_and_switch(self):
         self.movie.stop()
+        self.timer.stop()
         self.main_window.switch_screen(self.main_window.home_screen)
