@@ -18,7 +18,7 @@ class LoadingScreen(QWidget):
         # Set up the timer to switch to the home screen after 20 seconds
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.stop_movie_and_switch)
-        self.timer.start(20000)  # 20000 milliseconds = 20 seconds
+        self.timer.start(1000)  # 20000 milliseconds = 20 seconds
 
     def stop_movie_and_switch(self):
         self.movie.stop()

@@ -46,7 +46,7 @@ class SettingsScreen(QWidget):
 
     def go_back(self):
         # Placeholder for go back logic
-        print("Back button clicked")
+        self.main_window.switch_screen(self.main_window.menu_screen)
 
     def pair_phone(self):
         # Placeholder for pair phone logic
@@ -54,7 +54,7 @@ class SettingsScreen(QWidget):
 
     def open_network_settings(self):
         # Placeholder for open network settings logic
-        print("Network Settings button clicked")
+        self.main_window.switch_screen(self.main_window.network_settings)
 
     def open_display_settings(self):
         # Placeholder for open display settings logic

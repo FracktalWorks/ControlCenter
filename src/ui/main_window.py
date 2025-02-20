@@ -39,7 +39,7 @@ class MainWindow(QMainWindow):
         self.stacked_widget.addWidget(self.loading_screen)
 
     def load_network_settings(self):
-        self.network_settings = NetworkSettings()
+        self.network_settings = NetworkSettings(self)
         self.stacked_widget.addWidget(self.network_settings)
     
     def load_menu_screen(self):
@@ -54,7 +54,7 @@ class MainWindow(QMainWindow):
         print(f"Switching to screen: {widget}")
         traceback.print_stack()  # Print the call stack
         self.stacked_widget.setCurrentWidget(widget)
-        self.adjustSize()  # Adjust size after switching screens
+        #self.adjustSize()  # Adjust size after switching screens
 
     def switch_to_home_screen(self):
         self.switch_screen(self.home_screen)
