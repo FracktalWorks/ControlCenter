@@ -8,7 +8,7 @@ class HomeScreen(QWidget):
 
         # Load the .ui file
         try:
-            uic.loadUi('src/ui/ui_files/home_screen.ui', self)
+            uic.loadUi('src/ui/home_screen/home_screen.ui', self)
             print("UI file loaded successfully")
         except Exception as e:
             print(f"Failed to load UI file: {e}")

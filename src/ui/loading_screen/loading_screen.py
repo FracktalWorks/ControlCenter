@@ -7,7 +7,7 @@ class LoadingScreen(QWidget):
     def __init__(self, main_window):
         super(LoadingScreen, self).__init__()
         self.main_window = main_window
-        uic.loadUi('src/ui/ui_files/loading_screen.ui', self)
+        uic.loadUi('src/ui/loading_screen/loading_screen.ui', self)
 
         # Set up the loading GIF
         self.loadingGif = self.findChild(QLabel, 'loadingGif')

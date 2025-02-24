@@ -1,10 +1,9 @@
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget, QPushButton
-from ui.home_screen import HomeScreen
-from ui.loading_screen import LoadingScreen
-from ui.network_settings import NetworkSettings
-from ui.menu_screen import MenuScreen
-from ui.settings_screen import SettingsScreen
-import ui.ui_files.resources.resource_rc  # Ensure resources are loaded
+from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget
+from ui.home_screen.home_screen import HomeScreen
+from ui.loading_screen.loading_screen import LoadingScreen
+from ui.menu_screen.menu_screen import MenuScreen
+from ui.settings_screen.settings_screen import SettingsScreen
+import ui.resources.resource_rc  # Ensure resources are loaded
 import traceback
 
 class MainWindow(QMainWindow):
@@ -22,7 +21,6 @@ class MainWindow(QMainWindow):
         # Load sub UIs based on configuration
         self.load_home_screen()
         self.load_loading_screen()
-        self.load_network_settings()
         self.load_menu_screen()
         self.load_settings_screen()
         self.switch_screen(self.loading_screen)
@@ -37,10 +35,6 @@ class MainWindow(QMainWindow):
     def load_loading_screen(self):
         self.loading_screen = LoadingScreen(self)
         self.stacked_widget.addWidget(self.loading_screen)
-
-    def load_network_settings(self):
-        self.network_settings = NetworkSettings(self)
-        self.stacked_widget.addWidget(self.network_settings)
     
     def load_menu_screen(self):
         self.menu_screen = MenuScreen(self)
@@ -54,7 +48,7 @@ class MainWindow(QMainWindow):
         print(f"Switching to screen: {widget}")
         traceback.print_stack()  # Print the call stack
         self.stacked_widget.setCurrentWidget(widget)
-        #self.adjustSize()  # Adjust size after switching screens
+#        self.adjustSize()  # Adjust size after switching screens
 
     def switch_to_home_screen(self):
         self.switch_screen(self.home_screen)

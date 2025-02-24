@@ -5,7 +5,7 @@ class MenuScreen(QWidget):
     def __init__(self, main_window):
         super(MenuScreen, self).__init__()
         self.main_window = main_window
-        uic.loadUi('src/ui/ui_files/menu_screen.ui', self)
+        uic.loadUi('src/ui/menu_screen/menu_screen.ui', self)
 
         # Find buttons by their object names
         self.menuPrintButton = self.findChild(QToolButton, 'menuPrintButton')
@@ -58,5 +58,4 @@ class MenuScreen(QWidget):
 
     def go_back(self):
         # Placeholder for go back logic
-        self.main_window.switch_screen(self.main_window.home_screen)
         print("Back button clicked")

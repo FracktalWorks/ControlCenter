@@ -1,11 +1,12 @@
 from PyQt5 import uic
-from PyQt5.QtWidgets import QWidget, QPushButton
+from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget
+from ui.settings_screen.network_settings.network_settings import NetworkSettings
 
 class SettingsScreen(QWidget):
     def __init__(self, main_window):
         super(SettingsScreen, self).__init__()
         self.main_window = main_window
-        uic.loadUi('src/ui/ui_files/settings_screen.ui', self)
+        uic.loadUi('src/ui/settings_screen/settings_screen.ui', self)
 
         # Find buttons by their object names
         self.settingsBackButton = self.findChild(QPushButton, 'settingsBackButton')
@@ -17,6 +18,13 @@ class SettingsScreen(QWidget):
         self.restorePrintSettingsButton = self.findChild(QPushButton, 'restorePrintSettingsButton')
         self.restoreFactoryDefaultsButton = self.findChild(QPushButton, 'restoreFactoryDefaultsButton')
         self.restartButton = self.findChild(QPushButton, 'restartButton')
+
+        # Find the stacked widget
+        self.stackedWidget = self.findChild(QStackedWidget, 'stackedWidget')
+
+        # Load the NetworkSettings widget and add it to the stacked widget
+        self.network_settings = NetworkSettings(self)
+        self.stackedWidget.addWidget(self.network_settings)
 
         # Debug prints to check if buttons are found
         print(f"settingsBackButton: {self.settingsBackButton}")
@@ -53,8 +61,9 @@ class SettingsScreen(QWidget):
         print("Pair Phone button clicked")
 
     def open_network_settings(self):
-        # Placeholder for open network settings logic
-        self.main_window.switch_screen(self.main_window.network_settings)
+        # Logic to open the network settings screen within the settings screen
+        print("Network Settings button clicked")
+        self.stackedWidget.setCurrentWidget(self.network_settings)
 
     def open_display_settings(self):
         # Placeholder for open display settings logic

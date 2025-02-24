@@ -1,11 +1,10 @@
 from PyQt5 import uic
-from PyQt5.QtWidgets import QWidget, QPushButton
+from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget
 
 class NetworkSettings(QWidget):
-    def __init__(self, main_window):
-        super(NetworkSettings, self).__init__()
-        self.main_window = main_window
-        uic.loadUi('src/ui/ui_files/network_settings.ui', self)
+    def __init__(self, parent):
+        super(NetworkSettings, self).__init__(parent)
+        uic.loadUi('src/ui/settings_screen/network_settings/network_settings.ui', self)
 
         # Find buttons by their object names
         self.staticIPSettingsCancelButton = self.findChild(QPushButton, 'staticIPSettingsCancelButton')
@@ -24,7 +23,7 @@ class NetworkSettings(QWidget):
         self.networkInfoBackButton = self.findChild(QPushButton, 'networkInfoBackButton')
 
         # Find pages by their object names
-        self.stackedWidget = self.findChild(QWidget, 'stackedWidget')
+        self.stackedWidget = self.findChild(QStackedWidget, 'stackedWidget')
         self.networkSettingsPage = self.findChild(QWidget, 'networkSettingsPage')
         self.staticIPSettingsPage = self.findChild(QWidget, 'staticIPSettingsPage')
         self.wifiSettingsPage = self.findChild(QWidget, 'wifiSettingsPage')
@@ -76,12 +75,14 @@ class NetworkSettings(QWidget):
     def cancel_network_settings(self):
         # Placeholder for cancel network settings logic
         print("Cancel Network Settings button clicked")
-        self.main_window.switch_screen(self.main_window.settings_screen)
+        self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
 
     def go_back_to_settings_screen(self):
         # Logic to go back to the settings screen
         print("Back to settings screen button clicked")
-        self.main_window.switch_screen(self.main_window.settings_screen)
+        parent_widget = self.parentWidget()
+        if isinstance(parent_widget, QStackedWidget):
+            parent_widget.setCurrentWidget(parent_widget.parentWidget().findChild(QWidget, 'mainSettingsPage'))
 
     def go_back(self):
         # Logic to go back to the network settings page
