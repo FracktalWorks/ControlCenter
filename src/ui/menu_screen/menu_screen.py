@@ -16,12 +16,12 @@ class MenuScreen(QWidget):
         self.menuBackButton = self.findChild(QPushButton, 'menuBackButton')
 
         # Debug prints to check if buttons are found
-        print(f"menuPrintButton: {self.menuPrintButton}")
-        print(f"menuControlButton: {self.menuControlButton}")
-        print(f"menuCalibrateButton: {self.menuCalibrateButton}")
-        print(f"menuCartButton: {self.menuCartButton}")
-        print(f"menuSettingsButton: {self.menuSettingsButton}")
-        print(f"menuBackButton: {self.menuBackButton}")
+        # print(f"menuPrintButton: {self.menuPrintButton}")
+        # print(f"menuControlButton: {self.menuControlButton}")
+        # print(f"menuCalibrateButton: {self.menuCalibrateButton}")
+        # print(f"menuCartButton: {self.menuCartButton}")
+        # print(f"menuSettingsButton: {self.menuSettingsButton}")
+        # print(f"menuBackButton: {self.menuBackButton}")
 
         # Check if buttons are found
         if not all([self.menuPrintButton, self.menuControlButton, self.menuCalibrateButton, self.menuCartButton, self.menuSettingsButton, self.menuBackButton]):

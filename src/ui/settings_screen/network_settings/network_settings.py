@@ -1,9 +1,14 @@
+# set the index of the default screen to 0 in .ui so it always opens first
+# 
+# 
+# 
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget
 
 class NetworkSettings(QWidget):
-    def __init__(self, parent):
+    def __init__(self, parent, settings_screen):
         super(NetworkSettings, self).__init__(parent)
+        self.mainSettingsWidget = settings_screen  # Reference to the main settings widget
         uic.loadUi('src/ui/settings_screen/network_settings/network_settings.ui', self)
 
         # Find buttons by their object names
@@ -28,27 +33,6 @@ class NetworkSettings(QWidget):
         self.staticIPSettingsPage = self.findChild(QWidget, 'staticIPSettingsPage')
         self.wifiSettingsPage = self.findChild(QWidget, 'wifiSettingsPage')
         self.networkInfoPage = self.findChild(QWidget, 'networkInfoPage')
-
-        # Debug prints to check if buttons and pages are found
-        print(f"staticIPSettingsCancelButton: {self.staticIPSettingsCancelButton}")
-        print(f"staticIPGatewayKeyboardButton: {self.staticIPGatewayKeyboardButton}")
-        print(f"staticIPKeyboardButton: {self.staticIPKeyboardButton}")
-        print(f"staticIPNameServerKeyboardButton: {self.staticIPNameServerKeyboardButton}")
-        print(f"deleteStaticIPSettingsButton: {self.deleteStaticIPSettingsButton}")
-        print(f"staticIPSettingsDoneButton: {self.staticIPSettingsDoneButton}")
-        print(f"wifiSettingsCancelButton: {self.wifiSettingsCancelButton}")
-        print(f"wifiSettingsDoneButton: {self.wifiSettingsDoneButton}")
-        print(f"wifiSettingsSSIDKeyboardButton: {self.wifiSettingsSSIDKeyboardButton}")
-        print(f"networkInfoButton: {self.networkInfoButton}")
-        print(f"configureStaticIPButton: {self.configureStaticIPButton}")
-        print(f"networkSettingsBackButton: {self.networkSettingsBackButton}")
-        print(f"configureWifiButton: {self.configureWifiButton}")
-        print(f"networkInfoBackButton: {self.networkInfoBackButton}")
-        print(f"stackedWidget: {self.stackedWidget}")
-        print(f"networkSettingsPage: {self.networkSettingsPage}")
-        print(f"staticIPSettingsPage: {self.staticIPSettingsPage}")
-        print(f"wifiSettingsPage: {self.wifiSettingsPage}")
-        print(f"networkInfoPage: {self.networkInfoPage}")
 
         # Check if buttons and pages are found
         if not all([self.staticIPSettingsCancelButton, self.staticIPGatewayKeyboardButton, self.staticIPKeyboardButton, self.staticIPNameServerKeyboardButton, self.deleteStaticIPSettingsButton, self.staticIPSettingsDoneButton, self.wifiSettingsCancelButton, self.wifiSettingsDoneButton, self.wifiSettingsSSIDKeyboardButton, self.networkInfoButton, self.configureStaticIPButton, self.networkSettingsBackButton, self.configureWifiButton, self.networkInfoBackButton, self.stackedWidget, self.networkSettingsPage, self.staticIPSettingsPage, self.wifiSettingsPage, self.networkInfoPage]):
@@ -80,9 +64,7 @@ class NetworkSettings(QWidget):
     def go_back_to_settings_screen(self):
         # Logic to go back to the settings screen
         print("Back to settings screen button clicked")
-        parent_widget = self.parentWidget()
-        if isinstance(parent_widget, QStackedWidget):
-            parent_widget.setCurrentWidget(parent_widget.parentWidget().findChild(QWidget, 'mainSettingsPage'))
+        self.mainSettingsWidget.stackedWidget.setCurrentWidget(self.mainSettingsWidget.mainSettingsPage)
 
     def go_back(self):
         # Logic to go back to the network settings page

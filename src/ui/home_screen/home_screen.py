@@ -21,11 +21,11 @@ class HomeScreen(QWidget):
         self.controlButton = self.findChild(QPushButton, 'controlButton')
 
         # Debug prints to check if buttons are found
-        print(f"doorLockButton: {self.doorLockButton}")
-        print(f"menuButton: {self.menuButton}")
-        print(f"stopButton: {self.stopButton}")
-        print(f"playPauseButton: {self.playPauseButton}")
-        print(f"controlButton: {self.controlButton}")
+        # print(f"doorLockButton: {self.doorLockButton}")
+        # print(f"menuButton: {self.menuButton}")
+        # print(f"stopButton: {self.stopButton}")
+        # print(f"playPauseButton: {self.playPauseButton}")
+        # print(f"controlButton: {self.controlButton}")
 
         # Check if buttons are found
         if not all([self.doorLockButton, self.menuButton, self.stopButton, self.playPauseButton, self.controlButton]):

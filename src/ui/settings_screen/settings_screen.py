@@ -1,90 +1,137 @@
+import os
+import importlib.util
 from PyQt5 import uic
-from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget
-from ui.settings_screen.network_settings.network_settings import NetworkSettings
+from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QVBoxLayout, QScrollArea
+from PyQt5.QtGui import QFont
 
 class SettingsScreen(QWidget):
     def __init__(self, main_window):
+        """
+        Initialize the SettingsScreen widget.
+
+        Args:
+            main_window (QMainWindow): The main window of the application.
+        """
         super(SettingsScreen, self).__init__()
         self.main_window = main_window
         uic.loadUi('src/ui/settings_screen/settings_screen.ui', self)
 
-        # Find buttons by their object names
-        self.settingsBackButton = self.findChild(QPushButton, 'settingsBackButton')
-        self.pairPhoneButton = self.findChild(QPushButton, 'pairPhoneButton')
-        self.networkSettingsButton = self.findChild(QPushButton, 'networkSettingsButton')
-        self.displaySettingsButton = self.findChild(QPushButton, 'displaySettingsButton')
-        self.OTAButton = self.findChild(QPushButton, 'OTAButton')
-        self.versionButton = self.findChild(QPushButton, 'versionButton')
-        self.restorePrintSettingsButton = self.findChild(QPushButton, 'restorePrintSettingsButton')
-        self.restoreFactoryDefaultsButton = self.findChild(QPushButton, 'restoreFactoryDefaultsButton')
-        self.restartButton = self.findChild(QPushButton, 'restartButton')
-
         # Find the stacked widget
-        self.stackedWidget = self.findChild(QStackedWidget, 'stackedWidget')
+        self.stackedWidget = self.findChild(QStackedWidget, 'mainSettingsStackedWidget')
 
-        # Load the NetworkSettings widget and add it to the stacked widget
-        self.network_settings = NetworkSettings(self)
-        self.stackedWidget.addWidget(self.network_settings)
+        # Find the main settings page
+        self.mainSettingsPage = self.findChild(QWidget, 'mainSettingsPage')
 
-        # Debug prints to check if buttons are found
-        print(f"settingsBackButton: {self.settingsBackButton}")
-        print(f"pairPhoneButton: {self.pairPhoneButton}")
-        print(f"networkSettingsButton: {self.networkSettingsButton}")
-        print(f"displaySettingsButton: {self.displaySettingsButton}")
-        print(f"OTAButton: {self.OTAButton}")
-        print(f"versionButton: {self.versionButton}")
-        print(f"restorePrintSettingsButton: {self.restorePrintSettingsButton}")
-        print(f"restoreFactoryDefaultsButton: {self.restoreFactoryDefaultsButton}")
-        print(f"restartButton: {self.restartButton}")
+        # Find the scroll area and its contents
+        self.scrollArea = self.findChild(QScrollArea, 'scrollArea')
+        self.scrollAreaWidgetContents = self.scrollArea.findChild(QWidget, 'scrollAreaWidgetContents')
+        self.verticalLayout = self.scrollAreaWidgetContents.findChild(QVBoxLayout, 'verticalLayout')
 
-        # Check if buttons are found
-        if not all([self.settingsBackButton, self.pairPhoneButton, self.networkSettingsButton, self.displaySettingsButton, self.OTAButton, self.versionButton, self.restorePrintSettingsButton, self.restoreFactoryDefaultsButton, self.restartButton]):
-            raise ValueError("One or more buttons not found in the UI file")
-
-        # Connect buttons to their respective functions
+        # Add the back button to the main layout
+        self.settingsBackButton = self.findChild(QPushButton, 'settingsBackButton')
         self.settingsBackButton.clicked.connect(self.go_back)
-        self.pairPhoneButton.clicked.connect(self.pair_phone)
-        self.networkSettingsButton.clicked.connect(self.open_network_settings)
-        self.displaySettingsButton.clicked.connect(self.open_display_settings)
-        self.OTAButton.clicked.connect(self.check_for_updates)
-        self.versionButton.clicked.connect(self.show_version)
-        self.restorePrintSettingsButton.clicked.connect(self.restore_print_settings)
-        self.restoreFactoryDefaultsButton.clicked.connect(self.restore_factory_defaults)
-        self.restartButton.clicked.connect(self.restart)
+        self.verticalLayout.addWidget(self.settingsBackButton)
+
+        # Scan the "Settings Screen" folder for subfolders containing .ui files
+        self.load_settings_widgets()
+
+        # Set the default page to mainSettingsPage
+        self.stackedWidget.setCurrentWidget(self.mainSettingsPage)
 
     def go_back(self):
-        # Placeholder for go back logic
+        """
+        Switch back to the main menu screen.
+        """
         self.main_window.switch_screen(self.main_window.menu_screen)
 
-    def pair_phone(self):
-        # Placeholder for pair phone logic
-        print("Pair Phone button clicked")
+    def load_settings_widgets(self):
+        """
+        Load settings widgets from subfolders in the "Settings Screen" folder.
+        """
+        settings_folder = 'src/ui/settings_screen'
+        for subfolder in os.listdir(settings_folder):
+            subfolder_path = os.path.join(settings_folder, subfolder)
+            if os.path.isdir(subfolder_path):
+                ui_file = os.path.join(subfolder_path, f'{subfolder}.ui')
+                py_file = os.path.join(subfolder_path, f'{subfolder}.py')
+                if os.path.exists(ui_file) and os.path.exists(py_file):
+                    print(f"Loading widget: {subfolder}")
+                    # Create a button for the subfolder
+                    button = QPushButton(subfolder.replace('_', ' ').title())
+                    button.setMinimumHeight(100)
+                    button.setFont(QFont("Gotham Light", 16))
+                    button.setStyleSheet("""
+                        QPushButton {
+                            border: 1px solid rgb(87, 87, 87);
+                            background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+                        }
+                        QPushButton:pressed {
+                            background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #dadbde, stop: 1 #f6f7fa);
+                        }
+                        QPushButton:flat {
+                            border: none; /* no border for a flat push button */
+                        }
+                        QPushButton:default {
+                            border-color: navy; /* make the default button prominent */
+                        }
+                    """)
+                    button.clicked.connect(lambda _, sf=subfolder: self.load_widget(sf))
+                    self.verticalLayout.addWidget(button)
 
-    def open_network_settings(self):
-        # Logic to open the network settings screen within the settings screen
-        print("Network Settings button clicked")
-        self.stackedWidget.setCurrentWidget(self.network_settings)
+                    # Load the widget and add it to the stacked widget
+                    widget_instance = self.create_widget_instance(ui_file, py_file)
+                    page = QWidget()
+                    layout = QVBoxLayout(page)
+                    layout.setContentsMargins(0, 0, 0, 0)  # Remove margins
+                    layout.setSpacing(0)  # Remove spacing
+                    layout.addWidget(widget_instance)
+                    self.stackedWidget.addWidget(page)
+                    print(f"Added widget: {widget_instance.objectName()}")
 
-    def open_display_settings(self):
-        # Placeholder for open display settings logic
-        print("Display Settings button clicked")
+        # Ensure the mainSettingsPage is set as the default page after loading all widgets
+        self.stackedWidget.setCurrentWidget(self.mainSettingsPage)
 
-    def check_for_updates(self):
-        # Placeholder for check for updates logic
-        print("Check for Updates button clicked")
+    def load_widget(self, widget_name):
+        """
+        Switch to the specified widget in the stacked widget.
 
-    def show_version(self):
-        # Placeholder for show version logic
-        print("Version button clicked")
+        Args:
+            widget_name (str): The name of the widget to switch to.
+        """
+        print(f"Switching to widget: {widget_name}")
+        for i in range(self.stackedWidget.count()):
+            widget = self.stackedWidget.widget(i)
+            if widget.findChild(QWidget, widget_name):
+                self.stackedWidget.setCurrentWidget(widget)
+                print(f"Switched to widget: {widget_name}")
+                break
 
-    def restore_print_settings(self):
-        # Placeholder for restore print settings logic
-        print("Restore Print Settings button clicked")
+    def create_widget_instance(self, ui_file, py_file):
+        """
+        Create an instance of a widget from the specified .ui and .py files.
 
-    def restore_factory_defaults(self):
-        # Placeholder for restore factory defaults logic
-        print("Restore Factory Defaults button clicked")
+        Args:
+            ui_file (str): The path to the .ui file.
+            py_file (str): The path to the .py file.
 
-    def restart(self):
-        # Placeholder for restart logic
-        print("Restart button clicked")
+        Returns:
+            QWidget: An instance of the dynamically loaded widget.
+        """
+        class DynamicWidget(QWidget):
+            def __init__(self, parent):
+                super(DynamicWidget, self).__init__(parent)
+                uic.loadUi(ui_file, self)
+                self.setObjectName(os.path.basename(ui_file).split('.')[0])
+                self.load_backend(py_file, parent)
+
+            def load_backend(self, py_file, parent):
+                spec = importlib.util.spec_from_file_location("module.name", py_file)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                # Assuming the class name in the .py file is the same as the subfolder name
+                class_name = os.path.basename(py_file).split('.')[0].title().replace('_', '')
+                backend_class = getattr(module, class_name)
+                backend_instance = backend_class(self, parent)
+                self.backend = backend_instance
+
+        return DynamicWidget(self)
