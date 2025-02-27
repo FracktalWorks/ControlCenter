@@ -77,6 +77,20 @@ pyqt-3d-printer-app
 
 ## Code Flow and Architecture
 
+The architecture used in this code is closest to the Model-View-Presenter (MVP) pattern. Here's a brief explanation of why this is the case:
+
+### Model-View-Presenter (MVP)
+
+- **Model**: Represents the data and business logic of the application. In this case, it would be the classes and modules that handle the data and interactions with the OctoPrint API (e.g., `octoprint_client`, `models`).
+- **View**: Represents the UI components. In this case, it is the `.ui` files created using Qt Designer and the corresponding PyQt widgets (e.g., `settings_screen.ui`, `example_widget.ui`).
+- **Presenter**: Acts as an intermediary between the Model and the View. It retrieves data from the Model, formats it, and updates the View. In this case, it is the Python classes that load the UI files and handle the logic (e.g., `SettingsScreen`, `ExampleWidget`).
+
+### Why MVP?
+
+- **Separation of Concerns**: The UI (View) is separated from the business logic (Model), and the Presenter handles the communication between them.
+- **Dynamic Loading**: The `SettingsScreen` class dynamically loads different settings widgets, which is a typical responsibility of the Presenter in the MVP pattern.
+- **UI Logic in Presenter**: The logic for handling UI events (e.g., button clicks) and updating the UI is placed in the Presenter classes (`SettingsScreen`, `ExampleWidget`), which is characteristic of the MVP pattern.
+
 ### Main Components
 
 1. **Main Window**: The main entry point of the application. It initializes the main window and sets up the UI.
@@ -144,4 +158,6 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 - You can refer to the readme file at [Julia-Touch-UI-Documentation](https://github.com/FracktalWorks/Julia-Touch-UI-Documentation). For this project, I'm using VSCode and Copilot to develop, so taking a slightly different approach to the toolchain.
 - Refer to this to understand how to properly use images inside a QT project: [text](https://www.youtube.com/watch?v=LceWgvYSVkQ)
 - Convert the resource file: `pyrcc5 -o src/ui/ui_files/resources/resource_rc.py src/ui/ui_files/resources/resource.qrc`
+- https://stackoverflow.com/questions/26698628/mvc-design-with-qt-designer-and-pyqt-pyside MVC architecture example
+- https://medium.com/@mark_huber/a-clean-architecture-for-a-pyqt-gui-using-the-mvp-pattern-78ecbc8321c0 MVC details
 
