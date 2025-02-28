@@ -160,4 +160,6 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 - Convert the resource file: `pyrcc5 -o src/ui/ui_files/resources/resource_rc.py src/ui/ui_files/resources/resource.qrc`
 - https://stackoverflow.com/questions/26698628/mvc-design-with-qt-designer-and-pyqt-pyside MVC architecture example
 - https://medium.com/@mark_huber/a-clean-architecture-for-a-pyqt-gui-using-the-mvp-pattern-78ecbc8321c0 MVC details
+- https://developer.mantidproject.org/MVPTutorial/Introduction.html MVP tutorial
+- https://developer.mantidproject.org/MVPTutorial/Mocking.html mocking/automatic testing
 
