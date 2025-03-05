@@ -30,7 +30,17 @@ class SettingsScreen(QWidget):
         # Add the back button to the main layout
         self.settingsBackButton = self.findChild(QPushButton, 'settingsBackButton')
         self.settingsBackButton.clicked.connect(self.go_back)
-        self.verticalLayout.addWidget(self.settingsBackButton)
+        self.verticalLayout.insertWidget(0, self.settingsBackButton)
+
+        # Find the new buttons
+        self.restorePrintSettingsButton = self.findChild(QPushButton, 'restorePrintSettingsButton')
+        self.restoreFactoryDefaultsButton = self.findChild(QPushButton, 'restoreFactoryDefaultsButton')
+        self.restartButton = self.findChild(QPushButton, 'restartButton')
+
+        # Connect the new buttons to their respective functions
+        self.restorePrintSettingsButton.clicked.connect(self.restore_print_settings)
+        self.restoreFactoryDefaultsButton.clicked.connect(self.restore_factory_defaults)
+        self.restartButton.clicked.connect(self.restart_system)
 
         # Scan the "Settings Screen" folder for subfolders containing .ui files
         self.load_settings_widgets()
@@ -91,6 +101,9 @@ class SettingsScreen(QWidget):
         # Ensure the mainSettingsPage is set as the default page after loading all widgets
         self.stackedWidget.setCurrentWidget(self.mainSettingsPage)
 
+        # Ensure the restart button is at the bottom of the button list
+        self.verticalLayout.addWidget(self.restartButton)
+
     def load_widget(self, widget_name):
         """
         Switch to the specified widget in the stacked widget.
@@ -135,3 +148,24 @@ class SettingsScreen(QWidget):
                 self.backend = backend_instance
 
         return DynamicWidget(self)
+
+    def restore_print_settings(self):
+        """
+        Restore the print settings to their default values.
+        """
+        print("Restoring print settings to default values.")
+        # Add logic to restore print settings
+
+    def restore_factory_defaults(self):
+        """
+        Restore the system to factory default settings.
+        """
+        print("Restoring system to factory default settings.")
+        # Add logic to restore factory default settings
+
+    def restart_system(self):
+        """
+        Restart the system.
+        """
+        print("Restarting the system.")
+        # Add logic to restart the system

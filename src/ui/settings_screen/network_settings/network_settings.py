@@ -1,7 +1,3 @@
-# set the index of the default screen to 0 in .ui so it always opens first
-# 
-# 
-# 
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget
 

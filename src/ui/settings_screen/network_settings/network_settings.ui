@@ -26,7 +26,7 @@
     <string notr="true">background-color: rgb(40, 40, 40);</string>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>3</number>
    </property>
    <widget class="QWidget" name="networkSettingsPage">
     <widget class="QPushButton" name="networkInfoButton">
@@ -1244,56 +1244,6 @@ QPushButton:focus {
     </widget>
    </widget>
    <widget class="QWidget" name="networkInfoPage">
-    <widget class="QLabel" name="lanIp">
-     <property name="geometry">
-      <rect>
-       <x>410</x>
-       <y>250</y>
-       <width>381</width>
-       <height>51</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>Gotham</family>
-       <pointsize>16</pointsize>
-       <weight>50</weight>
-       <bold>false</bold>
-      </font>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">color: rgb(255, 255, 255);
-background-color: rgba(255, 255, 255, 0);</string>
-     </property>
-     <property name="text">
-      <string>Ethernet</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="wifiMac">
-     <property name="geometry">
-      <rect>
-       <x>90</x>
-       <y>170</y>
-       <width>311</width>
-       <height>51</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>Gotham</family>
-       <pointsize>16</pointsize>
-       <weight>50</weight>
-       <bold>false</bold>
-      </font>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">color: rgb(255, 255, 255);
-background-color: rgba(255, 255, 255, 0);</string>
-     </property>
-     <property name="text">
-      <string>WiFi</string>
-     </property>
-    </widget>
     <widget class="QPushButton" name="networkInfoBackButton">
      <property name="geometry">
       <rect>
@@ -1362,194 +1312,310 @@ QPushButton:default {
       <bool>false</bool>
      </property>
     </widget>
-    <widget class="QLabel" name="wifiMacLabel">
+    <widget class="QFrame" name="frame">
      <property name="geometry">
       <rect>
-       <x>410</x>
-       <y>150</y>
-       <width>240</width>
-       <height>31</height>
+       <x>10</x>
+       <y>10</y>
+       <width>501</width>
+       <height>371</height>
       </rect>
      </property>
-     <property name="font">
-      <font>
-       <family>Gotham</family>
-       <pointsize>16</pointsize>
-       <weight>50</weight>
-       <bold>false</bold>
-      </font>
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
      </property>
-     <property name="styleSheet">
-      <string notr="true">color: rgb(255, 255, 255);
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <layout class="QFormLayout" name="formLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="hostnameLabel">
+        <property name="font">
+         <font>
+          <family>Gotham</family>
+          <pointsize>16</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: rgb(255, 255, 255);
 background-color: rgba(255, 255, 255, 0);</string>
-     </property>
-     <property name="text">
-      <string>Wi-Fi IP</string>
-     </property>
+        </property>
+        <property name="text">
+         <string>mDNS URL:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLabel" name="wifiApLabel">
+        <property name="font">
+         <font>
+          <family>Gotham</family>
+          <pointsize>16</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: rgb(255, 255, 255);
+background-color: rgba(255, 255, 255, 0);</string>
+        </property>
+        <property name="text">
+         <string>Wi-Fi AP</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="wifiIpLabel">
+        <property name="font">
+         <font>
+          <family>Gotham</family>
+          <pointsize>16</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: rgb(255, 255, 255);
+background-color: rgba(255, 255, 255, 0);</string>
+        </property>
+        <property name="text">
+         <string>Wi-Fi MAC:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QLabel" name="wifiMacLabel">
+        <property name="font">
+         <font>
+          <family>Gotham</family>
+          <pointsize>16</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: rgb(255, 255, 255);
+background-color: rgba(255, 255, 255, 0);</string>
+        </property>
+        <property name="text">
+         <string>Wi-Fi IP</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="wifiMac">
+        <property name="font">
+         <font>
+          <family>Gotham</family>
+          <pointsize>16</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: rgb(255, 255, 255);
+background-color: rgba(255, 255, 255, 0);</string>
+        </property>
+        <property name="text">
+         <string>WiFi:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QLabel" name="wifiIp">
+        <property name="font">
+         <font>
+          <family>Gotham</family>
+          <pointsize>16</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: rgb(255, 255, 255);
+background-color: rgba(255, 255, 255, 0);</string>
+        </property>
+        <property name="text">
+         <string>WiFi</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="lanIpLabel">
+        <property name="font">
+         <font>
+          <family>Gotham</family>
+          <pointsize>16</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: rgb(255, 255, 255);
+background-color: rgba(255, 255, 255, 0);</string>
+        </property>
+        <property name="text">
+         <string>Ethernet MAC:  </string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1">
+       <widget class="QLabel" name="lanMacLabel">
+        <property name="font">
+         <font>
+          <family>Gotham</family>
+          <pointsize>16</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: rgb(255, 255, 255);
+background-color: rgba(255, 255, 255, 0);</string>
+        </property>
+        <property name="text">
+         <string>Ethernet IP</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
+       <widget class="QLabel" name="lanMac">
+        <property name="font">
+         <font>
+          <family>Gotham</family>
+          <pointsize>16</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: rgb(255, 255, 255);
+background-color: rgba(255, 255, 255, 0);</string>
+        </property>
+        <property name="text">
+         <string>Ethernet:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="1">
+       <widget class="QLabel" name="lanIp">
+        <property name="font">
+         <font>
+          <family>Gotham</family>
+          <pointsize>16</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: rgb(255, 255, 255);
+background-color: rgba(255, 255, 255, 0);</string>
+        </property>
+        <property name="text">
+         <string>Ethernet</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="hostname">
+        <property name="font">
+         <font>
+          <family>Gotham</family>
+          <pointsize>16</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: rgb(255, 255, 255);
+background-color: rgba(255, 255, 255, 0);</string>
+        </property>
+        <property name="text">
+         <string>Hostname:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLabel" name="wifiAp">
+        <property name="font">
+         <font>
+          <family>Gotham</family>
+          <pointsize>16</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: rgb(255, 255, 255);
+background-color: rgba(255, 255, 255, 0);</string>
+        </property>
+        <property name="text">
+         <string>WiFi</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
-    <widget class="QLabel" name="lanMac">
+    <widget class="QLabel" name="QRCodeBackground">
      <property name="geometry">
       <rect>
-       <x>90</x>
-       <y>250</y>
-       <width>301</width>
-       <height>51</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>Gotham</family>
-       <pointsize>16</pointsize>
-       <weight>50</weight>
-       <bold>false</bold>
-      </font>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">color: rgb(255, 255, 255);
-background-color: rgba(255, 255, 255, 0);</string>
-     </property>
-     <property name="text">
-      <string>Ethernet</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="wifiIpLabel">
-     <property name="geometry">
-      <rect>
-       <x>90</x>
-       <y>150</y>
-       <width>240</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>Gotham</family>
-       <pointsize>16</pointsize>
-       <weight>50</weight>
-       <bold>false</bold>
-      </font>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">color: rgb(255, 255, 255);
-background-color: rgba(255, 255, 255, 0);</string>
-     </property>
-     <property name="text">
-      <string>Wi-Fi MAC</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="lanMacLabel">
-     <property name="geometry">
-      <rect>
-       <x>410</x>
-       <y>230</y>
-       <width>240</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>Gotham</family>
-       <pointsize>16</pointsize>
-       <weight>50</weight>
-       <bold>false</bold>
-      </font>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">color: rgb(255, 255, 255);
-background-color: rgba(255, 255, 255, 0);</string>
-     </property>
-     <property name="text">
-      <string>Ethernet IP</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="hostname">
-     <property name="geometry">
-      <rect>
-       <x>90</x>
-       <y>82</y>
-       <width>311</width>
-       <height>51</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>Gotham</family>
-       <pointsize>16</pointsize>
-       <weight>50</weight>
-       <bold>false</bold>
-      </font>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">color: rgb(255, 255, 255);
-background-color: rgba(255, 255, 255, 0);</string>
-     </property>
-     <property name="text">
-      <string>Hostname</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="wifiAp">
-     <property name="geometry">
-      <rect>
-       <x>410</x>
+       <x>530</x>
        <y>80</y>
-       <width>381</width>
-       <height>51</height>
+       <width>250</width>
+       <height>250</height>
       </rect>
      </property>
      <property name="font">
       <font>
-       <family>Gotham</family>
-       <pointsize>16</pointsize>
-       <weight>50</weight>
-       <bold>false</bold>
+       <pointsize>20</pointsize>
       </font>
      </property>
      <property name="styleSheet">
-      <string notr="true">color: rgb(255, 255, 255);
-background-color: rgba(255, 255, 255, 0);</string>
+      <string notr="true">background-color: rgb(255, 255, 255);</string>
      </property>
      <property name="text">
-      <string>WiFi</string>
+      <string/>
      </property>
     </widget>
-    <widget class="QLabel" name="lanIpLabel">
+    <widget class="QLabel" name="QRCodeLabel">
      <property name="geometry">
       <rect>
-       <x>90</x>
-       <y>230</y>
-       <width>240</width>
-       <height>31</height>
+       <x>530</x>
+       <y>80</y>
+       <width>250</width>
+       <height>250</height>
       </rect>
      </property>
      <property name="font">
       <font>
-       <family>Gotham</family>
-       <pointsize>16</pointsize>
-       <weight>50</weight>
-       <bold>false</bold>
+       <pointsize>20</pointsize>
       </font>
      </property>
      <property name="styleSheet">
-      <string notr="true">color: rgb(255, 255, 255);
-background-color: rgba(255, 255, 255, 0);</string>
+      <string notr="true"/>
      </property>
      <property name="text">
-      <string>Ethernet MAC</string>
+      <string/>
+     </property>
+     <property name="scaledContents">
+      <bool>true</bool>
      </property>
     </widget>
-    <widget class="QLabel" name="wifiApLabel">
+    <widget class="QLabel" name="scanToConnectLabel">
      <property name="geometry">
       <rect>
-       <x>410</x>
-       <y>60</y>
-       <width>240</width>
-       <height>31</height>
+       <x>530</x>
+       <y>50</y>
+       <width>171</width>
+       <height>26</height>
       </rect>
      </property>
      <property name="font">
       <font>
        <family>Gotham</family>
-       <pointsize>16</pointsize>
+       <pointsize>12</pointsize>
        <weight>50</weight>
        <bold>false</bold>
       </font>
@@ -1559,57 +1625,7 @@ background-color: rgba(255, 255, 255, 0);</string>
 background-color: rgba(255, 255, 255, 0);</string>
      </property>
      <property name="text">
-      <string>Wi-Fi AP</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="wifiIp">
-     <property name="geometry">
-      <rect>
-       <x>410</x>
-       <y>170</y>
-       <width>381</width>
-       <height>51</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>Gotham</family>
-       <pointsize>16</pointsize>
-       <weight>50</weight>
-       <bold>false</bold>
-      </font>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">color: rgb(255, 255, 255);
-background-color: rgba(255, 255, 255, 0);</string>
-     </property>
-     <property name="text">
-      <string>WiFi</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="hostnameLabel">
-     <property name="geometry">
-      <rect>
-       <x>90</x>
-       <y>60</y>
-       <width>241</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>Gotham</family>
-       <pointsize>16</pointsize>
-       <weight>50</weight>
-       <bold>false</bold>
-      </font>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">color: rgb(255, 255, 255);
-background-color: rgba(255, 255, 255, 0);</string>
-     </property>
-     <property name="text">
-      <string>mDNS URL</string>
+      <string>Scan to connenct:</string>
      </property>
     </widget>
    </widget>
