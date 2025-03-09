@@ -136,3 +136,13 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 *.pyc
+src/models/__pycache__/printer_status.cpython-313.pyc
+src/thermalCamera/__pycache__/__init__.cpython-313.pyc
+src/thermalCamera/__pycache__/mi48.cpython-313.pyc
+src/thermalCamera/__pycache__/thermal_camera.cpython-313.pyc
+src/thermalCamera/__pycache__/utils.cpython-313.pyc
+src/ui/__pycache__/custom_widgets.cpython-313.pyc
+src/ui/__pycache__/main_window.cpython-313.pyc
+src/ui/control_screen/__pycache__/control_screen.cpython-313.pyc
+src/ui/loading_screen/__pycache__/loading_screen.cpython-313.pyc
+src/ui/tab_screen/__pycache__/tab_screen.cpython-313.pyc
