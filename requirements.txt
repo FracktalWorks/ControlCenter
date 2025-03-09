@@ -2,3 +2,9 @@ PyQt5
 requests
 Pillow
 moonrakerpy
+opencv-python 
+numpy 
+flask
+crcmod
+serial
+pyserial
