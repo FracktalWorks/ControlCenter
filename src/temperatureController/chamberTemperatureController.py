@@ -24,10 +24,10 @@ class ChamberTemperatureController(QThread):
         """Control the heater power based on the setpoint and actual temperatures."""
         setpoint = self.printer_status.chamberTemperatureSetpoint
         temps = self.printer_status.chamberTemperatures
-        bottom_temp = temps.get('Bottom', 0)
-        right_temp = temps.get('Right', 0)
-        top_temp = temps.get('Top', 0)
-        left_temp = temps.get('Left', 0)
+        bottom_temp = temps.get('bottom-center', 0)
+        right_temp = temps.get('middle-right', 0)
+        top_temp = temps.get('top-center', 0)
+        left_temp = temps.get('middle-left', 0)
 
         # Simple watermark algorithm to turn on and off heater between power levels of 1 and 99
         bottom_power = self.calculate_power(bottom_temp, setpoint)
