@@ -15,5 +15,5 @@ class ImageWidget(QWidget):
         painter = QPainter(self)
         if self.image:
             rect = self.rect()
-            scaled_image = self.image.scaled(rect.size(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+            scaled_image = self.image.scaled(rect.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
             painter.drawImage(rect, scaled_image)

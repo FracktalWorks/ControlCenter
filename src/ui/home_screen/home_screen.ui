@@ -95,8 +95,7 @@
                   </size>
                  </property>
                  <property name="styleSheet">
-                  <string notr="true">background-color: rgb(0, 255, 255);
-    border-radius: 20px;
+                  <string notr="true">background-color: rgb(232, 232, 232);
 </string>
                  </property>
                 </widget>
@@ -1473,7 +1472,7 @@ QPushButton:focus {
                        <property name="minimumSize">
                         <size>
                          <width>300</width>
-                         <height>150</height>
+                         <height>300</height>
                         </size>
                        </property>
                        <property name="maximumSize">
@@ -1483,8 +1482,7 @@ QPushButton:focus {
                         </size>
                        </property>
                        <property name="styleSheet">
-                        <string notr="true">background-color: rgb(0, 255, 255);
-    border-radius: 20px;
+                        <string notr="true">background-color: rgb(232, 232, 232);
 </string>
                        </property>
                       </widget>
@@ -1606,19 +1604,18 @@ QProgressBar {
           <widget class="QWidget" name="thermalCameraWidget" native="true">
            <property name="minimumSize">
             <size>
-             <width>300</width>
-             <height>300</height>
+             <width>200</width>
+             <height>200</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>300</width>
-             <height>300</height>
+             <width>400</width>
+             <height>400</height>
             </size>
            </property>
            <property name="styleSheet">
-            <string notr="true">background-color: rgb(0, 255, 255);
-    border-radius: 20px;
+            <string notr="true">background-color: rgb(232, 232, 232);
 </string>
            </property>
           </widget>
@@ -1671,9 +1668,14 @@ QProgressBar {
              <height>200</height>
             </size>
            </property>
+           <property name="maximumSize">
+            <size>
+             <width>400</width>
+             <height>400</height>
+            </size>
+           </property>
            <property name="styleSheet">
-            <string notr="true">background-color: rgb(0, 255, 255);
-    border-radius: 20px;
+            <string notr="true">background-color: rgb(232, 232, 232);
 </string>
            </property>
           </widget>

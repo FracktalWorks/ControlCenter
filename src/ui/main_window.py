@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
         self.stacked_widget = QStackedWidget()
         self.layout.addWidget(self.stacked_widget)
         
-        self.thermal_camera = ThermalCamera()
+        self.thermal_camera = ThermalCamera(roi=(0, 9, 61, 70))
         self.thermal_camera.frame_ready.connect(self.update_frame)
         self.thermal_camera.start()
 

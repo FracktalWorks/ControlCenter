@@ -5,6 +5,7 @@ from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import pyqtSlot
 import numpy as np
 from ui.custom_widgets import ImageWidget
+from PyQt5.QtCore import Qt
 
 class HomeScreen(QWidget):
     def __init__(self, main_window):
@@ -48,8 +49,6 @@ class HomeScreen(QWidget):
         # Initialize additional widget elements (graph and camera feed areas)
         self.chamberTempGraphWidget = self.findChild(QWidget, "chamberTempGraphWidget")
         self.layerPreviewWidget = self.findChild(QWidget, "layerPreviewWidget")
-        self.thermalCameraWidget = self.findChild(QWidget, "thermalCameraWidget")
-        self.thermalCameraWidget = self.findChild(QWidget, "thermalCameraWidget")
         self.rgbCameraWidget = self.findChild(QWidget, "rgbCameraWidget")
 
         # Replace the QWidget with the custom ImageWidget
@@ -57,7 +56,7 @@ class HomeScreen(QWidget):
         self.thermalCameraWidget = ImageWidget(thermal_camera_container)
         layout = QVBoxLayout(thermal_camera_container)
         layout.addWidget(self.thermalCameraWidget)
-        self.thermalCameraWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.thermalCameraWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding,)
 
         # Connect the temperatures_updated signal to the update_thermal_camera_widget slot
         self.main_window.printer_status.temperatures_updated.connect(self.update_thermal_camera_widget)
