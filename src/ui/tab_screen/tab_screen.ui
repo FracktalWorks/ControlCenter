@@ -230,7 +230,7 @@ background-color: rgba(255, 255, 255, 0);</string>
            <property name="frameShadow">
             <enum>QFrame::Raised</enum>
            </property>
-           <widget class="QLabel" name="printerStatus_4">
+           <widget class="QLabel" name="currentActionLabel">
             <property name="geometry">
              <rect>
               <x>10</x>
@@ -301,7 +301,7 @@ background-color: rgba(255, 255, 255, 0);</string>
            <property name="frameShadow">
             <enum>QFrame::Raised</enum>
            </property>
-           <widget class="QLabel" name="printerStatus_2">
+           <widget class="QLabel" name="laserStatus">
             <property name="geometry">
              <rect>
               <x>0</x>
@@ -343,7 +343,7 @@ background-color: rgba(255, 255, 255, 0);</string>
              <bool>true</bool>
             </property>
            </widget>
-           <widget class="QLabel" name="printerStatus_3">
+           <widget class="QLabel" name="scannerStatus">
             <property name="geometry">
              <rect>
               <x>0</x>
@@ -385,7 +385,7 @@ background-color: rgba(255, 255, 255, 0);</string>
              <bool>true</bool>
             </property>
            </widget>
-           <widget class="QLabel" name="printerStatusColour_3">
+           <widget class="QLabel" name="scannerStatusColour">
             <property name="geometry">
              <rect>
               <x>100</x>
@@ -427,7 +427,7 @@ background-color: rgba(255, 255, 255, 0);</string>
              <set>Qt::AlignCenter</set>
             </property>
            </widget>
-           <widget class="QLabel" name="printerStatusColour_2">
+           <widget class="QLabel" name="laserStatusColour">
             <property name="geometry">
              <rect>
               <x>100</x>

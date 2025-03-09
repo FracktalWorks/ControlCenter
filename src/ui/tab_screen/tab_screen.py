@@ -22,6 +22,7 @@ class TabScreen(QWidget):
 
         # Populate the tabs using the existing containers in the UI file
         self.load_home_tab()
+        self.load_parameters_tab()
         self.load_control_tab()
 
     def load_home_tab(self):
@@ -34,6 +35,18 @@ class TabScreen(QWidget):
             home_tab.setLayout(layout)
         else:
             print("Home tab not found in TabScreen UI")
+
+    def load_parameters_tab(self):
+        # Locate the existing parameters tab container (set objectName to "parameters_tab" in Qt Designer)
+        parameters_tab = self.findChild(QWidget, 'parameters_tab')
+        if parameters_tab:
+            from ui.parameters_screen.parameters_screen import ParametersScreen
+            self.parameters_screen = ParametersScreen(self.main_window, self.moonraker_api)
+            layout = QVBoxLayout(parameters_tab)
+            layout.addWidget(self.parameters_screen)
+            parameters_tab.setLayout(layout)
+        else:
+            print("Parameters tab not found in TabScreen UI")
 
     def load_control_tab(self):
         # Find the existing control tab by its object name as set in Qt Designer (e.g., "controlTab")

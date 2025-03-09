@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1333</width>
-    <height>711</height>
+    <width>1409</width>
+    <height>732</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout_3">
+  <layout class="QHBoxLayout" name="horizontalLayout_7">
    <item>
     <widget class="QFrame" name="frame">
      <property name="frameShape">
@@ -22,537 +22,555 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <widget class="QFrame" name="buildModuleFrame">
-      <property name="geometry">
-       <rect>
-        <x>40</x>
-        <y>30</y>
-        <width>441</width>
-        <height>651</height>
-       </rect>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">QFrame#buildModuleFrame {
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QFrame" name="buildModuleFrame">
+        <property name="styleSheet">
+         <string notr="true">QFrame#buildModuleFrame {
     border: 2px solid gray;
     border-radius: 20px;
 }</string>
-      </property>
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayout">
-       <item>
-        <widget class="QFrame" name="buildModuleAutomationFrame">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>200</height>
-          </size>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <property name="leftMargin">
+          <number>9</number>
          </property>
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
+         <property name="topMargin">
+          <number>9</number>
          </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
+         <property name="rightMargin">
+          <number>9</number>
          </property>
-         <layout class="QGridLayout" name="gridLayout_2">
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>0</number>
-          </property>
-          <property name="horizontalSpacing">
-           <number>6</number>
-          </property>
-          <item row="3" column="0">
-           <widget class="QPushButton" name="loadFileButton_6">
-            <property name="minimumSize">
-             <size>
-              <width>150</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>350</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Gotham</family>
-              <pointsize>12</pointsize>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QPushButton {
-    border: 1px solid rgb(87, 87, 87);
-
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-radius:20px;
-}
-
-QPushButton:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QPushButton:flat {
-    border: none; /* no border for a flat push button */
-}
-
-QPushButton:default {
-    border-color: navy; /* make the default button prominent */
-}
-
-QPushButton:focus {
-	outline: none;
-}</string>
-            </property>
-            <property name="text">
-             <string>Prepare for Part Removal</string>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QPushButton" name="loadFileButton_3">
-            <property name="minimumSize">
-             <size>
-              <width>150</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>500</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Gotham</family>
-              <pointsize>12</pointsize>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QPushButton {
-    border: 1px solid rgb(87, 87, 87);
-
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-radius:20px;
-}
-
-QPushButton:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QPushButton:flat {
-    border: none; /* no border for a flat push button */
-}
-
-QPushButton:default {
-    border-color: navy; /* make the default button prominent */
-}
-
-QPushButton:focus {
-	outline: none;
-}</string>
-            </property>
-            <property name="text">
-             <string>Undock</string>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QPushButton" name="loadFileButton">
-            <property name="minimumSize">
-             <size>
-              <width>150</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>350</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Gotham</family>
-              <pointsize>12</pointsize>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QPushButton {
-    border: 1px solid rgb(87, 87, 87);
-
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-radius:20px;
-}
-
-QPushButton:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QPushButton:flat {
-    border: none; /* no border for a flat push button */
-}
-
-QPushButton:default {
-    border-color: navy; /* make the default button prominent */
-}
-
-QPushButton:focus {
-	outline: none;
-}</string>
-            </property>
-            <property name="text">
-             <string>Home Build Module</string>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QPushButton" name="loadFileButton_2">
-            <property name="minimumSize">
-             <size>
-              <width>150</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>500</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Gotham</family>
-              <pointsize>12</pointsize>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QPushButton {
-    border: 1px solid rgb(87, 87, 87);
-
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-radius:20px;
-}
-
-QPushButton:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QPushButton:flat {
-    border: none; /* no border for a flat push button */
-}
-
-QPushButton:default {
-    border-color: navy; /* make the default button prominent */
-}
-
-QPushButton:focus {
-	outline: none;
-}</string>
-            </property>
-            <property name="text">
-             <string>Prepare Powder Loading</string>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QPushButton" name="loadFileButton_5">
-            <property name="minimumSize">
-             <size>
-              <width>150</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>500</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Gotham</family>
-              <pointsize>12</pointsize>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QPushButton {
-    border: 1px solid rgb(87, 87, 87);
-
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-radius:20px;
-}
-
-QPushButton:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QPushButton:flat {
-    border: none; /* no border for a flat push button */
-}
-
-QPushButton:default {
-    border-color: navy; /* make the default button prominent */
-}
-
-QPushButton:focus {
-	outline: none;
-}</string>
-            </property>
-            <property name="text">
-             <string>Move to Starting Position</string>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QPushButton" name="loadFileButton_4">
-            <property name="minimumSize">
-             <size>
-              <width>150</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>500</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Gotham</family>
-              <pointsize>12</pointsize>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QPushButton {
-    border: 1px solid rgb(87, 87, 87);
-
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-radius:20px;
-}
-
-QPushButton:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QPushButton:flat {
-    border: none; /* no border for a flat push button */
-}
-
-QPushButton:default {
-    border-color: navy; /* make the default button prominent */
-}
-
-QPushButton:focus {
-	outline: none;
-}</string>
-            </property>
-            <property name="text">
-             <string>Dock</string>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="fileInfoLabel_2">
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>20</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Gotham</family>
-              <pointsize>16</pointsize>
-              <weight>50</weight>
-              <bold>false</bold>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">color:  grey;</string>
-            </property>
-            <property name="text">
-             <string>Build Module Control</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QFrame" name="frame_8">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
+         <property name="bottomMargin">
+          <number>9</number>
          </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_5">
-          <item>
-           <widget class="QFrame" name="frame_7">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>300</height>
-             </size>
+         <item>
+          <widget class="QFrame" name="buildModuleAutomationFrame">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>200</height>
+            </size>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_2">
+            <property name="leftMargin">
+             <number>5</number>
             </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>16777215</height>
-             </size>
+            <property name="topMargin">
+             <number>5</number>
             </property>
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
+            <property name="rightMargin">
+             <number>5</number>
             </property>
-            <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
+            <property name="bottomMargin">
+             <number>5</number>
             </property>
-            <layout class="QHBoxLayout" name="horizontalLayout_2">
-             <item>
-              <widget class="QFrame" name="frame_3">
-               <property name="frameShape">
-                <enum>QFrame::StyledPanel</enum>
-               </property>
-               <property name="frameShadow">
-                <enum>QFrame::Raised</enum>
-               </property>
-               <layout class="QVBoxLayout" name="verticalLayout_3">
-                <property name="spacing">
-                 <number>0</number>
-                </property>
-                <property name="leftMargin">
-                 <number>0</number>
-                </property>
-                <property name="topMargin">
-                 <number>0</number>
-                </property>
-                <property name="rightMargin">
-                 <number>0</number>
-                </property>
-                <property name="bottomMargin">
-                 <number>0</number>
-                </property>
-                <item>
-                 <widget class="QLabel" name="fileInfoLabel_4">
-                  <property name="maximumSize">
-                   <size>
-                    <width>16777215</width>
-                    <height>20</height>
-                   </size>
+            <property name="horizontalSpacing">
+             <number>6</number>
+            </property>
+            <item row="3" column="0">
+             <widget class="QPushButton" name="prepareForPartRemovalButton">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>350</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Prepare for Part Removal</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QPushButton" name="undockButton">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>500</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Undock</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QPushButton" name="homeBuildModuleButton">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>350</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Home Build Module</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QPushButton" name="preparePowderLoadingButton">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>500</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Prepare Powder Loading</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QPushButton" name="moveToStartingPositionButton">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>500</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Move to Starting Position</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QPushButton" name="dockButton">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>500</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Dock</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="fileInfoLabel_2">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>16</pointsize>
+                <weight>50</weight>
+                <bold>false</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color:  grey;</string>
+              </property>
+              <property name="text">
+               <string>BUILD MODULE</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QFrame" name="frame_8">
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_5">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QFrame" name="frame_7">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>300</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_2">
+               <item>
+                <widget class="QFrame" name="frame_3">
+                 <property name="frameShape">
+                  <enum>QFrame::StyledPanel</enum>
+                 </property>
+                 <property name="frameShadow">
+                  <enum>QFrame::Raised</enum>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_3">
+                  <property name="spacing">
+                   <number>0</number>
                   </property>
-                  <property name="font">
-                   <font>
-                    <family>Gotham</family>
-                    <pointsize>16</pointsize>
-                    <weight>50</weight>
-                    <bold>false</bold>
-                   </font>
+                  <property name="leftMargin">
+                   <number>0</number>
                   </property>
-                  <property name="styleSheet">
-                   <string notr="true">color:  grey;</string>
+                  <property name="topMargin">
+                   <number>0</number>
                   </property>
-                  <property name="text">
-                   <string>Z Axis</string>
+                  <property name="rightMargin">
+                   <number>0</number>
                   </property>
-                 </widget>
-                </item>
-                <item>
-                 <spacer name="verticalSpacer">
-                  <property name="orientation">
-                   <enum>Qt::Vertical</enum>
+                  <property name="bottomMargin">
+                   <number>0</number>
                   </property>
-                  <property name="sizeType">
-                   <enum>QSizePolicy::Fixed</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>20</width>
-                    <height>10</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="moveZMButton_2">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>101</width>
-                    <height>91</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <family>MS Shell Dlg 2</family>
-                    <pointsize>20</pointsize>
-                   </font>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">QPushButton {
+                  <item>
+                   <widget class="QLabel" name="fileInfoLabel_4">
+                    <property name="maximumSize">
+                     <size>
+                      <width>16777215</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                    <property name="font">
+                     <font>
+                      <family>Gotham</family>
+                      <pointsize>16</pointsize>
+                      <weight>50</weight>
+                      <bold>false</bold>
+                     </font>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">color:  grey;</string>
+                    </property>
+                    <property name="text">
+                     <string>Z Axis</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="verticalSpacer">
+                    <property name="orientation">
+                     <enum>Qt::Vertical</enum>
+                    </property>
+                    <property name="sizeType">
+                     <enum>QSizePolicy::Fixed</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>20</width>
+                      <height>10</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="moveZMButton">
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>101</width>
+                      <height>91</height>
+                     </size>
+                    </property>
+                    <property name="font">
+                     <font>
+                      <family>MS Shell Dlg 2</family>
+                      <pointsize>20</pointsize>
+                     </font>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">QPushButton {
      border: 1px solid rgb(87, 87, 87);
 
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
@@ -576,56 +594,56 @@ QPushButton:default {
 QPushButton:focus {
 	outline: none;
 }</string>
-                  </property>
-                  <property name="text">
-                   <string/>
-                  </property>
-                  <property name="icon">
-                   <iconset resource="../resources/resource.qrc">
-                    <normaloff>:/Navigation/img/Navigation/arrows.png</normaloff>:/Navigation/img/Navigation/arrows.png</iconset>
-                  </property>
-                  <property name="iconSize">
-                   <size>
-                    <width>40</width>
-                    <height>40</height>
-                   </size>
-                  </property>
-                  <property name="checkable">
-                   <bool>false</bool>
-                  </property>
-                  <property name="autoDefault">
-                   <bool>false</bool>
-                  </property>
-                  <property name="default">
-                   <bool>false</bool>
-                  </property>
-                  <property name="flat">
-                   <bool>false</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="homeZButton_2">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>101</width>
-                    <height>91</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <family>MS Shell Dlg 2</family>
-                    <pointsize>20</pointsize>
-                   </font>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">QPushButton {
+                    </property>
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="../resources/resource.qrc">
+                      <normaloff>:/Navigation/img/Navigation/arrows.png</normaloff>:/Navigation/img/Navigation/arrows.png</iconset>
+                    </property>
+                    <property name="iconSize">
+                     <size>
+                      <width>40</width>
+                      <height>40</height>
+                     </size>
+                    </property>
+                    <property name="checkable">
+                     <bool>false</bool>
+                    </property>
+                    <property name="autoDefault">
+                     <bool>false</bool>
+                    </property>
+                    <property name="default">
+                     <bool>false</bool>
+                    </property>
+                    <property name="flat">
+                     <bool>false</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="homeZButton">
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>101</width>
+                      <height>91</height>
+                     </size>
+                    </property>
+                    <property name="font">
+                     <font>
+                      <family>MS Shell Dlg 2</family>
+                      <pointsize>20</pointsize>
+                     </font>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">QPushButton {
      border: 1px solid rgb(87, 87, 87);
 
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
@@ -647,56 +665,56 @@ QPushButton:default {
 QPushButton:focus {
 	outline: none;
 }</string>
-                  </property>
-                  <property name="text">
-                   <string/>
-                  </property>
-                  <property name="icon">
-                   <iconset resource="../resources/resource.qrc">
-                    <normaloff>:/Icons/img/icons/home-icon-silhouette.png</normaloff>:/Icons/img/icons/home-icon-silhouette.png</iconset>
-                  </property>
-                  <property name="iconSize">
-                   <size>
-                    <width>40</width>
-                    <height>40</height>
-                   </size>
-                  </property>
-                  <property name="checkable">
-                   <bool>false</bool>
-                  </property>
-                  <property name="autoDefault">
-                   <bool>false</bool>
-                  </property>
-                  <property name="default">
-                   <bool>false</bool>
-                  </property>
-                  <property name="flat">
-                   <bool>false</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="moveZPButton_2">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>101</width>
-                    <height>91</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <family>MS Shell Dlg 2</family>
-                    <pointsize>20</pointsize>
-                   </font>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">QPushButton {
+                    </property>
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="../resources/resource.qrc">
+                      <normaloff>:/Icons/img/icons/home-icon-silhouette.png</normaloff>:/Icons/img/icons/home-icon-silhouette.png</iconset>
+                    </property>
+                    <property name="iconSize">
+                     <size>
+                      <width>40</width>
+                      <height>40</height>
+                     </size>
+                    </property>
+                    <property name="checkable">
+                     <bool>false</bool>
+                    </property>
+                    <property name="autoDefault">
+                     <bool>false</bool>
+                    </property>
+                    <property name="default">
+                     <bool>false</bool>
+                    </property>
+                    <property name="flat">
+                     <bool>false</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="moveZPButton">
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>101</width>
+                      <height>91</height>
+                     </size>
+                    </property>
+                    <property name="font">
+                     <font>
+                      <family>MS Shell Dlg 2</family>
+                      <pointsize>20</pointsize>
+                     </font>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">QPushButton {
      border: 1px solid rgb(87, 87, 87);
 
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
@@ -720,123 +738,123 @@ QPushButton:default {
 QPushButton:focus {
 	outline: none;
 }</string>
+                    </property>
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="../resources/resource.qrc">
+                      <normaloff>:/Navigation/img/Navigation/arrows-5.png</normaloff>:/Navigation/img/Navigation/arrows-5.png</iconset>
+                    </property>
+                    <property name="iconSize">
+                     <size>
+                      <width>40</width>
+                      <height>40</height>
+                     </size>
+                    </property>
+                    <property name="checkable">
+                     <bool>false</bool>
+                    </property>
+                    <property name="autoDefault">
+                     <bool>false</bool>
+                    </property>
+                    <property name="default">
+                     <bool>false</bool>
+                    </property>
+                    <property name="flat">
+                     <bool>false</bool>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QFrame" name="frame_5">
+                 <property name="frameShape">
+                  <enum>QFrame::StyledPanel</enum>
+                 </property>
+                 <property name="frameShadow">
+                  <enum>QFrame::Raised</enum>
+                 </property>
+                 <layout class="QVBoxLayout" name="verticalLayout_4">
+                  <property name="spacing">
+                   <number>0</number>
                   </property>
-                  <property name="text">
-                   <string/>
+                  <property name="leftMargin">
+                   <number>0</number>
                   </property>
-                  <property name="icon">
-                   <iconset resource="../resources/resource.qrc">
-                    <normaloff>:/Navigation/img/Navigation/arrows-5.png</normaloff>:/Navigation/img/Navigation/arrows-5.png</iconset>
+                  <property name="topMargin">
+                   <number>0</number>
                   </property>
-                  <property name="iconSize">
-                   <size>
-                    <width>40</width>
-                    <height>40</height>
-                   </size>
+                  <property name="rightMargin">
+                   <number>0</number>
                   </property>
-                  <property name="checkable">
-                   <bool>false</bool>
+                  <property name="bottomMargin">
+                   <number>0</number>
                   </property>
-                  <property name="autoDefault">
-                   <bool>false</bool>
-                  </property>
-                  <property name="default">
-                   <bool>false</bool>
-                  </property>
-                  <property name="flat">
-                   <bool>false</bool>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </widget>
-             </item>
-             <item>
-              <widget class="QFrame" name="frame_5">
-               <property name="frameShape">
-                <enum>QFrame::StyledPanel</enum>
-               </property>
-               <property name="frameShadow">
-                <enum>QFrame::Raised</enum>
-               </property>
-               <layout class="QVBoxLayout" name="verticalLayout_4">
-                <property name="spacing">
-                 <number>0</number>
-                </property>
-                <property name="leftMargin">
-                 <number>0</number>
-                </property>
-                <property name="topMargin">
-                 <number>0</number>
-                </property>
-                <property name="rightMargin">
-                 <number>0</number>
-                </property>
-                <property name="bottomMargin">
-                 <number>0</number>
-                </property>
-                <item>
-                 <widget class="QLabel" name="fileInfoLabel_5">
-                  <property name="maximumSize">
-                   <size>
-                    <width>16777215</width>
-                    <height>20</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <family>Gotham</family>
-                    <pointsize>16</pointsize>
-                    <weight>50</weight>
-                    <bold>false</bold>
-                   </font>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">color:  grey;</string>
-                  </property>
-                  <property name="text">
-                   <string>Feed Axis</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <spacer name="verticalSpacer_2">
-                  <property name="orientation">
-                   <enum>Qt::Vertical</enum>
-                  </property>
-                  <property name="sizeType">
-                   <enum>QSizePolicy::Fixed</enum>
-                  </property>
-                  <property name="sizeHint" stdset="0">
-                   <size>
-                    <width>20</width>
-                    <height>10</height>
-                   </size>
-                  </property>
-                 </spacer>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="moveZMButton_4">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>101</width>
-                    <height>91</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <family>MS Shell Dlg 2</family>
-                    <pointsize>20</pointsize>
-                   </font>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">QPushButton {
+                  <item>
+                   <widget class="QLabel" name="feedLabel">
+                    <property name="maximumSize">
+                     <size>
+                      <width>16777215</width>
+                      <height>20</height>
+                     </size>
+                    </property>
+                    <property name="font">
+                     <font>
+                      <family>Gotham</family>
+                      <pointsize>16</pointsize>
+                      <weight>50</weight>
+                      <bold>false</bold>
+                     </font>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">color:  grey;</string>
+                    </property>
+                    <property name="text">
+                     <string>Feed Axis</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <spacer name="verticalSpacer_2">
+                    <property name="orientation">
+                     <enum>Qt::Vertical</enum>
+                    </property>
+                    <property name="sizeType">
+                     <enum>QSizePolicy::Fixed</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>20</width>
+                      <height>10</height>
+                     </size>
+                    </property>
+                   </spacer>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="moveFeedMButton">
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>101</width>
+                      <height>91</height>
+                     </size>
+                    </property>
+                    <property name="font">
+                     <font>
+                      <family>MS Shell Dlg 2</family>
+                      <pointsize>20</pointsize>
+                     </font>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">QPushButton {
      border: 1px solid rgb(87, 87, 87);
 
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
@@ -860,56 +878,56 @@ QPushButton:default {
 QPushButton:focus {
 	outline: none;
 }</string>
-                  </property>
-                  <property name="text">
-                   <string/>
-                  </property>
-                  <property name="icon">
-                   <iconset resource="../resources/resource.qrc">
-                    <normaloff>:/Navigation/img/Navigation/arrows.png</normaloff>:/Navigation/img/Navigation/arrows.png</iconset>
-                  </property>
-                  <property name="iconSize">
-                   <size>
-                    <width>40</width>
-                    <height>40</height>
-                   </size>
-                  </property>
-                  <property name="checkable">
-                   <bool>false</bool>
-                  </property>
-                  <property name="autoDefault">
-                   <bool>false</bool>
-                  </property>
-                  <property name="default">
-                   <bool>false</bool>
-                  </property>
-                  <property name="flat">
-                   <bool>false</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="homeZButton_4">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>101</width>
-                    <height>91</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <family>MS Shell Dlg 2</family>
-                    <pointsize>20</pointsize>
-                   </font>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">QPushButton {
+                    </property>
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="../resources/resource.qrc">
+                      <normaloff>:/Navigation/img/Navigation/arrows.png</normaloff>:/Navigation/img/Navigation/arrows.png</iconset>
+                    </property>
+                    <property name="iconSize">
+                     <size>
+                      <width>40</width>
+                      <height>40</height>
+                     </size>
+                    </property>
+                    <property name="checkable">
+                     <bool>false</bool>
+                    </property>
+                    <property name="autoDefault">
+                     <bool>false</bool>
+                    </property>
+                    <property name="default">
+                     <bool>false</bool>
+                    </property>
+                    <property name="flat">
+                     <bool>false</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="homeFeedButton">
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>101</width>
+                      <height>91</height>
+                     </size>
+                    </property>
+                    <property name="font">
+                     <font>
+                      <family>MS Shell Dlg 2</family>
+                      <pointsize>20</pointsize>
+                     </font>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">QPushButton {
      border: 1px solid rgb(87, 87, 87);
 
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
@@ -931,56 +949,56 @@ QPushButton:default {
 QPushButton:focus {
 	outline: none;
 }</string>
-                  </property>
-                  <property name="text">
-                   <string/>
-                  </property>
-                  <property name="icon">
-                   <iconset resource="../resources/resource.qrc">
-                    <normaloff>:/Icons/img/icons/home-icon-silhouette.png</normaloff>:/Icons/img/icons/home-icon-silhouette.png</iconset>
-                  </property>
-                  <property name="iconSize">
-                   <size>
-                    <width>40</width>
-                    <height>40</height>
-                   </size>
-                  </property>
-                  <property name="checkable">
-                   <bool>false</bool>
-                  </property>
-                  <property name="autoDefault">
-                   <bool>false</bool>
-                  </property>
-                  <property name="default">
-                   <bool>false</bool>
-                  </property>
-                  <property name="flat">
-                   <bool>false</bool>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="moveZPButton_4">
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>101</width>
-                    <height>91</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <family>MS Shell Dlg 2</family>
-                    <pointsize>20</pointsize>
-                   </font>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">QPushButton {
+                    </property>
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="../resources/resource.qrc">
+                      <normaloff>:/Icons/img/icons/home-icon-silhouette.png</normaloff>:/Icons/img/icons/home-icon-silhouette.png</iconset>
+                    </property>
+                    <property name="iconSize">
+                     <size>
+                      <width>40</width>
+                      <height>40</height>
+                     </size>
+                    </property>
+                    <property name="checkable">
+                     <bool>false</bool>
+                    </property>
+                    <property name="autoDefault">
+                     <bool>false</bool>
+                    </property>
+                    <property name="default">
+                     <bool>false</bool>
+                    </property>
+                    <property name="flat">
+                     <bool>false</bool>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="moveFeedPButton">
+                    <property name="minimumSize">
+                     <size>
+                      <width>0</width>
+                      <height>0</height>
+                     </size>
+                    </property>
+                    <property name="maximumSize">
+                     <size>
+                      <width>101</width>
+                      <height>91</height>
+                     </size>
+                    </property>
+                    <property name="font">
+                     <font>
+                      <family>MS Shell Dlg 2</family>
+                      <pointsize>20</pointsize>
+                     </font>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">QPushButton {
      border: 1px solid rgb(87, 87, 87);
 
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
@@ -1004,146 +1022,83 @@ QPushButton:default {
 QPushButton:focus {
 	outline: none;
 }</string>
-                  </property>
-                  <property name="text">
-                   <string/>
-                  </property>
-                  <property name="icon">
-                   <iconset resource="../resources/resource.qrc">
-                    <normaloff>:/Navigation/img/Navigation/arrows-5.png</normaloff>:/Navigation/img/Navigation/arrows-5.png</iconset>
-                  </property>
-                  <property name="iconSize">
-                   <size>
-                    <width>40</width>
-                    <height>40</height>
-                   </size>
-                  </property>
-                  <property name="checkable">
-                   <bool>false</bool>
-                  </property>
-                  <property name="autoDefault">
-                   <bool>false</bool>
-                  </property>
-                  <property name="default">
-                   <bool>false</bool>
-                  </property>
-                  <property name="flat">
-                   <bool>false</bool>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QFrame" name="frame_6">
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
-            </property>
-            <layout class="QHBoxLayout" name="horizontalLayout">
-             <property name="spacing">
-              <number>0</number>
-             </property>
-             <property name="leftMargin">
-              <number>0</number>
-             </property>
-             <property name="topMargin">
-              <number>0</number>
-             </property>
-             <property name="rightMargin">
-              <number>0</number>
-             </property>
-             <property name="bottomMargin">
-              <number>0</number>
-             </property>
-             <item>
-              <widget class="QPushButton" name="step1Button_3">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>60</height>
-                </size>
+                    </property>
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="../resources/resource.qrc">
+                      <normaloff>:/Navigation/img/Navigation/arrows-5.png</normaloff>:/Navigation/img/Navigation/arrows-5.png</iconset>
+                    </property>
+                    <property name="iconSize">
+                     <size>
+                      <width>40</width>
+                      <height>40</height>
+                     </size>
+                    </property>
+                    <property name="checkable">
+                     <bool>false</bool>
+                    </property>
+                    <property name="autoDefault">
+                     <bool>false</bool>
+                    </property>
+                    <property name="default">
+                     <bool>false</bool>
+                    </property>
+                    <property name="flat">
+                     <bool>false</bool>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QFrame" name="frame_6">
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout">
+               <property name="spacing">
+                <number>0</number>
                </property>
-               <property name="font">
-                <font>
-                 <family>MS Shell Dlg 2</family>
-                 <pointsize>15</pointsize>
-                </font>
+               <property name="leftMargin">
+                <number>0</number>
                </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton {
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QPushButton" name="step01Button">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>60</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>MS Shell Dlg 2</family>
+                   <pointsize>15</pointsize>
+                  </font>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton {
      border: 1px solid rgb(87, 87, 87);
-     border-bottom: none; /* no border for a flat push button */
 border-bottom-left-radius: 15px;
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-}
-
-QPushButton:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QPushButton:flat {
-    border-bottom: none; /* no border for a flat push button */
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QPushButton:default {
-    border-color: navy; /* make the default button prominent */
-}
-
-QPushButton:focus {
-	outline: none;
-}</string>
-               </property>
-               <property name="text">
-                <string>0.1 mm</string>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>40</width>
-                 <height>40</height>
-                </size>
-               </property>
-               <property name="checkable">
-                <bool>false</bool>
-               </property>
-               <property name="autoDefault">
-                <bool>false</bool>
-               </property>
-               <property name="default">
-                <bool>false</bool>
-               </property>
-               <property name="flat">
-                <bool>false</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="step10Button_4">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>60</height>
-                </size>
-               </property>
-               <property name="font">
-                <font>
-                 <family>MS Shell Dlg 2</family>
-                 <pointsize>15</pointsize>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton {
-     border: 1px solid rgb(87, 87, 87);
-     border-bottom: none; /* no border for a flat push button */
+border-top-left-radius: 15px;
 
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
 }
@@ -1166,49 +1121,47 @@ QPushButton:default {
 QPushButton:focus {
 	outline: none;
 }</string>
-               </property>
-               <property name="text">
-                <string>1 mm</string>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>40</width>
-                 <height>40</height>
-                </size>
-               </property>
-               <property name="checkable">
-                <bool>false</bool>
-               </property>
-               <property name="autoDefault">
-                <bool>false</bool>
-               </property>
-               <property name="default">
-                <bool>false</bool>
-               </property>
-               <property name="flat">
-                <bool>false</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="step10Button_3">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>60</height>
-                </size>
-               </property>
-               <property name="font">
-                <font>
-                 <family>MS Shell Dlg 2</family>
-                 <pointsize>15</pointsize>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton {
+                 </property>
+                 <property name="text">
+                  <string>0.1 mm</string>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>40</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                 <property name="checkable">
+                  <bool>false</bool>
+                 </property>
+                 <property name="autoDefault">
+                  <bool>false</bool>
+                 </property>
+                 <property name="default">
+                  <bool>false</bool>
+                 </property>
+                 <property name="flat">
+                  <bool>false</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="step1Button">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>60</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>MS Shell Dlg 2</family>
+                   <pointsize>15</pointsize>
+                  </font>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton {
      border: 1px solid rgb(87, 87, 87);
-     border-bottom: none; /* no border for a flat push button */
-
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
 }
 
@@ -1230,49 +1183,47 @@ QPushButton:default {
 QPushButton:focus {
 	outline: none;
 }</string>
-               </property>
-               <property name="text">
-                <string>10 mm</string>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>40</width>
-                 <height>40</height>
-                </size>
-               </property>
-               <property name="checkable">
-                <bool>false</bool>
-               </property>
-               <property name="autoDefault">
-                <bool>false</bool>
-               </property>
-               <property name="default">
-                <bool>false</bool>
-               </property>
-               <property name="flat">
-                <bool>false</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="step100Button_3">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>60</height>
-                </size>
-               </property>
-               <property name="font">
-                <font>
-                 <family>MS Shell Dlg 2</family>
-                 <pointsize>15</pointsize>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton {
+                 </property>
+                 <property name="text">
+                  <string>1 mm</string>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>40</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                 <property name="checkable">
+                  <bool>false</bool>
+                 </property>
+                 <property name="autoDefault">
+                  <bool>false</bool>
+                 </property>
+                 <property name="default">
+                  <bool>false</bool>
+                 </property>
+                 <property name="flat">
+                  <bool>false</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="step10Button">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>60</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>MS Shell Dlg 2</family>
+                   <pointsize>15</pointsize>
+                  </font>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton {
      border: 1px solid rgb(87, 87, 87);
-     border-bottom: none; /* no border for a flat push button */
-
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
 }
 
@@ -1294,52 +1245,114 @@ QPushButton:default {
 QPushButton:focus {
 	outline: none;
 }</string>
-               </property>
-               <property name="text">
-                <string>100 mm</string>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>40</width>
-                 <height>40</height>
-                </size>
-               </property>
-               <property name="checkable">
-                <bool>true</bool>
-               </property>
-               <property name="checked">
-                <bool>false</bool>
-               </property>
-               <property name="autoDefault">
-                <bool>false</bool>
-               </property>
-               <property name="default">
-                <bool>false</bool>
-               </property>
-               <property name="flat">
-                <bool>false</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="motorOffButton_3">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>60</height>
-                </size>
-               </property>
-               <property name="font">
-                <font>
-                 <family>MS Shell Dlg 2</family>
-                 <pointsize>20</pointsize>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton {
+                 </property>
+                 <property name="text">
+                  <string>10 mm</string>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>40</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                 <property name="checkable">
+                  <bool>false</bool>
+                 </property>
+                 <property name="autoDefault">
+                  <bool>false</bool>
+                 </property>
+                 <property name="default">
+                  <bool>false</bool>
+                 </property>
+                 <property name="flat">
+                  <bool>false</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="step100Button">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>60</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>MS Shell Dlg 2</family>
+                   <pointsize>15</pointsize>
+                  </font>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton {
      border: 1px solid rgb(87, 87, 87);
-     border-bottom: none; /* no border for a flat push button */
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border-bottom: none; /* no border for a flat push button */
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+                 </property>
+                 <property name="text">
+                  <string>100 mm</string>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>40</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                 <property name="checked">
+                  <bool>false</bool>
+                 </property>
+                 <property name="autoDefault">
+                  <bool>false</bool>
+                 </property>
+                 <property name="default">
+                  <bool>false</bool>
+                 </property>
+                 <property name="flat">
+                  <bool>false</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="motorOffButton">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>60</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>MS Shell Dlg 2</family>
+                   <pointsize>20</pointsize>
+                  </font>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton {
+     border: 1px solid rgb(87, 87, 87);
  border-bottom-right-radius: 15px;
+ border-top-right-radius: 15px;
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
 }
 
@@ -1358,135 +1371,324 @@ QPushButton:default {
 QPushButton:focus {
 	outline: none;
 }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="icon">
-                <iconset resource="../resources/resource.qrc">
-                 <normaloff>:/Icons/img/icons/motor.png</normaloff>:/Icons/img/icons/motor.png</iconset>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>40</width>
-                 <height>40</height>
-                </size>
-               </property>
-               <property name="checkable">
-                <bool>false</bool>
-               </property>
-               <property name="autoDefault">
-                <bool>false</bool>
-               </property>
-               <property name="default">
-                <bool>false</bool>
-               </property>
-               <property name="flat">
-                <bool>false</bool>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QFrame" name="recoaterFrame">
-      <property name="geometry">
-       <rect>
-        <x>490</x>
-        <y>30</y>
-        <width>811</width>
-        <height>191</height>
-       </rect>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">QFrame #recoaterFrame{
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="icon">
+                  <iconset resource="../resources/resource.qrc">
+                   <normaloff>:/Icons/img/icons/motor.png</normaloff>:/Icons/img/icons/motor.png</iconset>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>40</width>
+                   <height>40</height>
+                  </size>
+                 </property>
+                 <property name="checkable">
+                  <bool>false</bool>
+                 </property>
+                 <property name="autoDefault">
+                  <bool>false</bool>
+                 </property>
+                 <property name="default">
+                  <bool>false</bool>
+                 </property>
+                 <property name="flat">
+                  <bool>false</bool>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QFrame" name="temperatureFrame">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>221</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QFrame #temperatureFrame {
     border: 2px solid gray;
     border-radius: 20px;
 }</string>
-      </property>
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayout_6">
-       <item>
-        <widget class="QLabel" name="fileInfoLabel_6">
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>20</height>
-          </size>
-         </property>
-         <property name="font">
-          <font>
-           <family>Gotham</family>
-           <pointsize>16</pointsize>
-           <weight>50</weight>
-           <bold>false</bold>
-          </font>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">color:  grey;</string>
-         </property>
-         <property name="text">
-          <string>Recoater Control</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QFrame" name="frame_2">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_4">
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>0</number>
-          </property>
-          <item row="0" column="0">
-           <widget class="QPushButton" name="loadFileButton_15">
-            <property name="minimumSize">
-             <size>
-              <width>150</width>
-              <height>50</height>
-             </size>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_9">
+         <item>
+          <widget class="QFrame" name="frame_12">
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_7">
+            <property name="spacing">
+             <number>0</number>
             </property>
-            <property name="maximumSize">
-             <size>
-              <width>350</width>
-              <height>50</height>
-             </size>
+            <property name="leftMargin">
+             <number>0</number>
             </property>
-            <property name="font">
-             <font>
-              <family>Gotham</family>
-              <pointsize>12</pointsize>
-             </font>
+            <property name="topMargin">
+             <number>0</number>
             </property>
-            <property name="styleSheet">
-             <string notr="true">QPushButton {
-    border: 1px solid rgb(87, 87, 87);
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QLabel" name="fileInfoLabel_13">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>16</pointsize>
+                <weight>50</weight>
+                <bold>false</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color:  grey;</string>
+              </property>
+              <property name="text">
+               <string>TEMPERATURES</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_9">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>10</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="fileInfoLabel_7">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>16</pointsize>
+                <weight>50</weight>
+                <bold>false</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color:  grey;</string>
+              </property>
+              <property name="text">
+               <string>Bed</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>10</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QFrame" name="frame_11">
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_4">
+               <property name="spacing">
+                <number>0</number>
+               </property>
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QSpinBox" name="bedTempSpinBox">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>131</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Gotham</family>
+                   <pointsize>20</pointsize>
+                  </font>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QSpinBox {
+    padding-right: 5px; /* make room for the arrows */
+	color: rgb(0, 0, 0);
+	background-color: rgba(255, 255, 255, 0);
+   
+}
+QSpinBox ::text:selected {
+	background-color: rgb(0, 0, 0);
+   
+}
+QSpinBox::up-button {
+     border: 1px solid rgb(87, 87, 87);
 
+border-top-left-radius: 15px;
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-radius:20px;
+    width: 60px;
+     height: 61px;
+    padding: 2px;
+}
+
+QSpinBox::up-arrow { 
+image: url(:/Navigation/img/Navigation/arrows.png);
+    width: 40px;
+     height: 40px;
+padding: 5px; }
+
+
+
+QSpinBox::up-button:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+
+QSpinBox::down-button {
+     border: 1px solid rgb(87, 87, 87);
+border-bottom-left-radius: 15px;
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+    width: 60px;
+     height: 61px;
+    padding: 2px;
+}
+
+QSpinBox::down-arrow {
+image: url(:/Navigation/img/Navigation/arrows-5.png);
+    width: 40px;
+     height: 40px;
+padding: 5px;
+}
+
+QSpinBox::down-button:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+
+}
+
+</string>
+                 </property>
+                 <property name="frame">
+                  <bool>false</bool>
+                 </property>
+                 <property name="readOnly">
+                  <bool>false</bool>
+                 </property>
+                 <property name="buttonSymbols">
+                  <enum>QAbstractSpinBox::UpDownArrows</enum>
+                 </property>
+                 <property name="accelerated">
+                  <bool>true</bool>
+                 </property>
+                 <property name="suffix">
+                  <string>°C</string>
+                 </property>
+                 <property name="maximum">
+                  <number>300</number>
+                 </property>
+                 <property name="singleStep">
+                  <number>1</number>
+                 </property>
+                 <property name="value">
+                  <number>0</number>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="setBedTempButton">
+                 <property name="minimumSize">
+                  <size>
+                   <width>71</width>
+                   <height>131</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>100</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Gotham</family>
+                   <pointsize>13</pointsize>
+                  </font>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton {
+     border: 1px solid rgb(87, 87, 87);
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-bottom-right-radius: 15px;
+border-top-right-radius: 15px;
+
 }
 
 QPushButton:pressed {
@@ -1505,44 +1707,231 @@ QPushButton:default {
 QPushButton:focus {
 	outline: none;
 }</string>
-            </property>
-            <property name="text">
-             <string>Initial Levelling Recoat</string>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QPushButton" name="loadFileButton_14">
-            <property name="minimumSize">
-             <size>
-              <width>150</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>350</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Gotham</family>
-              <pointsize>12</pointsize>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QPushButton {
-    border: 1px solid rgb(87, 87, 87);
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="icon">
+                  <iconset>
+                   <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</iconset>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>50</width>
+                   <height>50</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_6">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Expanding</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="fileInfoLabel_8">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>16</pointsize>
+                <weight>50</weight>
+                <bold>false</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color:  grey;</string>
+              </property>
+              <property name="text">
+               <string>Volume</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="verticalSpacer_4">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Fixed</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>10</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QFrame" name="frame_14">
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+              <layout class="QHBoxLayout" name="horizontalLayout_5">
+               <property name="spacing">
+                <number>0</number>
+               </property>
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item>
+                <widget class="QSpinBox" name="volumeTempSpinBox">
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>131</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Gotham</family>
+                   <pointsize>20</pointsize>
+                  </font>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QSpinBox {
+    padding-right: 5px; /* make room for the arrows */
+	color: rgb(0, 0, 0);
+	background-color: rgba(255, 255, 255, 0);
+   
+}
+QSpinBox ::text:selected {
+	background-color: rgb(0, 0, 0);
+   
+}
+QSpinBox::up-button {
+     border: 1px solid rgb(87, 87, 87);
 
+border-top-left-radius: 15px;
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-radius:20px;
+    width: 60px;
+     height: 61px;
+    padding: 2px;
+}
+
+QSpinBox::up-arrow { 
+image: url(:/Navigation/img/Navigation/arrows.png);
+    width: 40px;
+     height: 40px;
+padding: 5px; }
+
+
+
+QSpinBox::up-button:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+
+QSpinBox::down-button {
+     border: 1px solid rgb(87, 87, 87);
+border-bottom-left-radius: 15px;
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+    width: 60px;
+     height: 61px;
+    padding: 2px;
+}
+
+QSpinBox::down-arrow {
+image: url(:/Navigation/img/Navigation/arrows-5.png);
+    width: 40px;
+     height: 40px;
+padding: 5px;
+}
+
+QSpinBox::down-button:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+
+}
+
+</string>
+                 </property>
+                 <property name="frame">
+                  <bool>false</bool>
+                 </property>
+                 <property name="readOnly">
+                  <bool>false</bool>
+                 </property>
+                 <property name="buttonSymbols">
+                  <enum>QAbstractSpinBox::UpDownArrows</enum>
+                 </property>
+                 <property name="accelerated">
+                  <bool>true</bool>
+                 </property>
+                 <property name="suffix">
+                  <string>°C</string>
+                 </property>
+                 <property name="maximum">
+                  <number>300</number>
+                 </property>
+                 <property name="singleStep">
+                  <number>1</number>
+                 </property>
+                 <property name="value">
+                  <number>0</number>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="setVolumeTempButton">
+                 <property name="minimumSize">
+                  <size>
+                   <width>71</width>
+                   <height>131</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>100</width>
+                   <height>16777215</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Gotham</family>
+                   <pointsize>13</pointsize>
+                  </font>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton {
+     border: 1px solid rgb(87, 87, 87);
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-bottom-right-radius: 15px;
+border-top-right-radius: 15px;
+
 }
 
 QPushButton:pressed {
@@ -1561,44 +1950,234 @@ QPushButton:default {
 QPushButton:focus {
 	outline: none;
 }</string>
+                 </property>
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="icon">
+                  <iconset>
+                   <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</iconset>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>50</width>
+                   <height>50</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <spacer name="verticalSpacer_7">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Expanding</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLabel" name="fileInfoLabel_9">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Gotham</family>
+             <pointsize>16</pointsize>
+             <weight>50</weight>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">color:  grey;</string>
+           </property>
+           <property name="text">
+            <string>Chamber</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="verticalSpacer_5">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Fixed</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>10</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QFrame" name="frame_16">
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <layout class="QHBoxLayout" name="horizontalLayout_6">
+            <property name="spacing">
+             <number>0</number>
             </property>
-            <property name="text">
-             <string>Home Recoater</string>
+            <property name="leftMargin">
+             <number>0</number>
             </property>
-            <property name="iconSize">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
+            <property name="topMargin">
+             <number>0</number>
             </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QPushButton" name="loadFileButton_16">
-            <property name="minimumSize">
-             <size>
-              <width>150</width>
-              <height>50</height>
-             </size>
+            <property name="rightMargin">
+             <number>0</number>
             </property>
-            <property name="maximumSize">
-             <size>
-              <width>350</width>
-              <height>50</height>
-             </size>
+            <property name="bottomMargin">
+             <number>0</number>
             </property>
-            <property name="font">
-             <font>
-              <family>Gotham</family>
-              <pointsize>12</pointsize>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QPushButton {
-    border: 1px solid rgb(87, 87, 87);
+            <item>
+             <widget class="QSpinBox" name="chamberTempSpinBox">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>131</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>20</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QSpinBox {
+    padding-right: 5px; /* make room for the arrows */
+	color: rgb(0, 0, 0);
+	background-color: rgba(255, 255, 255, 0);
+   
+}
+QSpinBox ::text:selected {
+	background-color: rgb(0, 0, 0);
+   
+}
+QSpinBox::up-button {
+     border: 1px solid rgb(87, 87, 87);
 
+border-top-left-radius: 15px;
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-radius:20px;
+    width: 60px;
+     height: 61px;
+    padding: 2px;
+}
+
+QSpinBox::up-arrow { 
+image: url(:/Navigation/img/Navigation/arrows.png);
+    width: 40px;
+     height: 40px;
+padding: 5px; }
+
+
+
+QSpinBox::up-button:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+
+QSpinBox::down-button {
+     border: 1px solid rgb(87, 87, 87);
+border-bottom-left-radius: 15px;
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+    width: 60px;
+     height: 61px;
+    padding: 2px;
+}
+
+QSpinBox::down-arrow {
+image: url(:/Navigation/img/Navigation/arrows-5.png);
+    width: 40px;
+     height: 40px;
+padding: 5px;
+}
+
+QSpinBox::down-button:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+
+}
+
+</string>
+              </property>
+              <property name="frame">
+               <bool>false</bool>
+              </property>
+              <property name="readOnly">
+               <bool>false</bool>
+              </property>
+              <property name="buttonSymbols">
+               <enum>QAbstractSpinBox::UpDownArrows</enum>
+              </property>
+              <property name="accelerated">
+               <bool>true</bool>
+              </property>
+              <property name="suffix">
+               <string>°C</string>
+              </property>
+              <property name="maximum">
+               <number>300</number>
+              </property>
+              <property name="singleStep">
+               <number>1</number>
+              </property>
+              <property name="value">
+               <number>0</number>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="setChamberTempButton">
+              <property name="minimumSize">
+               <size>
+                <width>71</width>
+                <height>131</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>100</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>13</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+     border: 1px solid rgb(87, 87, 87);
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-bottom-right-radius: 15px;
+border-top-right-radius: 15px;
+
 }
 
 QPushButton:pressed {
@@ -1617,44 +2196,44 @@ QPushButton:default {
 QPushButton:focus {
 	outline: none;
 }</string>
-            </property>
-            <property name="text">
-             <string>Heated Buffer Recoat</string>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QPushButton" name="loadFileButton_13">
-            <property name="minimumSize">
-             <size>
-              <width>150</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>350</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Gotham</family>
-              <pointsize>12</pointsize>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">QPushButton {
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset>
+                <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>50</width>
+                <height>50</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="cooldownButton">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>80</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Gotham</family>
+             <pointsize>15</pointsize>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">QPushButton {
     border: 1px solid rgb(87, 87, 87);
-
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-radius:20px;
+border-radius: 15px;
 }
 
 QPushButton:pressed {
@@ -1673,352 +2252,132 @@ QPushButton:default {
 QPushButton:focus {
 	outline: none;
 }</string>
-            </property>
-            <property name="text">
-             <string>Recoat</string>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>20</width>
-              <height>20</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-     <widget class="QFrame" name="frame_9">
-      <property name="geometry">
-       <rect>
-        <x>520</x>
-        <y>470</y>
-        <width>571</width>
-        <height>161</height>
-       </rect>
-      </property>
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-      <widget class="QPushButton" name="loadFileButton_17">
-       <property name="geometry">
-        <rect>
-         <x>30</x>
-         <y>80</y>
-         <width>257</width>
-         <height>50</height>
-        </rect>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>150</width>
-         <height>50</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>350</width>
-         <height>50</height>
-        </size>
-       </property>
-       <property name="font">
-        <font>
-         <family>Gotham</family>
-         <pointsize>12</pointsize>
-        </font>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton {
-    border: 1px solid rgb(87, 87, 87);
-
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-radius:20px;
-}
-
-QPushButton:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QPushButton:flat {
-    border: none; /* no border for a flat push button */
-}
-
-QPushButton:default {
-    border-color: navy; /* make the default button prominent */
-}
-
-QPushButton:focus {
-	outline: none;
-}</string>
-       </property>
-       <property name="text">
-        <string>Laser Mark Layer</string>
-       </property>
-       <property name="iconSize">
-        <size>
-         <width>20</width>
-         <height>20</height>
-        </size>
-       </property>
-      </widget>
-     </widget>
-     <widget class="QFrame" name="temperatureFrame">
-      <property name="geometry">
-       <rect>
-        <x>490</x>
-        <y>230</y>
-        <width>811</width>
-        <height>221</height>
-       </rect>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>0</width>
-        <height>221</height>
-       </size>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">QFrame #temperatureFrame {
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset resource="../resources/resource.qrc">
+             <normaloff>:/Icons/img/icons/snowflake.png</normaloff>:/Icons/img/icons/snowflake.png</iconset>
+           </property>
+           <property name="iconSize">
+            <size>
+             <width>50</width>
+             <height>50</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QFrame" name="groupFrame">
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_12">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QFrame" name="recoaterFrame">
+           <property name="styleSheet">
+            <string notr="true">QFrame #recoaterFrame{
     border: 2px solid gray;
     border-radius: 20px;
 }</string>
-      </property>
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-      <layout class="QHBoxLayout" name="horizontalLayout_7">
-       <property name="spacing">
-        <number>0</number>
-       </property>
-       <property name="leftMargin">
-        <number>9</number>
-       </property>
-       <property name="topMargin">
-        <number>9</number>
-       </property>
-       <property name="rightMargin">
-        <number>9</number>
-       </property>
-       <property name="bottomMargin">
-        <number>0</number>
-       </property>
-       <item>
-        <widget class="QFrame" name="frame_12">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_7">
-          <property name="spacing">
-           <number>0</number>
-          </property>
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>0</number>
-          </property>
-          <item>
-           <widget class="QLabel" name="fileInfoLabel_7">
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>20</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Gotham</family>
-              <pointsize>16</pointsize>
-              <weight>50</weight>
-              <bold>false</bold>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">color:  grey;</string>
-            </property>
-            <property name="text">
-             <string>Bed</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="verticalSpacer_3">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Fixed</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>10</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QFrame" name="frame_11">
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
-            </property>
-            <layout class="QHBoxLayout" name="horizontalLayout_4">
-             <property name="spacing">
-              <number>0</number>
-             </property>
-             <property name="leftMargin">
-              <number>0</number>
-             </property>
-             <property name="topMargin">
-              <number>0</number>
-             </property>
-             <property name="rightMargin">
-              <number>0</number>
-             </property>
-             <property name="bottomMargin">
-              <number>0</number>
-             </property>
-             <item>
-              <widget class="QSpinBox" name="toolTempSpinBox_3">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>131</height>
-                </size>
-               </property>
-               <property name="font">
-                <font>
-                 <family>Gotham</family>
-                 <pointsize>20</pointsize>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QSpinBox {
-    padding-right: 5px; /* make room for the arrows */
-	color: rgb(0, 0, 0);
-	background-color: rgba(255, 255, 255, 0);
-   
-}
-QSpinBox ::text:selected {
-	background-color: rgb(0, 0, 0);
-   
-}
-QSpinBox::up-button {
-     border: 1px solid rgb(87, 87, 87);
-
-border-top-left-radius: 15px;
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-    width: 60px;
-     height: 61px;
-    padding: 2px;
-}
-
-QSpinBox::up-arrow { 
-image: url(:/Navigation/img/Navigation/arrows.png);
-    width: 40px;
-     height: 40px;
-padding: 5px; }
-
-
-
-QSpinBox::up-button:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-
-QSpinBox::down-button {
-     border: 1px solid rgb(87, 87, 87);
-border-bottom-left-radius: 15px;
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-    width: 60px;
-     height: 61px;
-    padding: 2px;
-}
-
-QSpinBox::down-arrow {
-image: url(:/Navigation/img/Navigation/arrows-5.png);
-    width: 40px;
-     height: 40px;
-padding: 5px;
-}
-
-QSpinBox::down-button:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-
-}
-
-</string>
-               </property>
-               <property name="frame">
-                <bool>false</bool>
-               </property>
-               <property name="readOnly">
-                <bool>false</bool>
-               </property>
-               <property name="buttonSymbols">
-                <enum>QAbstractSpinBox::UpDownArrows</enum>
-               </property>
-               <property name="accelerated">
-                <bool>true</bool>
-               </property>
-               <property name="suffix">
-                <string>°C</string>
-               </property>
-               <property name="maximum">
-                <number>300</number>
-               </property>
-               <property name="singleStep">
-                <number>1</number>
-               </property>
-               <property name="value">
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_6">
+            <item>
+             <widget class="QLabel" name="fileInfoLabel_6">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>16</pointsize>
+                <weight>50</weight>
+                <bold>false</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color:  grey;</string>
+              </property>
+              <property name="text">
+               <string>RECOATER</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QFrame" name="frame_2">
+              <property name="frameShape">
+               <enum>QFrame::StyledPanel</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Raised</enum>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_4">
+               <property name="leftMargin">
                 <number>0</number>
                </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="setToolTempButton_3">
-               <property name="minimumSize">
-                <size>
-                 <width>71</width>
-                 <height>131</height>
-                </size>
+               <property name="topMargin">
+                <number>0</number>
                </property>
-               <property name="font">
-                <font>
-                 <family>Gotham</family>
-                 <pointsize>13</pointsize>
-                </font>
+               <property name="rightMargin">
+                <number>0</number>
                </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton {
-     border: 1px solid rgb(87, 87, 87);
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-bottom-right-radius: 15px;
-border-top-right-radius: 15px;
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
+               <item row="0" column="0">
+                <widget class="QPushButton" name="initialLevellingRecoatButton">
+                 <property name="minimumSize">
+                  <size>
+                   <width>200</width>
+                   <height>50</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>350</width>
+                   <height>50</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Gotham</family>
+                   <pointsize>12</pointsize>
+                  </font>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
 
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
 }
 
 QPushButton:pressed {
@@ -2037,236 +2396,44 @@ QPushButton:default {
 QPushButton:focus {
 	outline: none;
 }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="icon">
-                <iconset>
-                 <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</iconset>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>50</width>
-                 <height>50</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QFrame" name="frame_13">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_8">
-          <property name="spacing">
-           <number>0</number>
-          </property>
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>0</number>
-          </property>
-          <item>
-           <widget class="QLabel" name="fileInfoLabel_8">
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>20</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Gotham</family>
-              <pointsize>16</pointsize>
-              <weight>50</weight>
-              <bold>false</bold>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">color:  grey;</string>
-            </property>
-            <property name="text">
-             <string>Volume</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="verticalSpacer_4">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Fixed</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>10</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QFrame" name="frame_14">
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
-            </property>
-            <layout class="QHBoxLayout" name="horizontalLayout_5">
-             <property name="spacing">
-              <number>0</number>
-             </property>
-             <property name="leftMargin">
-              <number>0</number>
-             </property>
-             <property name="topMargin">
-              <number>0</number>
-             </property>
-             <property name="rightMargin">
-              <number>0</number>
-             </property>
-             <property name="bottomMargin">
-              <number>0</number>
-             </property>
-             <item>
-              <widget class="QSpinBox" name="toolTempSpinBox_4">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>131</height>
-                </size>
-               </property>
-               <property name="font">
-                <font>
-                 <family>Gotham</family>
-                 <pointsize>20</pointsize>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QSpinBox {
-    padding-right: 5px; /* make room for the arrows */
-	color: rgb(0, 0, 0);
-	background-color: rgba(255, 255, 255, 0);
-   
-}
-QSpinBox ::text:selected {
-	background-color: rgb(0, 0, 0);
-   
-}
-QSpinBox::up-button {
-     border: 1px solid rgb(87, 87, 87);
+                 </property>
+                 <property name="text">
+                  <string>Initial Levelling Recoat</string>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QPushButton" name="homeRecoaterButton">
+                 <property name="minimumSize">
+                  <size>
+                   <width>200</width>
+                   <height>50</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>350</width>
+                   <height>50</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Gotham</family>
+                   <pointsize>12</pointsize>
+                  </font>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
 
-border-top-left-radius: 15px;
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-    width: 60px;
-     height: 61px;
-    padding: 2px;
-}
-
-QSpinBox::up-arrow { 
-image: url(:/Navigation/img/Navigation/arrows.png);
-    width: 40px;
-     height: 40px;
-padding: 5px; }
-
-
-
-QSpinBox::up-button:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-
-QSpinBox::down-button {
-     border: 1px solid rgb(87, 87, 87);
-border-bottom-left-radius: 15px;
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-    width: 60px;
-     height: 61px;
-    padding: 2px;
-}
-
-QSpinBox::down-arrow {
-image: url(:/Navigation/img/Navigation/arrows-5.png);
-    width: 40px;
-     height: 40px;
-padding: 5px;
-}
-
-QSpinBox::down-button:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-
-}
-
-</string>
-               </property>
-               <property name="frame">
-                <bool>false</bool>
-               </property>
-               <property name="readOnly">
-                <bool>false</bool>
-               </property>
-               <property name="buttonSymbols">
-                <enum>QAbstractSpinBox::UpDownArrows</enum>
-               </property>
-               <property name="accelerated">
-                <bool>true</bool>
-               </property>
-               <property name="suffix">
-                <string>°C</string>
-               </property>
-               <property name="maximum">
-                <number>300</number>
-               </property>
-               <property name="singleStep">
-                <number>1</number>
-               </property>
-               <property name="value">
-                <number>0</number>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="setToolTempButton_4">
-               <property name="minimumSize">
-                <size>
-                 <width>71</width>
-                 <height>131</height>
-                </size>
-               </property>
-               <property name="font">
-                <font>
-                 <family>Gotham</family>
-                 <pointsize>13</pointsize>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton {
-     border: 1px solid rgb(87, 87, 87);
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-bottom-right-radius: 15px;
-border-top-right-radius: 15px;
-
+border-radius:20px;
 }
 
 QPushButton:pressed {
@@ -2285,233 +2452,44 @@ QPushButton:default {
 QPushButton:focus {
 	outline: none;
 }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="icon">
-                <iconset>
-                 <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</iconset>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>50</width>
-                 <height>50</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QFrame" name="frame_15">
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Raised</enum>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_9">
-          <property name="spacing">
-           <number>0</number>
-          </property>
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <item>
-           <widget class="QLabel" name="fileInfoLabel_9">
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>20</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Gotham</family>
-              <pointsize>16</pointsize>
-              <weight>50</weight>
-              <bold>false</bold>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">color:  grey;</string>
-            </property>
-            <property name="text">
-             <string>Chamber</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="verticalSpacer_5">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Fixed</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>10</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QFrame" name="frame_16">
-            <property name="frameShape">
-             <enum>QFrame::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Raised</enum>
-            </property>
-            <layout class="QHBoxLayout" name="horizontalLayout_6">
-             <property name="spacing">
-              <number>0</number>
-             </property>
-             <property name="leftMargin">
-              <number>0</number>
-             </property>
-             <property name="topMargin">
-              <number>0</number>
-             </property>
-             <property name="rightMargin">
-              <number>0</number>
-             </property>
-             <property name="bottomMargin">
-              <number>0</number>
-             </property>
-             <item>
-              <widget class="QSpinBox" name="toolTempSpinBox_5">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>131</height>
-                </size>
-               </property>
-               <property name="font">
-                <font>
-                 <family>Gotham</family>
-                 <pointsize>20</pointsize>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QSpinBox {
-    padding-right: 5px; /* make room for the arrows */
-	color: rgb(0, 0, 0);
-	background-color: rgba(255, 255, 255, 0);
-   
-}
-QSpinBox ::text:selected {
-	background-color: rgb(0, 0, 0);
-   
-}
-QSpinBox::up-button {
-     border: 1px solid rgb(87, 87, 87);
+                 </property>
+                 <property name="text">
+                  <string>Home Recoater</string>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QPushButton" name="heatedBufferRecoatButton">
+                 <property name="minimumSize">
+                  <size>
+                   <width>200</width>
+                   <height>50</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>350</width>
+                   <height>50</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Gotham</family>
+                   <pointsize>12</pointsize>
+                  </font>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
 
-border-top-left-radius: 15px;
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-    width: 60px;
-     height: 61px;
-    padding: 2px;
-}
-
-QSpinBox::up-arrow { 
-image: url(:/Navigation/img/Navigation/arrows.png);
-    width: 40px;
-     height: 40px;
-padding: 5px; }
-
-
-
-QSpinBox::up-button:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-
-QSpinBox::down-button {
-     border: 1px solid rgb(87, 87, 87);
-border-bottom-left-radius: 15px;
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-    width: 60px;
-     height: 61px;
-    padding: 2px;
-}
-
-QSpinBox::down-arrow {
-image: url(:/Navigation/img/Navigation/arrows-5.png);
-    width: 40px;
-     height: 40px;
-padding: 5px;
-}
-
-QSpinBox::down-button:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-
-}
-
-</string>
-               </property>
-               <property name="frame">
-                <bool>false</bool>
-               </property>
-               <property name="readOnly">
-                <bool>false</bool>
-               </property>
-               <property name="buttonSymbols">
-                <enum>QAbstractSpinBox::UpDownArrows</enum>
-               </property>
-               <property name="accelerated">
-                <bool>true</bool>
-               </property>
-               <property name="suffix">
-                <string>°C</string>
-               </property>
-               <property name="maximum">
-                <number>300</number>
-               </property>
-               <property name="singleStep">
-                <number>1</number>
-               </property>
-               <property name="value">
-                <number>0</number>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="setToolTempButton_5">
-               <property name="minimumSize">
-                <size>
-                 <width>71</width>
-                 <height>131</height>
-                </size>
-               </property>
-               <property name="font">
-                <font>
-                 <family>Gotham</family>
-                 <pointsize>13</pointsize>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QPushButton {
-     border: 1px solid rgb(87, 87, 87);
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-bottom-right-radius: 15px;
-border-top-right-radius: 15px;
-
+border-radius:20px;
 }
 
 QPushButton:pressed {
@@ -2530,30 +2508,682 @@ QPushButton:default {
 QPushButton:focus {
 	outline: none;
 }</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="icon">
-                <iconset>
-                 <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</iconset>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>50</width>
-                 <height>50</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-      </layout>
-     </widget>
+                 </property>
+                 <property name="text">
+                  <string>Heated Buffer Recoat</string>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QPushButton" name="recoatButton">
+                 <property name="minimumSize">
+                  <size>
+                   <width>200</width>
+                   <height>50</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>350</width>
+                   <height>50</height>
+                  </size>
+                 </property>
+                 <property name="font">
+                  <font>
+                   <family>Gotham</family>
+                   <pointsize>12</pointsize>
+                  </font>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+                 </property>
+                 <property name="text">
+                  <string>Recoat</string>
+                 </property>
+                 <property name="iconSize">
+                  <size>
+                   <width>20</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QFrame" name="laserscannerFrame">
+           <property name="styleSheet">
+            <string notr="true">QFrame #laserscannerFrame{
+    border: 2px solid gray;
+    border-radius: 20px;
+}</string>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <layout class="QGridLayout" name="gridLayout">
+            <item row="1" column="0">
+             <widget class="QPushButton" name="laserOnButton">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>350</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Laser ON</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QPushButton" name="laserOffButton">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>350</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Laser Off</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QPushButton" name="scannerOnButton">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>350</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Scanner ON</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QPushButton" name="laserMarkLayerButton">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>350</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Laser Mark Layer</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QPushButton" name="scannerOffButton">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>350</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Scanner Off</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QPushButton" name="stopMarkingButton">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>350</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Stop Marking</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0" colspan="2">
+             <widget class="QLabel" name="fileInfoLabel_10">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>16</pointsize>
+                <weight>50</weight>
+                <bold>false</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color:  grey;</string>
+              </property>
+              <property name="text">
+               <string>LASER/SCANNER</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QFrame" name="emergencyStopFrame">
+           <property name="styleSheet">
+            <string notr="true">QFrame #emergencyStopFrame{
+    border: 2px solid gray;
+    border-radius: 20px;
+}</string>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_11">
+            <item>
+             <widget class="QLabel" name="fileInfoLabel_14">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>16</pointsize>
+                <weight>50</weight>
+                <bold>false</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color:  grey;</string>
+              </property>
+              <property name="text">
+               <string>EMERGENCY STOP</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="emergencyStopButton">
+              <property name="minimumSize">
+               <size>
+                <width>150</width>
+                <height>150</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>16</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:50px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="../resources/resource.qrc">
+                <normaloff>:/Icons/img/icons/video-player-stop-button.png</normaloff>:/Icons/img/icons/video-player-stop-button.png</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>50</width>
+                <height>50</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QFrame" name="cameraFrames">
+        <property name="styleSheet">
+         <string notr="true">QFrame #cameraFrames{
+    border: 2px solid gray;
+    border-radius: 20px;
+}</string>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_10">
+         <item>
+          <widget class="QWidget" name="thermalCameraWidget" native="true">
+           <property name="minimumSize">
+            <size>
+             <width>200</width>
+             <height>200</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">background-color: rgb(0, 255, 255);
+    border-radius: 20px;
+</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="fileInfoLabel_12">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Gotham</family>
+             <pointsize>16</pointsize>
+             <weight>50</weight>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">color:  grey;</string>
+           </property>
+           <property name="text">
+            <string>Thermal Camera Feed</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="verticalSpacer_8">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Fixed</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>10</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QWidget" name="rgbCameraWidget" native="true">
+           <property name="minimumSize">
+            <size>
+             <width>200</width>
+             <height>200</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">background-color: rgb(0, 255, 255);
+    border-radius: 20px;
+</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="fileInfoLabel_11">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Gotham</family>
+             <pointsize>16</pointsize>
+             <weight>50</weight>
+             <bold>false</bold>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">color:  grey;</string>
+           </property>
+           <property name="text">
+            <string>RGB Camera Feed</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
   </layout>
