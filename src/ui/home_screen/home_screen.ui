@@ -1615,8 +1615,7 @@ QProgressBar {
             </size>
            </property>
            <property name="styleSheet">
-            <string notr="true">background-color: rgb(232, 232, 232);
-</string>
+            <string notr="true"/>
            </property>
           </widget>
          </item>
@@ -1671,12 +1670,11 @@ QProgressBar {
            <property name="maximumSize">
             <size>
              <width>350</width>
-             <height>400</height>
+             <height>350</height>
             </size>
            </property>
            <property name="styleSheet">
-            <string notr="true">background-color: rgb(232, 232, 232);
-</string>
+            <string notr="true"/>
            </property>
           </widget>
          </item>
