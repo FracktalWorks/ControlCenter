@@ -37,9 +37,8 @@ class MainWindow(QMainWindow):
         self.thermal_camera.start()
 
         self.rgb_camera = RGBCamera()
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.update_rgb_frame)
-        self.timer.start(30)  # Update frame every 30 ms
+        self.rgb_camera.rgb_camera_frame_ready.connect(self.update_rgb_frame)
+        self.rgb_camera.start()
 
         # Initialize HeaterBoard and ChamberTemperatureController
         self.heater_board = HeaterBoard()
@@ -80,7 +79,6 @@ class MainWindow(QMainWindow):
             # Convert temps values to regular float
             converted_temps = {key: float(value) for key, value in chamberTemperatures.items()}
             self.printer_status.updateTemperatures(frame, converted_temps)
-            print(converted_temps)
 
     def update_rgb_frame(self, frame):
         if frame is not None:

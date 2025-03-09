@@ -4,10 +4,10 @@ import time
 from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QTimer
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal
 import numpy as np
 
-class RGBCamera(QWidget):
+class RGBCamera(QThread):
     rgb_camera_frame_ready = pyqtSignal(np.ndarray)
 
     def __init__(self):
@@ -16,6 +16,15 @@ class RGBCamera(QWidget):
         if not self.cap.isOpened():
             print("Error: Could not open the IR camera.")
             exit()
+    def run(self):
+        """Runs the camera processing loop asynchronously."""
+        self.running = True
+        while self.running:
+            start_time = time.time()
+            self.update_frame()
+            elapsed_time = time.time() - start_time
+            sleep_time = max(0, (1/30) - elapsed_time)
+            time.sleep(sleep_time)
 
     def update_frame(self):
         ret, frame = self.cap.read()
