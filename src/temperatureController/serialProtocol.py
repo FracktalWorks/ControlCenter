@@ -1,15 +1,20 @@
 import serial
 import time
-import asyncio
-import functools
 
 def run_async(func):
-    @functools.wraps(func)
-    async def async_wrapper(*args, **kwargs):
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
-    return async_wrapper
+    """
+    Function decorater to make methods run in a thread
+    """
+    from threading import Thread
+    from functools import wraps
 
+    @wraps(func)
+    def async_func(*args, **kwargs):
+        func_hl = Thread(target=func, args=args, kwargs=kwargs)
+        func_hl.start()
+        return func_hl
+
+    return async_func
 
 class SerialProtocol:
     def __init__(self, port="COM19", baudrate=115200, timeout=1):
@@ -20,7 +25,7 @@ class SerialProtocol:
             print(f"Serial error: {e}")
             self.ser = None
             
-    @run_async
+    @run_async        
     def send_command(self, command):
         if not self.ser:
             print("Serial port is not initialized.")
