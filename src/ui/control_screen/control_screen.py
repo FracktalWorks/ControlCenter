@@ -1,11 +1,12 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import (QWidget, QToolButton, QPushButton, QLineEdit, QLabel,
-                             QComboBox, QFrame, QProgressBar, QSizePolicy, QVBoxLayout)
+                             QSpinBox, QFrame, QProgressBar, QSizePolicy, QVBoxLayout)
 from PyQt5.QtCore import pyqtSlot
 import numpy as np
 from ui.custom_widgets import ImageWidget
 from PyQt5.QtGui import QImage, QPixmap
-
+from temperatureController.heaterBoard import HeaterBoard
+from temperatureController.chamberTemperatureController import ChamberTemperatureController
 
 class ControlScreen(QWidget):
     def __init__(self, main_window, moonraker_api=None):
@@ -20,9 +21,14 @@ class ControlScreen(QWidget):
         except Exception as e:
             print(f"Failed to load ControlScreen UI: {e}")
 
-        # Setup any signal-slot connections and additional initialization here
+        self.chamberTempSpinBox = self.findChild(QSpinBox, "chamberTempSpinBox")
+        self.setChamberTempButton = self.findChild(QPushButton, "setChamberTempButton")
+        
 
-         # Replace the QWidget with the custom ImageWidget
+        # Setup any signal-slot connections and additional initialization here
+        self.setChamberTempButton.clicked.connect(lambda: self.update_setpoint(self.chamberTempSpinBox.value()))
+
+        # Replace the QWidget with the custom ImageWidget
         thermal_camera_container = self.findChild(QWidget, "thermalCameraWidget")
         self.thermalCameraWidget = ImageWidget(thermal_camera_container)
         layout = QVBoxLayout(thermal_camera_container)
@@ -32,8 +38,16 @@ class ControlScreen(QWidget):
         # Connect the temperatures_updated signal to the update_thermal_camera_widget slot
         self.main_window.printer_status.temperatures_updated.connect(self.update_thermal_camera_widget)
 
+    def update_setpoint(self, value):
+        """Update the chamber temperature setpoint in the PrinterStatus model."""
+        self.main_window.printer_status.chamberTemperatureSetpoint = value
+
+
     @pyqtSlot(np.ndarray, dict)
     def update_thermal_camera_widget(self, frame, temps):
         if frame is not None:
             image = QImage(frame.data, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_BGR888)
             self.thermalCameraWidget.setImage(image)
+        
+        if temps is not None:
+            self.chamber_temp_controller.update_heater_power(temps)

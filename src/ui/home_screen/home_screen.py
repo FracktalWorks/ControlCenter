@@ -49,7 +49,6 @@ class HomeScreen(QWidget):
         # Initialize additional widget elements (graph and camera feed areas)
         self.chamberTempGraphWidget = self.findChild(QWidget, "chamberTempGraphWidget")
         self.layerPreviewWidget = self.findChild(QWidget, "layerPreviewWidget")
-        self.rgbCameraWidget = self.findChild(QWidget, "rgbCameraWidget")
 
         # Replace the QWidget with the custom ImageWidget
         thermal_camera_container = self.findChild(QWidget, "thermalCameraWidget")
@@ -57,6 +56,13 @@ class HomeScreen(QWidget):
         layout = QVBoxLayout(thermal_camera_container)
         layout.addWidget(self.thermalCameraWidget)
         self.thermalCameraWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        # Replace the QWidget with the custom ImageWidget
+        rgb_camera_container = self.findChild(QWidget, "rgbCameraWidget")
+        self.rgbCameraWidget = ImageWidget(rgb_camera_container)
+        layout = QVBoxLayout(rgb_camera_container)
+        layout.addWidget(self.rgbCameraWidget)
+        self.rgbCameraWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         # Connect the temperatures_updated signal to the update_thermal_camera_widget slot
         self.main_window.printer_status.temperatures_updated.connect(self.update_thermal_camera_widget)
@@ -67,3 +73,9 @@ class HomeScreen(QWidget):
             image = QImage(frame.data, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_BGR888)
             self.thermalCameraWidget.setImage(image)
 
+
+    @pyqtSlot(np.ndarray)
+    def update_rgb_camera_widget(self, frame):
+        if frame is not None:
+            image = QImage(frame.data, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_BGR888)
+            self.rgbCameraWidget.setImage(image)
