@@ -16,10 +16,11 @@ class ChamberTemperatureController(QThread):
         self.timer.start(33)  # 30 fps
 
         # Initialize PID controllers for each side
-        self.pid_bottom = PID(5, 0.1, 0.05, setpoint=0)
-        self.pid_right = PID(5, 0.1, 0.05, setpoint=0)
-        self.pid_top = PID(5, 0.1, 0.05, setpoint=0)
-        self.pid_left = PID(5, 0.1, 0.05, setpoint=0)
+        self.pid_bottom = PID(10, 0.01, 0.1, setpoint=0)
+        self.pid_right = PID(10, 0.01, 0.1, setpoint=0)
+        self.pid_top = PID(10, 0.01, 0.1, setpoint=0)
+        self.pid_left = PID(10, 0.01, 0.1, setpoint=0)
+        self.pid_middle_center = PID(10, 0.1, 0.1, setpoint=0)  # New PID for middle-center
 
     def run(self):
         """Start the thread and the timer."""
@@ -34,18 +35,29 @@ class ChamberTemperatureController(QThread):
         right_temp = temps.get('middle-right', 0)
         top_temp = temps.get('top-center', 0)
         left_temp = temps.get('middle-left', 0)
+        middle_center_temp = temps.get('middle-center', 0)
 
         # Update setpoints for each PID controller
         self.pid_bottom.setpoint = setpoint
         self.pid_right.setpoint = setpoint
         self.pid_top.setpoint = setpoint
         self.pid_left.setpoint = setpoint
+        self.pid_middle_center.setpoint = setpoint  # Update setpoint for middle-center PID
 
         # Compute the control values
         control_bottom = self.pid_bottom(bottom_temp)
         control_right = self.pid_right(right_temp)
         control_top = self.pid_top(top_temp)
         control_left = self.pid_left(left_temp)
+        control_middle_center = self.pid_middle_center(middle_center_temp)  # Compute control for middle-center
+
+        # If middle-center temperature goes beyond the setpoint, reduce the output of other PIDs
+        if middle_center_temp > setpoint:
+            reduction_factor = max(0, 1 - control_middle_center / 100)
+            control_bottom *= reduction_factor
+            control_right *= reduction_factor
+            control_top *= reduction_factor
+            control_left *= reduction_factor
 
         # Clamp the control values between 1 and 99
         control_bottom = max(1, min(99, control_bottom))
@@ -54,6 +66,6 @@ class ChamberTemperatureController(QThread):
         control_left = max(1, min(99, control_left))
 
         # Apply the control values to the heater board
-        self.heater_board.setHeaterPowers(control_bottom, control_bottom , control_right, control_right, control_top, control_top, control_left, control_left)
+        self.heater_board.setHeaterPowers(control_bottom, control_bottom, control_right, control_right, control_top, control_top, control_left, control_left)
 
 
