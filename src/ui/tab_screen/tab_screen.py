@@ -5,11 +5,9 @@ from ui.control_screen.control_screen import ControlScreen
 
 
 class TabScreen(QWidget):
-    def __init__(self, main_window, moonraker_api=None):
+    def __init__(self, main_window):
         super(TabScreen, self).__init__()
         self.main_window = main_window
-        self.moonraker_api = moonraker_api
-
         # Load the .ui file for tab screen
         try:
             uic.loadUi('src/ui/tab_screen/tab_screen.ui', self)
@@ -29,7 +27,7 @@ class TabScreen(QWidget):
         # Find the existing home tab
         home_tab = self.findChild(QWidget, 'home_tab')
         if home_tab:
-            self.home_screen = HomeScreen(self, self.moonraker_api)
+            self.home_screen = HomeScreen(self.main_window)
             layout = QVBoxLayout(home_tab)
             layout.addWidget(self.home_screen)
             home_tab.setLayout(layout)
@@ -41,7 +39,7 @@ class TabScreen(QWidget):
         parameters_tab = self.findChild(QWidget, 'parameters_tab')
         if parameters_tab:
             from ui.parameters_screen.parameters_screen import ParametersScreen
-            self.parameters_screen = ParametersScreen(self.main_window, self.moonraker_api)
+            self.parameters_screen = ParametersScreen(self.main_window)
             layout = QVBoxLayout(parameters_tab)
             layout.addWidget(self.parameters_screen)
             parameters_tab.setLayout(layout)
@@ -53,7 +51,7 @@ class TabScreen(QWidget):
         control_tab = self.findChild(QWidget, 'control_tab')
         if control_tab:
             # Import ControlScreen only when needed
-            self.control_screen = ControlScreen(self, self.moonraker_api)
+            self.control_screen = ControlScreen(self.main_window)
             layout = QVBoxLayout(control_tab)
             layout.addWidget(self.control_screen)
             control_tab.setLayout(layout)

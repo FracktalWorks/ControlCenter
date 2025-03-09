@@ -4,10 +4,9 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QMovie
 
 class LoadingScreen(QWidget):
-    def __init__(self, main_window, moonraker_api=None):
+    def __init__(self, main_window):
         super(LoadingScreen, self).__init__()
         self.main_window = main_window
-        self.moonraker_api = moonraker_api
 
         # Load the .ui file
         try:

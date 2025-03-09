@@ -1,35 +1,71 @@
 from PyQt5 import uic
-from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton
+from PyQt5.QtWidgets import (QWidget, QToolButton, QPushButton, QLineEdit, QLabel,
+                             QComboBox, QFrame, QProgressBar, QSizePolicy, QVBoxLayout)
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtCore import pyqtSlot
+import numpy as np
+from ui.custom_widgets import ImageWidget
 
 class HomeScreen(QWidget):
-    def __init__(self, main_window, moonraker_api=None):
+    def __init__(self, main_window):
         super(HomeScreen, self).__init__()
         self.main_window = main_window
-        self.moonraker_api = moonraker_api
 
-        # Load the .ui file
+        # Load the UI file
         try:
             uic.loadUi('src/ui/home_screen/home_screen.ui', self)
-            print("UI file loaded successfully")
+            print("HomeScreen UI loaded successfully")
         except Exception as e:
             print(f"Failed to load UI file: {e}")
 
-    def toggle_door_lock(self):
-        # Placeholder for toggle door lock logic
-        print("Toggle Door Lock button clicked")
+        # Initialize labels
+        self.bedTargetTemperature = self.findChild(QLabel, "bedTargetTemperature")
+        self.bedActualTemperature = self.findChild(QLabel, "bedActualTemperature")
+        self.chamberTargetTemperature = self.findChild(QLabel, "chamberTargetTemperature")
+        self.chamberActualTemperature = self.findChild(QLabel, "chamberActualTemperature")
+        self.volumeTargetTemperature = self.findChild(QLabel, "volumeTargetTemperature")
+        self.volumeActualTemperature = self.findChild(QLabel, "volumeActualTemperature")
+        self.fileInfoLabel = self.findChild(QLabel, "fileInfoLabel")
 
-    def open_menu(self):
-        # Placeholder for open menu logic
-        print("Menu button clicked")
+        # Initialize QPushButtons (if any)
+        self.stopButton = self.findChild(QPushButton, "stopButton")
+        self.playPauseButton = self.findChild(QPushButton, "playPauseButton")
+        self.loadFileButton = self.findChild(QPushButton, "loadFileButton")
+        self.stopHeatingButton = self.findChild(QPushButton, "stopHeatingButton")
+        self.setPIDButton = self.findChild(QPushButton, "setPIDButton")
 
-    def stop_print(self):
-        # Placeholder for stop print logic
-        print("Stop Print button clicked")
+        # Initialize QLineEdits for PID parameters
+        self.p_LineEdit = self.findChild(QLineEdit, "p_LineEdit")
+        self.i_LineEdit = self.findChild(QLineEdit, "i_LineEdit")
+        self.d_lineEdit = self.findChild(QLineEdit, "d_lineEdit")
 
-    def play_pause_print(self):
-        # Placeholder for play/pause print logic
-        print("Play/Pause button clicked")
+        # Initialize QProgressBars
+        self.bedTempBar = self.findChild(QProgressBar, "bedTempBar")
+        self.printProgressBar = self.findChild(QProgressBar, "printProgressBar")
+        self.volumeTempBar = self.findChild(QProgressBar, "volumeTempBar")
+        self.chamberTempBar = self.findChild(QProgressBar, "chamberTempBar")
 
-    def open_control_panel(self):
-        # Placeholder for open control panel logic
-        print("Control Panel button clicked")
+        # Initialize additional widget elements (graph and camera feed areas)
+        self.chamberTempGraphWidget = self.findChild(QWidget, "chamberTempGraphWidget")
+        self.layerPreviewWidget = self.findChild(QWidget, "layerPreviewWidget")
+        self.thermalCameraWidget = self.findChild(QWidget, "thermalCameraWidget")
+        self.thermalCameraWidget = self.findChild(QWidget, "thermalCameraWidget")
+        self.rgbCameraWidget = self.findChild(QWidget, "rgbCameraWidget")
+
+        # Replace the QWidget with the custom ImageWidget
+        thermal_camera_container = self.findChild(QWidget, "thermalCameraWidget")
+        self.thermalCameraWidget = ImageWidget(thermal_camera_container)
+        layout = QVBoxLayout(thermal_camera_container)
+        layout.addWidget(self.thermalCameraWidget)
+        self.thermalCameraWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        # Connect the temperatures_updated signal to the update_thermal_camera_widget slot
+        self.main_window.printer_status.temperatures_updated.connect(self.update_thermal_camera_widget)
+
+    @pyqtSlot(np.ndarray, dict)
+    def update_thermal_camera_widget(self, frame, temps):
+        if frame is not None:
+            print(frame.shape)
+            image = QImage(frame.data, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_BGR888)
+            self.thermalCameraWidget.setImage(image)
+
