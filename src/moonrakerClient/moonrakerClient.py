@@ -1,23 +1,18 @@
-# filepath: c:\Users\VijayRaghavVarada\Documents\Github\ControlCenter\src\octoprint_client\moonraker_client.py
+# https://github.com/alchemyEngine/MoonrakerPy/blob/main/moonrakerpy/moonrakerpy.py for all functions
+
 from moonrakerpy import MoonrakerClient
 
 class MoonrakerAPI:
     def __init__(self, base_url):
         self.client = MoonrakerClient(base_url)
 
-    def get_printer_status(self):
-        return self.client.get_printer_status()
 
-    def start_print(self, file_path):
-        return self.client.start_print(file_path)
+    def send_gcode(self, cmd):
+        return self.client.send_gcode(cmd)
+    
+    def query_status(self):
+        return self.client.query_status()
+    
+    def query_temperatures(self):
+        return self.client.query_temperatures()
 
-    def stop_print(self):
-        return self.client.stop_print()
-
-    def pause_print(self):
-        return self.client.pause_print()
-
-    def resume_print(self):
-        return self.client.resume_print()
-
-    # Add more methods as needed

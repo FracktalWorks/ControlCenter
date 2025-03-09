@@ -45,7 +45,7 @@ class MainWindow(QMainWindow):
 
         # Initialize MoonrakerAPI if not in development mode
         if not Config.DEVELOPMENT_MODE:
-            self.moonraker_api = MoonrakerAPI('http://your-moonraker-url')
+            self.moonraker_api = MoonrakerAPI('http://127.0.0.1')
         else:
             self.moonraker_api = None
 
