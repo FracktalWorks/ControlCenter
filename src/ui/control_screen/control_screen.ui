@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1679</width>
+    <width>1554</width>
     <height>834</height>
    </rect>
   </property>
@@ -1712,8 +1712,8 @@ QPushButton:focus {
                   <string/>
                  </property>
                  <property name="icon">
-                  <iconset>
-                   <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</iconset>
+                  <iconset resource="../resources/resource.qrc">
+                   <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
                  </property>
                  <property name="iconSize">
                   <size>
@@ -1955,8 +1955,8 @@ QPushButton:focus {
                   <string/>
                  </property>
                  <property name="icon">
-                  <iconset>
-                   <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</iconset>
+                  <iconset resource="../resources/resource.qrc">
+                   <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
                  </property>
                  <property name="iconSize">
                   <size>
@@ -2201,8 +2201,8 @@ QPushButton:focus {
                <string/>
               </property>
               <property name="icon">
-               <iconset>
-                <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</iconset>
+               <iconset resource="../resources/resource.qrc">
+                <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
               </property>
               <property name="iconSize">
                <size>
