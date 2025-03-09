@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1450</width>
-    <height>932</height>
+    <width>1594</width>
+    <height>953</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1590,7 +1590,7 @@ QProgressBar {
         <property name="maximumSize">
          <size>
           <width>400</width>
-          <height>800</height>
+          <height>20000</height>
          </size>
         </property>
         <property name="frameShape">
@@ -1610,8 +1610,8 @@ QProgressBar {
            </property>
            <property name="maximumSize">
             <size>
-             <width>350</width>
-             <height>350</height>
+             <width>400</width>
+             <height>400</height>
             </size>
            </property>
            <property name="styleSheet">
@@ -1663,14 +1663,14 @@ QProgressBar {
           <widget class="QWidget" name="rgbCameraWidget" native="true">
            <property name="minimumSize">
             <size>
-             <width>200</width>
-             <height>200</height>
+             <width>350</width>
+             <height>350</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>350</width>
-             <height>350</height>
+             <width>400</width>
+             <height>400</height>
             </size>
            </property>
            <property name="styleSheet">
