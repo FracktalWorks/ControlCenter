@@ -5,6 +5,9 @@ from config import Config
 from models.printer_status import PrinterStatus
 from temperatureController.heaterBoard import HeaterBoard
 from temperatureController.chamberTemperatureController import ChamberTemperatureController
+from PyQt5.QtCore import QTimer
+
+
 
 from thermalCamera.thermal_camera import ThermalCamera
 from rgbCamera.rgbCamera import RGBCamera
@@ -34,8 +37,9 @@ class MainWindow(QMainWindow):
         self.thermal_camera.start()
 
         self.rgb_camera = RGBCamera()
-        self.rgb_camera.rgb_camera_frame_ready.connect(self.update_rgb_frame)
-        self.rgb_camera.start()
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_rgb_frame)
+        self.timer.start(30)  # Update frame every 30 ms
 
         # Initialize HeaterBoard and ChamberTemperatureController
         self.heater_board = HeaterBoard()
