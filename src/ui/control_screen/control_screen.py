@@ -40,8 +40,8 @@ class ControlScreen(QWidget):
         self.step=10
         self.setChamberTempButton.clicked.connect(lambda: self.update_setpoint(self.chamberTempSpinBox.value()))
         self.cooldownButton.clicked.connect(self.cooldown)
-        self.homeFeedButton.clicked.connect(self.main_window.moonraker_api.send_gcode("G28 Y"))
-        self.homeZButton.clicked.connect(self.main_window.moonraker_api.send_gcode("G28 Z"))
+        self.homeFeedButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("G28 Y"))
+        self.homeZButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("G28 Z"))
         self.step01Button.clicked.connect(lambda: self.setStep(0.1))
         self.step1Button.clicked.connect(lambda: self.setStep(1))
         self.step10Button.clicked.connect(lambda: self.setStep(10))
