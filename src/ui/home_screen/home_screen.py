@@ -77,5 +77,9 @@ class HomeScreen(QWidget):
     @pyqtSlot(np.ndarray)
     def update_rgb_camera_widget(self, frame):
         if frame is not None:
-            image = QImage(frame.data, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_BGR888)
+            height, width, channel = frame.shape
+            bytes_per_line = 3 * width
+            image = QImage(frame.data, width, height, bytes_per_line, QImage.Format_RGB888).rgbSwapped()
             self.rgbCameraWidget.setImage(image)
+
+
