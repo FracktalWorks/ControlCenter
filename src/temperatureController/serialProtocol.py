@@ -43,11 +43,9 @@ class SerialProtocol:
             self.ser.write(command.encode())
             self.ser.flush()  # Ensure data is sent
             time.sleep(0.1)  # Small delay to ensure board receives it
-            print(f"Sent: {command.strip()}")
 
             # Read response
             response = self.ser.readline().decode().strip()
-            print(f"Received: {response}")
 
         except Exception as e:
             print(f"Error: {e}")

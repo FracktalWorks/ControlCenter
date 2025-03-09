@@ -40,16 +40,16 @@ class ControlScreen(QWidget):
         self.step=10
         self.setChamberTempButton.clicked.connect(lambda: self.update_setpoint(self.chamberTempSpinBox.value()))
         self.cooldownButton.clicked.connect(self.cooldown)
-        self.homeFeedButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("G28 Y"))
-        self.homeZButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("G28 Z"))
+        self.homeFeedButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("G28 Y\nM400"))
+        self.homeZButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("G28 Z\nM400"))
         self.step01Button.clicked.connect(lambda: self.setStep(0.1))
         self.step1Button.clicked.connect(lambda: self.setStep(1))
         self.step10Button.clicked.connect(lambda: self.setStep(10))
         self.step100Button.clicked.connect(lambda: self.setStep(100))
-        self.moveZMButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"G91\nG0 Z-{self.step}\nG90"))
-        self.moveZPButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"G91\nG0 Z{self.step}\nG90"))
-        self.moveFeedMButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"G91\nG0 Y-{self.step}\nG90"))
-        self.moveFeedPButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"G91\nG0 Y{self.step}\nG90"))
+        self.moveZMButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"G91\nG0 Z-{self.step}\nG90\nM400"))
+        self.moveZPButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"G91\nG0 Z{self.step}\nG90\nM400"))
+        self.moveFeedMButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"G91\nG0 Y-{self.step}\nG90\nM400"))
+        self.moveFeedPButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"G91\nG0 Y{self.step}\nG90\nM400"))
         
 
 
