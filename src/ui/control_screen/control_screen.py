@@ -23,6 +23,10 @@ class ControlScreen(QWidget):
         self.chamberTempSpinBox = self.findChild(QSpinBox, "chamberTempSpinBox")
         self.setChamberTempButton = self.findChild(QPushButton, "setChamberTempButton")
         self.cooldownButton = self.findChild(QPushButton, "cooldownButton")
+
+        self.homeBuildModuleButton = self.findChild(QPushButton, "homeBuildModuleButton")
+        self.undockButton = self.findChild(QPushButton, "undockButton")
+        self.dockButton = self.findChild(QPushButton, "dockButton")
         self.homeFeedButton = self.findChild(QPushButton, "homeFeedButton")
         self.homeZButton = self.findChild(QPushButton, "homeZButton")
         self.step01Button = self.findChild(QPushButton, "step01Button")
@@ -33,11 +37,22 @@ class ControlScreen(QWidget):
         self.moveZPButton = self.findChild(QPushButton, "moveZPButton")
         self.moveFeedMButton = self.findChild(QPushButton, "moveFeedMButton")
         self.moveFeedPButton = self.findChild(QPushButton, "moveFeedPButton")
+        self.setBedTempButton = self.findChild(QPushButton, "setBedTempButton")
+        self.bedTempSpinBox = self.findChild(QSpinBox, "bedTempSpinBox")
+        self.setVolumeTempButton = self.findChild(QPushButton, "setVolumeTempButton")
+        self.volumeTempSpinBox = self.findChild(QSpinBox, "volumeTempSpinBox")
+
+
+        self.homeRecoaterButton = self.findChild(QPushButton, "homeRecoaterButton")
+        self.recoatButton = self.findChild(QPushButton, "recoatButton")
 
 
 
         # Setup any signal-slot connections and additional initialization here
         self.step=10
+        self.homeBuildModuleButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("G28 Z Y\nM400"))
+        self.undockButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("goDown\nM400"))
+        self.dockButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("liftUp\nM400"))
         self.setChamberTempButton.clicked.connect(lambda: self.update_setpoint(self.chamberTempSpinBox.value()))
         self.cooldownButton.clicked.connect(self.cooldown)
         self.homeFeedButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("G28 Y\nM400"))
@@ -50,8 +65,14 @@ class ControlScreen(QWidget):
         self.moveZPButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"G91\nG0 Z{self.step}\nG90\nM400"))
         self.moveFeedMButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"G91\nG0 Y-{self.step}\nG90\nM400"))
         self.moveFeedPButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"G91\nG0 Y{self.step}\nG90\nM400"))
-        
+        self.setBedTempButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET={self.bedTempSpinBox.value()}"))
+        self.setVolumeTempButton.clicked.connect(self.setVolumeHeaterTemp)
 
+
+
+        
+        self.homeRecoaterButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("homeRecoater"))
+        self.recoatButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("recoat"))
 
 
         # Replace the QWidget with the custom ImageWidget
@@ -73,6 +94,10 @@ class ControlScreen(QWidget):
         self.main_window.printer_status.temperatures_updated.connect(self.update_thermal_camera_widget)
         self.main_window.printer_status.rgb_frame_updated.connect(self.update_rgb_camera_widget)
 
+    def setVolumeHeaterTemp(self):
+        self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_front TARGET={self.volumeTempSpinBox.value()}")
+        self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_left TARGET={self.volumeTempSpinBox.value()}")
+        self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_right TARGET={self.volumeTempSpinBox.value()}")
 
 
     def update_setpoint(self, value):
