@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1400</width>
-    <height>802</height>
+    <width>1450</width>
+    <height>932</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -1583,13 +1583,13 @@ QProgressBar {
        <widget class="QFrame" name="CameraFeedFrame">
         <property name="minimumSize">
          <size>
-          <width>350</width>
+          <width>400</width>
           <height>0</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
-          <width>350</width>
+          <width>400</width>
           <height>800</height>
          </size>
         </property>
@@ -1604,14 +1604,14 @@ QProgressBar {
           <widget class="QWidget" name="thermalCameraWidget" native="true">
            <property name="minimumSize">
             <size>
-             <width>200</width>
-             <height>200</height>
+             <width>350</width>
+             <height>350</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>400</width>
-             <height>400</height>
+             <width>350</width>
+             <height>350</height>
             </size>
            </property>
            <property name="styleSheet">
@@ -1670,7 +1670,7 @@ QProgressBar {
            </property>
            <property name="maximumSize">
             <size>
-             <width>400</width>
+             <width>350</width>
              <height>400</height>
             </size>
            </property>
