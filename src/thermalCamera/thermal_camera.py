@@ -42,7 +42,7 @@ class ThermalCamera(QThread):
         self.latest_frame = None
         self.lock = threading.Lock()
 
-        self.temps = {"Top": 0, "Bottom": 0, "Left": 0, "Right": 0, "Center": 0}
+        self.temps = {f"Section {i}": 0 for i in range(1, 10)}
 
         # Connect to the MI48 camera. detects automatically 
         self.mi48, self.connected_port, _ = connect_senxor(src=self.com_port) if self.com_port else connect_senxor()
@@ -114,7 +114,7 @@ class ThermalCamera(QThread):
         with self.lock:
             self.latest_frame = roi_frame
 
-        self.thermal_camera_frame_ready.emit(roi_frame,temps)  # Emit the frame for display
+        self.thermal_camera_frame_ready.emit(roi_frame, temps)  # Emit the frame for display
 
     def draw_grid(self, frame):
         """Draws a 3×3 grid overlay on the thermal feed."""
@@ -132,17 +132,21 @@ class ThermalCamera(QThread):
             cv.line(frame, (0, y), (w, y), (255, 255, 255), 1)
 
     def calculate_temperatures(self, frame, x1, y1, x2, y2):
-        """Calculates the average temperatures for 5 sections: Top, Bottom, Left, Right, Center."""
+        """Calculates the average temperatures for 9 sections in a 3x3 grid."""
         w, h = x2 - x1, y2 - y1
         section_w, section_h = w // 3, h // 3   # Divide into 3x3 grid
         
         # Define sections
         sections = {
-            "Top": frame[y1:y1+section_h, x1:x2],     # Top 3 squares
-            "Bottom": frame[y2-section_h:y2, x1:x2],  # Bottom 3 squares
-            "Left": frame[y1:y2, x1:x1+section_w],    # Left 3 squares
-            "Right": frame[y1:y2, x2-section_w:x2],   # Right 3 squares
-            "Center": frame[y1+section_h:y2-section_h, x1+section_w:x2-section_w]  # Center square
+            "top-left": frame[y1:y1+section_h, x1:x1+section_w],
+            "top-center": frame[y1:y1+section_h, x1+section_w:x1+2*section_w],
+            "top-right": frame[y1:y1+section_h, x1+2*section_w:x2],
+            "middle-left": frame[y1+section_h:y1+2*section_h, x1:x1+section_w],
+            "middle-center": frame[y1+section_h:y1+2*section_h, x1+section_w:x1+2*section_w],
+            "middle-right": frame[y1+section_h:y1+2*section_h, x1+2*section_w:x2],
+            "bottom-left": frame[y1+2*section_h:y2, x1:x1+section_w],
+            "bottom-center": frame[y1+2*section_h:y2, x1+section_w:x1+2*section_w],
+            "bottom-right": frame[y1+2*section_h:y2, x1+2*section_w:x2]
         }
 
         # Calculate average temperature for each section
@@ -150,7 +154,7 @@ class ThermalCamera(QThread):
         return self.temps
     
     def get_avg_temperatures(self):
-        """Returns the latest average temperatures for the 5 zones."""
+        """Returns the latest average temperatures for the 9 sections."""
         return self.temps
     
     def overlay_text(self, frame, temps):
@@ -160,17 +164,27 @@ class ThermalCamera(QThread):
 
         # Set positions to display average temperature
         positions = {
-            "Top": (w // 2 - 50, section_h // 2),
-            "Bottom": (w // 2 - 50, h - section_h // 2),
-            "Left": (section_w // 4, h // 2),
-            "Right": (w - section_w // 2 - 50, h // 2),
-            "Center": (w // 2 - 50, h // 2)
+            "top-left": (section_w // 4, section_h // 2),
+            "top-center": (w // 2 - 50 , section_h // 2),
+            "top-right": (w - section_w // 2 - section_w // 4, section_h // 2),
+            "middle-left": (section_w // 4, h // 2 ),
+            "middle-center": (w // 2 - 50 , h // 2 ),
+            "middle-right": (w - section_w // 2 - 50 , h // 2 ),
+            "bottom-left": (section_w // 4, h - section_h // 2),
+            "bottom-center": (w // 2 - 50, h - section_h // 2),
+            "bottom-right": (w - section_w // 2 - 50 , h - section_h // 2)
         }
         
         # Overlay text for each section
         for section, temp in temps.items():
             x, y = positions[section]
             cv.putText(frame, f"{temp:.2f}C", (x, y), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1)
+
+        #  # Draw section labels
+        # for i, (section, (x, y)) in enumerate(positions.items(), 1):
+        #     label_x = (i - 1) % 3 * section_w + section_w // 2
+        #     label_y = (i - 1) // 3 * section_h + section_h // 2
+        #     cv.putText(frame, f"{section}", (label_x, label_y), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
     def stop(self):
         """Stops the camera."""
