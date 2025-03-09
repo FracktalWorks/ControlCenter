@@ -1,0 +1,9 @@
+README.md
+cmapy.py
+setup.cfg
+setup.py
+cmapy.egg-info/PKG-INFO
+cmapy.egg-info/SOURCES.txt
+cmapy.egg-info/dependency_links.txt
+cmapy.egg-info/requires.txt
+cmapy.egg-info/top_level.txt
