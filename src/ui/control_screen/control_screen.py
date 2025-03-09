@@ -48,6 +48,3 @@ class ControlScreen(QWidget):
         if frame is not None:
             image = QImage(frame.data, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_BGR888)
             self.thermalCameraWidget.setImage(image)
-        
-        if temps is not None:
-            self.chamber_temp_controller.update_heater_power(temps)
