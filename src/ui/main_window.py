@@ -6,8 +6,7 @@ from models.printer_status import PrinterStatus
 
 from thermalCamera.thermal_camera import ThermalCamera
 if not Config.DEVELOPMENT_MODE:
-    from moonraker_client.moonraker_client import MoonrakerAPI
-
+    from moonrakerClient.moonrakerClient import MoonrakerAPI
 
 import ui.resources.resource_rc  # Ensure resources are loaded
 import traceback
@@ -37,8 +36,6 @@ class MainWindow(QMainWindow):
         else:
             self.moonraker_api = None
 
-
-
         # Load sub UIs based on configuration
         self.load_loading_screen()
         self.load_tab_screen()
@@ -65,8 +62,10 @@ class MainWindow(QMainWindow):
 
     def update_frame(self, frame, temps):
         if frame is not None and temps is not None:
-            self.printer_status.updateTemperatures(frame, temps)   
-            print(temps)         
+            # Convert temps values to regular float
+            converted_temps = {key: float(value) for key, value in temps.items()}
+            self.printer_status.updateTemperatures(frame, converted_temps)
+            print(converted_temps)
 
 
 

@@ -5,8 +5,6 @@ import logging
 import threading
 import numpy as np
 import cv2 as cv
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QApplication
-from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QThread, pyqtSignal
 from .mi48 import MI48, format_header, format_framestats  # Connects and communicates with the MI48 thermal camera
 from .utils import data_to_frame, remap, cv_filter, RollingAverageFilter, connect_senxor
