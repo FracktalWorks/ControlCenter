@@ -3,11 +3,13 @@ from ui.loading_screen.loading_screen import LoadingScreen
 from ui.tab_screen.tab_screen import TabScreen
 from config import Config
 from models.printer_status import PrinterStatus
+from temperatureController.heaterBoard import HeaterBoard
+from temperatureController.chamberTemperatureController import ChamberTemperatureController
 
 from thermalCamera.thermal_camera import ThermalCamera
+from rgbCamera.rgbCamera import RGBCamera
 if not Config.DEVELOPMENT_MODE:
-    from moonraker_client.moonraker_client import MoonrakerAPI
-
+    from moonrakerClient.moonrakerClient import MoonrakerAPI
 
 import ui.resources.resource_rc  # Ensure resources are loaded
 import traceback
@@ -28,16 +30,22 @@ class MainWindow(QMainWindow):
         self.layout.addWidget(self.stacked_widget)
         
         self.thermal_camera = ThermalCamera(roi=(0, 9, 61, 70))
-        self.thermal_camera.frame_ready.connect(self.update_frame)
+        self.thermal_camera.thermal_camera_frame_ready.connect(self.update_frame)
         self.thermal_camera.start()
+
+        self.rgb_camera = RGBCamera()
+        self.rgb_camera.rgb_camera_frame_ready.connect(self.update_rgb_frame)
+        self.rgb_camera.start()
+
+        # Initialize HeaterBoard and ChamberTemperatureController
+        self.heater_board = HeaterBoard()
+        self.chamber_temp_controller = ChamberTemperatureController(self.heater_board, self.printer_status)
 
         # Initialize MoonrakerAPI if not in development mode
         if not Config.DEVELOPMENT_MODE:
             self.moonraker_api = MoonrakerAPI('http://your-moonraker-url')
         else:
             self.moonraker_api = None
-
-
 
         # Load sub UIs based on configuration
         self.load_loading_screen()
@@ -63,10 +71,15 @@ class MainWindow(QMainWindow):
     def switch_to_tab_screen(self):
         self.switch_screen(self.tab_screen)
 
-    def update_frame(self, frame, temps):
-        if frame is not None and temps is not None:
-            self.printer_status.updateTemperatures(frame, temps)   
-            print(temps)         
+    def update_frame(self, frame, chamberTemperatures):
+        if frame is not None and chamberTemperatures is not None:
+            # Convert temps values to regular float
+            converted_temps = {key: float(value) for key, value in chamberTemperatures.items()}
+            self.printer_status.updateTemperatures(frame, converted_temps)
+            print(converted_temps)
 
+    def update_rgb_frame(self, frame):
+        if frame is not None:
+            self.printer_status.updateRGBFrame(frame)
 
 

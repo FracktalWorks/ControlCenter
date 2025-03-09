@@ -5,8 +5,6 @@ import logging
 import threading
 import numpy as np
 import cv2 as cv
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QApplication
-from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QThread, pyqtSignal
 from .mi48 import MI48, format_header, format_framestats  # Connects and communicates with the MI48 thermal camera
 from .utils import data_to_frame, remap, cv_filter, RollingAverageFilter, connect_senxor
@@ -30,7 +28,7 @@ def replace_dead_pixels(frame, min_val=0, max_val=200):
     return frame
 
 class ThermalCamera(QThread):
-    frame_ready = pyqtSignal(np.ndarray, dict)
+    thermal_camera_frame_ready = pyqtSignal(np.ndarray, dict)
 
     def __init__(self, roi=(0, 0, 80, 80), com_port=None):
         """
@@ -116,7 +114,7 @@ class ThermalCamera(QThread):
         with self.lock:
             self.latest_frame = roi_frame
 
-        self.frame_ready.emit(roi_frame,temps)  # Emit the frame for display
+        self.thermal_camera_frame_ready.emit(roi_frame,temps)  # Emit the frame for display
 
     def draw_grid(self, frame):
         """Draws a 3×3 grid overlay on the thermal feed."""

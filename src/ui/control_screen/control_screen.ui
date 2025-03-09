@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1409</width>
-    <height>732</height>
+    <width>1679</width>
+    <height>834</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -3084,14 +3084,18 @@ QPushButton:focus {
           <widget class="QWidget" name="thermalCameraWidget" native="true">
            <property name="minimumSize">
             <size>
-             <width>200</width>
-             <height>200</height>
+             <width>350</width>
+             <height>350</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>350</width>
+             <height>350</height>
             </size>
            </property>
            <property name="styleSheet">
-            <string notr="true">background-color: rgb(0, 255, 255);
-    border-radius: 20px;
-</string>
+            <string notr="true"/>
            </property>
           </widget>
          </item>
@@ -3139,14 +3143,18 @@ QPushButton:focus {
           <widget class="QWidget" name="rgbCameraWidget" native="true">
            <property name="minimumSize">
             <size>
-             <width>200</width>
-             <height>200</height>
+             <width>350</width>
+             <height>350</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>350</width>
+             <height>350</height>
             </size>
            </property>
            <property name="styleSheet">
-            <string notr="true">background-color: rgb(0, 255, 255);
-    border-radius: 20px;
-</string>
+            <string notr="true"/>
            </property>
           </widget>
          </item>
