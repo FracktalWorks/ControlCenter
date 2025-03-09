@@ -4,8 +4,12 @@ import time
 from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import pyqtSignal
+import numpy as np
 
 class RGBCamera(QWidget):
+    rgb_camera_frame_ready = pyqtSignal(np.ndarray)
+
     def __init__(self):
         super().__init__()
         self.cap = cv2.VideoCapture(0)  # Ensure the correct camera index
