@@ -7,7 +7,14 @@ class LoadingScreen(QWidget):
     def __init__(self, main_window):
         super(LoadingScreen, self).__init__()
         self.main_window = main_window
-        uic.loadUi('src/ui/loading_screen/loading_screen.ui', self)
+
+        # Load the .ui file
+        try:
+            uic.loadUi('src/ui/loading_screen/loading_screen.ui', self)
+            print("UI file loaded successfully")
+        except Exception as e:
+            print(f"Failed to load UI file: {e}")
+
 
         # Set up the loading GIF
         self.loadingGif = self.findChild(QLabel, 'loadingGif')
@@ -23,4 +30,4 @@ class LoadingScreen(QWidget):
     def stop_movie_and_switch(self):
         self.movie.stop()
         self.timer.stop()
-        self.main_window.switch_screen(self.main_window.home_screen)
+        self.main_window.switch_screen(self.main_window.tab_screen)
