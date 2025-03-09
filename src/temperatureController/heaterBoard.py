@@ -1,4 +1,4 @@
-from serialProtocol import SerialProtocol
+from .serialProtocol import SerialProtocol
 
 class HeaterBoard:
     def __init__(self, port="COM19"): #TBD take port as input from frontend

@@ -66,6 +66,7 @@ class HomeScreen(QWidget):
 
         # Connect the temperatures_updated signal to the update_thermal_camera_widget slot
         self.main_window.printer_status.temperatures_updated.connect(self.update_thermal_camera_widget)
+        self.main_window.printer_status.rgb_frame_updated.connect(self.update_rgb_camera_widget)
 
     @pyqtSlot(np.ndarray, dict)
     def update_thermal_camera_widget(self, frame, temps):
