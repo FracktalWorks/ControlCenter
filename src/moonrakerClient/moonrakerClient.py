@@ -1,12 +1,12 @@
-# https://github.com/alchemyEngine/MoonrakerPy/blob/main/moonrakerpy/moonrakerpy.py for all functions
+# https://github.com/alchemyEngine/MoonrakerPy/blob/main/moonrakerpy for all functions
 
-from moonrakerpy import MoonrakerClient
+from moonrakerpy import MoonrakerPrinter
 
 class MoonrakerAPI:
     def __init__(self, base_url):
-        self.client = MoonrakerClient(base_url)
+        self.client = MoonrakerPrinter(base_url)
 
-
+ 
     def send_gcode(self, cmd):
         return self.client.send_gcode(cmd)
     
