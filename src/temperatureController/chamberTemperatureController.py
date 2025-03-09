@@ -28,6 +28,7 @@ class ChamberTemperatureController(QThread):
         right_temp = temps.get('middle-right', 0)
         top_temp = temps.get('top-center', 0)
         left_temp = temps.get('middle-left', 0)
+        middle_temp = temps.get('middle-center', 0)
 
         # Simple watermark algorithm to turn on and off heater between power levels of 1 and 99
         bottom_power = self.calculate_power(bottom_temp, setpoint)
@@ -35,8 +36,19 @@ class ChamberTemperatureController(QThread):
         top_power = self.calculate_power(top_temp, setpoint)
         left_power = self.calculate_power(left_temp, setpoint)
 
+        # Proportionally reduce heating power if middle-center temperature exceeds setpoint by more than 4 degrees
+        if middle_temp > setpoint:
+            overshoot = middle_temp - setpoint
+            reduction_factor = 1 - (overshoot / 10)  # Adjust the divisor to control the reduction rate
+            reduction_factor = max(reduction_factor, 0.1)  # Ensure the reduction factor does not go below 0.1
+
+            bottom_power = max(int(bottom_power * reduction_factor), 1)
+            right_power = max(int(right_power * reduction_factor), 1)
+            top_power = max(int(top_power * reduction_factor), 1)
+            left_power = max(int(left_power * reduction_factor), 1)
+
         # Set heater powers
-        self.heater_board.setHeaterPowers(bottom_power, bottom_power, right_power, right_power, top_power, top_power, left_power, left_power)
+        self.heater_board.setHeaterPowers(bottom_power, bottom_power / 2, right_power, 1, top_power, top_power / 2, left_power, 1)
 
     def calculate_power(self, temperature, setpoint):
         """Calculate heater power based on temperature and setpoint."""
