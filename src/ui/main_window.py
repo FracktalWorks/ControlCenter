@@ -7,8 +7,6 @@ from temperatureController.heaterBoard import HeaterBoard
 from temperatureController.chamberTemperatureController import ChamberTemperatureController
 from PyQt5.QtCore import QTimer
 
-
-
 from thermalCamera.thermal_camera import ThermalCamera
 from rgbCamera.rgbCamera import RGBCamera
 if not Config.DEVELOPMENT_MODE:
@@ -21,7 +19,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
 
-        self.printer_status = PrinterStatus() # Create an instance of the PrinterStatus model
+        self.printer_status = PrinterStatus()  # Create an instance of the PrinterStatus model
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -43,6 +41,7 @@ class MainWindow(QMainWindow):
         # Initialize HeaterBoard and ChamberTemperatureController
         self.heater_board = HeaterBoard()
         self.chamber_temp_controller = ChamberTemperatureController(self.heater_board, self.printer_status)
+        self.chamber_temp_controller.start()  # Start the ChamberTemperatureController thread
 
         # Initialize MoonrakerAPI if not in development mode
         if not Config.DEVELOPMENT_MODE:

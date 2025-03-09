@@ -6,13 +6,24 @@ class ChamberTemperatureController(QThread):
         super().__init__()
         self.heater_board = heater_board
         self.printer_status = printer_status
+
         # Connect to the temperatures_updated signal
         self.printer_status.temperatures_updated.connect(self.control_heater)
 
-    @pyqtSlot(np.ndarray, dict)
-    def control_heater(self, frame, temps):
+        # Timer to run the control_heater method at 30 fps (33 ms interval)
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.control_heater)
+        self.timer.start(33)  # 30 fps
+
+    def run(self):
+        """Start the thread and the timer."""
+        self.exec_()
+
+    @pyqtSlot()
+    def control_heater(self):
         """Control the heater power based on the setpoint and actual temperatures."""
         setpoint = self.printer_status.chamberTemperatureSetpoint
+        temps = self.printer_status.chamberTemperatures
         bottom_temp = temps.get('Bottom', 0)
         right_temp = temps.get('Right', 0)
         top_temp = temps.get('Top', 0)
