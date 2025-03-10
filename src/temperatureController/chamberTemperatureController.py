@@ -20,7 +20,7 @@ class ChamberTemperatureController(QThread):
         self.pid_right = PID(10, 0.01, 0.1, setpoint=0)
         self.pid_top = PID(10, 0.01, 0.1, setpoint=0)
         self.pid_left = PID(10, 0.01, 0.1, setpoint=0)
-        self.pid_middle_center = PID(10, 0.1, 0.1, setpoint=0)  # New PID for middle-center
+        self.pid_middle_center = PID(10, 0.01, 0.1, setpoint=0)  # New PID for middle-center
 
     def run(self):
         """Start the thread and the timer."""
@@ -66,6 +66,6 @@ class ChamberTemperatureController(QThread):
         control_left = max(1, min(99, control_left))
 
         # Apply the control values to the heater board
-        self.heater_board.setHeaterPowers(control_bottom, control_bottom, control_right, control_right, control_top, control_top, control_left, control_left)
+        self.heater_board.setHeaterPowers(control_bottom, control_bottom, control_right, control_right/2, control_top, control_top, control_left, control_left/2)
 
 
