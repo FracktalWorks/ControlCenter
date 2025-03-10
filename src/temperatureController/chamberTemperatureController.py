@@ -16,11 +16,11 @@ class ChamberTemperatureController(QThread):
         self.timer.start(33)  # 30 fps
 
         # Initialize PID controllers for each side
-        self.pid_bottom = PID(10, 0.01, 0.1, setpoint=0)
-        self.pid_right = PID(10, 0.01, 0.1, setpoint=0)
-        self.pid_top = PID(10, 0.01, 0.1, setpoint=0)
-        self.pid_left = PID(10, 0.01, 0.1, setpoint=0)
-        self.pid_middle_center = PID(10, 0.01, 0.1, setpoint=0)  # New PID for middle-center
+        self.pid_bottom = PID(10, 0.01, 0.4, setpoint=0)
+        self.pid_right = PID(10, 0.01, 0.4, setpoint=0)
+        self.pid_top = PID(10, 0.01, 0.4, setpoint=0)
+        self.pid_left = PID(10, 0.01, 0.4, setpoint=0)
+        self.pid_middle_center = PID(20, 0.01, 0.4, setpoint=0)  # New PID for middle-center
 
     def run(self):
         """Start the thread and the timer."""
