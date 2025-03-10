@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1554</width>
-    <height>834</height>
+    <height>882</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -2306,7 +2306,7 @@ QPushButton:focus {
            <property name="frameShadow">
             <enum>QFrame::Raised</enum>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_6">
+           <layout class="QVBoxLayout" name="verticalLayout_2">
             <item>
              <widget class="QLabel" name="fileInfoLabel_6">
               <property name="maximumSize">
@@ -2577,6 +2577,116 @@ QPushButton:focus {
                 </widget>
                </item>
               </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="doseRecoatLayer">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>500</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Dose-Recoat Layer</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QProgressBar" name="recoaterProgressBar">
+              <property name="minimumSize">
+               <size>
+                <width>50</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>16</pointsize>
+                <weight>50</weight>
+                <italic>false</italic>
+                <bold>false</bold>
+                <stylestrategy>PreferAntialias</stylestrategy>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QProgressBar::chunk {
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:0.523, x2:0, y2:0.534, stop:0 rgba(130, 203, 117, 255), stop:1 rgba(66, 191, 85, 255));
+border: 1px solid green;
+    border-radius: 10px;
+
+}
+
+QProgressBar {
+    border: 1px solid rgb(87, 87, 87);
+    border-radius: 10px;
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0, stop:0 rgba(150, 150, 150, 255), stop:1 rgba(180, 180, 180, 255));
+}
+</string>
+              </property>
+              <property name="maximum">
+               <number>100</number>
+              </property>
+              <property name="value">
+               <number>0</number>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+              <property name="textVisible">
+               <bool>true</bool>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="format">
+               <string>%p%</string>
+              </property>
              </widget>
             </item>
            </layout>
@@ -3001,12 +3111,12 @@ QPushButton:focus {
                <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>EMERGENCY STOP</string>
+               <string>STOP PROCESS MOVEMENT</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="emergencyStopButton">
+             <widget class="QPushButton" name="stopProcessButton">
               <property name="minimumSize">
                <size>
                 <width>150</width>

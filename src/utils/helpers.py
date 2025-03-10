@@ -17,3 +17,18 @@ def convert_to_percentage(value, total):
     if total == 0:
         return 0
     return (value / total) * 100
+
+def run_async(func):
+    """
+    Function decorater to make methods run in a thread
+    """
+    from threading import Thread
+    from functools import wraps
+
+    @wraps(func)
+    def async_func(*args, **kwargs):
+        func_hl = Thread(target=func, args=args, kwargs=kwargs)
+        func_hl.start()
+        return func_hl
+
+    return async_func

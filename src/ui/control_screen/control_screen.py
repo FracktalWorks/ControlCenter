@@ -1,12 +1,13 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import (QWidget, QToolButton, QPushButton, QLineEdit, QLabel,
-                             QSpinBox, QFrame, QProgressBar, QSizePolicy, QVBoxLayout)
+                             QSpinBox, QFrame, QProgressBar, QSizePolicy, QVBoxLayout, QMessageBox)
 from PyQt5.QtCore import pyqtSlot
 import numpy as np
 from ui.custom_widgets import ImageWidget
 from PyQt5.QtGui import QImage, QPixmap
 from temperatureController.heaterBoard import HeaterBoard
 from temperatureController.chamberTemperatureController import ChamberTemperatureController
+from utils.helpers import run_async
 
 class ControlScreen(QWidget):
     def __init__(self, main_window):
@@ -42,14 +43,18 @@ class ControlScreen(QWidget):
         self.setVolumeTempButton = self.findChild(QPushButton, "setVolumeTempButton")
         self.volumeTempSpinBox = self.findChild(QSpinBox, "volumeTempSpinBox")
 
-
         self.homeRecoaterButton = self.findChild(QPushButton, "homeRecoaterButton")
         self.recoatButton = self.findChild(QPushButton, "recoatButton")
+        self.initialLevellingRecoatButton = self.findChild(QPushButton, "initialLevellingRecoatButton")
+        self.heatedBufferRecoatButton = self.findChild(QPushButton, "heatedBufferRecoatButton")
+        self.doseRecoatLayerButton = self.findChild(QPushButton, "doseRecoatLayerButton")
 
-
+        self.stopProcessButton = self.findChild(QPushButton, "stopProcessButton")
+        self.recoaterProgressBar = self.findChild(QProgressBar, "recoaterProgressBar")
 
         # Setup any signal-slot connections and additional initialization here
-        self.step=10
+        self.step = 10
+        self.setStep(10)
         self.homeBuildModuleButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("G28 Z Y\nM400"))
         self.undockButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("goDown\nM400"))
         self.dockButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("liftUp\nM400"))
@@ -67,13 +72,13 @@ class ControlScreen(QWidget):
         self.moveFeedPButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"G91\nG0 Y{self.step}\nG90\nM400"))
         self.setBedTempButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET={self.bedTempSpinBox.value()}"))
         self.setVolumeTempButton.clicked.connect(self.setVolumeHeaterTemp)
+        self.initialLevellingRecoatButton.clicked.connect(self.confirm_initial_levelling_recoat)
+        self.heatedBufferRecoatButton.clicked.connect(self.confirm_heated_buffer_recoat)
+        self.doseRecoatLayerButton.clicked.connect(self.dose_recoat_layer)
+        self.stopProcessButton.clicked.connect(self.stop_process)
 
-
-
-        
         self.homeRecoaterButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("homeRecoater"))
         self.recoatButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("recoat"))
-
 
         # Replace the QWidget with the custom ImageWidget
         thermal_camera_container = self.findChild(QWidget, "thermalCameraWidget")
@@ -81,7 +86,6 @@ class ControlScreen(QWidget):
         layout = QVBoxLayout(thermal_camera_container)
         layout.addWidget(self.thermalCameraWidget)
         self.thermalCameraWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
 
         # Replace the QWidget with the custom ImageWidget
         rgb_camera_container = self.findChild(QWidget, "rgbCameraWidget")
@@ -94,16 +98,106 @@ class ControlScreen(QWidget):
         self.main_window.printer_status.temperatures_updated.connect(self.update_thermal_camera_widget)
         self.main_window.printer_status.rgb_frame_updated.connect(self.update_rgb_camera_widget)
 
+        # Flag to control the recoat process
+        self.recoat_running = False
+
+    def confirm_initial_levelling_recoat(self):
+        """Show a confirmation dialog before starting the initial levelling recoat."""
+        reply = QMessageBox.question(self, 'Confirmation',
+                                     'Ensure that the build module is moved to the starting position before starting the initial levelling recoat. Do you want to proceed?',
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.recoat_running = True
+            self.initialLevellingRecoat()
+
+    @run_async
+    def initialLevellingRecoat(self):
+        '''
+        This function is used to perform the initial levelling recoat
+        takes input from the layer height and the initial levelling height from the paramerters screen and calculates how many
+        time to run the recoater and move the Z and Y axis.
+        Sequence: we start by asuming that the Z axis is at zero position, and the feedAxis/Y axis is at its starting positon filled with powder.
+        after evey recoat the z axis goes up by the layer height and the feed axis goes down by the layer height, this is repeated until the
+        initial levelling height is reached.
+        '''
+        layerHeight = self.main_window.parameters_screen.layerHeightLineEdit.value()
+        initialLevellingHeight = self.main_window.parameters_screen.initialLevellingHeightLineEdit.value()
+        recoatCount = int(initialLevellingHeight / layerHeight)
+        for i in range(recoatCount):
+            if not self.recoat_running:
+                break
+            self.main_window.moonraker_api.send_gcode("homeRecoater")
+            self.main_window.moonraker_api.send_gcode(f"G91\nG0 Z{layerHeight}\nG90\nM400")
+            self.main_window.moonraker_api.send_gcode(f"G91\nG0 Y-{layerHeight}\nG90\nM400")
+            self.main_window.moonraker_api.send_gcode("recoat\nM400")
+            self.main_window.moonraker_api.send_gcode("homeRecoater\nM400")
+            # Update progress bar
+            progress = int((i + 1) / recoatCount * 100)
+            self.recoaterProgressBar.setValue(progress)
+
+    def confirm_heated_buffer_recoat(self):
+        """Show a confirmation dialog before starting the heated buffer recoat."""
+        reply = QMessageBox.question(self, 'Confirmation',
+                                     'Ensure that the build module is moved to the starting position before starting the heated buffer recoat. Do you want to proceed?',
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.recoat_running = True
+            self.heatedBufferRecoat()
+
+    @run_async
+    def heatedBufferRecoat(self):
+        '''
+        This function is used to perform the heated buffer recoat
+        takes input from the layer height and the heated buffer height from the paramerters screen and calculates how many
+        time to run the recoater and move the Z and Y axis.
+        Sequence: we start by asuming that the Z axis is at zero position, and the feedAxis/Y axis is at its starting positon filled with powder.
+        after evey recoat the z axis goes up by the layer height and the feed axis goes down by the layer height, this is repeated until the
+        heated buffer height is reached.
+        '''
+        layerHeight = self.main_window.parameters_screen.layerHeightLineEdit.value()
+        heatedBufferHeight = self.main_window.parameters_screen.heatedBufferHeightLineEdit.value()
+        recoatCount = int(heatedBufferHeight / layerHeight)
+        for i in range(recoatCount):
+            if not self.recoat_running:
+                break
+            self.main_window.moonraker_api.send_gcode("homeRecoater")
+            self.main_window.moonraker_api.send_gcode(f"G91\nG0 Z{layerHeight}\nG90\nM400")
+            self.main_window.moonraker_api.send_gcode(f"G91\nG0 Y-{layerHeight}\nG90\nM400")
+            self.main_window.moonraker_api.send_gcode("recoat\nM400")
+            self.main_window.moonraker_api.send_gcode("homeRecoater\nM400")
+            # Update progress bar
+            progress = int((i + 1) / recoatCount * 100)
+            self.recoaterProgressBar.setValue(progress)
+
+    @run_async
+    def dose_recoat_layer(self):
+        '''
+        This function is used to perform a single recoat using the layer height from the parameters screen.
+        '''
+        layerHeight = self.main_window.parameters_screen.layerHeightLineEdit.value()
+        self.main_window.moonraker_api.send_gcode("homeRecoater")
+        self.recoaterProgressBar.setValue(0)
+        self.main_window.moonraker_api.send_gcode(f"G91\nG0 Z{layerHeight}\nG90\nM400")
+        self.recoaterProgressBar.setValue(25)
+        self.main_window.moonraker_api.send_gcode(f"G91\nG0 Y-{layerHeight}\nG90\nM400")
+        self.recoaterProgressBar.setValue(50)
+        self.main_window.moonraker_api.send_gcode("recoat\nM400")
+        self.recoaterProgressBar.setValue(75)
+        self.main_window.moonraker_api.send_gcode("homeRecoater\nM400")
+        self.recoaterProgressBar.setValue(100)
+
+    def stop_process(self):
+        """Stop the recoat process."""
+        self.recoat_running = False
+
     def setVolumeHeaterTemp(self):
         self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_front TARGET={self.volumeTempSpinBox.value()}")
         self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_left TARGET={self.volumeTempSpinBox.value()}")
         self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_right TARGET={self.volumeTempSpinBox.value()}")
 
-
     def update_setpoint(self, value):
         """Update the chamber temperature setpoint in the PrinterStatus model."""
         self.main_window.printer_status.chamberTemperatureSetpoint = value
-
 
     @pyqtSlot(np.ndarray, dict)
     def update_thermal_camera_widget(self, frame, temps):
