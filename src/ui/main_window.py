@@ -3,13 +3,13 @@ from ui.loading_screen.loading_screen import LoadingScreen
 from ui.tab_screen.tab_screen import TabScreen
 from config import Config
 from models.printer_status import PrinterStatus
-from temperatureController.heaterBoard import HeaterBoard
-from temperatureController.chamberTemperatureController import ChamberTemperatureController
 from PyQt5.QtCore import QTimer
 
-from thermalCamera.thermal_camera import ThermalCamera
-from rgbCamera.rgbCamera import RGBCamera
 if not Config.DEVELOPMENT_MODE:
+    from temperatureController.heaterBoard import HeaterBoard
+    from temperatureController.chamberTemperatureController import ChamberTemperatureController
+    from thermalCamera.thermal_camera import ThermalCamera
+    from rgbCamera.rgbCamera import RGBCamera
     from moonrakerClient.moonrakerClient import MoonrakerAPI
 
 import ui.resources.resource_rc  # Ensure resources are loaded
@@ -30,24 +30,32 @@ class MainWindow(QMainWindow):
         self.stacked_widget = QStackedWidget()
         self.layout.addWidget(self.stacked_widget)
         
-        self.thermal_camera = ThermalCamera(roi=(0, 9, 61, 70))
-        self.thermal_camera.thermal_camera_frame_ready.connect(self.update_frame)
-        self.thermal_camera.start()
+        if not Config.DEVELOPMENT_MODE:
+            self.thermal_camera = ThermalCamera(roi=(0, 9, 61, 70))
+            self.thermal_camera.thermal_camera_frame_ready.connect(self.update_frame)
+            self.thermal_camera.start()
 
-        self.rgb_camera = RGBCamera()
-        self.rgb_camera.rgb_camera_frame_ready.connect(self.update_rgb_frame)
-        self.rgb_camera.start()
+            self.rgb_camera = RGBCamera()
+            self.rgb_camera.rgb_camera_frame_ready.connect(self.update_rgb_frame)
+            self.rgb_camera.start()
+        else:
+            self.thermal_camera = None
+            self.rgb_camera = None
 
-        # Initialize HeaterBoard and ChamberTemperatureController
-        self.heater_board = HeaterBoard()
-        self.chamber_temp_controller = ChamberTemperatureController(self.heater_board, self.printer_status)
-        self.chamber_temp_controller.start()  # Start the ChamberTemperatureController thread
+        # Initialize HeaterBoard and ChamberTemperatureController if not in development mode
+        if not Config.DEVELOPMENT_MODE:
+            self.heater_board = HeaterBoard()
+            self.chamber_temp_controller = ChamberTemperatureController(self.heater_board, self.printer_status)
+            self.chamber_temp_controller.start()  # Start the ChamberTemperatureController thread
+        else:
+            self.heater_board = None
+            self.chamber_temp_controller = None
 
         # Initialize MoonrakerAPI if not in development mode
         if not Config.DEVELOPMENT_MODE:
             self.moonraker_api = MoonrakerAPI('http://10.20.1.121')
         else:
-            self.moonraker_api = None
+            self.moonraker_api = MockMoonrakerAPI()
 
         # Load sub UIs based on configuration
         self.load_loading_screen()
@@ -82,5 +90,20 @@ class MainWindow(QMainWindow):
     def update_rgb_frame(self, frame):
         if frame is not None:
             self.printer_status.updateRGBFrame(frame)
+
+class MockMoonrakerAPI:
+    def __init__(self):
+        print("MockMoonrakerAPI initialized")
+
+    def send_gcode(self, cmd):
+        print(f"MockMoonrakerAPI.send_gcode called with cmd: {cmd}")
+
+    def query_status(self):
+        print("MockMoonrakerAPI.query_status called")
+        return {"status": "mock_status"}
+
+    def query_temperatures(self):
+        print("MockMoonrakerAPI.query_temperatures called")
+        return {"temperatures": "mock_temperatures"}
 
 

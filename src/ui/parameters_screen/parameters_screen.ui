@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1542</width>
-    <height>986</height>
+    <height>1019</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -107,7 +107,7 @@
                <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>Prepare Powder Loading Sequence</string>
+               <string>Prepare Powder Loading Sequence          {powderLoadingHeight} = initialLevellingHeight + partHeight+  2 * heatedBufferHeight </string>
               </property>
               <property name="wordWrap">
                <bool>true</bool>
@@ -115,7 +115,22 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QPlainTextEdit" name="plainTextEdit"/>
+             <widget class="QPlainTextEdit" name="powderLoadingSequenceText">
+              <property name="plainText">
+               <string>G28 Z Y
+G0 Y{powderLoadingHeight} F600
+M400
+G91
+G0 Y{powderLoadingExtraHeightGap} F600
+G90
+M400
+goDown
+goDown
+goDown
+goDown
+</string>
+              </property>
+             </widget>
             </item>
             <item row="1" column="0">
              <widget class="QLabel" name="fileInfoLabel_7">
@@ -143,7 +158,7 @@
                <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>Move to Starting Position Sequence</string>
+               <string>Move to Starting Position Sequence {powderLoadingHeight} = initialLevellingHeight + partHeight+  2 * heatedBufferHeigh</string>
               </property>
               <property name="wordWrap">
                <bool>true</bool>
@@ -151,7 +166,14 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QPlainTextEdit" name="plainTextEdit_2"/>
+             <widget class="QPlainTextEdit" name="moveToStartingSequenceText">
+              <property name="plainText">
+               <string>G28 Z Y
+M400
+G0 Z0 Y{powderLoadingHeight}
+M400</string>
+              </property>
+             </widget>
             </item>
             <item row="2" column="0">
              <widget class="QLabel" name="fileInfoLabel_8">
@@ -187,7 +209,18 @@
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QPlainTextEdit" name="plainTextEdit_3"/>
+             <widget class="QPlainTextEdit" name="prepareForPartRemovalSequenceText">
+              <property name="plainText">
+               <string>G91
+G0 Z{powderLoadingExtraHeightGap} Y{powderLoadingExtraHeightGap}
+G90
+M400
+goDown
+goDown
+goDown
+goDown</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -287,7 +320,18 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QPlainTextEdit" name="plainTextEdit_4"/>
+             <widget class="QPlainTextEdit" name="initialLevellingRecoatingSequenceText">
+              <property name="plainText">
+               <string>homeRecoater
+G91
+G0 Z{layerHeight} Y-{layerHeight}
+G90
+M400
+recoat
+M400
+homeRecoater</string>
+              </property>
+             </widget>
             </item>
             <item row="1" column="0">
              <widget class="QLabel" name="fileInfoLabel_12">
@@ -323,7 +367,18 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QPlainTextEdit" name="plainTextEdit_5"/>
+             <widget class="QPlainTextEdit" name="heatedBufferRecoatingSequenceText">
+              <property name="plainText">
+               <string>homeRecoater
+G91
+G0 Z{layerHeight} Y-{layerHeight}
+G90
+M400
+recoat
+M400
+homeRecoater</string>
+              </property>
+             </widget>
             </item>
             <item row="2" column="0">
              <widget class="QLabel" name="fileInfoLabel_13">
@@ -351,7 +406,7 @@
                <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>Printing Recoating Sequence</string>
+               <string>Dosing &amp; Recoating Sequence</string>
               </property>
               <property name="wordWrap">
                <bool>true</bool>
@@ -359,7 +414,18 @@
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QPlainTextEdit" name="plainTextEdit_6"/>
+             <widget class="QPlainTextEdit" name="printingRecoatingSequenceText">
+              <property name="plainText">
+               <string>homeRecoater
+G91
+G0 Z{layerHeight} Y-{layerHeight}
+G90
+M400
+recoat
+M400
+homeRecoater</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -451,7 +517,7 @@
                <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>Initial Levelling Height</string>
+               <string>Initial Levelling Height {initialLevellingHeight}</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -487,7 +553,7 @@
                <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>Heated Buffer Height</string>
+               <string>Heated Buffer Height {heatedBufferHeight}</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -549,7 +615,7 @@
                <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>Powder Loading Extra Height Gap</string>
+               <string>Powder Loading Extra Height Gap {powderLoadingExtraHeightGap}</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -568,7 +634,7 @@
                </size>
               </property>
               <property name="text">
-               <string>10</string>
+               <string>20</string>
               </property>
              </widget>
             </item>
@@ -598,7 +664,7 @@
                <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>Bed Temperature</string>
+               <string>Bed Temperature {bedTemperature}</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -647,7 +713,7 @@
                <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>Volume Temperature</string>
+               <string>Volume Temperature {volumeTemperatures}</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -709,7 +775,7 @@
                <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>Chamber Temperature</string>
+               <string>Chamber Temperature {chamberTemperature}</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -726,6 +792,9 @@
                 <width>0</width>
                 <height>30</height>
                </size>
+              </property>
+              <property name="text">
+               <string>10</string>
               </property>
              </widget>
             </item>
@@ -755,7 +824,7 @@
                <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>P</string>
+               <string>P {p}</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -772,6 +841,9 @@
                 <width>0</width>
                 <height>30</height>
                </size>
+              </property>
+              <property name="text">
+               <string>0.01</string>
               </property>
              </widget>
             </item>
@@ -801,7 +873,7 @@
                <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>I</string>
+               <string>I {i}</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -818,6 +890,9 @@
                 <width>0</width>
                 <height>30</height>
                </size>
+              </property>
+              <property name="text">
+               <string>0.5</string>
               </property>
              </widget>
             </item>
@@ -847,7 +922,7 @@
                <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>D</string>
+               <string>D {d}</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -883,7 +958,7 @@
                <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>Part Height</string>
+               <string>Part Height {partHeight}</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -932,7 +1007,7 @@
                <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>Layer Height</string>
+               <string>Layer Height {layerHeight}</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -974,7 +1049,7 @@
      </property>
      <layout class="QGridLayout" name="gridLayout">
       <item row="0" column="0">
-       <widget class="QPushButton" name="reverChangesButton">
+       <widget class="QPushButton" name="revertChangesButton">
         <property name="minimumSize">
          <size>
           <width>200</width>

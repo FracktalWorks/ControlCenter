@@ -14,8 +14,23 @@ class PrinterStatus(QObject):
         self.chamberTemperatureSetpoint = 0
         self.chamberHeatingStarted = False
         self.rgb_frame: Optional[Any] = None
-
-
+        self.layerHeight = 0.0
+        self.initialLevellingHeight = 0.0
+        self.heatedBufferHeight = 0.0
+        self.powderLoadingExtraHeightGap = 0.0
+        self.bedTemperature = 0.0
+        self.volumeTemperature = 0.0
+        self.chamberTemperature = 0.0
+        self.p = 0.0
+        self.i = 0.0
+        self.d = 0.0
+        self.powderLoadingSequence = ""
+        self.moveToStartingSequence = ""
+        self.prepareForPartRemovalSequence = ""
+        self.initialLevellingRecoatingSequence = ""
+        self.heatedBufferRecoatingSequence = ""
+        self.printingRecoatingSequence = ""
+        self.partHeight = 0.0
 
     def updateTemperatures(self, frame: Any, chamberTemperatures: Dict[str, float]):
         """Update the model with a new frame and temperature values."""
@@ -27,3 +42,54 @@ class PrinterStatus(QObject):
         """Update the model with a new RGB frame."""
         self.rgb_frame = frame
         self.rgb_frame_updated.emit(frame)
+
+    def setLayerHeight(self, value: float):
+        self.layerHeight = value
+
+    def setInitialLevellingHeight(self, value: float):
+        self.initialLevellingHeight = value
+
+    def setHeatedBufferHeight(self, value: float):
+        self.heatedBufferHeight = value
+
+    def setPowderLoadingExtraHeightGap(self, value: float):
+        self.powderLoadingExtraHeightGap = value
+
+    def setBedTemperature(self, value: float):
+        self.bedTemperature = value
+
+    def setVolumeTemperature(self, value: float):
+        self.volumeTemperature = value
+
+    def setChamberTemperature(self, value: float):
+        self.chamberTemperature = value
+
+    def setP(self, value: float):
+        self.p = value
+
+    def setI(self, value: float):
+        self.i = value
+
+    def setD(self, value: float):
+        self.d = value
+
+    def setPowderLoadingSequence(self, value: str):
+        self.powderLoadingSequence = value
+
+    def setMoveToStartingSequence(self, value: str):
+        self.moveToStartingSequence = value
+
+    def setPrepareForPartRemovalSequence(self, value: str):
+        self.prepareForPartRemovalSequence = value
+
+    def setInitialLevellingRecoatingSequence(self, value: str):
+        self.initialLevellingRecoatingSequence = value
+
+    def setHeatedBufferRecoatingSequence(self, value: str):
+        self.heatedBufferRecoatingSequence = value
+
+    def setPrintingRecoatingSequence(self, value: str):
+        self.printingRecoatingSequence = value
+
+    def setPartHeight(self, value: float):
+        self.partHeight = value
