@@ -25,6 +25,12 @@
      <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
        <widget class="QFrame" name="buildModuleFrame">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>830</height>
+         </size>
+        </property>
         <property name="styleSheet">
          <string notr="true">QFrame#buildModuleFrame {
     border: 2px solid gray;
@@ -1416,6 +1422,12 @@ QPushButton:focus {
           <height>221</height>
          </size>
         </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>830</height>
+         </size>
+        </property>
         <property name="styleSheet">
          <string notr="true">QFrame #temperatureFrame {
     border: 2px solid gray;
@@ -2294,6 +2306,12 @@ QPushButton:focus {
          </property>
          <item>
           <widget class="QFrame" name="recoaterFrame">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>405</height>
+            </size>
+           </property>
            <property name="styleSheet">
             <string notr="true">QFrame #recoaterFrame{
     border: 2px solid gray;
@@ -2748,6 +2766,12 @@ QPushButton:focus {
          </item>
          <item>
           <widget class="QFrame" name="laserscannerFrame">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>410</height>
+            </size>
+           </property>
            <property name="styleSheet">
             <string notr="true">QFrame #laserscannerFrame{
     border: 2px solid gray;
@@ -3129,6 +3153,12 @@ QPushButton:focus {
       </item>
       <item>
        <widget class="QFrame" name="cameraFrames">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>830</height>
+         </size>
+        </property>
         <property name="styleSheet">
          <string notr="true">QFrame #cameraFrames{
     border: 2px solid gray;
@@ -3141,7 +3171,7 @@ QPushButton:focus {
         <property name="frameShadow">
          <enum>QFrame::Raised</enum>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_10">
+        <layout class="QVBoxLayout" name="verticalLayout_6">
          <item>
           <widget class="QWidget" name="thermalCameraWidget" native="true">
            <property name="minimumSize">
@@ -3162,27 +3192,81 @@ QPushButton:focus {
           </widget>
          </item>
          <item>
-          <widget class="QLabel" name="fileInfoLabel_12">
+          <widget class="QFrame" name="frame_4">
            <property name="maximumSize">
             <size>
              <width>16777215</width>
-             <height>20</height>
+             <height>40</height>
             </size>
            </property>
-           <property name="font">
-            <font>
-             <family>Gotham</family>
-             <pointsize>16</pointsize>
-             <weight>50</weight>
-             <bold>false</bold>
-            </font>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
            </property>
-           <property name="styleSheet">
-            <string notr="true">color:  grey;</string>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
            </property>
-           <property name="text">
-            <string>Thermal Camera Feed</string>
-           </property>
+           <layout class="QHBoxLayout" name="horizontalLayout_8">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QLabel" name="fileInfoLabel_12">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+                <weight>50</weight>
+                <bold>false</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color:  grey;</string>
+              </property>
+              <property name="text">
+               <string>Thermal Camera     Max Temp:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="maxTempLabel">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+                <weight>50</weight>
+                <bold>false</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color:  grey;</string>
+              </property>
+              <property name="text">
+               <string>maxTemp</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </item>
          <item>
@@ -3205,8 +3289,8 @@ QPushButton:focus {
           <widget class="QWidget" name="rgbCameraWidget" native="true">
            <property name="minimumSize">
             <size>
-             <width>350</width>
-             <height>350</height>
+             <width>300</width>
+             <height>300</height>
             </size>
            </property>
            <property name="maximumSize">
@@ -3237,7 +3321,7 @@ QPushButton:focus {
            <property name="font">
             <font>
              <family>Gotham</family>
-             <pointsize>16</pointsize>
+             <pointsize>12</pointsize>
              <weight>50</weight>
              <bold>false</bold>
             </font>
@@ -3246,7 +3330,7 @@ QPushButton:focus {
             <string notr="true">color:  grey;</string>
            </property>
            <property name="text">
-            <string>RGB Camera Feed</string>
+            <string>RGB Camera</string>
            </property>
           </widget>
          </item>

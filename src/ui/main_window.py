@@ -33,6 +33,7 @@ class MainWindow(QMainWindow):
         if not Config.DEVELOPMENT_MODE:
             self.thermal_camera = ThermalCamera(roi=(0, 9, 61, 70))
             self.thermal_camera.thermal_camera_frame_ready.connect(self.update_frame)
+            self.thermal_camera.max_temp_signal.connect(self.update_max_temp)  # Connect max_temp_signal to update_max_temp
             self.thermal_camera.start()
 
             self.rgb_camera = RGBCamera()
@@ -86,6 +87,9 @@ class MainWindow(QMainWindow):
             # Convert temps values to regular float
             converted_temps = {key: float(value) for key, value in chamberTemperatures.items()}
             self.printer_status.updateTemperatures(frame, converted_temps)
+
+    def update_max_temp(self, max_temp):
+        self.printer_status.updateMaxTemp(max_temp)
 
     def update_rgb_frame(self, frame):
         if frame is not None:

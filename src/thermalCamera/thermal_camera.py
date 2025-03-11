@@ -29,6 +29,7 @@ def replace_dead_pixels(frame, min_val=0, max_val=200):
 
 class ThermalCamera(QThread):
     thermal_camera_frame_ready = pyqtSignal(np.ndarray, dict)
+    max_temp_signal = pyqtSignal(float)  # Add a new signal for the maximum temperature
 
     def __init__(self, roi=(0, 0, 80, 80), com_port=None):
         """
@@ -78,10 +79,12 @@ class ThermalCamera(QThread):
 
         # Convert raw data to an image frame
         frame = data_to_frame(data, (80, 62), hflip=True)
-        frame = np.clip(frame, min_temp, max_temp)
 
         # Replace dead pixels
         frame = replace_dead_pixels(frame)
+
+        # Clip the frame to the min/max temperatures
+        frame = np.clip(frame, min_temp, max_temp)
 
         # Vertical flip and rotate
         #frame = cv.flip(frame, 1)
@@ -109,6 +112,15 @@ class ThermalCamera(QThread):
 
         # Overlay text on the image
         self.overlay_text(roi_frame, temps)
+
+        # Draw a white rectangle around the point of maximum temperature
+        max_temp_loc = np.unravel_index(np.argmax(frame, axis=None), frame.shape)
+        max_temp_loc = (max_temp_loc[1] - x1, max_temp_loc[0] - y1)  # Adjust for ROI
+        max_temp_loc = (max_temp_loc[0] * 600 // (x2 - x1), max_temp_loc[1] * 600 // (y2 - y1))  # Scale to resized frame
+        cv.rectangle(roi_frame, (max_temp_loc[0] - 5, max_temp_loc[1] - 5), (max_temp_loc[0] + 5, max_temp_loc[1] + 5), (255, 255, 255), 1)
+
+        # Emit the maximum temperature after dead pixel correction
+        self.max_temp_signal.emit(frame.max())
 
         # Store the latest frame for streaming
         with self.lock:

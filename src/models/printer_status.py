@@ -6,6 +6,7 @@ import numpy as np
 class PrinterStatus(QObject):
     temperatures_updated = pyqtSignal(np.ndarray, dict)
     rgb_frame_updated = pyqtSignal(np.ndarray)
+    maxtemp_updated = pyqtSignal(float)  # Add the maxtemp_updated signal
 
     def __init__(self):
         super().__init__()
@@ -31,6 +32,7 @@ class PrinterStatus(QObject):
         self.heatedBufferRecoatingSequence = ""
         self.printingRecoatingSequence = ""
         self.partHeight = 0.0
+        self.maxTemp = 0.0
 
     def updateTemperatures(self, frame: Any, chamberTemperatures: Dict[str, float]):
         """Update the model with a new frame and temperature values."""
@@ -93,3 +95,7 @@ class PrinterStatus(QObject):
 
     def setPartHeight(self, value: float):
         self.partHeight = value
+
+    def updateMaxTemp(self, value: float):
+        self.maxTemp = value
+        self.maxtemp_updated.emit(value)  # Emit the maxtemp_updated signal

@@ -1,8 +1,8 @@
 #TBD: incase a gcode is yet to be executed, block the thread from executing another gcode in moonraker api
 
 from PyQt5 import uic
-from PyQt5.QtWidgets import (QWidget, QPushButton, QSpinBox, QProgressBar, QSizePolicy, QVBoxLayout, QMessageBox)
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QObject
+from PyQt5.QtWidgets import (QWidget, QPushButton, QSpinBox, QProgressBar, QSizePolicy, QVBoxLayout, QMessageBox, QLabel)
+from PyQt5.QtCore import pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QImage
 import numpy as np
 import time
@@ -90,7 +90,9 @@ class ControlScreen(QWidget):
 
         self.moveToStartingPositionButton = self.findChild(QPushButton, "moveToStartingPositionButton") 
         self.prepareForPartRemovalButton = self.findChild(QPushButton, "prepareForPartRemovalButton")  
-        
+
+        self.maxTempLabel = self.findChild(QLabel, "maxTempLabel")  # Find the maxTempLabel
+
     def setup_connections(self):
         self.step = 10
         self.setStep(10)
@@ -137,6 +139,12 @@ class ControlScreen(QWidget):
     def connect_signals(self):
         self.main_window.printer_status.temperatures_updated.connect(self.update_thermal_camera_widget)
         self.main_window.printer_status.rgb_frame_updated.connect(self.update_rgb_camera_widget)
+        self.main_window.printer_status.maxtemp_updated.connect(self.update_max_temp_label)  # Connect the maxtemp_updated signal
+
+    @pyqtSlot(float)
+    def update_max_temp_label(self, max_temp):
+        """Slot to update the text of maxTempLabel with the maximum temperature."""
+        self.maxTempLabel.setText(f"Max Temp: {max_temp:.2f}°C")
 
     def set_motion_control_buttons_enabled(self, enabled):
         """Enable or disable motion control buttons."""
@@ -146,7 +154,7 @@ class ControlScreen(QWidget):
     def confirm_initial_levelling_recoat(self):
         """Show a confirmation dialog before starting the initial levelling recoat."""
         reply = QMessageBox.question(self, 'Confirmation',
-                                     'Ensure that the build module is moved to the starting position before starting the initial levelling recoat. Do you want to proceed?',
+                                     'Ensure that the build module is moved to the starting position and recoater is homed before starting the initial levelling recoat. Do you want to proceed?',
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
             self.recoat_running = True
@@ -169,14 +177,17 @@ class ControlScreen(QWidget):
             for line in sequence_replaced.split('\n'):
                 self.main_window.moonraker_api.send_gcode(line)
             progress = int((i + 1) / recoatCount * 100)
-            self.progress_update_signal.emit(progress)
+            try:
+                self.progress_update_signal.emit(progress)
+            except Exception as e:
+                print(f"Error in emitting progress: {e}")
         
         self.set_motion_control_buttons_enabled(True)
 
     def confirm_heated_buffer_recoat(self):
         """Show a confirmation dialog before starting the heated buffer recoat."""
         reply = QMessageBox.question(self, 'Confirmation',
-                                     'Ensure that the build module is moved to the starting position before starting the heated buffer recoat. Do you want to proceed?',
+                                     'Ensure that the build module is moved to the starting position and recoater is homed  before starting the heated buffer recoat. Do you want to proceed?',
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
             self.recoat_running = True
@@ -207,7 +218,10 @@ class ControlScreen(QWidget):
             for line in sequence_replaced.split('\n'):
                 self.main_window.moonraker_api.send_gcode(line)
             progress = int((i + 1) / recoatCount * 100)
-            self.progress_update_signal.emit(progress)
+            try:
+                self.progress_update_signal.emit(progress)
+            except Exception as e:
+                print(f"Error in emitting progress: {e}")
         
         self.set_motion_control_buttons_enabled(True)
 
@@ -223,26 +237,32 @@ class ControlScreen(QWidget):
     @run_async
     def prepare_powder_loading(self):
         """Prepare for powder loading."""
+        self.set_motion_control_buttons_enabled(False)
         sequence = self.main_window.printer_status.powderLoadingSequence
         sequence_replaced = replace_placeholders(sequence, self.main_window.printer_status)
         for line in sequence_replaced.split('\n'):
             self.main_window.moonraker_api.send_gcode(line)
+        self.set_motion_control_buttons_enabled(True)
 
     @run_async
     def move_to_starting_sequence(self):
         """Execute the move to starting sequence."""
+        self.set_motion_control_buttons_enabled(False)
         sequence = self.main_window.printer_status.moveToStartingSequence
         sequence_replaced = replace_placeholders(sequence, self.main_window.printer_status)
         for line in sequence_replaced.split('\n'):
             self.main_window.moonraker_api.send_gcode(line)
+        self.set_motion_control_buttons_enabled(True)
 
     @run_async
     def prepare_for_part_removal_sequence(self):
         """Execute the prepare for part removal sequence."""
+        self.set_motion_control_buttons_enabled(False)
         sequence = self.main_window.printer_status.prepareForPartRemovalSequence
         sequence_replaced = replace_placeholders(sequence, self.main_window.printer_status)
         for line in sequence_replaced.split('\n'):
             self.main_window.moonraker_api.send_gcode(line)
+        self.set_motion_control_buttons_enabled(True)
 
     def stop_process(self):
         """Stop the recoat process."""

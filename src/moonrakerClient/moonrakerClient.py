@@ -22,9 +22,11 @@ class MoonrakerAPI:
     def __init__(self, base_url):
         self.client = MoonrakerPrinter(base_url)
 
-    @run_async
     def send_gcode(self, cmd):
-        return self.client.send_gcode(cmd)
+        try:
+            return self.client.send_gcode(cmd)
+        except Exception as e:
+            return str(e)
     
     @run_async
     def query_status(self):
