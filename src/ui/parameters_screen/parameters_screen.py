@@ -26,6 +26,7 @@ class ParametersScreen(QWidget):
         self.iLineEdit = self.findChild(QLineEdit, "iLineEdit")
         self.dLineEdit = self.findChild(QLineEdit, "dLineEdit")
         self.partHeightLineEdit = self.findChild(QLineEdit, "partHeightLineEdit")
+        self.dosingHeightLineEdit = self.findChild(QLineEdit, "dosingHeightLineEdit")  # Add dosingHeightLineEdit
 
         # Initialize all QPlainTextEdit widgets
         self.powderLoadingSequenceText = self.findChild(QPlainTextEdit, "powderLoadingSequenceText")
@@ -57,7 +58,8 @@ class ParametersScreen(QWidget):
             "initialLevellingRecoatingSequence": self.printer_status.initialLevellingRecoatingSequence,
             "heatedBufferRecoatingSequence": self.printer_status.heatedBufferRecoatingSequence,
             "printingRecoatingSequence": self.printer_status.printingRecoatingSequence,
-            "partHeight": self.printer_status.partHeight
+            "partHeight": self.printer_status.partHeight,
+            "dosingHeight": self.printer_status.dosingHeight  # Add dosingHeight
         }
 
         # Connect buttons to methods
@@ -82,6 +84,7 @@ class ParametersScreen(QWidget):
                 self.printer_status.setI(float(parameters["i"]))
                 self.printer_status.setD(float(parameters["d"]))
                 self.printer_status.setPartHeight(float(parameters["partHeight"]))
+                self.printer_status.setDosingHeight(float(parameters["dosingHeight"]))  # Add dosingHeight
                 self.printer_status.setPowderLoadingSequence(parameters["powderLoadingSequence"])
                 self.printer_status.setMoveToStartingSequence(parameters["moveToStartingSequence"])
                 self.printer_status.setPrepareForPartRemovalSequence(parameters["prepareForPartRemovalSequence"])
@@ -103,6 +106,7 @@ class ParametersScreen(QWidget):
         self.printer_status.setI(float(self.iLineEdit.text()))
         self.printer_status.setD(float(self.dLineEdit.text()))
         self.printer_status.setPartHeight(float(self.partHeightLineEdit.text()))
+        self.printer_status.setDosingHeight(float(self.dosingHeightLineEdit.text()))  # Add dosingHeight
 
         self.printer_status.setPowderLoadingSequence(self.powderLoadingSequenceText.toPlainText())
         self.printer_status.setMoveToStartingSequence(self.moveToStartingSequenceText.toPlainText())
@@ -129,7 +133,8 @@ class ParametersScreen(QWidget):
             "initialLevellingRecoatingSequence": self.initialLevellingRecoatingSequenceText.toPlainText(),
             "heatedBufferRecoatingSequence": self.heatedBufferRecoatingSequenceText.toPlainText(),
             "printingRecoatingSequence": self.printingRecoatingSequenceText.toPlainText(),
-            "partHeight": self.partHeightLineEdit.text()
+            "partHeight": self.partHeightLineEdit.text(),
+            "dosingHeight": self.dosingHeightLineEdit.text()  # Add dosingHeight
         }
         with open('parameters.yaml', 'w') as file:
             yaml.dump(parameters, file)
@@ -150,6 +155,7 @@ class ParametersScreen(QWidget):
                 self.iLineEdit.setText(parameters["i"])
                 self.dLineEdit.setText(parameters["d"])
                 self.partHeightLineEdit.setText(parameters["partHeight"])
+                self.dosingHeightLineEdit.setText(parameters["dosingHeight"])  # Add dosingHeight
                 self.powderLoadingSequenceText.setPlainText(parameters["powderLoadingSequence"])
                 self.moveToStartingSequenceText.setPlainText(parameters["moveToStartingSequence"])
                 self.prepareForPartRemovalSequenceText.setPlainText(parameters["prepareForPartRemovalSequence"])
@@ -169,6 +175,7 @@ class ParametersScreen(QWidget):
             self.iLineEdit.setText(str(self.initial_values["i"]))
             self.dLineEdit.setText(str(self.initial_values["d"]))
             self.partHeightLineEdit.setText(str(self.initial_values["partHeight"]))
+            self.dosingHeightLineEdit.setText(str(self.initial_values["dosingHeight"]))  # Add dosingHeight
             self.powderLoadingSequenceText.setPlainText(self.initial_values["powderLoadingSequence"])
             self.moveToStartingSequenceText.setPlainText(self.initial_values["moveToStartingSequence"])
             self.prepareForPartRemovalSequenceText.setPlainText(self.initial_values["prepareForPartRemovalSequence"])

@@ -4,8 +4,8 @@ from PyQt5.QtWidgets import (QWidget, QToolButton, QPushButton, QLineEdit, QLabe
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import pyqtSlot
 import numpy as np
+import pyqtgraph as pg
 from ui.custom_widgets import ImageWidget
-
 
 class HomeScreen(QWidget):
     def __init__(self, main_window):
@@ -27,6 +27,7 @@ class HomeScreen(QWidget):
         self.volumeTargetTemperature = self.findChild(QLabel, "volumeTargetTemperature")
         self.volumeActualTemperature = self.findChild(QLabel, "volumeActualTemperature")
         self.fileInfoLabel = self.findChild(QLabel, "fileInfoLabel")
+        self.maxTempLabel = self.findChild(QLabel, "maxTempLabel")  # Find the maxTempLabel
 
         # Initialize QPushButtons (if any)
         self.stopButton = self.findChild(QPushButton, "stopButton")
@@ -67,13 +68,20 @@ class HomeScreen(QWidget):
         # Connect the temperatures_updated signal to the update_thermal_camera_widget slot
         self.main_window.printer_status.temperatures_updated.connect(self.update_thermal_camera_widget)
         self.main_window.printer_status.rgb_frame_updated.connect(self.update_rgb_camera_widget)
+        self.main_window.printer_status.maxtemp_updated.connect(self.update_max_temp_label)  # Connect the maxtemp_updated signal
+
+        # Initialize the plot for max temperature
+        self.max_temp_plot = pg.PlotWidget()
+        self.chamberTempGraphWidget.setLayout(QVBoxLayout())  # Set a layout for chamberTempGraphWidget
+        self.chamberTempGraphWidget.layout().addWidget(self.max_temp_plot)
+        self.max_temp_curve = self.max_temp_plot.plot(pen='r')
+        self.max_temp_data = []
 
     @pyqtSlot(np.ndarray, dict)
     def update_thermal_camera_widget(self, frame, temps):
         if frame is not None:
             image = QImage(frame.data, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_BGR888)
             self.thermalCameraWidget.setImage(image)
-
 
     @pyqtSlot(np.ndarray)
     def update_rgb_camera_widget(self, frame):
@@ -83,4 +91,16 @@ class HomeScreen(QWidget):
             image = QImage(frame.data, width, height, bytes_per_line, QImage.Format_RGB888).rgbSwapped()
             self.rgbCameraWidget.setImage(image)
 
+    @pyqtSlot(float)
+    def update_max_temp_label(self, max_temp):
+        """Slot to update the text of maxTempLabel with the maximum temperature."""
+        self.maxTempLabel.setText(f"Max Temp: {max_temp:.2f}°C")
+        self.update_max_temp_plot(max_temp)
 
+    def update_max_temp_plot(self, max_temp):
+        """Update the max temperature plot with the new value."""
+        self.max_temp_data.append(max_temp)
+        # Keep only the last 60 entries (assuming 1 entry per second for the last minute)
+        if len(self.max_temp_data) > 60:
+            self.max_temp_data.pop(0)
+        self.max_temp_curve.setData(self.max_temp_data)

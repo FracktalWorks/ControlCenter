@@ -11,3 +11,4 @@ pyserial
 cmapy
 simple_pid
 pyyaml
+pyqtgraph

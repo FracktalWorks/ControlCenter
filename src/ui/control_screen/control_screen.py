@@ -2,12 +2,12 @@
 
 from PyQt5 import uic
 from PyQt5.QtWidgets import (QWidget, QPushButton, QSpinBox, QProgressBar, QSizePolicy, QVBoxLayout, QMessageBox, QLabel)
-from PyQt5.QtCore import pyqtSlot, pyqtSignal
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QTimer
 from PyQt5.QtGui import QImage
 import numpy as np
-import time
 from ui.custom_widgets import ImageWidget
 from utils.helpers import run_async
+import time
 
 class ControlScreen(QWidget):
     progress_update_signal = pyqtSignal(int)
@@ -118,10 +118,14 @@ class ControlScreen(QWidget):
         self.doseRecoatLayerButton.clicked.connect(lambda: self.dose_recoat_layer())
         self.preparePowderLoadingButton.clicked.connect(lambda: self.prepare_powder_loading())
         self.stopProcessButton.clicked.connect(self.stop_process)
-        self.homeRecoaterButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("homeRecoater"))
-        self.recoatButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("recoat"))
-        self.moveToStartingPositionButton.clicked.connect(lambda: self.move_to_starting_sequence())  
-        self.prepareForPartRemovalButton.clicked.connect(lambda: self.prepare_for_part_removal_sequence()) 
+        self.homeRecoaterButton.clicked.connect(lambda: self.run_async_send_gcode("homeRecoater"))
+        self.recoatButton.clicked.connect(lambda: self.run_async_send_gcode("recoat"))
+        self.moveToStartingPositionButton.clicked.connect(lambda: self.move_to_starting_sequence())
+        self.prepareForPartRemovalButton.clicked.connect(lambda: self.prepare_for_part_removal_sequence())
+
+    @run_async
+    def run_async_send_gcode(self, gcode):
+        self.main_window.moonraker_api.send_gcode(gcode)
 
     def setup_custom_widgets(self):
         thermal_camera_container = self.findChild(QWidget, "thermalCameraWidget")
@@ -209,10 +213,10 @@ class ControlScreen(QWidget):
             while True:
                 setpoint = self.main_window.printer_status.chamberTemperatureSetpoint
                 temps = self.main_window.printer_status.chamberTemperatures
-                if all(temps.get(pos, 0) >= setpoint for pos in ['bottom-center', 'middle-right', 'top-center', 'middle-left']):
+                if all(temps.get(pos, 0) >= setpoint for pos in ['middle-center']):
                     time.sleep(5)
                     temps = self.main_window.printer_status.chamberTemperatures
-                    if all(temps.get(pos, 0) >= setpoint for pos in ['bottom-center', 'middle-right', 'top-center', 'middle-left']):
+                    if all(temps.get(pos, 0) >= setpoint for pos in ['middle-center']):
                         break
             sequence_replaced = replace_placeholders(sequence, self.main_window.printer_status)
             for line in sequence_replaced.split('\n'):
@@ -328,7 +332,8 @@ def replace_placeholders(sequence: str, printer_status) -> str:
         "{p}": printer_status.p,
         "{i}": printer_status.i,
         "{d}": printer_status.d,
-        "{powderLoadingHeight}": printer_status.initialLevellingHeight + 2 * printer_status.heatedBufferHeight + printer_status.partHeight
+        "{powderLoadingHeight}": printer_status.initialLevellingHeight + 2 * printer_status.heatedBufferHeight + printer_status.partHeight,
+        "{dosingHeight}": printer_status.dosingHeight  # Add dosingHeight
     }
     for placeholder, value in placeholders.items():
         sequence = sequence.replace(placeholder, str(value))

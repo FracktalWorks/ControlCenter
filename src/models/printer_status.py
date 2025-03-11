@@ -32,6 +32,7 @@ class PrinterStatus(QObject):
         self.heatedBufferRecoatingSequence = ""
         self.printingRecoatingSequence = ""
         self.partHeight = 0.0
+        self.dosingHeight = 0.0  # Add dosingHeight
         self.maxTemp = 0.0
 
     def updateTemperatures(self, frame: Any, chamberTemperatures: Dict[str, float]):
@@ -95,6 +96,9 @@ class PrinterStatus(QObject):
 
     def setPartHeight(self, value: float):
         self.partHeight = value
+
+    def setDosingHeight(self, value: float):  # Add setDosingHeight method
+        self.dosingHeight = value
 
     def updateMaxTemp(self, value: float):
         self.maxTemp = value
