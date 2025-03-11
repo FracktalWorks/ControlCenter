@@ -10,20 +10,18 @@ class ChamberTemperatureController(QThread):
 
         self.printer_status.temperatures_updated.connect(self.control_heater)
 
-        # Timer to run the control_heater method at 30 fps (33 ms interval)
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.control_heater)
-        self.timer.start(33)  # 30 fps
-
         # Initialize PID controllers for each side
         self.pid_bottom = PID(10, 0.01, 0.4, setpoint=0)
         self.pid_right = PID(10, 0.01, 0.4, setpoint=0)
         self.pid_top = PID(10, 0.01, 0.4, setpoint=0)
         self.pid_left = PID(10, 0.01, 0.4, setpoint=0)
-        self.pid_middle_center = PID(10, 0.01, 0.4, setpoint=0)  # New PID for middle-center
+        self.pid_middle_center = PID(5, 0.01, 0.4, setpoint=0)  # New PID for middle-center
 
     def run(self):
         """Start the thread and the timer."""
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.control_heater)
+        self.timer.start(10)  # 30 fps
         self.exec_()
 
     @pyqtSlot()

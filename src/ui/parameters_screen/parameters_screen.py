@@ -91,6 +91,26 @@ class ParametersScreen(QWidget):
                 self.printer_status.setInitialLevellingRecoatingSequence(parameters["initialLevellingRecoatingSequence"])
                 self.printer_status.setHeatedBufferRecoatingSequence(parameters["heatedBufferRecoatingSequence"])
                 self.printer_status.setPrintingRecoatingSequence(parameters["printingRecoatingSequence"])
+
+                # Set values to QLineEdit and QPlainTextEdit widgets
+                self.layerHeightLineEdit.setText(parameters["layerHeight"])
+                self.initialLevellingHeightLineEdit.setText(parameters["initialLevellingHeight"])
+                self.heatedBufferHeightLineEdit.setText(parameters["heatedBufferHeight"])
+                self.powderLoadingExtraHeightGapLineEdit.setText(parameters["powderLoadingExtraHeightGap"])
+                self.bedTemperatureLineEdit.setText(parameters["bedTemperature"])
+                self.volumeTemberatureLineEdit.setText(parameters["volumeTemperature"])
+                self.chamberTemperatureLineEdit.setText(parameters["chamberTemperature"])
+                self.pLineEdit.setText(parameters["p"])
+                self.iLineEdit.setText(parameters["i"])
+                self.dLineEdit.setText(parameters["d"])
+                self.partHeightLineEdit.setText(parameters["partHeight"])
+                self.dosingHeightLineEdit.setText(parameters["dosingHeight"])  # Add dosingHeight
+                self.powderLoadingSequenceText.setPlainText(parameters["powderLoadingSequence"])
+                self.moveToStartingSequenceText.setPlainText(parameters["moveToStartingSequence"])
+                self.prepareForPartRemovalSequenceText.setPlainText(parameters["prepareForPartRemovalSequence"])
+                self.initialLevellingRecoatingSequenceText.setPlainText(parameters["initialLevellingRecoatingSequence"])
+                self.heatedBufferRecoatingSequenceText.setPlainText(parameters["heatedBufferRecoatingSequence"])
+                self.printingRecoatingSequenceText.setPlainText(parameters["printingRecoatingSequence"])
         except FileNotFoundError:
             print("parameters.yaml file not found. Using initial values.")
 

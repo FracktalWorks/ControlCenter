@@ -17,10 +17,10 @@ class LoadingScreen(QWidget):
 
 
         # Set up the loading GIF
-        self.loadingGif = self.findChild(QLabel, 'loadingGif')
-        self.movie = QMovie(":/Misc/img/loading_animation.gif")
-        self.loadingGif.setMovie(self.movie)
-        self.movie.start()
+        # self.loadingGif = self.findChild(QLabel, 'loadingGif')
+        # self.movie = QMovie(":/Misc/img/loading_animation.gif")
+        # self.loadingGif.setMovie(self.movie)
+        # self.movie.start()
 
         # Set up the timer to switch to the home screen after 20 seconds
         self.timer = QTimer(self)
@@ -28,6 +28,6 @@ class LoadingScreen(QWidget):
         self.timer.start(1000)  # 20000 milliseconds = 20 seconds
 
     def stop_movie_and_switch(self):
-        self.movie.stop()
+        # self.movie.stop()
         self.timer.stop()
         self.main_window.switch_screen(self.main_window.tab_screen)

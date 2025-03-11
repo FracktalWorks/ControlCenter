@@ -2,7 +2,7 @@ bedTemperature: '120'
 chamberTemperature: '160'
 d: '0.5'
 dosingHeight: '0.15'
-heatedBufferHeight: '0.4'
+heatedBufferHeight: '0.2'
 heatedBufferRecoatingSequence: 'homeRecoater
 
   G91
@@ -17,9 +17,9 @@ heatedBufferRecoatingSequence: 'homeRecoater
 
   M400
 
-  '
+  homeRecoater'
 i: '0.01'
-initialLevellingHeight: '2'
+initialLevellingHeight: '0.2'
 initialLevellingRecoatingSequence: 'homeRecoater
 
   G91
@@ -34,7 +34,7 @@ initialLevellingRecoatingSequence: 'homeRecoater
 
   M400
 
-  '
+  homeRecoater'
 layerHeight: '0.1'
 moveToStartingSequence: 'G28 Z Y
 
@@ -42,9 +42,7 @@ moveToStartingSequence: 'G28 Z Y
 
   G0 Z0 Y{powderLoadingHeight}
 
-  M400
-
-  homeRecoater'
+  M400'
 p: '10'
 partHeight: '10'
 powderLoadingExtraHeightGap: '20'
@@ -59,8 +57,6 @@ powderLoadingSequence: 'G28 Z Y
   G0 Y{powderLoadingExtraHeightGap} F600
 
   G90
-
-  homeRecoater
 
   M400
 
@@ -78,8 +74,6 @@ prepareForPartRemovalSequence: 'G91
   G0 Z{powderLoadingExtraHeightGap} Y{powderLoadingExtraHeightGap}
 
   G90
-
-  homeRecoater
 
   M400
 
@@ -104,5 +98,5 @@ printingRecoatingSequence: 'homeRecoater
 
   M400
 
-  '
+  homeRecoater'
 volumeTemperature: '120'

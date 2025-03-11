@@ -3205,68 +3205,66 @@ QPushButton:focus {
            <property name="frameShadow">
             <enum>QFrame::Raised</enum>
            </property>
-           <layout class="QHBoxLayout" name="horizontalLayout_8">
-            <property name="leftMargin">
-             <number>0</number>
+           <widget class="QLabel" name="fileInfoLabel_12">
+            <property name="geometry">
+             <rect>
+              <x>1</x>
+              <y>10</y>
+              <width>131</width>
+              <height>19</height>
+             </rect>
             </property>
-            <property name="topMargin">
-             <number>0</number>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>20</height>
+             </size>
             </property>
-            <property name="rightMargin">
-             <number>0</number>
+            <property name="font">
+             <font>
+              <family>Gotham</family>
+              <pointsize>12</pointsize>
+              <weight>50</weight>
+              <bold>false</bold>
+             </font>
             </property>
-            <property name="bottomMargin">
-             <number>0</number>
+            <property name="styleSheet">
+             <string notr="true">color:  grey;</string>
             </property>
-            <item>
-             <widget class="QLabel" name="fileInfoLabel_12">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <family>Gotham</family>
-                <pointsize>12</pointsize>
-                <weight>50</weight>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">color:  grey;</string>
-              </property>
-              <property name="text">
-               <string>Thermal Camera     Max Temp:</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="maxTempLabel">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <family>Gotham</family>
-                <pointsize>12</pointsize>
-                <weight>50</weight>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">color:  grey;</string>
-              </property>
-              <property name="text">
-               <string>maxTemp</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
+            <property name="text">
+             <string>Thermal Camera</string>
+            </property>
+           </widget>
+           <widget class="QLabel" name="maxTempLabel">
+            <property name="geometry">
+             <rect>
+              <x>140</x>
+              <y>10</y>
+              <width>211</width>
+              <height>19</height>
+             </rect>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <family>Gotham</family>
+              <pointsize>12</pointsize>
+              <weight>50</weight>
+              <bold>false</bold>
+             </font>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">color:  grey;</string>
+            </property>
+            <property name="text">
+             <string>maxTemp</string>
+            </property>
+           </widget>
           </widget>
          </item>
          <item>

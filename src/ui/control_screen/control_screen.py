@@ -214,7 +214,6 @@ class ControlScreen(QWidget):
                 setpoint = self.main_window.printer_status.chamberTemperatureSetpoint
                 temps = self.main_window.printer_status.chamberTemperatures
                 if all(temps.get(pos, 0) >= setpoint for pos in ['middle-center']):
-                    time.sleep(5)
                     temps = self.main_window.printer_status.chamberTemperatures
                     if all(temps.get(pos, 0) >= setpoint for pos in ['middle-center']):
                         break
@@ -232,11 +231,13 @@ class ControlScreen(QWidget):
     @run_async
     def dose_recoat_layer(self):
         """Perform a single recoat using the layer height from the parameters screen."""
+        self.set_motion_control_buttons_enabled(False)  # Disable motion control buttons
         sequence = self.main_window.printer_status.printingRecoatingSequence
         sequence_replaced = replace_placeholders(sequence, self.main_window.printer_status)
         for line in sequence_replaced.split('\n'):
             self.main_window.moonraker_api.send_gcode(line)
         self.progress_update_signal.emit(100)
+        self.set_motion_control_buttons_enabled(True)  # Re-enable motion control buttons
 
     @run_async
     def prepare_powder_loading(self):
@@ -282,6 +283,7 @@ class ControlScreen(QWidget):
     def update_setpoint(self, value):
         """Update the chamber temperature setpoint in the PrinterStatus model."""
         self.main_window.printer_status.chamberTemperatureSetpoint = value
+        print(f"Chamber temperature setpoint updated to {value}")
 
     @pyqtSlot(np.ndarray, dict)
     def update_thermal_camera_widget(self, frame, temps):

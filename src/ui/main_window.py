@@ -4,10 +4,10 @@ from ui.tab_screen.tab_screen import TabScreen
 from config import Config
 from models.printer_status import PrinterStatus
 from PyQt5.QtCore import QTimer
+from temperatureController.chamberTemperatureController import ChamberTemperatureController  # Ensure this import is present
 
 if not Config.DEVELOPMENT_MODE:
     from temperatureController.heaterBoard import HeaterBoard
-    from temperatureController.chamberTemperatureController import ChamberTemperatureController
     from thermalCamera.thermal_camera import ThermalCamera
     from rgbCamera.rgbCamera import RGBCamera
     from moonrakerClient.moonrakerClient import MoonrakerAPI
@@ -31,7 +31,7 @@ class MainWindow(QMainWindow):
         self.layout.addWidget(self.stacked_widget)
         
         if not Config.DEVELOPMENT_MODE:
-            self.thermal_camera = ThermalCamera(roi=(0, 9, 61, 70))
+            self.thermal_camera = ThermalCamera(roi=(5, 14, 56, 65))
             self.thermal_camera.thermal_camera_frame_ready.connect(self.update_frame)
             self.thermal_camera.max_temp_signal.connect(self.update_max_temp)  # Connect max_temp_signal to update_max_temp
             self.thermal_camera.start()

@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 from PyQt5.QtCore import QObject, pyqtSignal
 import numpy as np
+import time  # Add this import
 
 class PrinterStatus(QObject):
     temperatures_updated = pyqtSignal(np.ndarray, dict)
@@ -34,12 +35,14 @@ class PrinterStatus(QObject):
         self.partHeight = 0.0
         self.dosingHeight = 0.0  # Add dosingHeight
         self.maxTemp = 0.0
+        self.last_update_time = time.time()  # Add this attribute
 
     def updateTemperatures(self, frame: Any, chamberTemperatures: Dict[str, float]):
         """Update the model with a new frame and temperature values."""
         self.frame = frame
         self.chamberTemperatures = chamberTemperatures.copy()
         self.temperatures_updated.emit(frame, chamberTemperatures)
+        self.last_update_time = time.time()  # Update the last update time
 
     def updateRGBFrame(self, frame: Any):
         """Update the model with a new RGB frame."""

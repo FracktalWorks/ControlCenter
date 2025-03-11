@@ -14,11 +14,14 @@ logger = logging.getLogger(__name__)
 
 def cksum(data, sum=0):
     """Calculate simple sum over data, allowing for non-zero init"""
-    sum = sum
-    for byte in data:
-        sum += byte
-    #
-    return sum
+    try:
+        sum = sum
+        for byte in data:
+            sum += byte
+        return sum
+    except Exception as e:
+        logger.error(f"Error in cksum: {e}")
+        return sum
 
 
 class I2C_Interface:
@@ -28,17 +31,25 @@ class I2C_Interface:
         self.chip_addr = chip_addr
 
     def open(self):
-        self.device.open()
+        try:
+            self.device.open()
+        except Exception as e:
+            logger.error(f"Error opening I2C device: {e}")
 
     def regread(self, register_addr, regname=""):
-        byte = self.device.read_byte_data(self.chip_addr, register_addr)
-        return byte
-
+        try:
+            byte = self.device.read_byte_data(self.chip_addr, register_addr)
+            return byte
+        except Exception as e:
+            logger.error(f"Error reading I2C register {regname}: {e}")
+            return None
 
     def regwrite(self, register_addr, register_value, regname=""):
-        byte = register_value  # no need to .encode()
-        self.device.write_byte_data(self.chip_addr, register_addr, byte)
-        return None
+        try:
+            byte = register_value  # no need to .encode()
+            self.device.write_byte_data(self.chip_addr, register_addr, byte)
+        except Exception as e:
+            logger.error(f"Error writing I2C register {regname}: {e}")
 
     def reset_input_buffer(self):
         try:
@@ -46,6 +57,8 @@ class I2C_Interface:
         except AttributeError:
             # device may not support that
             pass
+        except Exception as e:
+            logger.error(f"Error resetting I2C input buffer: {e}")
 
     def reset_output_buffer(self):
         try:
@@ -53,9 +66,14 @@ class I2C_Interface:
         except AttributeError:
             # device may not support that
             pass
+        except Exception as e:
+            logger.error(f"Error resetting I2C output buffer: {e}")
 
     def close(self):
-        self.device.close()
+        try:
+            self.device.close()
+        except Exception as e:
+            logger.error(f"Error closing I2C device: {e}")
 
 
 class SPI_Interface:
@@ -67,46 +85,53 @@ class SPI_Interface:
         self.xfer_size = xfer_size
 
     def open(self):
-        self.device.open()
+        try:
+            self.device.open()
+        except Exception as e:
+            logger.error(f"Error opening SPI device: {e}")
 
     def read(self, length_in_words):
-        # MI48 operates as a full duplex device and requires
-        # a dummy write byte for every byte read back
-        length_in_bytes = 2 * length_in_words
-        dummy_bytes = [0,] * self.xfer_size
-        xfer_size_words = int(self.xfer_size / 2)
-        length_in_words = int(length_in_bytes / 2)
-        # create a couple of buffers for storage of intermediate
-        # transfer and for the return buffer
-        data = np.zeros(length_in_words, dtype=np.uint16)
-        # make up a counter of how many words we have received
-        n_words = 0
-        # loop until we receive the required number of words
-        while n_words < length_in_words:
-            i0 = n_words
-            i1 = n_words + xfer_size_words
-            # Keep the CS asserted throughout the transfer
-            # This should be a property of device.xfer.
-            # If device is an instance of spidev on rpi, this seems to be
-            # true for both xfer and xfer2 routines.
-            # For the sake of generality, keep this as xfer
-            response = self.device.xfer(dummy_bytes)
-            # interpret the response as array of uint8
-            buffer = np.array(response).astype('u1')
-            n_words += int(len(buffer) / 2.)
-            # The MI48 assumes 16 bit word transfer with MSbit first.
-            # But we are reading with 8-bit word transfers on the RPI,
-            # and storing the MSB to lower location than the LSB.
-            # Hence we end up with big-endian data of unsigned 2-byte ints.
-            _data = np.ndarray(shape=(int(len(buffer) / 2),),
-                               buffer=buffer, dtype='>u2')
-            try:
-                data[i0: i1] = _data
-            except IndexError:
-                # depending on xfer_size, the last transfer may be shorter
-                # print(i0, 2*i0, length_in_words, len(_data), len(buffer))
-                data[i0:] = _data[:length_in_words - i0]
-        return data
+        try:
+            # MI48 operates as a full duplex device and requires
+            # a dummy write byte for every byte read back
+            length_in_bytes = 2 * length_in_words
+            dummy_bytes = [0,] * self.xfer_size
+            xfer_size_words = int(self.xfer_size / 2)
+            length_in_words = int(length_in_bytes / 2)
+            # create a couple of buffers for storage of intermediate
+            # transfer and for the return buffer
+            data = np.zeros(length_in_words, dtype=np.uint16)
+            # make up a counter of how many words we have received
+            n_words = 0
+            # loop until we receive the required number of words
+            while n_words < length_in_words:
+                i0 = n_words
+                i1 = n_words + xfer_size_words
+                # Keep the CS asserted throughout the transfer
+                # This should be a property of device.xfer.
+                # If device is an instance of spidev on rpi, this seems to be
+                # true for both xfer and xfer2 routines.
+                # For the sake of generality, keep this as xfer
+                response = self.device.xfer(dummy_bytes)
+                # interpret the response as array of uint8
+                buffer = np.array(response).astype('u1')
+                n_words += int(len(buffer) / 2.)
+                # The MI48 assumes 16 bit word transfer with MSbit first.
+                # But we are reading with 8-bit word transfers on the RPI,
+                # and storing the MSB to lower location than the LSB.
+                # Hence we end up with big-endian data of unsigned 2-byte ints.
+                _data = np.ndarray(shape=(int(len(buffer) / 2),),
+                                buffer=buffer, dtype='>u2')
+                try:
+                    data[i0: i1] = _data
+                except IndexError:
+                    # depending on xfer_size, the last transfer may be shorter
+                    # print(i0, 2*i0, length_in_words, len(_data), len(buffer))
+                    data[i0:] = _data[:length_in_words - i0]
+            return data
+        except Exception as e:
+            logger.error(f"Error reading SPI data: {e}")
+            return None
 
     def reset_input_buffer(self):
         try:
@@ -114,6 +139,8 @@ class SPI_Interface:
         except AttributeError:
             # device may not support that
             pass
+        except Exception as e:
+            logger.error(f"Error resetting SPI input buffer: {e}")
 
     def reset_output_buffer(self):
         try:
@@ -121,9 +148,14 @@ class SPI_Interface:
         except AttributeError:
             # device may not support that
             pass
+        except Exception as e:
+            logger.error(f"Error resetting SPI output buffer: {e}")
 
     def close(self):
-        self.device.close()
+        try:
+            self.device.close()
+        except Exception as e:
+            logger.error(f"Error closing SPI device: {e}")
 
 
 # --------------------------
@@ -154,89 +186,121 @@ class USB_Interface:
         self.log = logger
 
     def open(self):
-        self.port.open()
-        self.topen = time.time()
+        try:
+            self.port.open()
+            self.topen = time.time()
+        except Exception as e:
+            logger.error(f"Error opening USB port: {e}")
 
     def close(self):
-        self.port.close()
+        try:
+            self.port.close()
+        except Exception as e:
+            logger.error(f"Error closing USB port: {e}")
 
     def reset_input_buffer(self):
-        self.port.reset_input_buffer()
+        try:
+            self.port.reset_input_buffer()
+        except Exception as e:
+            logger.error(f"Error resetting USB input buffer: {e}")
 
     def reset_output_buffer(self):
-        self.port.reset_output_buffer()
+        try:
+            self.port.reset_output_buffer()
+        except Exception as e:
+            logger.error(f"Error resetting USB output buffer: {e}")
 
     def regread(self, reg, regname=""):
         """Read a control/status register via USB protocol"""
-        result = None
-        while result is None:
-            cmd = 'RREG{:02X}XXXXXX'.format(reg)
-            cmd = '   #{:04X}{}'.format(len(cmd), cmd)
-            cmd_name = 'GET_{}'.format(regname)
-            result = usb_command(self.port, cmd, cmd_name)
-            if result is None: return
-            if not isinstance(result, int):
-                # a non int would be a GFRA coming back before the RREG
-                result = None
-        return result
+        try:
+            result = None
+            while result is None:
+                cmd = 'RREG{:02X}XXXXXX'.format(reg)
+                cmd = '   #{:04X}{}'.format(len(cmd), cmd)
+                cmd_name = 'GET_{}'.format(regname)
+                result = usb_command(self.port, cmd, cmd_name)
+                if result is None: return
+                if not isinstance(result, int):
+                    result = None
+            return result
+        except Exception as e:
+            logger.error(f"Error reading USB register {regname}: {e}")
+            return None
 
     def regwrite(self, reg, value, regname=""):
         """Write to a control register via USB protocol"""
-        cmd = 'WREG{:02X}{:02X}XXXX'.format(reg, value)
-        cmd = '   #{:04X}{}'.format(len(cmd), cmd)
-        cmd_name = 'SET_{}'.format(regname)
-        usb_command(self.port, cmd, cmd_name)
-        return None
+        try:
+            cmd = 'WREG{:02X}{:02X}XXXX'.format(reg, value)
+            cmd = '   #{:04X}{}'.format(len(cmd), cmd)
+            cmd_name = 'SET_{}'.format(regname)
+            usb_command(self.port, cmd, cmd_name)
+        except Exception as e:
+            logger.error(f"Error writing USB register {regname}: {e}")
 
     def read(self, size_in_words):
         """Read a GFRA acknowledge, remove USB header, and return data frame.
 
         The returned data frame is a 1-D numpy array of unsigned int16.
         """
-        cmd, data = usb_acknowledge(self.port)
-        if cmd == 'GFRA':
-            # data is a sequence (1-d array) of 16-bit unsigned ints
-            # here we drop the USB header 
-            return data[-size_in_words:]
-        else:
-            self.log.warning('read returned {} acknowledge.'.format(cmd))
+        try:
+            cmd, data = usb_acknowledge(self.port)
+            if cmd == 'GFRA':
+                # data is a sequence (1-d array) of 16-bit unsigned ints
+                # here we drop the USB header 
+                return data[-size_in_words:]
+            else:
+                self.log.warning('read returned {} acknowledge.'.format(cmd))
+                return None
+        except Exception as e:
+            logger.error(f"Error reading USB data: {e}")
             return None
 
 
 def usb_command(port, cmd: str, cmd_name='', verbose=True):
     """send command to MI48 via USB and return its acknowledge"""
-    _cmd = ''
-    while _cmd != cmd[8:12]:
-        # host command
-        port.write(cmd.encode())
-        # device ack
-        _cmd, data = usb_acknowledge(port)
-        if _cmd != cmd[8:12]:
-            if verbose:
-                logger.debug('Expected ACK: {}, rcvd: {}'.
-                             format(cmd[8:12], _cmd))
-                logger.debug('Resetting input buffer')
-            port.reset_input_buffer()
-    if _cmd == 'RREG':
-        assert isinstance(data, int)
-    # report
-    if verbose: logger.debug('{}'.format(fmt_usb_cmd(cmd, data)))
-    return data
+    try:
+        _cmd = ''
+        retries = 3  # Number of retries for command
+        while _cmd != cmd[8:12] and retries > 0:
+            try:
+                port.write(cmd.encode())
+            except serial.SerialTimeoutException:
+                logger.error("Write timeout occurred")
+                return None
+            _cmd, data = usb_acknowledge(port)
+            if _cmd != cmd[8:12]:
+                if verbose:
+                    logger.debug('Expected ACK: {}, rcvd: {}'.
+                                 format(cmd[8:12], _cmd))
+                    logger.debug('Resetting input buffer')
+                port.reset_input_buffer()
+                retries -= 1
+        if _cmd == 'RREG':
+            assert isinstance(data, int)
+        if verbose: logger.debug('{}'.format(fmt_usb_cmd(cmd, data)))
+        return data
+    except Exception as e:
+        logger.error(f"Error in usb_command: {e}")
+        return None
 
 def usb_acknowledge(port):
     """Receive the EVK acknowledge and parse it"""
-    ack = None
-    # this loop will make the program hang if ser.read()
-    # has no timeout configured!
-    while ack is None:
-        # if *.decode() yields UnicodeDecodeError
-        # drop the ACK and wait for the next one
-        ack = usb_get_ack(port)
+    try:
+        ack = None
+        retries = 3  # Number of retries for acknowledge
+        while ack is None and retries > 0:
+            ack = usb_get_ack(port)
+            if ack is None:
+                port.reset_input_buffer()
+                retries -= 1
         if ack is None:
-            #logger.warning('None ACK received. Resetting input buffer.')
-            port.reset_input_buffer()
-    parsed = usb_parse_ack(*ack)
-    return parsed
+            logger.error("Failed to receive valid acknowledge after retries")
+            return None
+        parsed = usb_parse_ack(*ack)
+        return parsed
+    except Exception as e:
+        logger.error(f"Error in usb_acknowledge: {e}")
+        return None
 
 def usb_parse_ack(cmd:str, data:bytes):
     """
@@ -249,20 +313,24 @@ def usb_parse_ack(cmd:str, data:bytes):
     * 'WREG' -- a None value
     * 'SERR' -- decoded data field
     """
-    cmd = cmd.decode()
-    if cmd == 'WREG':
-        # An acknowledge to a register-write contains no data
-        return cmd, None
-    if cmd == 'RREG':
-        # read command returns only a register value
-        return cmd, int(data.decode(), base=16)
-    if cmd == 'SERR':
-        # I have no info on what SERR contains... undocumented
-        return cmd, data.decode()
-    if cmd == 'GFRA':
-        # Frame acknowledge contains unencoded unsigned 16-bit ints
-        data = np.frombuffer(data, dtype='u2')
-        return cmd, data
+    try:
+        cmd = cmd.decode()
+        if cmd == 'WREG':
+            # An acknowledge to a register-write contains no data
+            return cmd, None
+        if cmd == 'RREG':
+            # read command returns only a register value
+            return cmd, int(data.decode(), base=16)
+        if cmd == 'SERR':
+            # I have no info on what SERR contains... undocumented
+            return cmd, data.decode()
+        if cmd == 'GFRA':
+            # Frame acknowledge contains unencoded unsigned 16-bit ints
+            data = np.frombuffer(data, dtype='u2')
+            return cmd, data
+    except Exception as e:
+        logger.error(f"Error in usb_parse_ack: {e}")
+        return None
 
 def usb_get_ack(port):
     """
@@ -273,101 +341,112 @@ def usb_get_ack(port):
 
     Return bytes.
     """
-    res = ''
-    while res != '   #':
-        res = port.read(4)
-        if res is None:
-            # likely the result of interface.read timeout (e.g. for USB)
+    try:
+        res = ''
+        while res != '   #':
+            res = port.read(4)
+            if res is None:
+                # likely the result of interface.read timeout (e.g. for USB)
+                return None
+            try:
+                res = res.decode()
+            except UnicodeDecodeError:
+                # This will happen if we're draining USB buffer from GFRA ack.
+                # so we ignore till we reach the beginning of the next frame.
+                res = ''
+
+        # Read the length field and start check sum calculation
+        _len = port.read(USB_ACK_LEN)
+        cs = cksum(_len)
+        try:
+            ack_len = int(_len.decode(), base=16)
+        except ValueError:
+            return None
+        data_len = ack_len - USB_ACK_LEN - USB_CMD_LEN
+        # Read the data part of the payload and update the checksum
+        cmd = port.read(USB_CMD_LEN)
+        cs = cksum(cmd, cs)
+        data = port.read(data_len)
+        if data_len > 0:
+            cs = cksum(data, cs)
+        cs = cs & 0xFFFF
+        # Read the check sum field
+        cks = port.read(USB_CKS_LEN)
+        try:
+            cks.decode()
+        except UnicodeDecodeError:
+            logger.error(f'USB check sum decode error: {cks}')
             return None
         try:
-            res = res.decode()
-        except UnicodeDecodeError:
-            # This will happen if we're draining USB buffer from GFRA ack.
-            # so we ignore till we reach the beginning of the next frame.
-            res = ''
-
-    # Read the length field and start check sum calculation
-    _len = port.read(USB_ACK_LEN)
-    cs = cksum(_len)
-    try:
-        ack_len = int(_len.decode(), base=16)
-    except ValueError:
+            cks = int(cks, base=16)
+        except ValueError:
+            # if host too slow, we get invalid literals here
+            logger.error(f'Bad USB check sum literals for {cmd}: {cks}')
+            return None
+        if cs != cks:
+            logger.error(f'Check sum mismatch: calculated {hex(cs)}, received {hex(cks)}')
+            return None
+        return cmd, data
+    except Exception as e:
+        logger.error(f"Error in usb_get_ack: {e}")
         return None
-    data_len = ack_len - USB_ACK_LEN - USB_CMD_LEN
-    # Read the data part of the payload and update the checksum
-    cmd = port.read(USB_CMD_LEN)
-    cs = cksum(cmd, cs)
-    data = port.read(data_len)
-    if data_len > 0:
-        cs = cksum(data, cs)
-    cs = cs & 0xFFFF
-    # Read the check sum field
-    cks = port.read(USB_CKS_LEN)
-    try:
-        cks.decode()
-    except UnicodeDecodeError:
-        print('USB check sum decode error: {}'.format(cks))
-        return None
-    try:
-        cks = int(cks, base=16)
-    except ValueError:
-        # if host too slow, we get invalid literals here
-        logger.error('Bad USB check sum literals for {}: {}'.format(cmd, cks))
-        return None
-    if cs != cks:
-        logger.error('Check sum mismatch: calculated {}, received {}'.
-                    format(hex(cs), hex(cks)))
-        return None
-    return cmd, data
 
 def fmt_usb_cmd(cmd, data):
     """Command is a string already; here we return a more informative one"""
-    s = []
-#    s.append(cmd[:8])     # len
-    s.append(cmd[8:12])    # type
-    s.append(cmd[12:14])   # addr
-    s.append('{:16s}'.format(get_reg_name(int(cmd[12:14], 16))))
+    try:
+        s = []
+    #    s.append(cmd[:8])     # len
+        s.append(cmd[8:12])    # type
+        s.append(cmd[12:14])   # addr
+        s.append('{:16s}'.format(get_reg_name(int(cmd[12:14], 16))))
 
-    if cmd[8:12] == 'WREG':
-        val = int(cmd[14:16], 16)
-        s.append('0x{:02X}'.format(val))
+        if cmd[8:12] == 'WREG':
+            val = int(cmd[14:16], 16)
+            s.append('0x{:02X}'.format(val))
 
-    if cmd[8:12] == 'RREG':
-        assert isinstance(data, int)
-        s.append('0x{:02X}'.format(data))  # value
-#        s.append('(0x{:02X})'.format(data))
+        if cmd[8:12] == 'RREG':
+            assert isinstance(data, int)
+            s.append('0x{:02X}'.format(data))  # value
+    #        s.append('(0x{:02X})'.format(data))
 
-    return ' '+' '.join(s)
+        return ' '+' '.join(s)
+    except Exception as e:
+        logger.error(f"Error in fmt_usb_cmd: {e}")
+        return ''
 
 def get_serial(open_ports=None, comport=None, verbose=True):
     """Open a serial port to which the MI48 is attached.
 
     Raise UnboundLocalError if no serial port is successfully open
     """
-    for p in list(serial.tools.list_ports.comports()):
-        if p.vid == MI_VID and p.pid in MI_PIDs:
-            # check it is the comport we want and skip if not
-            # if we did not specify description/name then get the 
-            # first that we find to match Meridian's devices
-            logger.info(f'Senxor detected: {p.description}')
-            if comport is not None and comport not in p.description:
-                continue
-            try:
-                ser = serial.Serial(p.device)
-            except serial.SerialException:
-                # assume it is open
-                logger.info('Failed opening port:\n{}'.format(p))
-                # do not raise, but check the next port in the list
-                continue
-            # here we already have gotten a serial device; set it up
-            ser.baudrate = 115200
-            ser.rtscts = True
-            ser.dsrdtr = True
-            ser.timeout = 0.5
-            ser.write_timeout = 0.5
-            logger.info('Opened USB port:\n{}\n'.format(pformat(ser)))
-            break
-    # the following return statement will generate UnboundLocalError
-    # if no serial was successfully opened
-    return ser
+    try:
+        for p in list(serial.tools.list_ports.comports()):
+            if p.vid == MI_VID and p.pid in MI_PIDs:
+                # check it is the comport we want and skip if not
+                # if we did not specify description/name then get the 
+                # first that we find to match Meridian's devices
+                logger.info(f'Senxor detected: {p.description}')
+                if comport is not None and comport not in p.description:
+                    continue
+                try:
+                    ser = serial.Serial(p.device)
+                except serial.SerialException:
+                    # assume it is open
+                    logger.info('Failed opening port:\n{}'.format(p))
+                    # do not raise, but check the next port in the list
+                    continue
+                # here we already have gotten a serial device; set it up
+                ser.baudrate = 115200
+                ser.rtscts = True
+                ser.dsrdtr = True
+                ser.timeout = 0.5
+                ser.write_timeout = 0.5
+                logger.info('Opened USB port:\n{}\n'.format(pformat(ser)))
+                break
+        # the following return statement will generate UnboundLocalError
+        # if no serial was successfully opened
+        return ser
+    except Exception as e:
+        logger.error(f"Error in get_serial: {e}")
+        return None
 

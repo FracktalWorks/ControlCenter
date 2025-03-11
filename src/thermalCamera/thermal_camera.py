@@ -49,7 +49,7 @@ class ThermalCamera(QThread):
         self.mi48, self.connected_port, _ = connect_senxor(src=self.com_port) if self.com_port else connect_senxor()
 
         # Set camera parameters
-        self.mi48.set_fps(25)                                                   # Set Frames Per Second (FPS)  15-->25
+        self.mi48.set_fps(10)                                                   # Set Frames Per Second (FPS)  15-->25
         self.mi48.disable_filter(f1=True, f2=True, f3=True)                     # Disable all filters
         self.mi48.set_filter_1(85)                                              # Set internal filter sett 1 to 85
         self.mi48.enable_filter(f1=True, f2=False, f3=False, f3_ks_5=False)
