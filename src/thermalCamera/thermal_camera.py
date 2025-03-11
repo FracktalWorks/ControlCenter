@@ -69,101 +69,111 @@ class ThermalCamera(QThread):
 
     def process_frame(self):
         """Processes a frame: crops ROI, calculates temperatures, overlays grid and text."""
-        data, header = self.mi48.read()
-        if data is None:
-            return
+        try:
+            data, header = self.mi48.read()
+            if data is None:
+                return
 
-        # Calculate min/max temperatures
-        min_temp = self.dminav(data.min())
-        max_temp = self.dmaxav(data.max())
+            # Calculate min/max temperatures
+            min_temp = self.dminav(data.min())
+            max_temp = self.dmaxav(data.max())
 
-        # Convert raw data to an image frame
-        frame = data_to_frame(data, (80, 62), hflip=True)
+            # Convert raw data to an image frame
+            frame = data_to_frame(data, (80, 62), hflip=True)
 
-        # Replace dead pixels
-        frame = replace_dead_pixels(frame)
+            # Replace dead pixels
+            frame = replace_dead_pixels(frame)
 
-        # Clip the frame to the min/max temperatures
-        frame = np.clip(frame, min_temp, max_temp)
+            # Clip the frame to the min/max temperatures
+            frame = np.clip(frame, min_temp, max_temp)
 
-        # Vertical flip and rotate
-        #frame = cv.flip(frame, 1)
-        frame = cv.rotate(frame, cv.ROTATE_90_CLOCKWISE)
+            # Vertical flip and rotate
+            #frame = cv.flip(frame, 1)
+            frame = cv.rotate(frame, cv.ROTATE_90_CLOCKWISE)
 
-        # Apply filters
-        filt_frame = cv_filter(remap(frame), {'blur_ks': 3, 'd': 5, 'sigmaColor': 27, 'sigmaSpace': 27},  #Remaps temperature values for visualization
-                               use_median=True, use_bilat=True, use_nlm=False)                            #Applies smoothing filters to reduce noise.
+            # Apply filters
+            filt_frame = cv_filter(remap(frame), {'blur_ks': 3, 'd': 5, 'sigmaColor': 27, 'sigmaSpace': 27},  #Remaps temperature values for visualization
+                                use_median=True, use_bilat=True, use_nlm=False)                            #Applies smoothing filters to reduce noise.
 
-        # Crop to ROI
-        x1, y1, x2, y2 = self.roi
-        roi_frame = filt_frame[y1:y2, x1:x2]
+            # Crop to ROI
+            x1, y1, x2, y2 = self.roi
+            roi_frame = filt_frame[y1:y2, x1:x2]
 
-        # Apply thermal color mapping
-        roi_frame = cv.applyColorMap(roi_frame, cv.COLORMAP_INFERNO)
+            # Apply thermal color mapping
+            roi_frame = cv.applyColorMap(roi_frame, cv.COLORMAP_INFERNO)
 
-        # Resize the frame to make it larger
-        roi_frame = cv.resize(roi_frame, (600, 600), interpolation=cv.INTER_LINEAR)
+            # Resize the frame to make it larger
+            roi_frame = cv.resize(roi_frame, (600, 600), interpolation=cv.INTER_LINEAR)
 
-        # Draw the 3×3 grid
-        self.draw_grid(roi_frame)
+            # Draw the 3×3 grid
+            self.draw_grid(roi_frame)
 
-        # Calculate section temperatures
-        temps = self.calculate_temperatures(frame, x1, y1, x2, y2)
+            # Calculate section temperatures
+            temps = self.calculate_temperatures(frame, x1, y1, x2, y2)
 
-        # Overlay text on the image
-        self.overlay_text(roi_frame, temps)
+            # Overlay text on the image
+            self.overlay_text(roi_frame, temps)
 
-        # Draw a white rectangle around the point of maximum temperature
-        max_temp_loc = np.unravel_index(np.argmax(frame, axis=None), frame.shape)
-        max_temp_loc = (max_temp_loc[1] - x1, max_temp_loc[0] - y1)  # Adjust for ROI
-        max_temp_loc = (max_temp_loc[0] * 600 // (x2 - x1), max_temp_loc[1] * 600 // (y2 - y1))  # Scale to resized frame
-        cv.rectangle(roi_frame, (max_temp_loc[0] - 5, max_temp_loc[1] - 5), (max_temp_loc[0] + 5, max_temp_loc[1] + 5), (255, 255, 255), 1)
+            # Draw a white rectangle around the point of maximum temperature
+            max_temp_loc = np.unravel_index(np.argmax(frame, axis=None), frame.shape)
+            max_temp_loc = (max_temp_loc[1] - x1, max_temp_loc[0] - y1)  # Adjust for ROI
+            max_temp_loc = (max_temp_loc[0] * 600 // (x2 - x1), max_temp_loc[1] * 600 // (y2 - y1))  # Scale to resized frame
+            cv.rectangle(roi_frame, (max_temp_loc[0] - 5, max_temp_loc[1] - 5), (max_temp_loc[0] + 5, max_temp_loc[1] + 5), (255, 255, 255), 1)
 
-        # Emit the maximum temperature after dead pixel correction
-        self.max_temp_signal.emit(frame.max())
+            # Emit the maximum temperature after dead pixel correction
+            self.max_temp_signal.emit(frame.max())
 
-        # Store the latest frame for streaming
-        with self.lock:
-            self.latest_frame = roi_frame
+            # Store the latest frame for streaming
+            with self.lock:
+                self.latest_frame = roi_frame
 
-        self.thermal_camera_frame_ready.emit(roi_frame, temps)  # Emit the frame for display
+            self.thermal_camera_frame_ready.emit(roi_frame, temps)  # Emit the frame for display
+        except Exception as e:
+            logging.error(f"Error processing frame: {e}")
 
     def draw_grid(self, frame):
         """Draws a 3×3 grid overlay on the thermal feed."""
-        h, w = frame.shape[:2]     # Get frame dimensions
-        step_w, step_h = w // 3, h // 3    # Divide width and height into 3 sections to get 3x3 grid
+        try:
+            h, w = frame.shape[:2]     # Get frame dimensions
+            step_w, step_h = w // 3, h // 3    # Divide width and height into 3 sections to get 3x3 grid
 
-        # Draw vertical lines
-        for i in range(1, 3):
-            x = i * step_w
-            cv.line(frame, (x, 0), (x, h), (255, 255, 255), 1)
+            # Draw vertical lines
+            for i in range(1, 3):
+                x = i * step_w
+                cv.line(frame, (x, 0), (x, h), (255, 255, 255), 1)
 
-        # Draw horizontal lines
-        for i in range(1, 3):
-            y = i * step_h
-            cv.line(frame, (0, y), (w, y), (255, 255, 255), 1)
+            # Draw horizontal lines
+            for i in range(1, 3):
+                y = i * step_h
+                cv.line(frame, (0, y), (w, y), (255, 255, 255), 1)
+        except Exception as e:
+            logging.error(f"Error drawing grid: {e}")
 
     def calculate_temperatures(self, frame, x1, y1, x2, y2):
         """Calculates the average temperatures for 9 sections in a 3x3 grid."""
-        w, h = x2 - x1, y2 - y1
-        section_w, section_h = w // 3, h // 3   # Divide into 3x3 grid
-        
-        # Define sections
-        sections = {
-            "top-left": frame[y1:y1+section_h, x1:x1+section_w],
-            "top-center": frame[y1:y1+section_h, x1+section_w:x1+2*section_w],
-            "top-right": frame[y1:y1+section_h, x1+2*section_w:x2],
-            "middle-left": frame[y1+section_h:y1+2*section_h, x1:x1+section_w],
-            "middle-center": frame[y1+section_h:y1+2*section_h, x1+section_w:x1+2*section_w],
-            "middle-right": frame[y1+section_h:y1+2*section_h, x1+2*section_w:x2],
-            "bottom-left": frame[y1+2*section_h:y2, x1:x1+section_w],
-            "bottom-center": frame[y1+2*section_h:y2, x1+section_w:x1+2*section_w],
-            "bottom-right": frame[y1+2*section_h:y2, x1+2*section_w:x2]
-        }
+        try:
+            w, h = x2 - x1, y2 - y1
+            section_w, section_h = w // 3, h // 3   # Divide into 3x3 grid
+            
+            # Define sections
+            sections = {
+                "top-left": frame[y1:y1+section_h, x1:x1+section_w],
+                "top-center": frame[y1:y1+section_h, x1+section_w:x1+2*section_w],
+                "top-right": frame[y1:y1+section_h, x1+2*section_w:x2],
+                "middle-left": frame[y1+section_h:y1+2*section_h, x1:x1+section_w],
+                "middle-center": frame[y1+section_h:y1+2*section_h, x1+section_w:x1+2*section_w],
+                "middle-right": frame[y1+section_h:y1+2*section_h, x1+2*section_w:x2],
+                "bottom-left": frame[y1+2*section_h:y2, x1:x1+section_w],
+                "bottom-center": frame[y1+2*section_h:y2, x1+section_w:x1+2*section_w],
+                "bottom-right": frame[y1+2*section_h:y2, x1+2*section_w:x2]
+            }
 
-        # Calculate average temperature for each section
-        self.temps = {name: np.mean(region) for name, region in sections.items()}
-        return self.temps
+            # Calculate average temperature for each section
+            self.temps = {name: np.mean(region) for name, region in sections.items()}
+            return self.temps
+        except Exception as e:
+            logging.error(f"Error calculating temperatures: {e}")
+            return self.temps
     
     def get_avg_temperatures(self):
         """Returns the latest average temperatures for the 9 sections."""
@@ -171,32 +181,35 @@ class ThermalCamera(QThread):
     
     def overlay_text(self, frame, temps):
         """Overlays temperature values on the image."""
-        h, w = frame.shape[:2]
-        section_w, section_h = w // 3, h // 3   # Grid size
+        try:
+            h, w = frame.shape[:2]
+            section_w, section_h = w // 3, h // 3   # Grid size
 
-        # Set positions to display average temperature
-        positions = {
-            "top-left": (section_w // 4, section_h // 2),
-            "top-center": (w // 2 - 50 , section_h // 2),
-            "top-right": (w - section_w // 2 - section_w // 4, section_h // 2),
-            "middle-left": (section_w // 4, h // 2 ),
-            "middle-center": (w // 2 - 50 , h // 2 ),
-            "middle-right": (w - section_w // 2 - 50 , h // 2 ),
-            "bottom-left": (section_w // 4, h - section_h // 2),
-            "bottom-center": (w // 2 - 50, h - section_h // 2),
-            "bottom-right": (w - section_w // 2 - 50 , h - section_h // 2)
-        }
-        
-        # Overlay text for each section
-        for section, temp in temps.items():
-            x, y = positions[section]
-            cv.putText(frame, f"{temp:.2f}C", (x, y), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1)
+            # Set positions to display average temperature
+            positions = {
+                "top-left": (section_w // 4, section_h // 2),
+                "top-center": (w // 2 - 50 , section_h // 2),
+                "top-right": (w - section_w // 2 - section_w // 4, section_h // 2),
+                "middle-left": (section_w // 4, h // 2 ),
+                "middle-center": (w // 2 - 50 , h // 2 ),
+                "middle-right": (w - section_w // 2 - 50 , h // 2 ),
+                "bottom-left": (section_w // 4, h - section_h // 2),
+                "bottom-center": (w // 2 - 50, h - section_h // 2),
+                "bottom-right": (w - section_w // 2 - 50 , h - section_h // 2)
+            }
+            
+            # Overlay text for each section
+            for section, temp in temps.items():
+                x, y = positions[section]
+                cv.putText(frame, f"{temp:.2f}C", (x, y), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1)
 
-        #  # Draw section labels
-        # for i, (section, (x, y)) in enumerate(positions.items(), 1):
-        #     label_x = (i - 1) % 3 * section_w + section_w // 2
-        #     label_y = (i - 1) // 3 * section_h + section_h // 2
-        #     cv.putText(frame, f"{section}", (label_x, label_y), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+            #  # Draw section labels
+            # for i, (section, (x, y)) in enumerate(positions.items(), 1):
+            #     label_x = (i - 1) % 3 * section_w + section_w // 2
+            #     label_y = (i - 1) // 3 * section_h + section_h // 2
+            #     cv.putText(frame, f"{section}", (label_x, label_y), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+        except Exception as e:
+            logging.error(f"Error overlaying text: {e}")
 
     def stop(self):
         """Stops the camera."""
