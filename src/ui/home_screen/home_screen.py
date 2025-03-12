@@ -77,6 +77,25 @@ class HomeScreen(QWidget):
         self.max_temp_curve = self.max_temp_plot.plot(pen='r')
         self.max_temp_data = []
 
+        # Connect buttons to their respective slots
+        self.playPauseButton.clicked.connect(self.toggle_printing)
+        self.stopButton.clicked.connect(self.stop_printing)
+
+    def toggle_printing(self):
+        if self.playPauseButton.isChecked():
+            self.main_window.control_screen.process_running = True
+            self.main_window.control_screen.start_printing_sequence()
+            self.playPauseButton.setText("Pause")
+        else:
+            self.main_window.control_screen.process_running = False
+            self.playPauseButton.setText("Play")
+
+    def stop_printing(self):
+        self.main_window.control_screen.process_running = False
+        self.printProgressBar.setValue(0)
+        self.playPauseButton.setChecked(False)
+        self.playPauseButton.setText("Play")
+
     @pyqtSlot(np.ndarray, dict)
     def update_thermal_camera_widget(self, frame, temps):
         if frame is not None:

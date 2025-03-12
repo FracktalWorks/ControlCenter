@@ -25,12 +25,6 @@
      <layout class="QHBoxLayout" name="horizontalLayout_3">
       <item>
        <widget class="QFrame" name="buildModuleFrame">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>830</height>
-         </size>
-        </property>
         <property name="styleSheet">
          <string notr="true">QFrame#buildModuleFrame {
     border: 2px solid gray;
@@ -1422,12 +1416,6 @@ QPushButton:focus {
           <height>221</height>
          </size>
         </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>830</height>
-         </size>
-        </property>
         <property name="styleSheet">
          <string notr="true">QFrame #temperatureFrame {
     border: 2px solid gray;
@@ -2306,12 +2294,6 @@ QPushButton:focus {
          </property>
          <item>
           <widget class="QFrame" name="recoaterFrame">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>405</height>
-            </size>
-           </property>
            <property name="styleSheet">
             <string notr="true">QFrame #recoaterFrame{
     border: 2px solid gray;
@@ -2766,12 +2748,6 @@ QPushButton:focus {
          </item>
          <item>
           <widget class="QFrame" name="laserscannerFrame">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>410</height>
-            </size>
-           </property>
            <property name="styleSheet">
             <string notr="true">QFrame #laserscannerFrame{
     border: 2px solid gray;
@@ -2785,119 +2761,167 @@ QPushButton:focus {
             <enum>QFrame::Raised</enum>
            </property>
            <layout class="QGridLayout" name="gridLayout">
-            <item row="1" column="0">
-             <widget class="QPushButton" name="laserOnButton">
-              <property name="minimumSize">
-               <size>
-                <width>200</width>
-                <height>50</height>
-               </size>
-              </property>
+            <item row="0" column="0">
+             <widget class="QLabel" name="fileInfoLabel_10">
               <property name="maximumSize">
                <size>
-                <width>350</width>
-                <height>50</height>
+                <width>16777215</width>
+                <height>20</height>
                </size>
               </property>
               <property name="font">
                <font>
                 <family>Gotham</family>
-                <pointsize>12</pointsize>
+                <pointsize>16</pointsize>
+                <weight>50</weight>
+                <bold>false</bold>
                </font>
               </property>
               <property name="styleSheet">
-               <string notr="true">QPushButton {
-    border: 1px solid rgb(87, 87, 87);
-
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-radius:20px;
-}
-
-QPushButton:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QPushButton:flat {
-    border: none; /* no border for a flat push button */
-}
-
-QPushButton:default {
-    border-color: navy; /* make the default button prominent */
-}
-
-QPushButton:focus {
-	outline: none;
-}</string>
+               <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>Laser ON</string>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>20</width>
-                <height>20</height>
-               </size>
+               <string>LASER/SCANNER</string>
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
-             <widget class="QPushButton" name="laserOffButton">
-              <property name="minimumSize">
-               <size>
-                <width>200</width>
-                <height>50</height>
-               </size>
-              </property>
+            <item row="1" column="0" colspan="2">
+             <widget class="QLabel" name="laserStatusLabel">
               <property name="maximumSize">
                <size>
-                <width>350</width>
-                <height>50</height>
+                <width>16777215</width>
+                <height>20</height>
                </size>
               </property>
               <property name="font">
                <font>
                 <family>Gotham</family>
-                <pointsize>12</pointsize>
+                <pointsize>16</pointsize>
+                <weight>50</weight>
+                <bold>false</bold>
                </font>
               </property>
               <property name="styleSheet">
-               <string notr="true">QPushButton {
-    border: 1px solid rgb(87, 87, 87);
-
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-radius:20px;
-}
-
-QPushButton:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QPushButton:flat {
-    border: none; /* no border for a flat push button */
-}
-
-QPushButton:default {
-    border-color: navy; /* make the default button prominent */
-}
-
-QPushButton:focus {
-	outline: none;
-}</string>
+               <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>Laser Off</string>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>20</width>
-                <height>20</height>
-               </size>
+               <string>LaserStatusText</string>
               </property>
              </widget>
             </item>
             <item row="2" column="0">
+             <widget class="QPushButton" name="opticsOnButton">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>350</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Optics ON</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QPushButton" name="opticsOffButton">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>350</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Optics Off</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
              <widget class="QPushButton" name="scannerOnButton">
               <property name="minimumSize">
                <size>
@@ -2953,63 +2977,7 @@ QPushButton:focus {
               </property>
              </widget>
             </item>
-            <item row="3" column="0">
-             <widget class="QPushButton" name="laserMarkLayerButton">
-              <property name="minimumSize">
-               <size>
-                <width>200</width>
-                <height>50</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>350</width>
-                <height>50</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <family>Gotham</family>
-                <pointsize>12</pointsize>
-               </font>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QPushButton {
-    border: 1px solid rgb(87, 87, 87);
-
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-radius:20px;
-}
-
-QPushButton:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QPushButton:flat {
-    border: none; /* no border for a flat push button */
-}
-
-QPushButton:default {
-    border-color: navy; /* make the default button prominent */
-}
-
-QPushButton:focus {
-	outline: none;
-}</string>
-              </property>
-              <property name="text">
-               <string>Laser Mark Layer</string>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>20</width>
-                <height>20</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
+            <item row="3" column="1">
              <widget class="QPushButton" name="scannerOffButton">
               <property name="minimumSize">
                <size>
@@ -3065,7 +3033,63 @@ QPushButton:focus {
               </property>
              </widget>
             </item>
-            <item row="3" column="1">
+            <item row="4" column="0">
+             <widget class="QPushButton" name="startMarkingButton">
+              <property name="minimumSize">
+               <size>
+                <width>200</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>350</width>
+                <height>50</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QPushButton {
+    border: 1px solid rgb(87, 87, 87);
+
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+border-radius:20px;
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Start Marking</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>20</width>
+                <height>20</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="1">
              <widget class="QPushButton" name="stopMarkingButton">
               <property name="minimumSize">
                <size>
@@ -3121,30 +3145,6 @@ QPushButton:focus {
               </property>
              </widget>
             </item>
-            <item row="0" column="0" colspan="2">
-             <widget class="QLabel" name="fileInfoLabel_10">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <family>Gotham</family>
-                <pointsize>16</pointsize>
-                <weight>50</weight>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">color:  grey;</string>
-              </property>
-              <property name="text">
-               <string>LASER/SCANNER</string>
-              </property>
-             </widget>
-            </item>
            </layout>
           </widget>
          </item>
@@ -3153,12 +3153,6 @@ QPushButton:focus {
       </item>
       <item>
        <widget class="QFrame" name="cameraFrames">
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>830</height>
-         </size>
-        </property>
         <property name="styleSheet">
          <string notr="true">QFrame #cameraFrames{
     border: 2px solid gray;
@@ -3171,7 +3165,7 @@ QPushButton:focus {
         <property name="frameShadow">
          <enum>QFrame::Raised</enum>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_6">
+        <layout class="QVBoxLayout" name="verticalLayout_10">
          <item>
           <widget class="QWidget" name="thermalCameraWidget" native="true">
            <property name="minimumSize">
@@ -3192,79 +3186,27 @@ QPushButton:focus {
           </widget>
          </item>
          <item>
-          <widget class="QFrame" name="frame_4">
+          <widget class="QLabel" name="fileInfoLabel_12">
            <property name="maximumSize">
             <size>
              <width>16777215</width>
-             <height>40</height>
+             <height>20</height>
             </size>
            </property>
-           <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+           <property name="font">
+            <font>
+             <family>Gotham</family>
+             <pointsize>16</pointsize>
+             <weight>50</weight>
+             <bold>false</bold>
+            </font>
            </property>
-           <property name="frameShadow">
-            <enum>QFrame::Raised</enum>
+           <property name="styleSheet">
+            <string notr="true">color:  grey;</string>
            </property>
-           <widget class="QLabel" name="fileInfoLabel_12">
-            <property name="geometry">
-             <rect>
-              <x>1</x>
-              <y>10</y>
-              <width>131</width>
-              <height>19</height>
-             </rect>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>20</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Gotham</family>
-              <pointsize>12</pointsize>
-              <weight>50</weight>
-              <bold>false</bold>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">color:  grey;</string>
-            </property>
-            <property name="text">
-             <string>Thermal Camera</string>
-            </property>
-           </widget>
-           <widget class="QLabel" name="maxTempLabel">
-            <property name="geometry">
-             <rect>
-              <x>140</x>
-              <y>10</y>
-              <width>211</width>
-              <height>19</height>
-             </rect>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>20</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <family>Gotham</family>
-              <pointsize>12</pointsize>
-              <weight>50</weight>
-              <bold>false</bold>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">color:  grey;</string>
-            </property>
-            <property name="text">
-             <string>maxTemp</string>
-            </property>
-           </widget>
+           <property name="text">
+            <string>Thermal Camera Feed</string>
+           </property>
           </widget>
          </item>
          <item>
@@ -3287,8 +3229,8 @@ QPushButton:focus {
           <widget class="QWidget" name="rgbCameraWidget" native="true">
            <property name="minimumSize">
             <size>
-             <width>300</width>
-             <height>300</height>
+             <width>350</width>
+             <height>350</height>
             </size>
            </property>
            <property name="maximumSize">
@@ -3319,7 +3261,7 @@ QPushButton:focus {
            <property name="font">
             <font>
              <family>Gotham</family>
-             <pointsize>12</pointsize>
+             <pointsize>16</pointsize>
              <weight>50</weight>
              <bold>false</bold>
             </font>
@@ -3328,7 +3270,7 @@ QPushButton:focus {
             <string notr="true">color:  grey;</string>
            </property>
            <property name="text">
-            <string>RGB Camera</string>
+            <string>RGB Camera Feed</string>
            </property>
           </widget>
          </item>

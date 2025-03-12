@@ -5,6 +5,7 @@ from config import Config
 from models.printer_status import PrinterStatus
 from PyQt5.QtCore import QTimer
 from temperatureController.chamberTemperatureController import ChamberTemperatureController  # Ensure this import is present
+from Feeltek.scanCard import Scancard  # Import Scancard
 
 if not Config.DEVELOPMENT_MODE:
     from temperatureController.heaterBoard import HeaterBoard
@@ -55,6 +56,10 @@ class MainWindow(QMainWindow):
         else:
             self.moonraker_api = MockMoonrakerAPI()
 
+        # Initialize Scancard
+        self.scancard = Scancard(parent=self)
+        self.scancard.connection_thread.status_changed.connect(self.handle_scancard_status_change)
+
         # Load sub UIs based on configuration
         self.load_loading_screen()
         self.load_tab_screen()
@@ -91,6 +96,26 @@ class MainWindow(QMainWindow):
     def update_rgb_frame(self, frame):
         if frame is not None:
             self.printer_status.updateRGBFrame(frame)
+
+    # Add methods to interact with Scancard
+    def start_scancard_mark(self):
+        self.scancard.start_mark()
+
+    def stop_scancard_mark(self):
+        self.scancard.stop_mark()
+
+    def get_scancard_status(self):
+        self.scancard.get_working_status()
+
+    def handle_scancard_status_change(self, status):
+        status_map = {
+            "0": "Waiting",
+            "1": "Marking",
+            "2": "Previewing",
+            "3": "Already working"
+        }
+        status_text = status_map.get(status, "Unknown")
+        self.printer_status.scancard_status = status_text
 
 class MockMoonrakerAPI:
     def __init__(self):

@@ -28,6 +28,7 @@ class TabScreen(QWidget):
         home_tab = self.findChild(QWidget, 'home_tab')
         if home_tab:
             self.home_screen = HomeScreen(self.main_window)
+            self.main_window.home_screen = self.home_screen  # Store reference in main_window
             layout = QVBoxLayout(home_tab)
             layout.addWidget(self.home_screen)
             home_tab.setLayout(layout)
@@ -52,6 +53,7 @@ class TabScreen(QWidget):
         if control_tab:
             # Import ControlScreen only when needed
             self.control_screen = ControlScreen(self.main_window)
+            self.main_window.control_screen = self.control_screen  # Store reference in main_window
             layout = QVBoxLayout(control_tab)
             layout.addWidget(self.control_screen)
             control_tab.setLayout(layout)

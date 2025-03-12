@@ -31,8 +31,8 @@ class ControlScreen(QWidget):
         # Connect signals to slots
         self.connect_signals()
 
-        # Flag to control the recoat process
-        self.recoat_running = False
+        # Flag to control the process
+        self.process_running = False
 
         # Connect the progress update signal to the progress bar update slot
         self.progress_update_signal.connect(self.update_progress_bar)
@@ -47,6 +47,9 @@ class ControlScreen(QWidget):
             self.prepareForPartRemovalButton, self.initialLevellingRecoatButton,
             self.heatedBufferRecoatButton, self.doseRecoatLayerButton, self.preparePowderLoadingButton
         ]
+
+        # Connect the scancard status update signal to the label update slot
+        self.main_window.printer_status.scancard_status_updated.connect(self.update_laser_status)
 
     def load_ui(self):
         try:
@@ -161,32 +164,43 @@ class ControlScreen(QWidget):
                                      'Ensure that the build module is moved to the starting position and recoater is homed before starting the initial levelling recoat. Do you want to proceed?',
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
-            self.recoat_running = True
+            self.process_running = True
             self.set_motion_control_buttons_enabled(False)
             self.initialLevellingRecoat()
 
     @run_async
     def initialLevellingRecoat(self):
         """Perform the initial levelling recoat."""
+        self.main_window.home_screen.playPauseButton.setChecked(True)
+        self.main_window.home_screen.playPauseButton.setText("Pause")
+        self.set_motion_control_buttons_enabled(False)
+        
         layerHeight = self.main_window.printer_status.layerHeight
         initialLevellingHeight = self.main_window.printer_status.initialLevellingHeight
         recoatCount = int(initialLevellingHeight / layerHeight)
         sequence = self.main_window.printer_status.initialLevellingRecoatingSequence
 
         for i in range(recoatCount):
-            if not self.recoat_running:
-                self.progress_update_signal.emit(0)
+            if not self.process_running:
                 break
+
+            # Pause handling
+            while not self.main_window.home_screen.playPauseButton.isChecked():
+                if not self.process_running:
+                    break
+                time.sleep(1)  # Sleep for a short duration to avoid busy waiting
+
+            if not self.process_running:
+                break
+
+            # Perform recoat operation
             sequence_replaced = replace_placeholders(sequence, self.main_window.printer_status)
             for line in sequence_replaced.split('\n'):
                 self.main_window.moonraker_api.send_gcode(line)
-            progress = int((i + 1) / recoatCount * 100)
-            try:
-                self.progress_update_signal.emit(progress)
-            except Exception as e:
-                print(f"Error in emitting progress: {e}")
-        
+
         self.set_motion_control_buttons_enabled(True)
+        self.main_window.home_screen.playPauseButton.setChecked(False)
+        self.main_window.home_screen.playPauseButton.setText("Play")
 
     def confirm_heated_buffer_recoat(self):
         """Show a confirmation dialog before starting the heated buffer recoat."""
@@ -194,38 +208,43 @@ class ControlScreen(QWidget):
                                      'Ensure that the build module is moved to the starting position and recoater is homed  before starting the heated buffer recoat. Do you want to proceed?',
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
-            self.recoat_running = True
+            self.process_running = True
             self.set_motion_control_buttons_enabled(False)
             self.heatedBufferRecoat()
 
     @run_async
     def heatedBufferRecoat(self):
         """Perform the heated buffer recoat."""
+        self.main_window.home_screen.playPauseButton.setChecked(True)
+        self.main_window.home_screen.playPauseButton.setText("Pause")
+        self.set_motion_control_buttons_enabled(False)
+        
         layerHeight = self.main_window.printer_status.layerHeight
         heatedBufferHeight = self.main_window.printer_status.heatedBufferHeight
         recoatCount = int(heatedBufferHeight / layerHeight)
         sequence = self.main_window.printer_status.heatedBufferRecoatingSequence
 
         for i in range(recoatCount):
-            if not self.recoat_running:
-                self.progress_update_signal.emit(0)
+            if not self.process_running:
                 break
-            while True:
-                setpoint = self.main_window.printer_status.chamberTemperatureSetpoint
-                temps = self.main_window.printer_status.chamberTemperatures
-                if all(temps.get(pos, 0) >= setpoint for pos in ['middle-center']):
+
+            # Pause handling
+            while not self.main_window.home_screen.playPauseButton.isChecked():
+                if not self.process_running:
                     break
                 time.sleep(1)  # Sleep for a short duration to avoid busy waiting
+
+            if not self.process_running:
+                break
+
+            # Perform recoat operation
             sequence_replaced = replace_placeholders(sequence, self.main_window.printer_status)
             for line in sequence_replaced.split('\n'):
                 self.main_window.moonraker_api.send_gcode(line)
-            progress = int((i + 1) / recoatCount * 100)
-            try:
-                self.progress_update_signal.emit(progress)
-            except Exception as e:
-                print(f"Error in emitting progress: {e}")
-        
+
         self.set_motion_control_buttons_enabled(True)
+        self.main_window.home_screen.playPauseButton.setChecked(False)
+        self.main_window.home_screen.playPauseButton.setText("Play")
 
     @run_async
     def dose_recoat_layer(self):
@@ -269,8 +288,11 @@ class ControlScreen(QWidget):
         self.set_motion_control_buttons_enabled(True)
 
     def stop_process(self):
-        """Stop the recoat process."""
-        self.recoat_running = False
+        """Stop the process."""
+        self.process_running = False
+        self.main_window.home_screen.playPauseButton.setChecked(False)
+        self.main_window.home_screen.playPauseButton.setText("Play")
+        self.main_window.home_screen.printProgressBar.setValue(0)
 
     def setVolumeHeaterTemp(self):
         """Set the volume heater temperature."""
@@ -319,6 +341,76 @@ class ControlScreen(QWidget):
     def update_progress_bar(self, value):
         """Update the recoater progress bar."""
         self.recoaterProgressBar.setValue(value)
+
+    def start_marking(self):
+        """Start the marking process."""
+        self.main_window.start_scancard_mark()
+
+    def stop_marking(self):
+        """Stop the marking process."""
+        self.main_window.stop_scancard_mark()
+
+    def update_laser_status(self, status):
+        """Update the laser status label."""
+        self.laserStatusLabel.setText(f"Laser Status: {status}")
+
+    @run_async
+    def start_printing_sequence(self):
+        """Start the main printing sequence."""
+        self.set_motion_control_buttons_enabled(False)
+        self.main_window.home_screen.printProgressBar.setValue(0)
+
+        # Step 1: Initial Levelling Recoat
+        self.initialLevellingRecoat()
+        self.main_window.home_screen.printProgressBar.setValue(10)
+
+        # Step 2: Heated Buffer Recoat
+        self.heatedBufferRecoat()
+        self.main_window.home_screen.printProgressBar.setValue(20)
+
+        # Step 3 and 4: Mark laser and dose recoat layer until partHeight is achieved
+        layerHeight = self.main_window.printer_status.layerHeight
+        partHeight = self.main_window.printer_status.partHeight
+        recoatCount = int(partHeight / layerHeight)
+
+        for i in range(recoatCount):
+            if not self.process_running:
+                self.main_window.home_screen.printProgressBar.setValue(0)
+                break
+
+            # Pause handling
+            while not self.main_window.home_screen.playPauseButton.isChecked():
+                if not self.process_running:
+                    self.main_window.home_screen.printProgressBar.setValue(0)
+                    break
+                time.sleep(1)  # Sleep for a short duration to avoid busy waiting
+
+            if not self.process_running:
+                self.main_window.home_screen.printProgressBar.setValue(0)
+                break
+
+            # Mark laser until scancard status is "Already working"
+            while self.main_window.printer_status.scancard_status != "Already working":
+                if not self.process_running:
+                    self.main_window.home_screen.printProgressBar.setValue(0)
+                    break
+                self.main_window.start_scancard_mark()
+                time.sleep(1)  # Sleep for a short duration to avoid busy waiting
+
+            if not self.process_running:
+                self.main_window.home_screen.printProgressBar.setValue(0)
+                break
+
+            # Dose recoat layer
+            self.dose_recoat_layer()
+            progress = int((i + 1) / recoatCount * 60) + 20
+            self.main_window.home_screen.printProgressBar.setValue(progress)
+
+        # Step 5: Final Heated Buffer Recoat
+        self.heatedBufferRecoat()
+        self.main_window.home_screen.printProgressBar.setValue(100)
+
+        self.set_motion_control_buttons_enabled(True)
 
 def replace_placeholders(sequence: str, printer_status) -> str:
     """Replace placeholders in the sequence with actual values from the printer_status model."""

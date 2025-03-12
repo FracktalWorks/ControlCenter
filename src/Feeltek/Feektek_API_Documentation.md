@@ -1767,8 +1767,8 @@ Returned Value the Corresponding Error Content is Described as Follows:
 ## 3. Interface Calling Process
 
 ### 3.1 Schematic Diagram of the Overall Software Workflow
-
-Connect to LenMark3Ds software via ICP
+![alt text](3.1.png)
+Connect to LenMark3Ds software via TCP
 
 1. Use the “open_file” command to open the marking file path.
 2. Use the “set_markparameters_by_layer” command to set marking parameters.
