@@ -13,11 +13,11 @@ class ChamberTemperatureController(QThread):
         self.printer_status.temperatures_updated.connect(self.control_heater)
 
         # Initialize PID controllers for each side
-        self.pid_bottom = PID(10, 0.01, 0.4, setpoint=0)
-        self.pid_right = PID(10, 0.01, 0.4, setpoint=0)
-        self.pid_top = PID(10, 0.01, 0.4, setpoint=0)
-        self.pid_left = PID(10, 0.01, 0.4, setpoint=0)
-        self.pid_middle_center = PID(5, 0.01, 0.4, setpoint=0)  # New PID for middle-center
+        self.pid_bottom = PID(15, 0.0001, 0.1, setpoint=0)
+        self.pid_right = PID(15, 0.0001, 0.1, setpoint=0)
+        self.pid_top = PID(15, 0.0001, 0.1, setpoint=0)
+        self.pid_left = PID(15, 0.0001, 0.1, setpoint=0)
+        self.pid_middle_center = PID(5, 0.0001, 0.1, setpoint=0)  # New PID for middle-center
 
     @pyqtSlot(np.ndarray, dict)
     def control_heater(self, frame, chamberTemperatures):

@@ -31,7 +31,7 @@ class MainWindow(QMainWindow):
         self.layout.addWidget(self.stacked_widget)
         
         if not Config.DEVELOPMENT_MODE:
-            self.thermal_camera = ThermalCamera(roi=(5, 14, 56, 65))
+            self.thermal_camera = ThermalCamera(roi=(5, 16, 56, 61))
             self.thermal_camera.thermal_camera_frame_ready.connect(self.update_frame)
             self.thermal_camera.max_temp_signal.connect(self.update_max_temp)  # Connect max_temp_signal to update_max_temp
             self.thermal_camera.start()

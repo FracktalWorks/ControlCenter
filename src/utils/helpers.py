@@ -40,6 +40,7 @@ class Worker(QRunnable):
         finally:
             self.signals.finished.emit()
 
+# Keep a reference to the workers to prevent them from being garbage collected
 workers = []
 
 def run_async(func):
