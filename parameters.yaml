@@ -2,7 +2,7 @@ bedTemperature: '120'
 chamberTemperature: '160'
 d: '0.5'
 dosingHeight: '0.15'
-heatedBufferHeight: '3'
+heatedBufferHeight: '0.4'
 heatedBufferRecoatingSequence: 'homeRecoater
 
   G91
