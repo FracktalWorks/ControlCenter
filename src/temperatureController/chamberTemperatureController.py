@@ -59,18 +59,18 @@ class ChamberTemperatureController(QThread):
         self.pid_left.setpoint = setpoint
 
         # Compute the control values
-        control_bottom = self.pid_bottom(bottom_temp)
-        control_right = self.pid_right(right_temp)
-        control_top = self.pid_top(top_temp)
-        control_left = self.pid_left(left_temp)
+        control_bottom = int(self.pid_bottom(bottom_temp))
+        control_right = int(self.pid_right(right_temp))
+        control_top = int(self.pid_top(top_temp))
+        control_left = int(self.pid_left(left_temp))
 
         # If middle-center temperature goes beyond the setpoint, reduce the output of other PIDs
         if middle_center_temp > setpoint:
             reduction_factor = 0.75
-            control_bottom *= reduction_factor
-            control_right *= reduction_factor
-            control_top *= reduction_factor
-            control_left *= reduction_factor
+            control_bottom = int(control_bottom * reduction_factor)
+            control_right = int(control_right * reduction_factor)
+            control_top = int(control_top * reduction_factor)
+            control_left = int(control_left * reduction_factor)
 
         # Clamp the control values between 1 and 99
         control_bottom = max(1, min(99, control_bottom))
@@ -79,7 +79,7 @@ class ChamberTemperatureController(QThread):
         control_left = max(1, min(99, control_left))
 
         # Apply the control values to the heater board
-        self.heater_board.setHeaterPowers(control_bottom, control_bottom, control_right, control_right / 2, control_top, control_top, control_left, control_left / 2)
+        self.heater_board.setHeaterPowers(control_bottom, control_bottom, control_right, control_right // 2, control_top, control_top, control_left, control_left // 2)
 
         # Log the control values for debugging
         print(f"Control values - Bottom: {control_bottom}, Right: {control_right}, Top: {control_top}, Left: {control_left}")

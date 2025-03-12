@@ -6,18 +6,29 @@ class HeaterBoard:
 
     def setHeaterPowers(self, ch1, ch2, ch4, ch3, ch5, ch6, ch7, ch8):
         command = f"8,{ch1},{ch2},{ch3},{ch6},{ch5},{ch4},{ch7},{ch8}"
-        self.serial_model.send_command_async(command)  # Use the asynchronous method
+        future = self.serial_model.send_command_async(command)  # Use the asynchronous method
+        future.add_done_callback(self.handle_response)  # Handle the response when done
+
+    def handle_response(self, future):
+        try:
+            response = future.result()
+            print(f"Async Response: {response}")
+        except Exception as e:
+            print(f"Error in async response: {e}")
 
     def stopHeaters(self):
         command = "8,1,1,1,1,1,1,1,1"
-        self.serial_model.send_command_async(command)  # Use the asynchronous method
+        future = self.serial_model.send_command_async(command)  # Use the asynchronous method
+        future.add_done_callback(self.handle_response)  # Handle the response when done
         print("Heater stopped")
 
     def enableWatchdog(self, event):
         command = f"E"
-        self.serial_model.send_command_async(command)  # Use the asynchronous method
+        future = self.serial_model.send_command_async(command)  # Use the asynchronous method
+        future.add_done_callback(self.handle_response)  # Handle the response when done
 
     def disableWatchdog(self, event):
         command = f"D"
-        self.serial_model.send_command_async(command)  # Use the asynchronous method
+        future = self.serial_model.send_command_async(command)  # Use the asynchronous method
+        future.add_done_callback(self.handle_response)  # Handle the response when done
 
