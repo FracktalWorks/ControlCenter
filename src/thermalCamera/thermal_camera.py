@@ -10,7 +10,7 @@ from .mi48 import MI48, format_header, format_framestats  # Connects and communi
 from .utils import data_to_frame, remap, cv_filter, RollingAverageFilter, connect_senxor
 
 
-def replace_dead_pixels(frame, min_val=0, max_val=200):
+def replace_dead_pixels(frame, min_val=0, max_val=220):
     """Replace dead pixels with the average of surrounding 48 pixels."""
     for i in range(3, frame.shape[0] - 3):
         for j in range(3, frame.shape[1] - 3):

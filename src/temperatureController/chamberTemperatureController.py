@@ -17,7 +17,7 @@ class ChamberTemperatureController(QThread):
         self.pid_right = PID(15, 0.0001, 0.1, setpoint=0)
         self.pid_top = PID(15, 0.0001, 0.1, setpoint=0)
         self.pid_left = PID(15, 0.0001, 0.1, setpoint=0)
-        self.pid_middle_center = PID(5, 0.0001, 0.1, setpoint=0)  # New PID for middle-center
+        self.pid_middle_center = PID(15, 0.0001, 0.1, setpoint=0)  # New PID for middle-center
 
     @pyqtSlot(np.ndarray, dict)
     def control_heater(self, frame, chamberTemperatures):
