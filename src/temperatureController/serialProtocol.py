@@ -1,18 +1,17 @@
 import serial
 import time
-from utils.helpers import run_async
-
+from concurrent.futures import ThreadPoolExecutor
 
 class SerialProtocol:
     def __init__(self, port="COM19", baudrate=115200, timeout=1):
         try:
             self.ser = serial.Serial(port, baudrate, timeout=timeout)
             time.sleep(2)  # Wait for the board to initialize
+            self.executor = ThreadPoolExecutor(max_workers=1)  # Initialize a thread pool executor
         except serial.SerialException as e:
             print(f"Serial error: {e}")
             self.ser = None
-            
-    @run_async        
+
     def send_command(self, command):
         if not self.ser:
             print("Serial port is not initialized.")
@@ -29,7 +28,6 @@ class SerialProtocol:
             # Send command
             self.ser.write(command.encode())
             self.ser.flush()  # Ensure data is sent
-            time.sleep(0.1)  # Small delay to ensure board receives it
 
             # Read response
             response = self.ser.readline().decode().strip()
@@ -37,6 +35,11 @@ class SerialProtocol:
         except Exception as e:
             print(f"Error: {e}")
 
+    def send_command_async(self, command):
+        """Send command asynchronously."""
+        self.executor.submit(self.send_command, command)
+
     def close(self):
         if self.ser:
             self.ser.close()
+        self.executor.shutdown(wait=False)  # Shutdown the executor

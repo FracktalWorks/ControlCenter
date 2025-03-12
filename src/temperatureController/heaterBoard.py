@@ -6,18 +6,18 @@ class HeaterBoard:
 
     def setHeaterPowers(self, ch1, ch2, ch4, ch3, ch5, ch6, ch7, ch8):
         command = f"8,{ch1},{ch2},{ch3},{ch6},{ch5},{ch4},{ch7},{ch8}"
-        self.serial_model.send_command(command)
+        self.serial_model.send_command_async(command)  # Use the asynchronous method
 
     def stopHeaters(self):
         command = "8,1,1,1,1,1,1,1,1"
-        self.serial_model.send_command(command)
+        self.serial_model.send_command_async(command)  # Use the asynchronous method
         print("Heater stopped")
 
     def enableWatchdog(self, event):
         command = f"E"
-        self.serial_model.send_command(command)
+        self.serial_model.send_command_async(command)  # Use the asynchronous method
 
     def disableWatchdog(self, event):
         command = f"D"
-        self.serial_model.send_command(command)
+        self.serial_model.send_command_async(command)  # Use the asynchronous method
 

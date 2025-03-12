@@ -45,11 +45,8 @@ class MainWindow(QMainWindow):
 
         # Initialize HeaterBoard and ChamberTemperatureController if not in development mode
         if not Config.DEVELOPMENT_MODE:
-            self.heater_board = HeaterBoard()
-            self.chamber_temp_controller = ChamberTemperatureController(self.heater_board, self.printer_status)
-            self.chamber_temp_controller.start()  # Start the ChamberTemperatureController thread
+            self.chamber_temp_controller = ChamberTemperatureController(self.printer_status)
         else:
-            self.heater_board = None
             self.chamber_temp_controller = None
 
         # Initialize MoonrakerAPI if not in development mode
