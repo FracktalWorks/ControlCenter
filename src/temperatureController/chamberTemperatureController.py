@@ -13,16 +13,37 @@ class ChamberTemperatureController(QThread):
         self.printer_status.temperatures_updated.connect(self.control_heater)
 
         # Initialize PID controllers for each side
-        self.pid_bottom = PID(15, 0.0001, 0.1, setpoint=0)
-        self.pid_right = PID(15, 0.0001, 0.1, setpoint=0)
-        self.pid_top = PID(15, 0.0001, 0.1, setpoint=0)
-        self.pid_left = PID(15, 0.0001, 0.1, setpoint=0)
-        self.pid_middle_center = PID(15, 0.0001, 0.1, setpoint=0)  # New PID for middle-center
+        self.pid_bottom = PID(15, 0.000001, 0.001, setpoint=0)
+        self.pid_right = PID(15, 0.000001, 0.001, setpoint=0)
+        self.pid_top = PID(15, 0.000001, 0.001, setpoint=0)
+        self.pid_left = PID(15, 0.000001, 0.001, setpoint=0)
+
+        # Set output limits for the PID controllers to clamp the integral factor
+        self.pid_bottom.output_limits = (1, 99)
+        self.pid_right.output_limits = (1, 99)
+        self.pid_top.output_limits = (1, 99)
+        self.pid_left.output_limits = (1, 99)
+
+        # Store the previous setpoint to detect changes
+        self.previous_setpoint = self.printer_status.chamberTemperatureSetpoint
+
+    def reset_pids(self):
+        """Reset the PID controllers."""
+        self.pid_bottom.reset()
+        self.pid_right.reset()
+        self.pid_top.reset()
+        self.pid_left.reset()
 
     @pyqtSlot(np.ndarray, dict)
     def control_heater(self, frame, chamberTemperatures):
         """Control the heater power based on the setpoint and actual temperatures."""
         setpoint = self.printer_status.chamberTemperatureSetpoint
+
+        # Check if the setpoint has changed
+        if setpoint != self.previous_setpoint:
+            self.reset_pids()
+            self.previous_setpoint = setpoint
+
         temps = chamberTemperatures
         bottom_temp = temps.get('bottom-center', 0)
         right_temp = temps.get('middle-right', 0)
@@ -35,18 +56,16 @@ class ChamberTemperatureController(QThread):
         self.pid_right.setpoint = setpoint
         self.pid_top.setpoint = setpoint
         self.pid_left.setpoint = setpoint
-        self.pid_middle_center.setpoint = setpoint  # Update setpoint for middle-center PID
 
         # Compute the control values
         control_bottom = self.pid_bottom(bottom_temp)
         control_right = self.pid_right(right_temp)
         control_top = self.pid_top(top_temp)
         control_left = self.pid_left(left_temp)
-        control_middle_center = self.pid_middle_center(middle_center_temp)  # Compute control for middle-center
 
         # If middle-center temperature goes beyond the setpoint, reduce the output of other PIDs
         if middle_center_temp > setpoint:
-            reduction_factor = max(0, 1 - control_middle_center / 100)
+            reduction_factor = 0.75
             control_bottom *= reduction_factor
             control_right *= reduction_factor
             control_top *= reduction_factor
