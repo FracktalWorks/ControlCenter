@@ -41,6 +41,7 @@ class ChamberTemperatureController(QThread):
 
         # Check if the setpoint has changed
         if setpoint != self.previous_setpoint:
+            print(f"Setpoint changed from {self.previous_setpoint} to {setpoint}. Resetting PIDs.")
             self.reset_pids()
             self.previous_setpoint = setpoint
 
@@ -79,3 +80,6 @@ class ChamberTemperatureController(QThread):
 
         # Apply the control values to the heater board
         self.heater_board.setHeaterPowers(control_bottom, control_bottom, control_right, control_right / 2, control_top, control_top, control_left, control_left / 2)
+
+        # Log the control values for debugging
+        print(f"Control values - Bottom: {control_bottom}, Right: {control_right}, Top: {control_top}, Left: {control_left}")
