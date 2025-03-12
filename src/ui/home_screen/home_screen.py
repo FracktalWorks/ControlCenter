@@ -83,18 +83,15 @@ class HomeScreen(QWidget):
 
     def toggle_printing(self):
         if self.playPauseButton.isChecked():
-            self.main_window.control_screen.process_running = True
-            self.main_window.control_screen.start_printing_sequence()
+            self.main_window.process_automation_controller.process_running = True
+            self.main_window.process_automation_controller.start_printing_sequence()
             self.playPauseButton.setText("Pause")
         else:
-            self.main_window.control_screen.process_running = False
+            self.main_window.process_automation_controller.process_running = False
             self.playPauseButton.setText("Play")
 
     def stop_printing(self):
-        self.main_window.control_screen.process_running = False
-        self.printProgressBar.setValue(0)
-        self.playPauseButton.setChecked(False)
-        self.playPauseButton.setText("Play")
+        self.main_window.process_automation_controller.stop_process()
 
     @pyqtSlot(np.ndarray, dict)
     def update_thermal_camera_widget(self, frame, temps):

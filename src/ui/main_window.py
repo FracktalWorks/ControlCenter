@@ -6,6 +6,7 @@ from models.printer_status import PrinterStatus
 from PyQt5.QtCore import QTimer
 from temperatureController.chamberTemperatureController import ChamberTemperatureController  # Ensure this import is present
 from Feeltek.scanCard import Scancard  # Import Scancard
+from processAutomationController import ProcessAutomationController
 
 if not Config.DEVELOPMENT_MODE:
     from temperatureController.heaterBoard import HeaterBoard
@@ -21,6 +22,7 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__()
 
         self.printer_status = PrinterStatus()  # Create an instance of the PrinterStatus model
+        self.process_automation_controller = ProcessAutomationController(self)  # Initialize ProcessAutomationController
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)

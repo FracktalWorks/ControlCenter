@@ -8,6 +8,7 @@ import numpy as np
 from ui.custom_widgets import ImageWidget
 from utils.helpers import run_async
 import time
+from processAutomationController import ProcessAutomationController
 
 class ControlScreen(QWidget):
     progress_update_signal = pyqtSignal(int)
@@ -31,8 +32,8 @@ class ControlScreen(QWidget):
         # Connect signals to slots
         self.connect_signals()
 
-        # Flag to control the process
-        self.process_running = False
+        # Initialize ProcessAutomationController
+        self.process_automation_controller = ProcessAutomationController(main_window)
 
         # Connect the progress update signal to the progress bar update slot
         self.progress_update_signal.connect(self.update_progress_bar)
@@ -99,32 +100,32 @@ class ControlScreen(QWidget):
     def setup_connections(self):
         self.step = 10
         self.setStep(10)
-        self.homeBuildModuleButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("G28 Z Y\nM400"))
-        self.undockButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("goDown\nM400"))
-        self.dockButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("liftUp\nM400"))
+        self.homeBuildModuleButton.clicked.connect(lambda: self.run_async_send_gcode("G28 Z Y\nM400"))
+        self.undockButton.clicked.connect(lambda: self.run_async_send_gcode("goDown\nM400"))
+        self.dockButton.clicked.connect(lambda: self.run_async_send_gcode("liftUp\nM400"))
         self.setChamberTempButton.clicked.connect(lambda: self.update_setpoint(self.chamberTempSpinBox.value()))
         self.cooldownButton.clicked.connect(self.cooldown)
-        self.homeFeedButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("G28 Y\nM400"))
-        self.homeZButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode("G28 Z\nM400"))
+        self.homeFeedButton.clicked.connect(lambda: self.run_async_send_gcode("G28 Y\nM400"))
+        self.homeZButton.clicked.connect(lambda: self.run_async_send_gcode("G28 Z\nM400"))
         self.step01Button.clicked.connect(lambda: self.setStep(0.1))
         self.step1Button.clicked.connect(lambda: self.setStep(1))
         self.step10Button.clicked.connect(lambda: self.setStep(10))
         self.step100Button.clicked.connect(lambda: self.setStep(100))
-        self.moveZMButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"G91\nG0 Z-{self.step}\nG90\nM400"))
-        self.moveZPButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"G91\nG0 Z{self.step}\nG90\nM400"))
-        self.moveFeedMButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"G91\nG0 Y-{self.step}\nG90\nM400"))
-        self.moveFeedPButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"G91\nG0 Y{self.step}\nG90\nM400"))
-        self.setBedTempButton.clicked.connect(lambda: self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET={self.bedTempSpinBox.value()}"))
+        self.moveZMButton.clicked.connect(lambda: self.run_async_send_gcode(f"G91\nG0 Z-{self.step}\nG90\nM400"))
+        self.moveZPButton.clicked.connect(lambda: self.run_async_send_gcode(f"G91\nG0 Z{self.step}\nG90\nM400"))
+        self.moveFeedMButton.clicked.connect(lambda: self.run_async_send_gcode(f"G91\nG0 Y-{self.step}\nG90\nM400"))
+        self.moveFeedPButton.clicked.connect(lambda: self.run_async_send_gcode(f"G91\nG0 Y{self.step}\nG90\nM400"))
+        self.setBedTempButton.clicked.connect(lambda: self.run_async_send_gcode(f"SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET={self.bedTempSpinBox.value()}"))
         self.setVolumeTempButton.clicked.connect(self.setVolumeHeaterTemp)
         self.initialLevellingRecoatButton.clicked.connect(self.confirm_initial_levelling_recoat)
         self.heatedBufferRecoatButton.clicked.connect(self.confirm_heated_buffer_recoat)
-        self.doseRecoatLayerButton.clicked.connect(lambda: self.dose_recoat_layer())
-        self.preparePowderLoadingButton.clicked.connect(lambda: self.prepare_powder_loading())
-        self.stopProcessButton.clicked.connect(self.stop_process)
+        self.doseRecoatLayerButton.clicked.connect(lambda: self.process_automation_controller.dose_recoat_layer())
+        self.preparePowderLoadingButton.clicked.connect(lambda: self.process_automation_controller.prepare_powder_loading())
+        self.stopProcessButton.clicked.connect(self.process_automation_controller.stop_process)
         self.homeRecoaterButton.clicked.connect(lambda: self.run_async_send_gcode("homeRecoater"))
         self.recoatButton.clicked.connect(lambda: self.run_async_send_gcode("recoat"))
-        self.moveToStartingPositionButton.clicked.connect(lambda: self.move_to_starting_sequence())
-        self.prepareForPartRemovalButton.clicked.connect(lambda: self.prepare_for_part_removal_sequence())
+        self.moveToStartingPositionButton.clicked.connect(lambda: self.process_automation_controller.move_to_starting_sequence())
+        self.prepareForPartRemovalButton.clicked.connect(lambda: self.process_automation_controller.prepare_for_part_removal_sequence())
 
     @run_async
     def run_async_send_gcode(self, gcode):
@@ -164,43 +165,9 @@ class ControlScreen(QWidget):
                                      'Ensure that the build module is moved to the starting position and recoater is homed before starting the initial levelling recoat. Do you want to proceed?',
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
-            self.process_running = True
+            self.process_automation_controller.process_running = True
             self.set_motion_control_buttons_enabled(False)
-            self.initialLevellingRecoat()
-
-    @run_async
-    def initialLevellingRecoat(self):
-        """Perform the initial levelling recoat."""
-        self.main_window.home_screen.playPauseButton.setChecked(True)
-        self.main_window.home_screen.playPauseButton.setText("Pause")
-        self.set_motion_control_buttons_enabled(False)
-        
-        layerHeight = self.main_window.printer_status.layerHeight
-        initialLevellingHeight = self.main_window.printer_status.initialLevellingHeight
-        recoatCount = int(initialLevellingHeight / layerHeight)
-        sequence = self.main_window.printer_status.initialLevellingRecoatingSequence
-
-        for i in range(recoatCount):
-            if not self.process_running:
-                break
-
-            # Pause handling
-            while not self.main_window.home_screen.playPauseButton.isChecked():
-                if not self.process_running:
-                    break
-                time.sleep(1)  # Sleep for a short duration to avoid busy waiting
-
-            if not self.process_running:
-                break
-
-            # Perform recoat operation
-            sequence_replaced = replace_placeholders(sequence, self.main_window.printer_status)
-            for line in sequence_replaced.split('\n'):
-                self.main_window.moonraker_api.send_gcode(line)
-
-        self.set_motion_control_buttons_enabled(True)
-        self.main_window.home_screen.playPauseButton.setChecked(False)
-        self.main_window.home_screen.playPauseButton.setText("Play")
+            self.process_automation_controller.initialLevellingRecoat()
 
     def confirm_heated_buffer_recoat(self):
         """Show a confirmation dialog before starting the heated buffer recoat."""
@@ -208,98 +175,16 @@ class ControlScreen(QWidget):
                                      'Ensure that the build module is moved to the starting position and recoater is homed  before starting the heated buffer recoat. Do you want to proceed?',
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
-            self.process_running = True
+            self.process_automation_controller.process_running = True
             self.set_motion_control_buttons_enabled(False)
-            self.heatedBufferRecoat()
-
-    @run_async
-    def heatedBufferRecoat(self):
-        """Perform the heated buffer recoat."""
-        self.main_window.home_screen.playPauseButton.setChecked(True)
-        self.main_window.home_screen.playPauseButton.setText("Pause")
-        self.set_motion_control_buttons_enabled(False)
-        
-        layerHeight = self.main_window.printer_status.layerHeight
-        heatedBufferHeight = self.main_window.printer_status.heatedBufferHeight
-        recoatCount = int(heatedBufferHeight / layerHeight)
-        sequence = self.main_window.printer_status.heatedBufferRecoatingSequence
-
-        for i in range(recoatCount):
-            if not self.process_running:
-                break
-
-            # Pause handling
-            while not self.main_window.home_screen.playPauseButton.isChecked():
-                if not self.process_running:
-                    break
-                time.sleep(1)  # Sleep for a short duration to avoid busy waiting
-
-            if not self.process_running:
-                break
-
-            # Perform recoat operation
-            sequence_replaced = replace_placeholders(sequence, self.main_window.printer_status)
-            for line in sequence_replaced.split('\n'):
-                self.main_window.moonraker_api.send_gcode(line)
-
-        self.set_motion_control_buttons_enabled(True)
-        self.main_window.home_screen.playPauseButton.setChecked(False)
-        self.main_window.home_screen.playPauseButton.setText("Play")
-
-    @run_async
-    def dose_recoat_layer(self):
-        """Perform a single recoat using the layer height from the parameters screen."""
-        self.set_motion_control_buttons_enabled(False)  # Disable motion control buttons
-        sequence = self.main_window.printer_status.printingRecoatingSequence
-        sequence_replaced = replace_placeholders(sequence, self.main_window.printer_status)
-        for line in sequence_replaced.split('\n'):
-            self.main_window.moonraker_api.send_gcode(line)
-        self.progress_update_signal.emit(100)
-        self.set_motion_control_buttons_enabled(True)  # Re-enable motion control buttons
-
-    @run_async
-    def prepare_powder_loading(self):
-        """Prepare for powder loading."""
-        self.set_motion_control_buttons_enabled(False)
-        sequence = self.main_window.printer_status.powderLoadingSequence
-        sequence_replaced = replace_placeholders(sequence, self.main_window.printer_status)
-        for line in sequence_replaced.split('\n'):
-            self.main_window.moonraker_api.send_gcode(line)
-        self.set_motion_control_buttons_enabled(True)
-
-    @run_async
-    def move_to_starting_sequence(self):
-        """Execute the move to starting sequence."""
-        self.set_motion_control_buttons_enabled(False)
-        sequence = self.main_window.printer_status.moveToStartingSequence
-        sequence_replaced = replace_placeholders(sequence, self.main_window.printer_status)
-        for line in sequence_replaced.split('\n'):
-            self.main_window.moonraker_api.send_gcode(line)
-        self.set_motion_control_buttons_enabled(True)
-
-    @run_async
-    def prepare_for_part_removal_sequence(self):
-        """Execute the prepare for part removal sequence."""
-        self.set_motion_control_buttons_enabled(False)
-        sequence = self.main_window.printer_status.prepareForPartRemovalSequence
-        sequence_replaced = replace_placeholders(sequence, self.main_window.printer_status)
-        for line in sequence_replaced.split('\n'):
-            self.main_window.moonraker_api.send_gcode(line)
-        self.set_motion_control_buttons_enabled(True)
-
-    def stop_process(self):
-        """Stop the process."""
-        self.process_running = False
-        self.main_window.home_screen.playPauseButton.setChecked(False)
-        self.main_window.home_screen.playPauseButton.setText("Play")
-        self.main_window.home_screen.printProgressBar.setValue(0)
+            self.process_automation_controller.heatedBufferRecoat()
 
     def setVolumeHeaterTemp(self):
         """Set the volume heater temperature."""
         target_temp = self.volumeTempSpinBox.value()
-        self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_front TARGET={target_temp}")
-        self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_left TARGET={target_temp}")
-        self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_right TARGET={target_temp}")
+        self.run_async_send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_front TARGET={target_temp}")
+        self.run_async_send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_left TARGET={target_temp}")
+        self.run_async_send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_right TARGET={target_temp}")
 
     def update_setpoint(self, value):
         """Update the chamber temperature setpoint in the PrinterStatus model."""
