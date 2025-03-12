@@ -214,9 +214,8 @@ class ControlScreen(QWidget):
                 setpoint = self.main_window.printer_status.chamberTemperatureSetpoint
                 temps = self.main_window.printer_status.chamberTemperatures
                 if all(temps.get(pos, 0) >= setpoint for pos in ['middle-center']):
-                    temps = self.main_window.printer_status.chamberTemperatures
-                    if all(temps.get(pos, 0) >= setpoint for pos in ['middle-center']):
-                        break
+                    break
+                time.sleep(1)  # Sleep for a short duration to avoid busy waiting
             sequence_replaced = replace_placeholders(sequence, self.main_window.printer_status)
             for line in sequence_replaced.split('\n'):
                 self.main_window.moonraker_api.send_gcode(line)
