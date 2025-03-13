@@ -97,6 +97,10 @@ class ControlScreen(QWidget):
         # Initialize scanCardStatusLabel
         self.scanCardStatusLabel = self.findChild(QLabel, "scanCardStatusLabel")
 
+        # Initialize start and stop marking buttons
+        self.startMarkingButton = self.findChild(QPushButton, "startMarkingButton")
+        self.stopMarkingButton = self.findChild(QPushButton, "stopMarkingButton")
+
     def setup_connections(self):
         self.step = 10
         self.setStep(10)
@@ -126,6 +130,10 @@ class ControlScreen(QWidget):
         self.recoatButton.clicked.connect(lambda: self.run_async_send_gcode("recoat"))
         self.moveToStartingPositionButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.move_to_starting_sequence))
         self.prepareForPartRemovalButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.prepare_for_part_removal_sequence))
+
+        # Connect start and stop marking buttons to Scancard functions
+        self.startMarkingButton.clicked.connect(self.main_window.scancard.start_mark)
+        self.stopMarkingButton.clicked.connect(self.main_window.scancard.stop_mark)
 
     @run_async
     def run_async_send_gcode(self, gcode):

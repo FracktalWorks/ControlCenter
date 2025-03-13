@@ -171,6 +171,13 @@ class ProcessAutomationController(QObject):
                 break
 
             print("Marking layer number: ", i)
+            # Mark laser until scancard status is "Already working"
+            while self.main_window.printer_status.scancard_status != "Already working":
+                if not self.process_running:
+                    self.progress_update_signal.emit(0)
+                    break
+                self.main_window.start_scancard_mark()
+                time.sleep(1)  # Sleep for a short duration to avoid busy waiting
 
 
             if not self.process_running:

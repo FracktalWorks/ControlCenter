@@ -65,7 +65,7 @@ class MainWindow(QMainWindow):
         # Set up a QTimer to periodically check the Scancard status
         self.scancard_timer = QTimer(self)
         self.scancard_timer.timeout.connect(self.handle_scancard_status_change)
-        self.scancard_timer.start(1000)  # Check status every 2000 ms (2 seconds
+        self.scancard_timer.start(500)  # Check status every 2000 ms (2 seconds
 
         # Load sub UIs based on configuration
         self.load_loading_screen()
