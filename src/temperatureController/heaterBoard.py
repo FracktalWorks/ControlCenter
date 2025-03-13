@@ -12,7 +12,7 @@ class HeaterBoard:
     def handle_response(self, future):
         try:
             response = future.result()
-            print(f"Async Response: {response}")
+            # print(f"Async Response: {response}")
         except Exception as e:
             print(f"Error in async response: {e}")
 

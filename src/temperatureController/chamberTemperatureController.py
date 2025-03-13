@@ -82,4 +82,4 @@ class ChamberTemperatureController(QThread):
         self.heater_board.setHeaterPowers(control_bottom, control_bottom, control_right, control_right // 2, control_top, control_top, control_left, control_left // 2)
 
         # Log the control values for debugging
-        print(f"Control values - Bottom: {control_bottom}, Right: {control_right}, Top: {control_top}, Left: {control_left}")
+        # print(f"Control values - Bottom: {control_bottom}, Right: {control_right}, Top: {control_top}, Left: {control_left}")

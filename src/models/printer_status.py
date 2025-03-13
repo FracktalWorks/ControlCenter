@@ -37,7 +37,8 @@ class PrinterStatus(QObject):
         self.dosingHeight = 0.0  # Add dosingHeight
         self.maxTemp = 0.0
         self.last_update_time = time.time()  # Add this attribute
-        self._scancard_status = "Unknown"
+        self.scancard_status = "Unknown"
+        self.printing = False
 
     def updateTemperatures(self, frame: Any, chamberTemperatures: Dict[str, float]):
         """Update the model with a new frame and temperature values."""
@@ -108,13 +109,6 @@ class PrinterStatus(QObject):
     def updateMaxTemp(self, value: float):
         self.maxTemp = value
         self.maxtemp_updated.emit(value)  # Emit the maxtemp_updated signal
-
-    @property
-    def scancard_status(self):
-        return self._scancard_status
-
-    @scancard_status.setter
-    def scancard_status(self, value):
-        if self._scancard_status != value:
-            self._scancard_status = value
-            self.scancard_status_updated.emit(value)
+    
+    def updateScancardStatus(self, status: str):
+        self.scancard_status = status

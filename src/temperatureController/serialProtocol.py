@@ -62,7 +62,7 @@ class SerialProtocol:
 
             # Read response
             response = self.ser.readline().decode().strip()
-            print(f"Response: {response}")
+            # print(f"Response: {response}")
             return response
 
         except Exception as e:

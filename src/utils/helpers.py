@@ -31,17 +31,20 @@ class Worker(QRunnable):
         self.args = args
         self.kwargs = kwargs
         self.signals = WorkerSignals()
+        self.is_running = False  # Custom attribute to track running state
 
     def run(self):
+        self.is_running = True
         try:
             self.func(*self.args, **self.kwargs)
         except Exception as e:
             self.signals.error.emit(e)
         finally:
+            self.is_running = False
             self.signals.finished.emit()
 
 # Keep a reference to the workers to prevent them from being garbage collected
-workers = []
+workers = {}
 
 def run_async(func):
     """
@@ -51,10 +54,15 @@ def run_async(func):
 
     @wraps(func)
     def async_func(*args, **kwargs):
+        if func in workers and workers[func].is_running:
+            print(f"Worker for {func.__name__} is already running.")
+            return workers[func]
+
         worker = Worker(func, *args, **kwargs)
         worker.signals.error.connect(lambda e: print(f"Error in thread: {e}"))
-        
-        workers.append(worker)  # Keep a reference to the worker
+        worker.signals.finished.connect(lambda: workers.pop(func, None))  # Remove the worker from the dictionary when finished
+
+        workers[func] = worker  # Keep a reference to the worker
         QThreadPool.globalInstance().start(worker)
         return worker
 

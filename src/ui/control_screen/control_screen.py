@@ -8,7 +8,7 @@ import numpy as np
 from ui.custom_widgets import ImageWidget
 from utils.helpers import run_async
 import time
-from processAutomationController import ProcessAutomationController
+from processAutomationController.processAutomationController import ProcessAutomationController
 
 class ControlScreen(QWidget):
     progress_update_signal = pyqtSignal(int)
@@ -23,6 +23,9 @@ class ControlScreen(QWidget):
         # Initialize UI elements
         self.initialize_ui_elements()
 
+        # Initialize ProcessAutomationController
+        self.process_automation_controller = ProcessAutomationController(main_window)
+
         # Setup signal-slot connections
         self.setup_connections()
 
@@ -31,12 +34,6 @@ class ControlScreen(QWidget):
 
         # Connect signals to slots
         self.connect_signals()
-
-        # Initialize ProcessAutomationController
-        self.process_automation_controller = ProcessAutomationController(main_window)
-
-        # Connect the progress update signal to the progress bar update slot
-        self.progress_update_signal.connect(self.update_progress_bar)
 
         self.motion_control_buttons = [
             self.homeBuildModuleButton, self.undockButton, self.dockButton,
@@ -97,6 +94,9 @@ class ControlScreen(QWidget):
 
         self.maxTempLabel = self.findChild(QLabel, "maxTempLabel")  # Find the maxTempLabel
 
+        # Initialize scanCardStatusLabel
+        self.scanCardStatusLabel = self.findChild(QLabel, "scanCardStatusLabel")
+
     def setup_connections(self):
         self.step = 10
         self.setStep(10)
@@ -119,17 +119,21 @@ class ControlScreen(QWidget):
         self.setVolumeTempButton.clicked.connect(self.setVolumeHeaterTemp)
         self.initialLevellingRecoatButton.clicked.connect(self.confirm_initial_levelling_recoat)
         self.heatedBufferRecoatButton.clicked.connect(self.confirm_heated_buffer_recoat)
-        self.doseRecoatLayerButton.clicked.connect(lambda: self.process_automation_controller.dose_recoat_layer())
-        self.preparePowderLoadingButton.clicked.connect(lambda: self.process_automation_controller.prepare_powder_loading())
+        self.doseRecoatLayerButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.dose_recoat_layer))
+        self.preparePowderLoadingButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.prepare_powder_loading))
         self.stopProcessButton.clicked.connect(self.process_automation_controller.stop_process)
         self.homeRecoaterButton.clicked.connect(lambda: self.run_async_send_gcode("homeRecoater"))
         self.recoatButton.clicked.connect(lambda: self.run_async_send_gcode("recoat"))
-        self.moveToStartingPositionButton.clicked.connect(lambda: self.process_automation_controller.move_to_starting_sequence())
-        self.prepareForPartRemovalButton.clicked.connect(lambda: self.process_automation_controller.prepare_for_part_removal_sequence())
+        self.moveToStartingPositionButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.move_to_starting_sequence))
+        self.prepareForPartRemovalButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.prepare_for_part_removal_sequence))
 
     @run_async
     def run_async_send_gcode(self, gcode):
         self.main_window.moonraker_api.send_gcode(gcode)
+
+    @run_async
+    def run_async_process(self, process_method):
+        process_method()
 
     def setup_custom_widgets(self):
         thermal_camera_container = self.findChild(QWidget, "thermalCameraWidget")
@@ -167,7 +171,7 @@ class ControlScreen(QWidget):
         if reply == QMessageBox.Yes:
             self.process_automation_controller.process_running = True
             self.set_motion_control_buttons_enabled(False)
-            self.process_automation_controller.initialLevellingRecoat()
+            self.run_async_process(self.process_automation_controller.initialLevellingRecoat)
 
     def confirm_heated_buffer_recoat(self):
         """Show a confirmation dialog before starting the heated buffer recoat."""
@@ -177,14 +181,14 @@ class ControlScreen(QWidget):
         if reply == QMessageBox.Yes:
             self.process_automation_controller.process_running = True
             self.set_motion_control_buttons_enabled(False)
-            self.process_automation_controller.heatedBufferRecoat()
+            self.run_async_process(self.process_automation_controller.heatedBufferRecoat)
 
     def setVolumeHeaterTemp(self):
         """Set the volume heater temperature."""
         target_temp = self.volumeTempSpinBox.value()
-        self.run_async_send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_front TARGET={target_temp}")
-        self.run_async_send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_left TARGET={target_temp}")
-        self.run_async_send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_right TARGET={target_temp}")
+        self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_front TARGET={target_temp}")
+        self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_left TARGET={target_temp}")
+        self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_right TARGET={target_temp}")
 
     def update_setpoint(self, value):
         """Update the chamber temperature setpoint in the PrinterStatus model."""
@@ -223,10 +227,6 @@ class ControlScreen(QWidget):
         except Exception as e:
             print(f"Error in setting step: {e}")
 
-    def update_progress_bar(self, value):
-        """Update the recoater progress bar."""
-        self.recoaterProgressBar.setValue(value)
-
     def start_marking(self):
         """Start the marking process."""
         self.main_window.start_scancard_mark()
@@ -237,65 +237,8 @@ class ControlScreen(QWidget):
 
     def update_laser_status(self, status):
         """Update the laser status label."""
-        self.laserStatusLabel.setText(f"Laser Status: {status}")
+        self.scanCardStatusLabel.setText(f"Laser Status: {status}")
 
-    @run_async
-    def start_printing_sequence(self):
-        """Start the main printing sequence."""
-        self.set_motion_control_buttons_enabled(False)
-        self.main_window.home_screen.printProgressBar.setValue(0)
-
-        # Step 1: Initial Levelling Recoat
-        self.initialLevellingRecoat()
-        self.main_window.home_screen.printProgressBar.setValue(10)
-
-        # Step 2: Heated Buffer Recoat
-        self.heatedBufferRecoat()
-        self.main_window.home_screen.printProgressBar.setValue(20)
-
-        # Step 3 and 4: Mark laser and dose recoat layer until partHeight is achieved
-        layerHeight = self.main_window.printer_status.layerHeight
-        partHeight = self.main_window.printer_status.partHeight
-        recoatCount = int(partHeight / layerHeight)
-
-        for i in range(recoatCount):
-            if not self.process_running:
-                self.main_window.home_screen.printProgressBar.setValue(0)
-                break
-
-            # Pause handling
-            while not self.main_window.home_screen.playPauseButton.isChecked():
-                if not self.process_running:
-                    self.main_window.home_screen.printProgressBar.setValue(0)
-                    break
-                time.sleep(1)  # Sleep for a short duration to avoid busy waiting
-
-            if not self.process_running:
-                self.main_window.home_screen.printProgressBar.setValue(0)
-                break
-
-            # Mark laser until scancard status is "Already working"
-            while self.main_window.printer_status.scancard_status != "Already working":
-                if not self.process_running:
-                    self.main_window.home_screen.printProgressBar.setValue(0)
-                    break
-                self.main_window.start_scancard_mark()
-                time.sleep(1)  # Sleep for a short duration to avoid busy waiting
-
-            if not self.process_running:
-                self.main_window.home_screen.printProgressBar.setValue(0)
-                break
-
-            # Dose recoat layer
-            self.dose_recoat_layer()
-            progress = int((i + 1) / recoatCount * 60) + 20
-            self.main_window.home_screen.printProgressBar.setValue(progress)
-
-        # Step 5: Final Heated Buffer Recoat
-        self.heatedBufferRecoat()
-        self.main_window.home_screen.printProgressBar.setValue(100)
-
-        self.set_motion_control_buttons_enabled(True)
 
 def replace_placeholders(sequence: str, printer_status) -> str:
     """Replace placeholders in the sequence with actual values from the printer_status model."""

@@ -3,46 +3,8 @@ import socket
 import json
 import time
 from typing import Optional, Dict, Any
-from PyQt5.QtCore import QThread, pyqtSignal
-from laserErrorLogging import LaserErrorLogger
-
-class ScancardConnection(QThread):
-    status_changed = pyqtSignal(bool)
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.parent = parent
-        self.is_running = True
-        self.HOST = "localhost"
-        self.PORT = 50000
-
-    def run(self):
-        while self.is_running:
-            self.check_connection()
-            time.sleep(5)  # Check every 5 seconds
-        
-    def stop(self):
-        self.is_running = False
-
-    def check_connection(self):
-        request = {
-            "sid": 0,
-            "cmd": "get_working_status",
-        }
-        try:
-            json_string = json.dumps(request)
-            with socket.create_connection((self.HOST, self.PORT), timeout=2) as sock:
-                sock.sendall(json_string.encode())
-                ret = sock.recv(1024)
-                if ret:
-                    ret_str = ret.decode('GB2312')
-                    ret_json = json.loads(ret_str)
-                    connection_status = ret_json.get("ret")
-                    self.scancard_status_changed.emit(connection_status in ["0", "1", "2", "3"])
-                else:
-                    self.scancard_status_changed.emit(False)
-        except (socket.timeout, socket.error, json.JSONDecodeError):
-            self.scancard_status_changed.emit(False)
+from concurrent.futures import ThreadPoolExecutor, Future
+from PyQt5.QtCore import QMutex
 
 class Scancard:
     """
@@ -61,8 +23,6 @@ class Scancard:
         file_path: The file path.
         formatted_response: The formatted response.
         layer_id: The layer ID.
-        laser_logger: An instance of the LaserErrorLogger class.
-        consoleWidget: The console widget.
     Methods:
         __init__(self, parent=None): Initializes the Scancard object.
         api(self): Sends an API request to localhost:50000 and prints out the response.
@@ -160,7 +120,7 @@ class Scancard:
         try:
             self.parent = parent
             self.input_file_path = ""  # path to .emd file created
-            self.input_file = ""       # name of .emd file created
+            self.input_file = ""       # name of the .emd file created
             self.input_cli = ""
             self.HOST = "localhost"
             self.PORT = 50000
@@ -174,20 +134,11 @@ class Scancard:
             self.formatted_response = {}
             self.layer_id = 0
 
-            self.laser_logger = LaserErrorLogger()
-
-            self.connection_thread = ScancardConnection(parent=self)
-            self.connection_thread.status_changed.connect(self.handle_status_change)
-            self.connection_thread.start()
+            self.executor = ThreadPoolExecutor(max_workers=1)
+            self.mutex = QMutex()
 
         except Exception as e:
             print(f"E1: Variable initialization failed. {e}")
-
-    def handle_status_change(self, status: bool):
-        if status:
-            print("Scancard is connected.")
-        else:
-            print("Scancard connection lost.")
 
     def api(self):
         try:
@@ -217,211 +168,193 @@ class Scancard:
             self.log_error(f"E202 - {self.function} not successful \n {e}")
 
     def log_info(self, message: str):
-        self.laser_logger.logger.info(message)
-        self.parent.print_to_console({"info": message})
+        # print({"info": message})
+        pass
 
     def log_error(self, message: str):
-        self.laser_logger.logger.error(message)
-        self.parent.print_to_console({"error": message})
+        # print({"error": message})
+        pass
 
     def create_request(self, cmd: str, data: Optional[Dict[str, Any]] = None):
         self.req = {"sid": 0, "cmd": cmd}
         if data:
             self.req["data"] = data
 
-    def open_file(self, file_path: str):
-        self.create_request("open_file", {"path": file_path})
-        self.function = "Opening file"
-        self.api()
+    def execute_command(self, cmd: str, data: Optional[Dict[str, Any]] = None):
+        self.create_request(cmd, data)
+        self.function = cmd.replace("_", " ").capitalize()
 
-    def close_file(self):
-        self.create_request("close_file")
-        self.function = "Closing file"
-        self.api()
+        def task():
+            try:
+                json_string = json.dumps(self.req)
+                with socket.create_connection((self.HOST, self.PORT), timeout=self.timeout) as sock:
+                    self.log_info(f"{self.function}-> Connecting to {self.HOST}:{self.PORT}...")
+                    sock.sendall(json_string.encode())
+                    self.log_info(f"{self.function}-> Sending {self.req} to {self.HOST}:{self.PORT} with timeout of {self.timeout}s")
+                    ret = sock.recv(1024)
+                    if ret:
+                        self.handle_response(ret)
+                    else:
+                        self.log_error(f"E203 - {self.function} not successful - Request {self.req} TIMED OUT!!")
+            except (socket.timeout, socket.error, json.JSONDecodeError) as e:
+                self.log_error(f"E200 - {self.function} not successful \n {e}")
 
-    def save_file(self, file_path: str, cover: bool):
-        self.create_request("save_file", {"path": file_path, "cover": cover})
-        self.function = "Saving file"
-        self.api()
+        self.mutex.lock()
+        future = self.executor.submit(task)
+        future.add_done_callback(lambda f: self.mutex.unlock())
+        return future
 
     def get_working_status(self):
-        self.create_request("get_working_status")
-        self.function = "Getting working status"
-        self.api()
+        status_map = {
+            0: "Waiting",
+            1: "Marking",
+            2: "Previewing",
+            3: "Already working"
+        }
+
+        def task():
+            self.create_request("get_working_status")
+            self.function = "Getting working status"
+            try:
+                json_string = json.dumps(self.req)
+                with socket.create_connection((self.HOST, self.PORT), timeout=self.timeout) as sock:
+                    self.log_info(f"{self.function}-> Connecting to {self.HOST}:{self.PORT}...")
+                    sock.sendall(json_string.encode())
+                    self.log_info(f"{self.function}-> Sending {self.req} to {self.HOST}:{self.PORT} with timeout of {self.timeout}s")
+                    ret = sock.recv(1024)
+                    if ret:
+                        ret_decoded = ret.decode('GB18030', errors='replace')
+                        json_end_index = ret_decoded.rfind('}') + 1
+                        json_content = ret_decoded[:json_end_index]
+                        response_data = json.loads(json_content)
+                        connection_status = response_data.get("ret")
+                        status_text = status_map.get(connection_status, "Unknown")
+                        self.log_info(f"{self.function}-> Response received from {self.HOST}:{self.PORT} - {status_text}")
+                        return status_text
+                    else:
+                        self.log_error(f"E203 - {self.function} not successful - Request {self.req} TIMED OUT!!")
+                        return "No response received."
+            except (socket.timeout, socket.error, json.JSONDecodeError) as e:
+                self.log_error(f"E200 - {self.function} not successful \n {e}")
+                return f"Connection to {self.HOST}:{self.PORT} failed: {e}"
+
+        self.mutex.lock()
+        future = self.executor.submit(task)
+        future.add_done_callback(lambda f: self.mutex.unlock())
+        return future
+
+    def open_file(self, file_path: str):
+        return self.execute_command("open_file", {"path": file_path})
+
+    def close_file(self):
+        return self.execute_command("close_file")
+
+    def save_file(self, file_path: str, cover: bool):
+        return self.execute_command("save_file", {"path": file_path, "cover": cover})
 
     def start_mark(self):
-        self.create_request("start_mark")
-        self.function = "Starting mark"
-        self.api()
+        return self.execute_command("start_mark")
 
     def stop_mark(self):
-        self.create_request("stop_mark")
-        self.function = "Stopping mark"
-        self.api()
+        return self.execute_command("stop_mark")
 
     def start_preview(self):
-        self.create_request("start_preview")
-        self.function = "Starting preview"
-        self.api()
+        return self.execute_command("start_preview")
 
     def stop_preview(self):
-        self.create_request("stop_preview")
-        self.function = "Stopping preview"
-        self.api()
+        return self.execute_command("stop_preview")
 
     def get_markParameters_by_layer(self, layer_id: int):
-        self.create_request("get_markParameters_by_layer", {"layer_id": layer_id})
-        self.function = "Getting mark parameters by layer"
-        self.api()
+        return self.execute_command("get_markParameters_by_layer", {"layer_id": layer_id})
 
     def set_markParameters_by_layer(self, layer_id: int, params: Dict[str, Any]):
-        self.create_request("set_markParameters_by_layer", {"layer_id": layer_id, **params})
-        self.function = "Setting mark parameters by layer"
-        self.api()
+        return self.execute_command("set_markParameters_by_layer", {"layer_id": layer_id, **params})
 
     def get_markParameters_by_index(self, index: int, in_index: int):
-        self.create_request("get_markParameters_by_index", {"index": index, "in_index": in_index})
-        self.function = "Getting mark parameters by index"
-        self.api()
+        return self.execute_command("get_markParameters_by_index", {"index": index, "in_index": in_index})
 
     def set_markParameters_by_index(self, index: int, in_index: int, params: Dict[str, Any]):
-        self.create_request("set_markParameters_by_index", {"index": index, "in_index": in_index, **params})
-        self.function = "Setting mark parameters by index"
-        self.api()
+        return self.execute_command("set_markParameters_by_index", {"index": index, "in_index": in_index, **params})
 
     def download_parameters(self):
-        self.create_request("download_Parameters")
-        self.function = "Downloading parameters"
-        self.api()
+        return self.execute_command("download_Parameters")
 
     def get_entity_fill_property_by_index(self, index: int, in_index: int):
-        self.create_request("get_entity_fill_property_by_index", {"index": index, "in_index": in_index})
-        self.function = "Getting entity fill property by index"
-        self.api()
+        return self.execute_command("get_entity_fill_property_by_index", {"index": index, "in_index": in_index})
 
     def set_entity_fill_property_by_index(self, index: int, in_index: int, params: Dict[str, Any]):
-        self.create_request("set_entity_fill_property_by_index", {"index": index, "in_index": in_index, **params})
-        self.function = "Setting entity fill property by index"
-        self.api()
+        return self.execute_command("set_entity_fill_property_by_index", {"index": index, "in_index": in_index, **params})
 
     def get_entity_count(self):
-        self.create_request("get_entity_count")
-        self.function = "Getting entity count"
-        self.api()
+        return self.execute_command("get_entity_count")
 
     def translate_entity(self, dx: float, dy: float):
-        self.create_request("translate_entity", {"dx": dx, "dy": dy})
-        self.function = "Translating entity"
-        self.api()
+        return self.execute_command("translate_entity", {"dx": dx, "dy": dy})
 
     def rotate_entity(self, cx: float, cy: float, fAngle: float):
-        self.create_request("rotate_entity", {"cx": cx, "cy": cy, "fAngle": fAngle})
-        self.function = "Rotating entity"
-        self.api()
+        return self.execute_command("rotate_entity", {"cx": cx, "cy": cy, "fAngle": fAngle})
 
     def translate_entity_by_index(self, index: int, dx: float, dy: float):
-        self.create_request("translate_entity_by_index", {"index": index, "dx": dx, "dy": dy})
-        self.function = "Translating entity by index"
-        self.api()
+        return self.execute_command("translate_entity_by_index", {"index": index, "dx": dx, "dy": dy})
 
     def rotate_entity_by_index(self, index: int, cx: float, cy: float, fAngle: float):
-        self.create_request("rotate_entity_by_index", {"index": index, "cx": cx, "cy": cy, "fAngle": fAngle})
-        self.function = "Rotating entity by index"
-        self.api()
+        return self.execute_command("rotate_entity_by_index", {"index": index, "cx": cx, "cy": cy, "fAngle": fAngle})
 
     def trans_by_model(self, dx: float, dy: float, dz: float, axis: str, fAngle: float, fScale: float):
-        self.create_request("TransByModel", {"dx": dx, "dy": dy, "dz": dz, "axis": axis, "fAngle": fAngle, "fScale": fScale})
-        self.function = "Model transformation"
-        self.api()
+        return self.execute_command("TransByModel", {"dx": dx, "dy": dy, "dz": dz, "axis": axis, "fAngle": fAngle, "fScale": fScale})
 
     def get_name_by_index(self, index: int):
-        self.create_request("get_name_by_index", {"index": index})
-        self.function = "Getting name by index"
-        self.api()
+        return self.execute_command("get_name_by_index", {"index": index})
 
     def set_name_by_index(self, index: int, name: str):
-        self.create_request("set_name_by_index", {"index": index, "name": name})
-        self.function = "Setting name by index"
-        self.api()
+        return self.execute_command("set_name_by_index", {"index": index, "name": name})
 
     def get_content_by_index(self, index: int):
-        self.create_request("get_content_by_index", {"index": index})
-        self.function = "Getting content by index"
-        self.api()
+        return self.execute_command("get_content_by_index", {"index": index})
 
     def set_content_by_index(self, index: int, content: str):
-        self.create_request("set_content_by_index", {"index": index, "content": content})
-        self.function = "Setting content by index"
-        self.api()
+        return self.execute_command("set_content_by_index", {"index": index, "content": content})
 
     def get_pos_size_by_index(self, index: int):
-        self.create_request("get_pos_size_by_index", {"index": index})
-        self.function = "Getting position and size by index"
-        self.api()
+        return self.execute_command("get_pos_size_by_index", {"index": index})
 
     def set_pos_size_by_index(self, index: int, xPos: float, yPos: float, zPos: float, xSize: float, ySize: float, zSize: float):
-        self.create_request("set_pos_size_by_index", {"index": index, "xPos": xPos, "yPos": yPos, "zPos": zPos, "xSize": xSize, "ySize": ySize, "zSize": zSize})
-        self.function = "Setting position and size by index"
-        self.api()
+        return self.execute_command("set_pos_size_by_index", {"index": index, "xPos": xPos, "yPos": yPos, "zPos": zPos, "xSize": xSize, "ySize": ySize, "zSize": zSize})
 
     def get_content_by_name(self, name: str):
-        self.create_request("get_content_by_name", {"name": name})
-        self.function = "Getting content by name"
-        self.api()
+        return self.execute_command("get_content_by_name", {"name": name})
 
     def set_content_by_name(self, name: str, content: str):
-        self.create_request("set_content_by_name", {"name": name, "content": content})
-        self.function = "Setting content by name"
-        self.api()
+        return self.execute_command("set_content_by_name", {"name": name, "content": content})
 
     def delete_by_index(self, index: int):
-        self.create_request("delete_by_index", {"index": index})
-        self.function = "Deleting by index"
-        self.api()
+        return self.execute_command("delete_by_index", {"index": index})
 
     def copy_by_index(self, index: int):
-        self.create_request("copy_by_index", {"index": index})
-        self.function = "Copying by index"
-        self.api()
+        return self.execute_command("copy_by_index", {"index": index})
 
     def mark_by_index(self, index: int):
-        self.create_request("mark_by_index", {"index": index})
-        self.function = "Marking by index"
-        self.api()
+        return self.execute_command("mark_by_index", {"index": index})
 
     def read_input(self):
-        self.create_request("read_input", {"data": 0xff})
-        self.function = "Reading input"
-        self.api()
+        return self.execute_command("read_input", {"data": 0xff})
 
     def set_output(self, output: int):
-        self.create_request("write_output", {"output": output})
-        self.function = "Setting output"
-        self.api()
+        return self.execute_command("write_output", {"output": output})
 
     def clear_error(self):
-        self.create_request("clear_error")
-        self.function = "Clearing errors"
-        self.api()
+        return self.execute_command("clear_error")
 
     def get_error(self):
-        self.create_request("get_error")
-        self.function = "Getting error"
-        self.api()
-        error_description = self.ERROR_DESCRIPTIONS.get(self.ret_value, "Unknown error")
-        self.parent.print_to_console({"info": f"Error description: {error_description}"})
+        future = self.execute_command("get_error")
+        future.add_done_callback(lambda f: self.log_info(f"Error description: {self.ERROR_DESCRIPTIONS.get(self.ret_value, 'Unknown error')}"))
+        return future
 
     def enable_vision(self, bEnVision: bool):
-        self.create_request("enable_vision", {"bEnVision": bEnVision})
-        self.function = "Enabling vision"
-        self.api()
+        return self.execute_command("enable_vision", {"bEnVision": bEnVision})
 
     def vision_translate(self, dX: float, dY: float):
-        self.create_request("vision_translate", {"dX": dX, "dY": dY})
-        self.function = "Translating vision"
-        self.api()
+        return self.execute_command("vision_translate", {"dX": dX, "dY": dY})
 
     def vision_rotate(self, cX: float, cY: float, fAngle: float):
-        self.create_request("vision_rotate", {"cX": cX, "cY": cY, "fAngle": fAngle})
-        self.function = "Rotating vision"
-        self.api()
+        return self.execute_command("vision_rotate", {"cX": cX, "cY": cY, "fAngle": fAngle})

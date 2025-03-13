@@ -2786,7 +2786,7 @@ QPushButton:focus {
              </widget>
             </item>
             <item row="1" column="0" colspan="2">
-             <widget class="QLabel" name="laserStatusLabel">
+             <widget class="QLabel" name="scanCardStatusLabel">
               <property name="maximumSize">
                <size>
                 <width>16777215</width>
@@ -2796,7 +2796,7 @@ QPushButton:focus {
               <property name="font">
                <font>
                 <family>Gotham</family>
-                <pointsize>16</pointsize>
+                <pointsize>12</pointsize>
                 <weight>50</weight>
                 <bold>false</bold>
                </font>
@@ -3165,7 +3165,7 @@ QPushButton:focus {
         <property name="frameShadow">
          <enum>QFrame::Raised</enum>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_10">
+        <layout class="QVBoxLayout" name="verticalLayout_6">
          <item>
           <widget class="QWidget" name="thermalCameraWidget" native="true">
            <property name="minimumSize">
@@ -3186,27 +3186,81 @@ QPushButton:focus {
           </widget>
          </item>
          <item>
-          <widget class="QLabel" name="fileInfoLabel_12">
+          <widget class="QFrame" name="frame_13">
            <property name="maximumSize">
             <size>
              <width>16777215</width>
-             <height>20</height>
+             <height>40</height>
             </size>
            </property>
-           <property name="font">
-            <font>
-             <family>Gotham</family>
-             <pointsize>16</pointsize>
-             <weight>50</weight>
-             <bold>false</bold>
-            </font>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
            </property>
-           <property name="styleSheet">
-            <string notr="true">color:  grey;</string>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
            </property>
-           <property name="text">
-            <string>Thermal Camera Feed</string>
-           </property>
+           <layout class="QHBoxLayout" name="horizontalLayout_9">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QLabel" name="fileInfoLabel_12">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+                <weight>50</weight>
+                <bold>false</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color:  grey;</string>
+              </property>
+              <property name="text">
+               <string>Thermal Camera</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="maxTempLabel">
+              <property name="maximumSize">
+               <size>
+                <width>16777215</width>
+                <height>20</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>12</pointsize>
+                <weight>50</weight>
+                <bold>false</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color:  grey;</string>
+              </property>
+              <property name="text">
+               <string>maxTemp</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </item>
          <item>
@@ -3261,7 +3315,7 @@ QPushButton:focus {
            <property name="font">
             <font>
              <family>Gotham</family>
-             <pointsize>16</pointsize>
+             <pointsize>12</pointsize>
              <weight>50</weight>
              <bold>false</bold>
             </font>

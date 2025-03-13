@@ -6,8 +6,26 @@ class MoonrakerAPI:
     def __init__(self, base_url):
         self.base_url = base_url
         self.api_mutex = Lock()
+        
+        # Configure the logger
         self.logger = logging.getLogger(__name__)
-        logging.basicConfig(level=logging.INFO)
+        self.logger.setLevel(logging.INFO)
+        
+        # Create a file handler
+        file_handler = logging.FileHandler('moonraker.log')
+        file_handler.setLevel(logging.INFO)
+        
+        # Create a formatter and set it for the handler
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        file_handler.setFormatter(formatter)
+        
+        # Add the file handler to the logger
+        self.logger.addHandler(file_handler)
+        
+        # Remove the default console handler if it exists
+        if self.logger.hasHandlers():
+            self.logger.handlers.clear()
+            self.logger.addHandler(file_handler)
 
     def reconnect(self):
         """

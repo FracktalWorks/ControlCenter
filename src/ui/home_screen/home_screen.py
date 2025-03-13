@@ -6,11 +6,13 @@ from PyQt5.QtCore import pyqtSlot
 import numpy as np
 import pyqtgraph as pg
 from ui.custom_widgets import ImageWidget
+from utils.helpers import run_async  # Import the run_async decorator
 
 class HomeScreen(QWidget):
     def __init__(self, main_window):
         super(HomeScreen, self).__init__()
         self.main_window = main_window
+        self.is_paused = False  # Add this line to initialize the pause flag
 
         # Load the UI file
         try:
@@ -81,14 +83,19 @@ class HomeScreen(QWidget):
         self.playPauseButton.clicked.connect(self.toggle_printing)
         self.stopButton.clicked.connect(self.stop_printing)
 
+    @run_async  # Apply the run_async decorator
+    def start_printing_sequence(self):
+        self.main_window.process_automation_controller.start_printing_sequence()
+
     def toggle_printing(self):
         if self.playPauseButton.isChecked():
-            self.main_window.process_automation_controller.process_running = True
-            self.main_window.process_automation_controller.start_printing_sequence()
-            self.playPauseButton.setText("Pause")
+            if self.is_paused:
+                self.is_paused = False
+            else:
+                self.main_window.process_automation_controller.process_running = True
+                self.start_printing_sequence()  # Call the decorated method
         else:
-            self.main_window.process_automation_controller.process_running = False
-            self.playPauseButton.setText("Play")
+            self.is_paused = True  # Set the pause flag
 
     def stop_printing(self):
         self.main_window.process_automation_controller.stop_process()
