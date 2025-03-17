@@ -168,11 +168,11 @@ class Scancard:
             self.log_error(f"E202 - {self.function} not successful \n {e}")
 
     def log_info(self, message: str):
-        print({"info": message})
+        # print({"info": message})
         pass
 
     def log_error(self, message: str):
-        print({"error": message})
+        # print({"error": message})
         pass
 
     def create_request(self, cmd: str, data: Optional[Dict[str, Any]] = None):
@@ -253,10 +253,12 @@ class Scancard:
         return self.execute_command("save_file", {"path": file_path, "cover": cover})
 
     def start_mark(self):
-        return self.execute_command("start_mark")
+        future = self.execute_command("start_mark")
+        return future
 
     def stop_mark(self):
-        return self.execute_command("stop_mark")
+        future = self.execute_command("stop_mark")
+        return future
 
     def start_preview(self):
         return self.execute_command("start_preview")

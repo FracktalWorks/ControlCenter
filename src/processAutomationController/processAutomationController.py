@@ -65,6 +65,7 @@ class ProcessAutomationController(QObject):
                 setpoint = self.main_window.printer_status.chamberTemperatureSetpoint
                 temps = self.main_window.printer_status.chamberTemperatures
                 if all(temps.get(pos, 0) >= setpoint for pos in ['middle-center']):
+                    time.sleep(2) #wait 20 secs atleast for layer to heat
                     break
                 if not self.process_running:
                     self.progress_update_signal.emit(0)
@@ -124,6 +125,7 @@ class ProcessAutomationController(QObject):
             self.main_window.moonraker_api.send_gcode(line)
         self.set_motion_control_buttons_enabled(True)
 
+    @run_async
     def start_printing_sequence(self):
         """Start the main printing sequence."""
         self.set_motion_control_buttons_enabled(False)
@@ -160,6 +162,7 @@ class ProcessAutomationController(QObject):
                 setpoint = self.main_window.printer_status.chamberTemperatureSetpoint
                 temps = self.main_window.printer_status.chamberTemperatures
                 if all(temps.get(pos, 0) >= setpoint for pos in ['middle-center']):
+                    time.sleep(2) #wait 20 secs atleast for layer to heat
                     break
                 if not self.process_running:
                     self.progress_update_signal.emit(0)
@@ -171,14 +174,15 @@ class ProcessAutomationController(QObject):
                 break
 
             print("Marking layer number: ", i)
-            # Mark laser until scancard status is "Already working"
-            while self.main_window.printer_status.scancard_status != "Already working":
+            # Mark laser until the command is successfully sent
+            future = self.main_window.scancard.start_mark()
+            response = future.result()
+            time.sleep(5)  # Sleep for a short duration to avoid busy waiting \\ to ensure we get latest status
+            while self.main_window.printer_status.scancard_status == "Marking":
+                time.sleep(1)
                 if not self.process_running:
                     self.progress_update_signal.emit(0)
                     break
-                self.main_window.start_scancard_mark()
-                time.sleep(1)  # Sleep for a short duration to avoid busy waiting
-
 
             if not self.process_running:
                 self.progress_update_signal.emit(0)

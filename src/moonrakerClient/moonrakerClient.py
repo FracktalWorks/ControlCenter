@@ -19,13 +19,11 @@ class MoonrakerAPI:
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         file_handler.setFormatter(formatter)
         
+        # Remove all existing handlers
+        self.logger.handlers.clear()
+        
         # Add the file handler to the logger
         self.logger.addHandler(file_handler)
-        
-        # Remove the default console handler if it exists
-        if self.logger.hasHandlers():
-            self.logger.handlers.clear()
-            self.logger.addHandler(file_handler)
 
     def reconnect(self):
         """

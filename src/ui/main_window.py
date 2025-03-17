@@ -55,7 +55,7 @@ class MainWindow(QMainWindow):
 
         # Initialize MoonrakerAPI if not in development mode
         if not Config.DEVELOPMENT_MODE:
-            self.moonraker_api = MoonrakerAPI('http://10.20.1.121')
+            self.moonraker_api = MoonrakerAPI('http://10.20.1.135')
         else:
             self.moonraker_api = MockMoonrakerAPI()
 
@@ -65,7 +65,7 @@ class MainWindow(QMainWindow):
         # Set up a QTimer to periodically check the Scancard status
         self.scancard_timer = QTimer(self)
         self.scancard_timer.timeout.connect(self.handle_scancard_status_change)
-        self.scancard_timer.start(500)  # Check status every 2000 ms (2 seconds
+        self.scancard_timer.start(5000)  # Check status every 2000 ms (2 seconds
 
         # Load sub UIs based on configuration
         self.load_loading_screen()
