@@ -60,12 +60,12 @@ class MainWindow(QMainWindow):
             self.moonraker_api = MockMoonrakerAPI()
 
         # Initialize Scancard
-        self.scancard = Scancard(self)
+        self.scancard = Scancard(self) if not Config.DEVELOPMENT_MODE else MockScancard(self)
 
         # Set up a QTimer to periodically check the Scancard status
         self.scancard_timer = QTimer(self)
         self.scancard_timer.timeout.connect(self.handle_scancard_status_change)
-        self.scancard_timer.start(5000)  # Check status every 2000 ms (2 seconds
+        self.scancard_timer.start(5000)  # Check status every 5000 ms (5 seconds)
 
         # Load sub UIs based on configuration
         self.load_loading_screen()
@@ -131,6 +131,13 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(f"Failed to update Scancard status: {e}")
 
+    def open_scancard_file(self, file_path: str):
+        future = self.scancard.open_file(file_path)
+        future.add_done_callback(lambda f: self.update_file_info_label(file_path))
+
+    def update_file_info_label(self, file_path: str):
+        self.home_screen.fileInfoLabel.setText(file_path)
+
 class MockMoonrakerAPI:
     def __init__(self):
         print("MockMoonrakerAPI initialized")
@@ -145,5 +152,32 @@ class MockMoonrakerAPI:
     def query_temperatures(self):
         print("MockMoonrakerAPI.query_temperatures called")
         return {"temperatures": "mock_temperatures"}
+
+class MockScancard:
+    def __init__(self, main_window):
+        print("MockScancard initialized")
+
+    def start_mark(self):
+        print("MockScancard.start_mark called")
+
+    def stop_mark(self):
+        print("MockScancard.stop_mark called")
+
+    def get_working_status(self):
+        print("MockScancard.get_working_status called")
+        return MockFuture()
+
+    def open_file(self, file_path):
+        print(f"MockScancard.open_file called with file_path: {file_path}")
+        return MockFuture()
+
+class MockFuture:
+    def add_done_callback(self, callback):
+        print("MockFuture.add_done_callback called")
+        callback(self)
+
+    def result(self):
+        print("MockFuture.result called")
+        return "mock_status"
 
 

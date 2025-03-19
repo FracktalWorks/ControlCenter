@@ -1,6 +1,6 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import (QWidget, QToolButton, QPushButton, QLineEdit, QLabel,
-                             QComboBox, QFrame, QProgressBar, QSizePolicy, QVBoxLayout)
+                             QComboBox, QFrame, QProgressBar, QSizePolicy, QVBoxLayout, QFileDialog)
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import pyqtSlot
 import numpy as np
@@ -82,6 +82,7 @@ class HomeScreen(QWidget):
         # Connect buttons to their respective slots
         self.playPauseButton.clicked.connect(self.toggle_printing)
         self.stopButton.clicked.connect(self.stop_printing)
+        self.loadFileButton.clicked.connect(self.load_file)  # Connect the loadFileButton to the load_file method
 
     @run_async  # Apply the run_async decorator
     def start_printing_sequence(self):
@@ -127,3 +128,9 @@ class HomeScreen(QWidget):
         if len(self.max_temp_data) > 60:
             self.max_temp_data.pop(0)
         self.max_temp_curve.setData(self.max_temp_data)
+
+    def load_file(self):
+        options = QFileDialog.Options()
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open File", "", "All Files (*);;EMD Files (*.emd)", options=options)
+        if file_path:
+            self.main_window.open_scancard_file(file_path)
