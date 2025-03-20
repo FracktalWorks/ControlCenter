@@ -133,11 +133,39 @@ class MainWindow(QMainWindow):
 
     def open_scancard_file(self, file_path: str):
         close_future = self.scancard.close_file()
-        close_future.add_done_callback(lambda _: self._open_scancard_file(file_path))
+        close_future.add_done_callback(lambda f: self._handle_close_file_result_and_open(f, file_path))
+
+    def _handle_close_file_result_and_open(self, future, file_path: str):
+        try:
+            result = future.result()
+            meaning = self._get_scancard_return_meaning(result)
+            print(f"Close file result: {result} - {meaning}")
+        except Exception as e:
+            print(f"Failed to close Scancard file: {e}")
+        finally:
+            self._open_scancard_file(file_path)
 
     def _open_scancard_file(self, file_path: str):
         future = self.scancard.open_file(file_path)
-        future.add_done_callback(lambda f: self.update_file_info_label(file_path))
+        future.add_done_callback(lambda f: self._handle_open_file_result(f, file_path))
+
+    def _handle_open_file_result(self, future, file_path: str):
+        try:
+            result = future.result()
+            meaning = self._get_scancard_return_meaning(result)
+            print(f"Open file result: {result} - {meaning}")
+            self.update_file_info_label(file_path)
+        except Exception as e:
+            print(f"Failed to open Scancard file: {e}")
+
+    def _get_scancard_return_meaning(self, ret_value):
+        meanings = {
+            1: "Successfully executed",
+            0: "Not executed",
+            -1: "Failed to open",
+            -2: "File does not exist"
+        }
+        return meanings.get(ret_value, "Unknown return value")
 
     def update_file_info_label(self, file_path: str):
         self.home_screen.fileInfoLabel.setText(file_path)
