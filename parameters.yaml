@@ -2,7 +2,7 @@ bedTemperature: '120'
 chamberTemperature: '170'
 d: '0.5'
 dosingHeight: '0.1'
-heatedBufferHeight: '1'
+heatedBufferHeight: '5'
 heatedBufferRecoatingSequence: 'G91
 
   G0 Z{layerHeight} Y-{dosingHeight}
@@ -40,7 +40,7 @@ moveToStartingSequence: 'G28 Z Y
 
   M400'
 p: '10'
-partHeight: '15'
+partHeight: '20'
 powderLoadingExtraHeightGap: '20'
 powderLoadingSequence: 'G28 Z Y
 

@@ -132,6 +132,10 @@ class MainWindow(QMainWindow):
             print(f"Failed to update Scancard status: {e}")
 
     def open_scancard_file(self, file_path: str):
+        close_future = self.scancard.close_file()
+        close_future.add_done_callback(lambda _: self._open_scancard_file(file_path))
+
+    def _open_scancard_file(self, file_path: str):
         future = self.scancard.open_file(file_path)
         future.add_done_callback(lambda f: self.update_file_info_label(file_path))
 
@@ -169,6 +173,10 @@ class MockScancard:
 
     def open_file(self, file_path):
         print(f"MockScancard.open_file called with file_path: {file_path}")
+        return MockFuture()
+
+    def close_file(self):
+        print("MockScancard.close_file called")
         return MockFuture()
 
 class MockFuture:
