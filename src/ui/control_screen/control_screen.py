@@ -57,6 +57,18 @@ class ControlScreen(QWidget):
             print(f"Failed to load ControlScreen UI: {e}")
 
     def initialize_ui_elements(self):
+
+        self.gcode_label = self.findChild(QLabel, "gcode_label")
+        self.sendgcode = self.findChild(QPushButton, "sendgcode")
+        self.uploadgcode = self.findChild(QPushButton, "uploadgcode")
+        self.Xminus = self.findChild(QPushButton, "Xminus")
+        self.Xplus = self.findChild(QPushButton, "Xplus")
+        self.Yplus = self.findChild(QPushButton, "Yplus")
+        self.Yminus = self.findChild(QPushButton, "Yminus")
+        self.XYhome = self.findChild(QPushButton, "XYhome")
+        self.Zhome = self.findChild(QPushButton, "Zhome")
+
+        
         self.chamberTempSpinBox = self.findChild(QSpinBox, "chamberTempSpinBox")
         self.setChamberTempButton = self.findChild(QPushButton, "setChamberTempButton")
         self.cooldownButton = self.findChild(QPushButton, "cooldownButton")

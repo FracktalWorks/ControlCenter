@@ -7,6 +7,37 @@ import time
 class ProcessAutomationController(QObject):
     progress_update_signal = pyqtSignal(int)
 
+    def send_command(command, output_widget):
+        """Send a command to the motion controller and display the response."""
+        try:
+            response = pi_instruments.send_command(command)
+            if response:
+                output_widget.append(f"Command Sent: {command}")
+                output_widget.append(f"Response: {response}")
+                
+                # Wait for the movement to complete
+                time.sleep(0.5)
+                
+                # Send ?FPOS command to get current position
+                position_response = controller.send_command("?FPOS")
+                output_widget.append(f"Current Position: {position_response}")
+        except Exception as e:
+            output_widget.append(f"Error: {e}")
+            log_error(e)
+
+    def send_gcode_file(file_path, output_widget):
+        """Read G-code from a file and send each line to the controller."""
+        try:
+            with open(file_path, 'r') as file:
+                for line in file:
+                    command = line.strip()
+                    if command:
+                        send_command(command, output_widget)
+                        time.sleep(0.2)  # Short delay to avoid command overlap
+        except FileNotFoundError:
+            output_widget.append(f"Error: File {file_path} not found.")
+            log_error(f"File {file_path} not found.")
+    
     def __init__(self, main_window):
         super(ProcessAutomationController, self).__init__()
         self.main_window = main_window

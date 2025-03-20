@@ -15,7 +15,7 @@ def main():
     window.show()
     logging.debug("Main window shown")
 
-    # Set up a QTimer to trigger garbage collection periodically
+    # Set up a QTimer to trigger garbage collection periodically 
     gc_timer = QTimer()
     gc_timer.timeout.connect(gc.collect)
     gc_timer.start(60000)  # Trigger garbage collection every 60 seconds
