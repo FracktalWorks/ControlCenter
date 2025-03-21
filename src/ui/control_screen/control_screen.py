@@ -1,281 +1,1907 @@
-#TBD: incase a gcode is yet to be executed, block the thread from executing another gcode in moonraker api
+# -*- coding: utf-8 -*-
 
-from PyQt5 import uic
-from PyQt5.QtWidgets import (QWidget, QPushButton, QSpinBox, QProgressBar, QSizePolicy, QVBoxLayout, QMessageBox, QLabel)
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QTimer
-from PyQt5.QtGui import QImage
-import numpy as np
-from ui.custom_widgets import ImageWidget
-from utils.helpers import run_async
-import time
-from processAutomationController.processAutomationController import ProcessAutomationController
-
-class ControlScreen(QWidget):
-    progress_update_signal = pyqtSignal(int)
-
-    def __init__(self, main_window):
-        super(ControlScreen, self).__init__(main_window)
-        self.main_window = main_window
-
-        # Load the control screen UI
-        self.load_ui()
-
-        # Initialize UI elements
-        self.initialize_ui_elements()
-
-        # Initialize ProcessAutomationController
-        self.process_automation_controller = ProcessAutomationController(main_window)
-
-        # Setup signal-slot connections
-        self.setup_connections()
-
-        # Replace QWidget with custom ImageWidget
-        self.setup_custom_widgets()
-
-        # Connect signals to slots
-        self.connect_signals()
-
-        self.motion_control_buttons = [
-            self.homeBuildModuleButton, self.undockButton, self.dockButton,
-            self.homeFeedButton, self.homeZButton, self.step01Button,
-            self.step1Button, self.step10Button, self.step100Button,
-            self.moveZMButton, self.moveZPButton, self.moveFeedMButton,
-            self.moveFeedPButton, self.setBedTempButton, self.setVolumeTempButton,
-            self.homeRecoaterButton, self.recoatButton, self.moveToStartingPositionButton,
-            self.prepareForPartRemovalButton, self.initialLevellingRecoatButton,
-            self.heatedBufferRecoatButton, self.doseRecoatLayerButton, self.preparePowderLoadingButton
-        ]
-
-        # Connect the scancard status update signal to the label update slot
-        self.main_window.printer_status.scancard_status_updated.connect(self.update_laser_status)
-
-    def load_ui(self):
-        try:
-            uic.loadUi('src/ui/control_screen/control_screen.ui', self)
-            print("ControlScreen UI loaded successfully")
-        except Exception as e:
-            print(f"Failed to load ControlScreen UI: {e}")
-
-    def initialize_ui_elements(self):
-
-        self.gcode_label = self.findChild(QLabel, "gcode_label")
-        self.sendgcode = self.findChild(QPushButton, "sendgcode")
-        self.uploadgcode = self.findChild(QPushButton, "uploadgcode")
-        self.Xminus = self.findChild(QPushButton, "Xminus")
-        self.Xplus = self.findChild(QPushButton, "Xplus")
-        self.Yplus = self.findChild(QPushButton, "Yplus")
-        self.Yminus = self.findChild(QPushButton, "Yminus")
-        self.XYhome = self.findChild(QPushButton, "XYhome")
-        self.Zhome = self.findChild(QPushButton, "Zhome")
-
-        
-        self.chamberTempSpinBox = self.findChild(QSpinBox, "chamberTempSpinBox")
-        self.setChamberTempButton = self.findChild(QPushButton, "setChamberTempButton")
-        self.cooldownButton = self.findChild(QPushButton, "cooldownButton")
-
-        self.homeBuildModuleButton = self.findChild(QPushButton, "homeBuildModuleButton")
-        self.undockButton = self.findChild(QPushButton, "undockButton")
-        self.dockButton = self.findChild(QPushButton, "dockButton")
-        self.homeFeedButton = self.findChild(QPushButton, "homeFeedButton")
-        self.homeZButton = self.findChild(QPushButton, "homeZButton")
-        self.step01Button = self.findChild(QPushButton, "step01Button")
-        self.step1Button = self.findChild(QPushButton, "step1Button")
-        self.step10Button = self.findChild(QPushButton, "step10Button")
-        self.step100Button = self.findChild(QPushButton, "step100Button")
-        self.moveZMButton = self.findChild(QPushButton, "moveZMButton")
-        self.moveZPButton = self.findChild(QPushButton, "moveZPButton")
-        self.moveFeedMButton = self.findChild(QPushButton, "moveFeedMButton")
-        self.moveFeedPButton = self.findChild(QPushButton, "moveFeedPButton")
-        self.setBedTempButton = self.findChild(QPushButton, "setBedTempButton")
-        self.bedTempSpinBox = self.findChild(QSpinBox, "bedTempSpinBox")
-        self.setVolumeTempButton = self.findChild(QPushButton, "setVolumeTempButton")
-        self.volumeTempSpinBox = self.findChild(QSpinBox, "volumeTempSpinBox")
-
-        self.homeRecoaterButton = self.findChild(QPushButton, "homeRecoaterButton")
-        self.recoatButton = self.findChild(QPushButton, "recoatButton")
-        self.initialLevellingRecoatButton = self.findChild(QPushButton, "initialLevellingRecoatButton")
-        self.heatedBufferRecoatButton = self.findChild(QPushButton, "heatedBufferRecoatButton")
-        self.doseRecoatLayerButton = self.findChild(QPushButton, "doseRecoatLayerButton")
-        self.preparePowderLoadingButton = self.findChild(QPushButton, "preparePowderLoadingButton")
-
-        self.stopProcessButton = self.findChild(QPushButton, "stopProcessButton")
-        self.recoaterProgressBar = self.findChild(QProgressBar, "recoaterProgressBar")
-
-        self.moveToStartingPositionButton = self.findChild(QPushButton, "moveToStartingPositionButton") 
-        self.prepareForPartRemovalButton = self.findChild(QPushButton, "prepareForPartRemovalButton")  
-
-        self.maxTempLabel = self.findChild(QLabel, "maxTempLabel")  # Find the maxTempLabel
-
-        # Initialize scanCardStatusLabel
-        self.scanCardStatusLabel = self.findChild(QLabel, "scanCardStatusLabel")
-
-        # Initialize start and stop marking buttons
-        self.startMarkingButton = self.findChild(QPushButton, "startMarkingButton")
-        self.stopMarkingButton = self.findChild(QPushButton, "stopMarkingButton")
-
-    def setup_connections(self):
-        self.step = 10
-        self.setStep(10)
-        self.homeBuildModuleButton.clicked.connect(lambda: self.run_async_send_gcode("G28 Z Y\nM400"))
-        self.undockButton.clicked.connect(lambda: self.run_async_send_gcode("goDown\nM400"))
-        self.dockButton.clicked.connect(lambda: self.run_async_send_gcode("liftUp\nM400"))
-        self.setChamberTempButton.clicked.connect(lambda: self.update_setpoint(self.chamberTempSpinBox.value()))
-        self.cooldownButton.clicked.connect(self.cooldown)
-        self.homeFeedButton.clicked.connect(lambda: self.run_async_send_gcode("G28 Y\nM400"))
-        self.homeZButton.clicked.connect(lambda: self.run_async_send_gcode("G28 Z\nM400"))
-        self.step01Button.clicked.connect(lambda: self.setStep(0.1))
-        self.step1Button.clicked.connect(lambda: self.setStep(1))
-        self.step10Button.clicked.connect(lambda: self.setStep(10))
-        self.step100Button.clicked.connect(lambda: self.setStep(100))
-        self.moveZMButton.clicked.connect(lambda: self.run_async_send_gcode(f"G91\nG0 Z-{self.step}\nG90\nM400"))
-        self.moveZPButton.clicked.connect(lambda: self.run_async_send_gcode(f"G91\nG0 Z{self.step}\nG90\nM400"))
-        self.moveFeedMButton.clicked.connect(lambda: self.run_async_send_gcode(f"G91\nG0 Y-{self.step}\nG90\nM400"))
-        self.moveFeedPButton.clicked.connect(lambda: self.run_async_send_gcode(f"G91\nG0 Y{self.step}\nG90\nM400"))
-        self.setBedTempButton.clicked.connect(lambda: self.run_async_send_gcode(f"SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET={self.bedTempSpinBox.value()}"))
-        self.setVolumeTempButton.clicked.connect(self.setVolumeHeaterTemp)
-        self.initialLevellingRecoatButton.clicked.connect(self.confirm_initial_levelling_recoat)
-        self.heatedBufferRecoatButton.clicked.connect(self.confirm_heated_buffer_recoat)
-        self.doseRecoatLayerButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.dose_recoat_layer))
-        self.preparePowderLoadingButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.prepare_powder_loading))
-        self.stopProcessButton.clicked.connect(self.process_automation_controller.stop_process)
-        self.homeRecoaterButton.clicked.connect(lambda: self.run_async_send_gcode("homeRecoater"))
-        self.recoatButton.clicked.connect(lambda: self.run_async_send_gcode("recoat"))
-        self.moveToStartingPositionButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.move_to_starting_sequence))
-        self.prepareForPartRemovalButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.prepare_for_part_removal_sequence))
-
-        # Connect start and stop marking buttons to Scancard functions
-        self.startMarkingButton.clicked.connect(self.main_window.scancard.start_mark)
-        self.stopMarkingButton.clicked.connect(self.main_window.scancard.stop_mark)
-
-    @run_async
-    def run_async_send_gcode(self, gcode):
-        self.main_window.moonraker_api.send_gcode(gcode)
-
-    @run_async
-    def run_async_process(self, process_method):
-        process_method()
-
-    def setup_custom_widgets(self):
-        thermal_camera_container = self.findChild(QWidget, "thermalCameraWidget")
-        self.thermalCameraWidget = ImageWidget(thermal_camera_container)
-        layout = QVBoxLayout(thermal_camera_container)
-        layout.addWidget(self.thermalCameraWidget)
-        self.thermalCameraWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-        rgb_camera_container = self.findChild(QWidget, "rgbCameraWidget")
-        self.rgbCameraWidget = ImageWidget(rgb_camera_container)
-        layout = QVBoxLayout(rgb_camera_container)
-        layout.addWidget(self.rgbCameraWidget)
-        self.rgbCameraWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-    def connect_signals(self):
-        self.main_window.printer_status.temperatures_updated.connect(self.update_thermal_camera_widget)
-        self.main_window.printer_status.rgb_frame_updated.connect(self.update_rgb_camera_widget)
-        self.main_window.printer_status.maxtemp_updated.connect(self.update_max_temp_label)  # Connect the maxtemp_updated signal
-
-    @pyqtSlot(float)
-    def update_max_temp_label(self, max_temp):
-        """Slot to update the text of maxTempLabel with the maximum temperature."""
-        self.maxTempLabel.setText(f"Max Temp: {max_temp:.2f}°C")
-
-    def set_motion_control_buttons_enabled(self, enabled):
-        """Enable or disable motion control buttons."""
-        for button in self.motion_control_buttons:
-            button.setEnabled(enabled)
-
-    def confirm_initial_levelling_recoat(self):
-        """Show a confirmation dialog before starting the initial levelling recoat."""
-        reply = QMessageBox.question(self, 'Confirmation',
-                                     'Ensure that the build module is moved to the starting position and recoater is homed before starting the initial levelling recoat. Do you want to proceed?',
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            self.process_automation_controller.process_running = True
-            self.set_motion_control_buttons_enabled(False)
-            self.run_async_process(self.process_automation_controller.initialLevellingRecoat)
-
-    def confirm_heated_buffer_recoat(self):
-        """Show a confirmation dialog before starting the heated buffer recoat."""
-        reply = QMessageBox.question(self, 'Confirmation',
-                                     'Ensure that the build module is moved to the starting position and recoater is homed  before starting the heated buffer recoat. Do you want to proceed?',
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            self.process_automation_controller.process_running = True
-            self.set_motion_control_buttons_enabled(False)
-            self.run_async_process(self.process_automation_controller.heatedBufferRecoat)
-
-    def setVolumeHeaterTemp(self):
-        """Set the volume heater temperature."""
-        target_temp = self.volumeTempSpinBox.value()
-        self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_front TARGET={target_temp}")
-        self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_left TARGET={target_temp}")
-        self.main_window.moonraker_api.send_gcode(f"SET_HEATER_TEMPERATURE HEATER=bed_heater_right TARGET={target_temp}")
-
-    def update_setpoint(self, value):
-        """Update the chamber temperature setpoint in the PrinterStatus model."""
-        self.main_window.printer_status.chamberTemperatureSetpoint = value
-        print(f"Chamber temperature setpoint updated to {value}")
-
-    @pyqtSlot(np.ndarray, dict)
-    def update_thermal_camera_widget(self, frame, temps):
-        """Update the thermal camera widget."""
-        if frame is not None:
-            image = QImage(frame.data, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_BGR888)
-            self.thermalCameraWidget.setImage(image)
-
-    @pyqtSlot(np.ndarray)
-    def update_rgb_camera_widget(self, frame):
-        """Update the RGB camera widget."""
-        if frame is not None:
-            height, width, channel = frame.shape
-            bytes_per_line = 3 * width
-            image = QImage(frame.data, width, height, bytes_per_line, QImage.Format_RGB888).rgbSwapped()
-            self.rgbCameraWidget.setImage(image)
-
-    def cooldown(self):
-        """Cooldown the chamber."""
-        self.main_window.printer_status.chamberTemperatureSetpoint = 0
-        self.chamberTempSpinBox.setValue(0)
-
-    def setStep(self, stepRate):
-        """Set the step rate for movement."""
-        try:
-            self.step100Button.setFlat(stepRate == 100)
-            self.step1Button.setFlat(stepRate == 1)
-            self.step10Button.setFlat(stepRate == 10)
-            self.step01Button.setFlat(stepRate == 0.1)
-            self.step = stepRate
-        except Exception as e:
-            print(f"Error in setting step: {e}")
-
-    def start_marking(self):
-        """Start the marking process."""
-        self.main_window.start_scancard_mark()
-
-    def stop_marking(self):
-        """Stop the marking process."""
-        self.main_window.stop_scancard_mark()
-
-    def update_laser_status(self, status):
-        """Update the laser status label."""
-        self.scanCardStatusLabel.setText(f"Laser Status: {status}")
+# Form implementation generated from reading ui file 'control_screen.ui'
+#
+# Created by: PyQt5 UI code generator 5.15.11
+#
+# WARNING: Any manual changes made to this file will be lost when pyuic5 is
+# run again.  Do not edit this file unless you know what you are doing.
 
 
-def replace_placeholders(sequence: str, printer_status) -> str:
-    """Replace placeholders in the sequence with actual values from the printer_status model."""
-    placeholders = {
-        "{layerHeight}": printer_status.layerHeight,
-        "{initialLevellingHeight}": printer_status.initialLevellingHeight,
-        "{heatedBufferHeight}": printer_status.heatedBufferHeight,
-        "{powderLoadingExtraHeightGap}": printer_status.powderLoadingExtraHeightGap,
-        "{bedTemperature}": printer_status.bedTemperature,
-        "{volumeTemperature}": printer_status.volumeTemperature,
-        "{chamberTemperature}": printer_status.chamberTemperature,
-        "{p}": printer_status.p,
-        "{i}": printer_status.i,
-        "{d}": printer_status.d,
-        "{powderLoadingHeight}": printer_status.initialLevellingHeight + 2 * printer_status.heatedBufferHeight + printer_status.partHeight,
-        "{dosingHeight}": printer_status.dosingHeight  # Add dosingHeight
-    }
-    for placeholder, value in placeholders.items():
-        sequence = sequence.replace(placeholder, str(value))
-    return sequence
+from PyQt5 import QtCore, QtGui, QtWidgets
+
+
+class Ui_Form(object):
+    def setupUi(self, Form):
+        Form.setObjectName("Form")
+        Form.resize(1555, 834)
+        self.frame = QtWidgets.QFrame(Form)
+        self.frame.setGeometry(QtCore.QRect(9, 9, 1537, 816))
+        self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame.setObjectName("frame")
+        self.buildModuleFrame = QtWidgets.QFrame(self.frame)
+        self.buildModuleFrame.setGeometry(QtCore.QRect(10, 10, 440, 598))
+        self.buildModuleFrame.setStyleSheet("QFrame#buildModuleFrame {\n"
+"    border: 2px solid gray;\n"
+"    border-radius: 20px;\n"
+"}")
+        self.buildModuleFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.buildModuleFrame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.buildModuleFrame.setObjectName("buildModuleFrame")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.buildModuleFrame)
+        self.verticalLayout.setContentsMargins(9, 9, 9, 9)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.buildModuleAutomationFrame = QtWidgets.QFrame(self.buildModuleFrame)
+        self.buildModuleAutomationFrame.setMaximumSize(QtCore.QSize(16777215, 200))
+        self.buildModuleAutomationFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.buildModuleAutomationFrame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.buildModuleAutomationFrame.setObjectName("buildModuleAutomationFrame")
+        self.gridLayout_2 = QtWidgets.QGridLayout(self.buildModuleAutomationFrame)
+        self.gridLayout_2.setContentsMargins(5, 5, 5, 5)
+        self.gridLayout_2.setHorizontalSpacing(6)
+        self.gridLayout_2.setObjectName("gridLayout_2")
+        self.prepareForPartRemovalButton = QtWidgets.QPushButton(self.buildModuleAutomationFrame)
+        self.prepareForPartRemovalButton.setMinimumSize(QtCore.QSize(200, 50))
+        self.prepareForPartRemovalButton.setMaximumSize(QtCore.QSize(350, 50))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        self.prepareForPartRemovalButton.setFont(font)
+        self.prepareForPartRemovalButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:20px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.prepareForPartRemovalButton.setIconSize(QtCore.QSize(20, 20))
+        self.prepareForPartRemovalButton.setObjectName("prepareForPartRemovalButton")
+        self.gridLayout_2.addWidget(self.prepareForPartRemovalButton, 3, 0, 1, 1)
+        self.undockButton = QtWidgets.QPushButton(self.buildModuleAutomationFrame)
+        self.undockButton.setMinimumSize(QtCore.QSize(200, 50))
+        self.undockButton.setMaximumSize(QtCore.QSize(500, 50))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        self.undockButton.setFont(font)
+        self.undockButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:20px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.undockButton.setIconSize(QtCore.QSize(20, 20))
+        self.undockButton.setObjectName("undockButton")
+        self.gridLayout_2.addWidget(self.undockButton, 2, 1, 1, 1)
+        self.homeBuildModuleButton = QtWidgets.QPushButton(self.buildModuleAutomationFrame)
+        self.homeBuildModuleButton.setMinimumSize(QtCore.QSize(200, 50))
+        self.homeBuildModuleButton.setMaximumSize(QtCore.QSize(350, 50))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        self.homeBuildModuleButton.setFont(font)
+        self.homeBuildModuleButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:20px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.homeBuildModuleButton.setIconSize(QtCore.QSize(20, 20))
+        self.homeBuildModuleButton.setObjectName("homeBuildModuleButton")
+        self.gridLayout_2.addWidget(self.homeBuildModuleButton, 1, 1, 1, 1)
+        self.preparePowderLoadingButton = QtWidgets.QPushButton(self.buildModuleAutomationFrame)
+        self.preparePowderLoadingButton.setMinimumSize(QtCore.QSize(200, 50))
+        self.preparePowderLoadingButton.setMaximumSize(QtCore.QSize(500, 50))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        self.preparePowderLoadingButton.setFont(font)
+        self.preparePowderLoadingButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:20px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.preparePowderLoadingButton.setIconSize(QtCore.QSize(20, 20))
+        self.preparePowderLoadingButton.setObjectName("preparePowderLoadingButton")
+        self.gridLayout_2.addWidget(self.preparePowderLoadingButton, 1, 0, 1, 1)
+        self.moveToStartingPositionButton = QtWidgets.QPushButton(self.buildModuleAutomationFrame)
+        self.moveToStartingPositionButton.setMinimumSize(QtCore.QSize(200, 50))
+        self.moveToStartingPositionButton.setMaximumSize(QtCore.QSize(500, 50))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        self.moveToStartingPositionButton.setFont(font)
+        self.moveToStartingPositionButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:20px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.moveToStartingPositionButton.setIconSize(QtCore.QSize(20, 20))
+        self.moveToStartingPositionButton.setObjectName("moveToStartingPositionButton")
+        self.gridLayout_2.addWidget(self.moveToStartingPositionButton, 2, 0, 1, 1)
+        self.dockButton = QtWidgets.QPushButton(self.buildModuleAutomationFrame)
+        self.dockButton.setMinimumSize(QtCore.QSize(200, 50))
+        self.dockButton.setMaximumSize(QtCore.QSize(500, 50))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        self.dockButton.setFont(font)
+        self.dockButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:20px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.dockButton.setIconSize(QtCore.QSize(20, 20))
+        self.dockButton.setObjectName("dockButton")
+        self.gridLayout_2.addWidget(self.dockButton, 3, 1, 1, 1)
+        self.fileInfoLabel_2 = QtWidgets.QLabel(self.buildModuleAutomationFrame)
+        self.fileInfoLabel_2.setMaximumSize(QtCore.QSize(16777215, 20))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(16)
+        font.setBold(False)
+        self.fileInfoLabel_2.setFont(font)
+        self.fileInfoLabel_2.setStyleSheet("color:  grey;")
+        self.fileInfoLabel_2.setObjectName("fileInfoLabel_2")
+        self.gridLayout_2.addWidget(self.fileInfoLabel_2, 0, 0, 1, 1)
+        self.verticalLayout.addWidget(self.buildModuleAutomationFrame)
+        self.frame_8 = QtWidgets.QFrame(self.buildModuleFrame)
+        self.frame_8.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_8.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame_8.setObjectName("frame_8")
+        self.verticalLayout_5 = QtWidgets.QVBoxLayout(self.frame_8)
+        self.verticalLayout_5.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_5.setObjectName("verticalLayout_5")
+        self.frame_7 = QtWidgets.QFrame(self.frame_8)
+        self.frame_7.setMinimumSize(QtCore.QSize(0, 300))
+        self.frame_7.setMaximumSize(QtCore.QSize(16777215, 16777215))
+        self.frame_7.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_7.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame_7.setObjectName("frame_7")
+        self.frame_3 = QtWidgets.QFrame(self.frame_7)
+        self.frame_3.setGeometry(QtCore.QRect(10, 10, 60, 158))
+        self.frame_3.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_3.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame_3.setObjectName("frame_3")
+        self.verticalLayout_3 = QtWidgets.QVBoxLayout(self.frame_3)
+        self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_3.setSpacing(0)
+        self.verticalLayout_3.setObjectName("verticalLayout_3")
+        spacerItem = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.verticalLayout_3.addItem(spacerItem)
+        self.frame_5 = QtWidgets.QFrame(self.frame_7)
+        self.frame_5.setGeometry(QtCore.QRect(211, 10, 86, 158))
+        self.frame_5.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_5.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame_5.setObjectName("frame_5")
+        self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.frame_5)
+        self.verticalLayout_4.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_4.setSpacing(0)
+        self.verticalLayout_4.setObjectName("verticalLayout_4")
+        spacerItem1 = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.verticalLayout_4.addItem(spacerItem1)
+        self.moveZPButton = QtWidgets.QPushButton(self.frame_7)
+        self.moveZPButton.setGeometry(QtCore.QRect(10, 210, 101, 81))
+        self.moveZPButton.setMinimumSize(QtCore.QSize(0, 0))
+        self.moveZPButton.setMaximumSize(QtCore.QSize(101, 91))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(20)
+        self.moveZPButton.setFont(font)
+        self.moveZPButton.setStyleSheet("QPushButton {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"    border-bottom-left-radius: 15px;\n"
+"    border-bottom-right-radius: 15px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.moveZPButton.setText("")
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(":/Navigation/img/Navigation/arrows-5.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.moveZPButton.setIcon(icon)
+        self.moveZPButton.setIconSize(QtCore.QSize(40, 40))
+        self.moveZPButton.setCheckable(False)
+        self.moveZPButton.setAutoDefault(False)
+        self.moveZPButton.setDefault(False)
+        self.moveZPButton.setFlat(False)
+        self.moveZPButton.setObjectName("moveZPButton")
+        self.homeZButton = QtWidgets.QPushButton(self.frame_7)
+        self.homeZButton.setGeometry(QtCore.QRect(10, 120, 101, 91))
+        self.homeZButton.setMinimumSize(QtCore.QSize(0, 0))
+        self.homeZButton.setMaximumSize(QtCore.QSize(101, 91))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(20)
+        self.homeZButton.setFont(font)
+        self.homeZButton.setStyleSheet("QPushButton {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.homeZButton.setText("")
+        icon1 = QtGui.QIcon()
+        icon1.addPixmap(QtGui.QPixmap(":/Icons/img/icons/home-icon-silhouette.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.homeZButton.setIcon(icon1)
+        self.homeZButton.setIconSize(QtCore.QSize(40, 40))
+        self.homeZButton.setCheckable(False)
+        self.homeZButton.setAutoDefault(False)
+        self.homeZButton.setDefault(False)
+        self.homeZButton.setFlat(False)
+        self.homeZButton.setObjectName("homeZButton")
+        self.moveZMButton = QtWidgets.QPushButton(self.frame_7)
+        self.moveZMButton.setGeometry(QtCore.QRect(10, 30, 101, 91))
+        self.moveZMButton.setMinimumSize(QtCore.QSize(0, 0))
+        self.moveZMButton.setMaximumSize(QtCore.QSize(101, 91))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(20)
+        self.moveZMButton.setFont(font)
+        self.moveZMButton.setStyleSheet("QPushButton {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"    border-top-left-radius: 15px;\n"
+"    border-top-right-radius: 15px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.moveZMButton.setText("")
+        icon2 = QtGui.QIcon()
+        icon2.addPixmap(QtGui.QPixmap(":/Navigation/img/Navigation/arrows.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.moveZMButton.setIcon(icon2)
+        self.moveZMButton.setIconSize(QtCore.QSize(40, 40))
+        self.moveZMButton.setCheckable(False)
+        self.moveZMButton.setAutoDefault(False)
+        self.moveZMButton.setDefault(False)
+        self.moveZMButton.setFlat(False)
+        self.moveZMButton.setObjectName("moveZMButton")
+        self.fileInfoLabel_4 = QtWidgets.QLabel(self.frame_7)
+        self.fileInfoLabel_4.setGeometry(QtCore.QRect(50, 10, 58, 20))
+        self.fileInfoLabel_4.setMaximumSize(QtCore.QSize(16777215, 20))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(16)
+        font.setBold(False)
+        self.fileInfoLabel_4.setFont(font)
+        self.fileInfoLabel_4.setStyleSheet("color:  grey;")
+        self.fileInfoLabel_4.setObjectName("fileInfoLabel_4")
+        self.moveXMButton = QtWidgets.QPushButton(self.frame_7)
+        self.moveXMButton.setGeometry(QtCore.QRect(220, 40, 101, 81))
+        self.moveXMButton.setMinimumSize(QtCore.QSize(0, 0))
+        self.moveXMButton.setMaximumSize(QtCore.QSize(101, 91))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(20)
+        self.moveXMButton.setFont(font)
+        self.moveXMButton.setStyleSheet("QPushButton {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"    border-top-left-radius: 15px;\n"
+"    border-top-right-radius: 15px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.moveXMButton.setText("")
+        self.moveXMButton.setIcon(icon2)
+        self.moveXMButton.setIconSize(QtCore.QSize(40, 40))
+        self.moveXMButton.setCheckable(False)
+        self.moveXMButton.setAutoDefault(False)
+        self.moveXMButton.setDefault(False)
+        self.moveXMButton.setFlat(False)
+        self.moveXMButton.setObjectName("moveXMButton")
+        self.moveXPButton = QtWidgets.QPushButton(self.frame_7)
+        self.moveXPButton.setGeometry(QtCore.QRect(220, 210, 101, 81))
+        self.moveXPButton.setMinimumSize(QtCore.QSize(0, 0))
+        self.moveXPButton.setMaximumSize(QtCore.QSize(101, 91))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(20)
+        self.moveXPButton.setFont(font)
+        self.moveXPButton.setStyleSheet("QPushButton {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"    border-bottom-left-radius: 15px;\n"
+"    border-bottom-right-radius: 15px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.moveXPButton.setText("")
+        self.moveXPButton.setIcon(icon)
+        self.moveXPButton.setIconSize(QtCore.QSize(40, 40))
+        self.moveXPButton.setCheckable(False)
+        self.moveXPButton.setAutoDefault(False)
+        self.moveXPButton.setDefault(False)
+        self.moveXPButton.setFlat(False)
+        self.moveXPButton.setObjectName("moveXPButton")
+        self.homeXYButton = QtWidgets.QPushButton(self.frame_7)
+        self.homeXYButton.setGeometry(QtCore.QRect(220, 120, 101, 91))
+        self.homeXYButton.setMinimumSize(QtCore.QSize(0, 0))
+        self.homeXYButton.setMaximumSize(QtCore.QSize(101, 91))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(20)
+        self.homeXYButton.setFont(font)
+        self.homeXYButton.setStyleSheet("QPushButton {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.homeXYButton.setText("")
+        self.homeXYButton.setIcon(icon1)
+        self.homeXYButton.setIconSize(QtCore.QSize(40, 40))
+        self.homeXYButton.setCheckable(False)
+        self.homeXYButton.setAutoDefault(False)
+        self.homeXYButton.setDefault(False)
+        self.homeXYButton.setFlat(False)
+        self.homeXYButton.setObjectName("homeXYButton")
+        self.feedLabel = QtWidgets.QLabel(self.frame_7)
+        self.feedLabel.setGeometry(QtCore.QRect(300, 10, 84, 20))
+        self.feedLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(16)
+        font.setBold(False)
+        self.feedLabel.setFont(font)
+        self.feedLabel.setStyleSheet("color:  grey;")
+        self.feedLabel.setObjectName("feedLabel")
+        self.moveYPButton = QtWidgets.QPushButton(self.frame_7)
+        self.moveYPButton.setGeometry(QtCore.QRect(130, 120, 91, 91))
+        self.moveYPButton.setMinimumSize(QtCore.QSize(0, 0))
+        self.moveYPButton.setMaximumSize(QtCore.QSize(101, 91))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(20)
+        self.moveYPButton.setFont(font)
+        self.moveYPButton.setStyleSheet("QPushButton {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"     transform: rotate(45deg);\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"    border-top-left-radius: 15px;\n"
+"    border-bottom-left-radius: 15px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.moveYPButton.setText("")
+        self.moveYPButton.setIcon(icon2)
+        self.moveYPButton.setIconSize(QtCore.QSize(40, 40))
+        self.moveYPButton.setCheckable(False)
+        self.moveYPButton.setAutoDefault(False)
+        self.moveYPButton.setDefault(False)
+        self.moveYPButton.setFlat(False)
+        self.moveYPButton.setObjectName("moveYPButton")
+        self.moveYMButton = QtWidgets.QPushButton(self.frame_7)
+        self.moveYMButton.setGeometry(QtCore.QRect(320, 120, 91, 91))
+        self.moveYMButton.setMinimumSize(QtCore.QSize(0, 0))
+        self.moveYMButton.setMaximumSize(QtCore.QSize(101, 91))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(20)
+        self.moveYMButton.setFont(font)
+        self.moveYMButton.setStyleSheet("QPushButton {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"    border-bottom-right-radius: 15px;\n"
+"    border-top-right-radius: 15px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.moveYMButton.setText("")
+        self.moveYMButton.setIcon(icon)
+        self.moveYMButton.setIconSize(QtCore.QSize(40, 40))
+        self.moveYMButton.setCheckable(False)
+        self.moveYMButton.setAutoDefault(False)
+        self.moveYMButton.setDefault(False)
+        self.moveYMButton.setFlat(False)
+        self.moveYMButton.setObjectName("moveYMButton")
+        self.verticalLayout_5.addWidget(self.frame_7)
+        self.frame_6 = QtWidgets.QFrame(self.frame_8)
+        self.frame_6.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_6.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame_6.setObjectName("frame_6")
+        self.horizontalLayout = QtWidgets.QHBoxLayout(self.frame_6)
+        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout.setSpacing(0)
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.step01Button = QtWidgets.QPushButton(self.frame_6)
+        self.step01Button.setMinimumSize(QtCore.QSize(0, 60))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(15)
+        self.step01Button.setFont(font)
+        self.step01Button.setStyleSheet("QPushButton {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"border-bottom-left-radius: 15px;\n"
+"border-top-left-radius: 15px;\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border-bottom: none; /* no border for a flat push button */\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.step01Button.setIconSize(QtCore.QSize(40, 40))
+        self.step01Button.setCheckable(False)
+        self.step01Button.setAutoDefault(False)
+        self.step01Button.setDefault(False)
+        self.step01Button.setFlat(False)
+        self.step01Button.setObjectName("step01Button")
+        self.horizontalLayout.addWidget(self.step01Button)
+        self.step1Button = QtWidgets.QPushButton(self.frame_6)
+        self.step1Button.setMinimumSize(QtCore.QSize(0, 60))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(15)
+        self.step1Button.setFont(font)
+        self.step1Button.setStyleSheet("QPushButton {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border-bottom: none; /* no border for a flat push button */\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.step1Button.setIconSize(QtCore.QSize(40, 40))
+        self.step1Button.setCheckable(False)
+        self.step1Button.setAutoDefault(False)
+        self.step1Button.setDefault(False)
+        self.step1Button.setFlat(False)
+        self.step1Button.setObjectName("step1Button")
+        self.horizontalLayout.addWidget(self.step1Button)
+        self.step10Button = QtWidgets.QPushButton(self.frame_6)
+        self.step10Button.setMinimumSize(QtCore.QSize(0, 60))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(15)
+        self.step10Button.setFont(font)
+        self.step10Button.setStyleSheet("QPushButton {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border-bottom: none; /* no border for a flat push button */\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.step10Button.setIconSize(QtCore.QSize(40, 40))
+        self.step10Button.setCheckable(False)
+        self.step10Button.setAutoDefault(False)
+        self.step10Button.setDefault(False)
+        self.step10Button.setFlat(False)
+        self.step10Button.setObjectName("step10Button")
+        self.horizontalLayout.addWidget(self.step10Button)
+        self.step100Button = QtWidgets.QPushButton(self.frame_6)
+        self.step100Button.setMinimumSize(QtCore.QSize(0, 60))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(15)
+        self.step100Button.setFont(font)
+        self.step100Button.setStyleSheet("QPushButton {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border-bottom: none; /* no border for a flat push button */\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.step100Button.setIconSize(QtCore.QSize(40, 40))
+        self.step100Button.setCheckable(True)
+        self.step100Button.setChecked(False)
+        self.step100Button.setAutoDefault(False)
+        self.step100Button.setDefault(False)
+        self.step100Button.setFlat(False)
+        self.step100Button.setObjectName("step100Button")
+        self.horizontalLayout.addWidget(self.step100Button)
+        self.motorOffButton = QtWidgets.QPushButton(self.frame_6)
+        self.motorOffButton.setMinimumSize(QtCore.QSize(0, 60))
+        font = QtGui.QFont()
+        font.setFamily("MS Shell Dlg 2")
+        font.setPointSize(20)
+        self.motorOffButton.setFont(font)
+        self.motorOffButton.setStyleSheet("QPushButton {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+" border-bottom-right-radius: 15px;\n"
+" border-top-right-radius: 15px;\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.motorOffButton.setText("")
+        icon3 = QtGui.QIcon()
+        icon3.addPixmap(QtGui.QPixmap(":/Icons/img/icons/motor.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.motorOffButton.setIcon(icon3)
+        self.motorOffButton.setIconSize(QtCore.QSize(40, 40))
+        self.motorOffButton.setCheckable(False)
+        self.motorOffButton.setAutoDefault(False)
+        self.motorOffButton.setDefault(False)
+        self.motorOffButton.setFlat(False)
+        self.motorOffButton.setObjectName("motorOffButton")
+        self.horizontalLayout.addWidget(self.motorOffButton)
+        self.verticalLayout_5.addWidget(self.frame_6)
+        self.verticalLayout.addWidget(self.frame_8)
+        self.temperatureFrame = QtWidgets.QFrame(self.frame)
+        self.temperatureFrame.setGeometry(QtCore.QRect(456, 10, 255, 693))
+        self.temperatureFrame.setMinimumSize(QtCore.QSize(0, 221))
+        self.temperatureFrame.setStyleSheet("QFrame #temperatureFrame {\n"
+"    border: 2px solid gray;\n"
+"    border-radius: 20px;\n"
+"}")
+        self.temperatureFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.temperatureFrame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.temperatureFrame.setObjectName("temperatureFrame")
+        self.verticalLayout_9 = QtWidgets.QVBoxLayout(self.temperatureFrame)
+        self.verticalLayout_9.setObjectName("verticalLayout_9")
+        self.frame_12 = QtWidgets.QFrame(self.temperatureFrame)
+        self.frame_12.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_12.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame_12.setObjectName("frame_12")
+        self.verticalLayout_7 = QtWidgets.QVBoxLayout(self.frame_12)
+        self.verticalLayout_7.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_7.setSpacing(0)
+        self.verticalLayout_7.setObjectName("verticalLayout_7")
+        self.fileInfoLabel_13 = QtWidgets.QLabel(self.frame_12)
+        self.fileInfoLabel_13.setMinimumSize(QtCore.QSize(0, 0))
+        self.fileInfoLabel_13.setMaximumSize(QtCore.QSize(16777215, 20))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(16)
+        font.setBold(False)
+        self.fileInfoLabel_13.setFont(font)
+        self.fileInfoLabel_13.setStyleSheet("color:  grey;")
+        self.fileInfoLabel_13.setObjectName("fileInfoLabel_13")
+        self.verticalLayout_7.addWidget(self.fileInfoLabel_13)
+        spacerItem2 = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.verticalLayout_7.addItem(spacerItem2)
+        self.fileInfoLabel_7 = QtWidgets.QLabel(self.frame_12)
+        self.fileInfoLabel_7.setMaximumSize(QtCore.QSize(16777215, 20))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(16)
+        font.setBold(False)
+        self.fileInfoLabel_7.setFont(font)
+        self.fileInfoLabel_7.setStyleSheet("color:  grey;")
+        self.fileInfoLabel_7.setObjectName("fileInfoLabel_7")
+        self.verticalLayout_7.addWidget(self.fileInfoLabel_7)
+        spacerItem3 = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.verticalLayout_7.addItem(spacerItem3)
+        self.frame_11 = QtWidgets.QFrame(self.frame_12)
+        self.frame_11.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_11.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame_11.setObjectName("frame_11")
+        self.horizontalLayout_4 = QtWidgets.QHBoxLayout(self.frame_11)
+        self.horizontalLayout_4.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_4.setSpacing(0)
+        self.horizontalLayout_4.setObjectName("horizontalLayout_4")
+        self.bedTempSpinBox = QtWidgets.QSpinBox(self.frame_11)
+        self.bedTempSpinBox.setMinimumSize(QtCore.QSize(0, 131))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(20)
+        self.bedTempSpinBox.setFont(font)
+        self.bedTempSpinBox.setStyleSheet("QSpinBox {\n"
+"    padding-right: 5px; /* make room for the arrows */\n"
+"    color: rgb(0, 0, 0);\n"
+"    background-color: rgba(255, 255, 255, 0);\n"
+"   \n"
+"}\n"
+"QSpinBox ::text:selected {\n"
+"    background-color: rgb(0, 0, 0);\n"
+"   \n"
+"}\n"
+"QSpinBox::up-button {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"border-top-left-radius: 15px;\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"    width: 60px;\n"
+"     height: 61px;\n"
+"    padding: 2px;\n"
+"}\n"
+"\n"
+"QSpinBox::up-arrow { \n"
+"image: url(:/Navigation/img/Navigation/arrows.png);\n"
+"    width: 40px;\n"
+"     height: 40px;\n"
+"padding: 5px; }\n"
+"\n"
+"\n"
+"\n"
+"QSpinBox::up-button:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"\n"
+"QSpinBox::down-button {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"border-bottom-left-radius: 15px;\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"    width: 60px;\n"
+"     height: 61px;\n"
+"    padding: 2px;\n"
+"}\n"
+"\n"
+"QSpinBox::down-arrow {\n"
+"image: url(:/Navigation/img/Navigation/arrows-5.png);\n"
+"    width: 40px;\n"
+"     height: 40px;\n"
+"padding: 5px;\n"
+"}\n"
+"\n"
+"QSpinBox::down-button:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"\n"
+"}\n"
+"\n"
+"")
+        self.bedTempSpinBox.setFrame(False)
+        self.bedTempSpinBox.setReadOnly(False)
+        self.bedTempSpinBox.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
+        self.bedTempSpinBox.setAccelerated(True)
+        self.bedTempSpinBox.setMaximum(300)
+        self.bedTempSpinBox.setSingleStep(1)
+        self.bedTempSpinBox.setProperty("value", 0)
+        self.bedTempSpinBox.setObjectName("bedTempSpinBox")
+        self.horizontalLayout_4.addWidget(self.bedTempSpinBox)
+        self.setBedTempButton = QtWidgets.QPushButton(self.frame_11)
+        self.setBedTempButton.setMinimumSize(QtCore.QSize(71, 131))
+        self.setBedTempButton.setMaximumSize(QtCore.QSize(100, 16777215))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(13)
+        self.setBedTempButton.setFont(font)
+        self.setBedTempButton.setStyleSheet("QPushButton {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-bottom-right-radius: 15px;\n"
+"border-top-right-radius: 15px;\n"
+"\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.setBedTempButton.setText("")
+        icon4 = QtGui.QIcon()
+        icon4.addPixmap(QtGui.QPixmap(":/Icons/img/icons/verification-mark.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.setBedTempButton.setIcon(icon4)
+        self.setBedTempButton.setIconSize(QtCore.QSize(50, 50))
+        self.setBedTempButton.setObjectName("setBedTempButton")
+        self.horizontalLayout_4.addWidget(self.setBedTempButton)
+        self.verticalLayout_7.addWidget(self.frame_11)
+        spacerItem4 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout_7.addItem(spacerItem4)
+        self.fileInfoLabel_8 = QtWidgets.QLabel(self.frame_12)
+        self.fileInfoLabel_8.setMaximumSize(QtCore.QSize(16777215, 20))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(16)
+        font.setBold(False)
+        self.fileInfoLabel_8.setFont(font)
+        self.fileInfoLabel_8.setStyleSheet("color:  grey;")
+        self.fileInfoLabel_8.setObjectName("fileInfoLabel_8")
+        self.verticalLayout_7.addWidget(self.fileInfoLabel_8)
+        spacerItem5 = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.verticalLayout_7.addItem(spacerItem5)
+        self.frame_14 = QtWidgets.QFrame(self.frame_12)
+        self.frame_14.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_14.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame_14.setObjectName("frame_14")
+        self.horizontalLayout_5 = QtWidgets.QHBoxLayout(self.frame_14)
+        self.horizontalLayout_5.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_5.setSpacing(0)
+        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
+        self.volumeTempSpinBox = QtWidgets.QSpinBox(self.frame_14)
+        self.volumeTempSpinBox.setMinimumSize(QtCore.QSize(0, 131))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(20)
+        self.volumeTempSpinBox.setFont(font)
+        self.volumeTempSpinBox.setStyleSheet("QSpinBox {\n"
+"    padding-right: 5px; /* make room for the arrows */\n"
+"    color: rgb(0, 0, 0);\n"
+"    background-color: rgba(255, 255, 255, 0);\n"
+"   \n"
+"}\n"
+"QSpinBox ::text:selected {\n"
+"    background-color: rgb(0, 0, 0);\n"
+"   \n"
+"}\n"
+"QSpinBox::up-button {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"border-top-left-radius: 15px;\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"    width: 60px;\n"
+"     height: 61px;\n"
+"    padding: 2px;\n"
+"}\n"
+"\n"
+"QSpinBox::up-arrow { \n"
+"image: url(:/Navigation/img/Navigation/arrows.png);\n"
+"    width: 40px;\n"
+"     height: 40px;\n"
+"padding: 5px; }\n"
+"\n"
+"\n"
+"\n"
+"QSpinBox::up-button:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"\n"
+"QSpinBox::down-button {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"border-bottom-left-radius: 15px;\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"    width: 60px;\n"
+"     height: 61px;\n"
+"    padding: 2px;\n"
+"}\n"
+"\n"
+"QSpinBox::down-arrow {\n"
+"image: url(:/Navigation/img/Navigation/arrows-5.png);\n"
+"    width: 40px;\n"
+"     height: 40px;\n"
+"padding: 5px;\n"
+"}\n"
+"\n"
+"QSpinBox::down-button:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"\n"
+"}\n"
+"\n"
+"")
+        self.volumeTempSpinBox.setFrame(False)
+        self.volumeTempSpinBox.setReadOnly(False)
+        self.volumeTempSpinBox.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
+        self.volumeTempSpinBox.setAccelerated(True)
+        self.volumeTempSpinBox.setMaximum(300)
+        self.volumeTempSpinBox.setSingleStep(1)
+        self.volumeTempSpinBox.setProperty("value", 0)
+        self.volumeTempSpinBox.setObjectName("volumeTempSpinBox")
+        self.horizontalLayout_5.addWidget(self.volumeTempSpinBox)
+        self.setVolumeTempButton = QtWidgets.QPushButton(self.frame_14)
+        self.setVolumeTempButton.setMinimumSize(QtCore.QSize(71, 131))
+        self.setVolumeTempButton.setMaximumSize(QtCore.QSize(100, 16777215))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(13)
+        self.setVolumeTempButton.setFont(font)
+        self.setVolumeTempButton.setStyleSheet("QPushButton {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-bottom-right-radius: 15px;\n"
+"border-top-right-radius: 15px;\n"
+"\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.setVolumeTempButton.setText("")
+        self.setVolumeTempButton.setIcon(icon4)
+        self.setVolumeTempButton.setIconSize(QtCore.QSize(50, 50))
+        self.setVolumeTempButton.setObjectName("setVolumeTempButton")
+        self.horizontalLayout_5.addWidget(self.setVolumeTempButton)
+        self.verticalLayout_7.addWidget(self.frame_14)
+        self.verticalLayout_9.addWidget(self.frame_12)
+        spacerItem6 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.verticalLayout_9.addItem(spacerItem6)
+        self.fileInfoLabel_9 = QtWidgets.QLabel(self.temperatureFrame)
+        self.fileInfoLabel_9.setMaximumSize(QtCore.QSize(16777215, 20))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(16)
+        font.setBold(False)
+        self.fileInfoLabel_9.setFont(font)
+        self.fileInfoLabel_9.setStyleSheet("color:  grey;")
+        self.fileInfoLabel_9.setObjectName("fileInfoLabel_9")
+        self.verticalLayout_9.addWidget(self.fileInfoLabel_9)
+        spacerItem7 = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.verticalLayout_9.addItem(spacerItem7)
+        self.frame_16 = QtWidgets.QFrame(self.temperatureFrame)
+        self.frame_16.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_16.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame_16.setObjectName("frame_16")
+        self.horizontalLayout_6 = QtWidgets.QHBoxLayout(self.frame_16)
+        self.horizontalLayout_6.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_6.setSpacing(0)
+        self.horizontalLayout_6.setObjectName("horizontalLayout_6")
+        self.chamberTempSpinBox = QtWidgets.QSpinBox(self.frame_16)
+        self.chamberTempSpinBox.setMinimumSize(QtCore.QSize(0, 131))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(20)
+        self.chamberTempSpinBox.setFont(font)
+        self.chamberTempSpinBox.setStyleSheet("QSpinBox {\n"
+"    padding-right: 5px; /* make room for the arrows */\n"
+"    color: rgb(0, 0, 0);\n"
+"    background-color: rgba(255, 255, 255, 0);\n"
+"   \n"
+"}\n"
+"QSpinBox ::text:selected {\n"
+"    background-color: rgb(0, 0, 0);\n"
+"   \n"
+"}\n"
+"QSpinBox::up-button {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"border-top-left-radius: 15px;\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"    width: 60px;\n"
+"     height: 61px;\n"
+"    padding: 2px;\n"
+"}\n"
+"\n"
+"QSpinBox::up-arrow { \n"
+"image: url(:/Navigation/img/Navigation/arrows.png);\n"
+"    width: 40px;\n"
+"     height: 40px;\n"
+"padding: 5px; }\n"
+"\n"
+"\n"
+"\n"
+"QSpinBox::up-button:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"\n"
+"QSpinBox::down-button {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"border-bottom-left-radius: 15px;\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"    width: 60px;\n"
+"     height: 61px;\n"
+"    padding: 2px;\n"
+"}\n"
+"\n"
+"QSpinBox::down-arrow {\n"
+"image: url(:/Navigation/img/Navigation/arrows-5.png);\n"
+"    width: 40px;\n"
+"     height: 40px;\n"
+"padding: 5px;\n"
+"}\n"
+"\n"
+"QSpinBox::down-button:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"\n"
+"}\n"
+"\n"
+"")
+        self.chamberTempSpinBox.setFrame(False)
+        self.chamberTempSpinBox.setReadOnly(False)
+        self.chamberTempSpinBox.setButtonSymbols(QtWidgets.QAbstractSpinBox.UpDownArrows)
+        self.chamberTempSpinBox.setAccelerated(True)
+        self.chamberTempSpinBox.setMaximum(300)
+        self.chamberTempSpinBox.setSingleStep(1)
+        self.chamberTempSpinBox.setProperty("value", 0)
+        self.chamberTempSpinBox.setObjectName("chamberTempSpinBox")
+        self.horizontalLayout_6.addWidget(self.chamberTempSpinBox)
+        self.setChamberTempButton = QtWidgets.QPushButton(self.frame_16)
+        self.setChamberTempButton.setMinimumSize(QtCore.QSize(71, 131))
+        self.setChamberTempButton.setMaximumSize(QtCore.QSize(100, 16777215))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(13)
+        self.setChamberTempButton.setFont(font)
+        self.setChamberTempButton.setStyleSheet("QPushButton {\n"
+"     border: 1px solid rgb(87, 87, 87);\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-bottom-right-radius: 15px;\n"
+"border-top-right-radius: 15px;\n"
+"\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.setChamberTempButton.setText("")
+        self.setChamberTempButton.setIcon(icon4)
+        self.setChamberTempButton.setIconSize(QtCore.QSize(50, 50))
+        self.setChamberTempButton.setObjectName("setChamberTempButton")
+        self.horizontalLayout_6.addWidget(self.setChamberTempButton)
+        self.verticalLayout_9.addWidget(self.frame_16)
+        self.cooldownButton = QtWidgets.QPushButton(self.temperatureFrame)
+        self.cooldownButton.setMinimumSize(QtCore.QSize(0, 80))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(15)
+        self.cooldownButton.setFont(font)
+        self.cooldownButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius: 15px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.cooldownButton.setText("")
+        icon5 = QtGui.QIcon()
+        icon5.addPixmap(QtGui.QPixmap(":/Icons/img/icons/snowflake.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.cooldownButton.setIcon(icon5)
+        self.cooldownButton.setIconSize(QtCore.QSize(50, 50))
+        self.cooldownButton.setObjectName("cooldownButton")
+        self.verticalLayout_9.addWidget(self.cooldownButton)
+        self.groupFrame = QtWidgets.QFrame(self.frame)
+        self.groupFrame.setGeometry(QtCore.QRect(717, 10, 432, 599))
+        self.groupFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.groupFrame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.groupFrame.setObjectName("groupFrame")
+        self.verticalLayout_12 = QtWidgets.QVBoxLayout(self.groupFrame)
+        self.verticalLayout_12.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_12.setObjectName("verticalLayout_12")
+        self.recoaterFrame = QtWidgets.QFrame(self.groupFrame)
+        self.recoaterFrame.setStyleSheet("QFrame #recoaterFrame{\n"
+"    border: 2px solid gray;\n"
+"    border-radius: 20px;\n"
+"}")
+        self.recoaterFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.recoaterFrame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.recoaterFrame.setObjectName("recoaterFrame")
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.recoaterFrame)
+        self.verticalLayout_2.setObjectName("verticalLayout_2")
+        self.fileInfoLabel_6 = QtWidgets.QLabel(self.recoaterFrame)
+        self.fileInfoLabel_6.setMaximumSize(QtCore.QSize(16777215, 20))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(16)
+        font.setBold(False)
+        self.fileInfoLabel_6.setFont(font)
+        self.fileInfoLabel_6.setStyleSheet("color:  grey;")
+        self.fileInfoLabel_6.setObjectName("fileInfoLabel_6")
+        self.verticalLayout_2.addWidget(self.fileInfoLabel_6)
+        self.recoaterProgressBar = QtWidgets.QProgressBar(self.recoaterFrame)
+        self.recoaterProgressBar.setMinimumSize(QtCore.QSize(50, 0))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(16)
+        font.setBold(False)
+        font.setItalic(False)
+        font.setStyleStrategy(QtGui.QFont.PreferAntialias)
+        self.recoaterProgressBar.setFont(font)
+        self.recoaterProgressBar.setStyleSheet("QProgressBar::chunk {\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:0.523, x2:0, y2:0.534, stop:0 rgba(130, 203, 117, 255), stop:1 rgba(66, 191, 85, 255));\n"
+"border: 1px solid green;\n"
+"    border-radius: 10px;\n"
+"\n"
+"}\n"
+"\n"
+"QProgressBar {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"    border-radius: 10px;\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0, stop:0 rgba(150, 150, 150, 255), stop:1 rgba(180, 180, 180, 255));\n"
+"}\n"
+"")
+        self.recoaterProgressBar.setMaximum(100)
+        self.recoaterProgressBar.setProperty("value", 0)
+        self.recoaterProgressBar.setAlignment(QtCore.Qt.AlignCenter)
+        self.recoaterProgressBar.setTextVisible(True)
+        self.recoaterProgressBar.setOrientation(QtCore.Qt.Horizontal)
+        self.recoaterProgressBar.setObjectName("recoaterProgressBar")
+        self.verticalLayout_2.addWidget(self.recoaterProgressBar)
+        self.frame_2 = QtWidgets.QFrame(self.recoaterFrame)
+        self.frame_2.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_2.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame_2.setObjectName("frame_2")
+        self.gridLayout_4 = QtWidgets.QGridLayout(self.frame_2)
+        self.gridLayout_4.setContentsMargins(0, 0, 0, 0)
+        self.gridLayout_4.setObjectName("gridLayout_4")
+        self.initialLevellingRecoatButton = QtWidgets.QPushButton(self.frame_2)
+        self.initialLevellingRecoatButton.setMinimumSize(QtCore.QSize(200, 50))
+        self.initialLevellingRecoatButton.setMaximumSize(QtCore.QSize(350, 50))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        self.initialLevellingRecoatButton.setFont(font)
+        self.initialLevellingRecoatButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:20px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.initialLevellingRecoatButton.setIconSize(QtCore.QSize(20, 20))
+        self.initialLevellingRecoatButton.setObjectName("initialLevellingRecoatButton")
+        self.gridLayout_4.addWidget(self.initialLevellingRecoatButton, 0, 0, 1, 1)
+        self.homeRecoaterButton = QtWidgets.QPushButton(self.frame_2)
+        self.homeRecoaterButton.setMinimumSize(QtCore.QSize(200, 50))
+        self.homeRecoaterButton.setMaximumSize(QtCore.QSize(350, 50))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        self.homeRecoaterButton.setFont(font)
+        self.homeRecoaterButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:20px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.homeRecoaterButton.setIconSize(QtCore.QSize(20, 20))
+        self.homeRecoaterButton.setObjectName("homeRecoaterButton")
+        self.gridLayout_4.addWidget(self.homeRecoaterButton, 0, 1, 1, 1)
+        self.heatedBufferRecoatButton = QtWidgets.QPushButton(self.frame_2)
+        self.heatedBufferRecoatButton.setMinimumSize(QtCore.QSize(200, 50))
+        self.heatedBufferRecoatButton.setMaximumSize(QtCore.QSize(350, 50))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        self.heatedBufferRecoatButton.setFont(font)
+        self.heatedBufferRecoatButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:20px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.heatedBufferRecoatButton.setIconSize(QtCore.QSize(20, 20))
+        self.heatedBufferRecoatButton.setObjectName("heatedBufferRecoatButton")
+        self.gridLayout_4.addWidget(self.heatedBufferRecoatButton, 1, 0, 1, 1)
+        self.recoatButton = QtWidgets.QPushButton(self.frame_2)
+        self.recoatButton.setMinimumSize(QtCore.QSize(200, 50))
+        self.recoatButton.setMaximumSize(QtCore.QSize(350, 50))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        self.recoatButton.setFont(font)
+        self.recoatButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:20px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.recoatButton.setIconSize(QtCore.QSize(20, 20))
+        self.recoatButton.setObjectName("recoatButton")
+        self.gridLayout_4.addWidget(self.recoatButton, 1, 1, 1, 1)
+        self.verticalLayout_2.addWidget(self.frame_2)
+        self.doseRecoatLayerButton = QtWidgets.QPushButton(self.recoaterFrame)
+        self.doseRecoatLayerButton.setMinimumSize(QtCore.QSize(200, 50))
+        self.doseRecoatLayerButton.setMaximumSize(QtCore.QSize(500, 50))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        self.doseRecoatLayerButton.setFont(font)
+        self.doseRecoatLayerButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:20px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.doseRecoatLayerButton.setIconSize(QtCore.QSize(20, 20))
+        self.doseRecoatLayerButton.setObjectName("doseRecoatLayerButton")
+        self.verticalLayout_2.addWidget(self.doseRecoatLayerButton)
+        self.stopProcessButton = QtWidgets.QPushButton(self.recoaterFrame)
+        self.stopProcessButton.setMinimumSize(QtCore.QSize(150, 100))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(16)
+        self.stopProcessButton.setFont(font)
+        self.stopProcessButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:50px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.stopProcessButton.setText("")
+        icon6 = QtGui.QIcon()
+        icon6.addPixmap(QtGui.QPixmap(":/Icons/img/icons/video-player-stop-button.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.stopProcessButton.setIcon(icon6)
+        self.stopProcessButton.setIconSize(QtCore.QSize(50, 50))
+        self.stopProcessButton.setObjectName("stopProcessButton")
+        self.verticalLayout_2.addWidget(self.stopProcessButton)
+        self.verticalLayout_12.addWidget(self.recoaterFrame)
+        self.laserscannerFrame = QtWidgets.QFrame(self.groupFrame)
+        self.laserscannerFrame.setStyleSheet("QFrame #laserscannerFrame{\n"
+"    border: 2px solid gray;\n"
+"    border-radius: 20px;\n"
+"}")
+        self.laserscannerFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.laserscannerFrame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.laserscannerFrame.setObjectName("laserscannerFrame")
+        self.gridLayout = QtWidgets.QGridLayout(self.laserscannerFrame)
+        self.gridLayout.setObjectName("gridLayout")
+        self.fileInfoLabel_10 = QtWidgets.QLabel(self.laserscannerFrame)
+        self.fileInfoLabel_10.setMaximumSize(QtCore.QSize(16777215, 20))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(16)
+        font.setBold(False)
+        self.fileInfoLabel_10.setFont(font)
+        self.fileInfoLabel_10.setStyleSheet("color:  grey;")
+        self.fileInfoLabel_10.setObjectName("fileInfoLabel_10")
+        self.gridLayout.addWidget(self.fileInfoLabel_10, 0, 0, 1, 1)
+        self.scanCardStatusLabel = QtWidgets.QLabel(self.laserscannerFrame)
+        self.scanCardStatusLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        font.setBold(False)
+        self.scanCardStatusLabel.setFont(font)
+        self.scanCardStatusLabel.setStyleSheet("color:  grey;")
+        self.scanCardStatusLabel.setObjectName("scanCardStatusLabel")
+        self.gridLayout.addWidget(self.scanCardStatusLabel, 1, 0, 1, 2)
+        self.opticsOnButton = QtWidgets.QPushButton(self.laserscannerFrame)
+        self.opticsOnButton.setMinimumSize(QtCore.QSize(200, 50))
+        self.opticsOnButton.setMaximumSize(QtCore.QSize(350, 50))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        self.opticsOnButton.setFont(font)
+        self.opticsOnButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:20px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.opticsOnButton.setIconSize(QtCore.QSize(20, 20))
+        self.opticsOnButton.setObjectName("opticsOnButton")
+        self.gridLayout.addWidget(self.opticsOnButton, 2, 0, 1, 1)
+        self.opticsOffButton = QtWidgets.QPushButton(self.laserscannerFrame)
+        self.opticsOffButton.setMinimumSize(QtCore.QSize(200, 50))
+        self.opticsOffButton.setMaximumSize(QtCore.QSize(350, 50))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        self.opticsOffButton.setFont(font)
+        self.opticsOffButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:20px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.opticsOffButton.setIconSize(QtCore.QSize(20, 20))
+        self.opticsOffButton.setObjectName("opticsOffButton")
+        self.gridLayout.addWidget(self.opticsOffButton, 2, 1, 1, 1)
+        self.scannerOnButton = QtWidgets.QPushButton(self.laserscannerFrame)
+        self.scannerOnButton.setMinimumSize(QtCore.QSize(200, 50))
+        self.scannerOnButton.setMaximumSize(QtCore.QSize(350, 50))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        self.scannerOnButton.setFont(font)
+        self.scannerOnButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:20px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.scannerOnButton.setIconSize(QtCore.QSize(20, 20))
+        self.scannerOnButton.setObjectName("scannerOnButton")
+        self.gridLayout.addWidget(self.scannerOnButton, 3, 0, 1, 1)
+        self.scannerOffButton = QtWidgets.QPushButton(self.laserscannerFrame)
+        self.scannerOffButton.setMinimumSize(QtCore.QSize(200, 50))
+        self.scannerOffButton.setMaximumSize(QtCore.QSize(350, 50))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        self.scannerOffButton.setFont(font)
+        self.scannerOffButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:20px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.scannerOffButton.setIconSize(QtCore.QSize(20, 20))
+        self.scannerOffButton.setObjectName("scannerOffButton")
+        self.gridLayout.addWidget(self.scannerOffButton, 3, 1, 1, 1)
+        self.startMarkingButton = QtWidgets.QPushButton(self.laserscannerFrame)
+        self.startMarkingButton.setMinimumSize(QtCore.QSize(200, 50))
+        self.startMarkingButton.setMaximumSize(QtCore.QSize(350, 50))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        self.startMarkingButton.setFont(font)
+        self.startMarkingButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:20px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.startMarkingButton.setIconSize(QtCore.QSize(20, 20))
+        self.startMarkingButton.setObjectName("startMarkingButton")
+        self.gridLayout.addWidget(self.startMarkingButton, 4, 0, 1, 1)
+        self.stopMarkingButton = QtWidgets.QPushButton(self.laserscannerFrame)
+        self.stopMarkingButton.setMinimumSize(QtCore.QSize(200, 50))
+        self.stopMarkingButton.setMaximumSize(QtCore.QSize(350, 50))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        self.stopMarkingButton.setFont(font)
+        self.stopMarkingButton.setStyleSheet("QPushButton {\n"
+"    border: 1px solid rgb(87, 87, 87);\n"
+"\n"
+"    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));\n"
+"border-radius:20px;\n"
+"}\n"
+"\n"
+"QPushButton:pressed {\n"
+"    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,\n"
+"                                      stop: 0 #dadbde, stop: 1 #f6f7fa);\n"
+"}\n"
+"\n"
+"QPushButton:flat {\n"
+"    border: none; /* no border for a flat push button */\n"
+"}\n"
+"\n"
+"QPushButton:default {\n"
+"    border-color: navy; /* make the default button prominent */\n"
+"}\n"
+"\n"
+"QPushButton:focus {\n"
+"    outline: none;\n"
+"}")
+        self.stopMarkingButton.setIconSize(QtCore.QSize(20, 20))
+        self.stopMarkingButton.setObjectName("stopMarkingButton")
+        self.gridLayout.addWidget(self.stopMarkingButton, 4, 1, 1, 1)
+        self.verticalLayout_12.addWidget(self.laserscannerFrame)
+        self.cameraFrames = QtWidgets.QFrame(self.frame)
+        self.cameraFrames.setGeometry(QtCore.QRect(1155, 10, 372, 794))
+        self.cameraFrames.setStyleSheet("QFrame #cameraFrames{\n"
+"    border: 2px solid gray;\n"
+"    border-radius: 20px;\n"
+"}")
+        self.cameraFrames.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.cameraFrames.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.cameraFrames.setObjectName("cameraFrames")
+        self.verticalLayout_6 = QtWidgets.QVBoxLayout(self.cameraFrames)
+        self.verticalLayout_6.setObjectName("verticalLayout_6")
+        self.thermalCameraWidget = QtWidgets.QWidget(self.cameraFrames)
+        self.thermalCameraWidget.setMinimumSize(QtCore.QSize(350, 350))
+        self.thermalCameraWidget.setMaximumSize(QtCore.QSize(350, 350))
+        self.thermalCameraWidget.setStyleSheet("")
+        self.thermalCameraWidget.setObjectName("thermalCameraWidget")
+        self.verticalLayout_6.addWidget(self.thermalCameraWidget)
+        self.frame_13 = QtWidgets.QFrame(self.cameraFrames)
+        self.frame_13.setMaximumSize(QtCore.QSize(16777215, 40))
+        self.frame_13.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_13.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame_13.setObjectName("frame_13")
+        self.horizontalLayout_9 = QtWidgets.QHBoxLayout(self.frame_13)
+        self.horizontalLayout_9.setContentsMargins(0, 0, 0, 0)
+        self.horizontalLayout_9.setObjectName("horizontalLayout_9")
+        self.fileInfoLabel_12 = QtWidgets.QLabel(self.frame_13)
+        self.fileInfoLabel_12.setMaximumSize(QtCore.QSize(16777215, 20))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        font.setBold(False)
+        self.fileInfoLabel_12.setFont(font)
+        self.fileInfoLabel_12.setStyleSheet("color:  grey;")
+        self.fileInfoLabel_12.setObjectName("fileInfoLabel_12")
+        self.horizontalLayout_9.addWidget(self.fileInfoLabel_12)
+        self.maxTempLabel = QtWidgets.QLabel(self.frame_13)
+        self.maxTempLabel.setMaximumSize(QtCore.QSize(16777215, 20))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        font.setBold(False)
+        self.maxTempLabel.setFont(font)
+        self.maxTempLabel.setStyleSheet("color:  grey;")
+        self.maxTempLabel.setObjectName("maxTempLabel")
+        self.horizontalLayout_9.addWidget(self.maxTempLabel)
+        self.verticalLayout_6.addWidget(self.frame_13)
+        spacerItem8 = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.verticalLayout_6.addItem(spacerItem8)
+        self.rgbCameraWidget = QtWidgets.QWidget(self.cameraFrames)
+        self.rgbCameraWidget.setMinimumSize(QtCore.QSize(350, 350))
+        self.rgbCameraWidget.setMaximumSize(QtCore.QSize(350, 350))
+        self.rgbCameraWidget.setStyleSheet("")
+        self.rgbCameraWidget.setObjectName("rgbCameraWidget")
+        self.verticalLayout_6.addWidget(self.rgbCameraWidget)
+        self.fileInfoLabel_11 = QtWidgets.QLabel(self.cameraFrames)
+        self.fileInfoLabel_11.setMinimumSize(QtCore.QSize(0, 0))
+        self.fileInfoLabel_11.setMaximumSize(QtCore.QSize(16777215, 20))
+        font = QtGui.QFont()
+        font.setFamily("Gotham")
+        font.setPointSize(12)
+        font.setBold(False)
+        self.fileInfoLabel_11.setFont(font)
+        self.fileInfoLabel_11.setStyleSheet("color:  grey;")
+        self.fileInfoLabel_11.setObjectName("fileInfoLabel_11")
+        self.verticalLayout_6.addWidget(self.fileInfoLabel_11)
+
+        self.retranslateUi(Form)
+        QtCore.QMetaObject.connectSlotsByName(Form)
+
+    def retranslateUi(self, Form):
+        _translate = QtCore.QCoreApplication.translate
+        Form.setWindowTitle(_translate("Form", "Form"))
+        self.prepareForPartRemovalButton.setText(_translate("Form", "Prepare for Part Removal"))
+        self.undockButton.setText(_translate("Form", "Undock"))
+        self.homeBuildModuleButton.setText(_translate("Form", "Home Build Module"))
+        self.preparePowderLoadingButton.setText(_translate("Form", "Prepare Powder Loading"))
+        self.moveToStartingPositionButton.setText(_translate("Form", "Move to Starting Position"))
+        self.dockButton.setText(_translate("Form", "Dock"))
+        self.fileInfoLabel_2.setText(_translate("Form", "BUILD MODULE"))
+        self.fileInfoLabel_4.setText(_translate("Form", "Z Axis"))
+        self.feedLabel.setText(_translate("Form", "X Y Axis "))
+        self.step01Button.setText(_translate("Form", "0.1 mm"))
+        self.step1Button.setText(_translate("Form", "1 mm"))
+        self.step10Button.setText(_translate("Form", "10 mm"))
+        self.step100Button.setText(_translate("Form", "100 mm"))
+        self.fileInfoLabel_13.setText(_translate("Form", "TEMPERATURES"))
+        self.fileInfoLabel_7.setText(_translate("Form", "Bed"))
+        self.bedTempSpinBox.setSuffix(_translate("Form", "°C"))
+        self.fileInfoLabel_8.setText(_translate("Form", "Volume"))
+        self.volumeTempSpinBox.setSuffix(_translate("Form", "°C"))
+        self.fileInfoLabel_9.setText(_translate("Form", "Chamber"))
+        self.chamberTempSpinBox.setSuffix(_translate("Form", "°C"))
+        self.fileInfoLabel_6.setText(_translate("Form", "RECOATER"))
+        self.recoaterProgressBar.setFormat(_translate("Form", "%p%"))
+        self.initialLevellingRecoatButton.setText(_translate("Form", "Initial Levelling Recoat"))
+        self.homeRecoaterButton.setText(_translate("Form", "Home Recoater"))
+        self.heatedBufferRecoatButton.setText(_translate("Form", "Heated Buffer Recoat"))
+        self.recoatButton.setText(_translate("Form", "Recoat"))
+        self.doseRecoatLayerButton.setText(_translate("Form", "Dose-Recoat Layer"))
+        self.fileInfoLabel_10.setText(_translate("Form", "LASER/SCANNER"))
+        self.scanCardStatusLabel.setText(_translate("Form", "LaserStatusText"))
+        self.opticsOnButton.setText(_translate("Form", "Optics ON"))
+        self.opticsOffButton.setText(_translate("Form", "Optics Off"))
+        self.scannerOnButton.setText(_translate("Form", "Scanner ON"))
+        self.scannerOffButton.setText(_translate("Form", "Scanner Off"))
+        self.startMarkingButton.setText(_translate("Form", "Start Marking"))
+        self.stopMarkingButton.setText(_translate("Form", "Stop Marking"))
+        self.fileInfoLabel_12.setText(_translate("Form", "Thermal Camera"))
+        self.maxTempLabel.setText(_translate("Form", "maxTemp"))
+        self.fileInfoLabel_11.setText(_translate("Form", "RGB Camera Feed"))
+import resource_rc
+
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    Form = QtWidgets.QWidget()
+    ui = Ui_Form()
+    ui.setupUi(Form)
+    Form.show()
+    sys.exit(app.exec_())

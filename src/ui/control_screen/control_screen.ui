@@ -1015,7 +1015,7 @@ QPushButton:focus {
             <bool>false</bool>
            </property>
           </widget>
-          <widget class="QPushButton" name="homeFeedButton">
+          <widget class="QPushButton" name="homeXYButton">
            <property name="geometry">
             <rect>
              <x>220</x>
