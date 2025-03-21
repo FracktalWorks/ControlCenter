@@ -1894,7 +1894,7 @@ class Ui_Form(object):
         self.fileInfoLabel_12.setText(_translate("Form", "Thermal Camera"))
         self.maxTempLabel.setText(_translate("Form", "maxTemp"))
         self.fileInfoLabel_11.setText(_translate("Form", "RGB Camera Feed"))
-import resource_rc
+#import resource_rc
 
 
 if __name__ == "__main__":
