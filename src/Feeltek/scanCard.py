@@ -180,24 +180,20 @@ class Scancard:
         if data:
             self.req["data"] = data
 
-    def execute_command(self, cmd: str, data: Optional[Dict[str, Any]] = None):
-        self.create_request(cmd, data)
-        self.function = cmd.replace("_", " ").capitalize()
-
+    def execute_command(self, cmd: str, data: Optional[Dict[str, Any]] = None) -> Future:
         def task():
             try:
-                json_string = json.dumps(self.req)
+                json_string = json.dumps({"sid": 0, "cmd": cmd, "data": data})
                 with socket.create_connection((self.HOST, self.PORT), timeout=self.timeout) as sock:
-                    self.log_info(f"{self.function}-> Connecting to {self.HOST}:{self.PORT}...")
                     sock.sendall(json_string.encode())
-                    self.log_info(f"{self.function}-> Sending {self.req} to {self.HOST}:{self.PORT} with timeout of {self.timeout}s")
                     ret = sock.recv(1024)
                     if ret:
-                        self.handle_response(ret)
+                        response_data = json.loads(ret.decode('GB18030', errors='replace'))
+                        return {"ret_value": response_data.get("ret")}
                     else:
-                        self.log_error(f"E203 - {self.function} not successful - Request {self.req} TIMED OUT!!")
+                        return {"ret_value": -1}  # Simulated error response
             except (socket.timeout, socket.error, json.JSONDecodeError) as e:
-                self.log_error(f"E200 - {self.function} not successful \n {e}")
+                return {"ret_value": -1}  # Simulated error response
 
         self.mutex.lock()
         future = self.executor.submit(task)

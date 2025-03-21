@@ -138,21 +138,27 @@ class MainWindow(QMainWindow):
     def _handle_close_file_result_and_open(self, future, file_path: str):
         try:
             result = future.result()
-            meaning = self._get_scancard_return_meaning(result)
+            if result is None:
+                raise ValueError("No result returned from close_file command")
+            meaning = self._get_scancard_return_meaning(result.get("ret_value"))
             print(f"Close file result: {result} - {meaning}")
         except Exception as e:
             print(f"Failed to close Scancard file: {e}")
         finally:
+            print("Executing finally block")
             self._open_scancard_file(file_path)
 
     def _open_scancard_file(self, file_path: str):
+        print(f"Opening Scancard file: {file_path}")
         future = self.scancard.open_file(file_path)
         future.add_done_callback(lambda f: self._handle_open_file_result(f, file_path))
 
     def _handle_open_file_result(self, future, file_path: str):
         try:
             result = future.result()
-            meaning = self._get_scancard_return_meaning(result)
+            if result is None:
+                raise ValueError("No result returned from open_file command")
+            meaning = self._get_scancard_return_meaning(result.get("ret_value"))
             print(f"Open file result: {result} - {meaning}")
             self.update_file_info_label(file_path)
         except Exception as e:
@@ -160,7 +166,7 @@ class MainWindow(QMainWindow):
 
     def _get_scancard_return_meaning(self, ret_value):
         meanings = {
-            1: "Successfully executed",
+            1: "Execution successful",
             0: "Not executed",
             -1: "Failed to open",
             -2: "File does not exist"
@@ -214,6 +220,6 @@ class MockFuture:
 
     def result(self):
         print("MockFuture.result called")
-        return "mock_status"
+        return {"ret_value": 1}  # Simulated response
 
 
