@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 from utils.helpers import run_async
 import time
+import  pi_instruments
 
 # TBD clean play pause process. use printer printing status to diferentiate between control and main printing sequence
 
@@ -19,7 +20,7 @@ class ProcessAutomationController(QObject):
                 time.sleep(0.5)
                 
                 # Send ?FPOS command to get current position
-                position_response = controller.send_command("?FPOS")
+                position_response = pi_instruments.send_command("?FPOS")
                 output_widget.append(f"Current Position: {position_response}")
         except Exception as e:
             output_widget.append(f"Error: {e}")
@@ -32,7 +33,7 @@ class ProcessAutomationController(QObject):
                 for line in file:
                     command = line.strip()
                     if command:
-                        send_command(command, output_widget)
+                        pi_instruments.send_command(command, output_widget)
                         time.sleep(0.2)  # Short delay to avoid command overlap
         except FileNotFoundError:
             output_widget.append(f"Error: File {file_path} not found.")

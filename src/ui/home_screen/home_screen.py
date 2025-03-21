@@ -7,6 +7,7 @@ import numpy as np
 import pyqtgraph as pg
 from ui.custom_widgets import ImageWidget
 from utils.helpers import run_async  # Import the run_async decorator
+import processAutomationController  # Import the ProcessAutomationController module
 
 class HomeScreen(QWidget):
     def __init__(self, main_window):
@@ -129,8 +130,13 @@ class HomeScreen(QWidget):
             self.max_temp_data.pop(0)
         self.max_temp_curve.setData(self.max_temp_data)
 
+    # def load_file(self):
+    #     options = QFileDialog.Options()
+    #     file_path, _ = QFileDialog.getOpenFileName(self, "Open File", "", "All Files (*);;EMD Files (*.emd)", options=options)
+    #     if file_path:
+    #         self.main_window.open_scancard_file(file_path)
+
     def load_file(self):
-        options = QFileDialog.Options()
-        file_path, _ = QFileDialog.getOpenFileName(self, "Open File", "", "All Files (*);;EMD Files (*.emd)", options=options)
+        file_path, _ = QFileDialog.getOpenFileName(self, "Open G-code File", "", "Text Files (*.txt);;All Files (*)")
         if file_path:
-            self.main_window.open_scancard_file(file_path)
+            processAutomationController.send_gcode_file(file_path, self.output_display)
