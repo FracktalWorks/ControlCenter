@@ -43,7 +43,8 @@ class ControlScreen(QWidget):
             self.moveFeedPButton, self.setBedTempButton, self.setVolumeTempButton,
             self.homeRecoaterButton, self.recoatButton, self.moveToStartingPositionButton,
             self.prepareForPartRemovalButton, self.initialLevellingRecoatButton,
-            self.heatedBufferRecoatButton, self.doseRecoatLayerButton, self.preparePowderLoadingButton
+            self.heatedBufferRecoatButton, self.doseRecoatLayerButton, self.preparePowderLoadingButton,
+            self.homeXYButton, self.moveXMButton, self.moveXPButton, self.moveYMButton, self.moveYPButton,
         ]
 
         # Connect the scancard status update signal to the label update slot
@@ -60,25 +61,33 @@ class ControlScreen(QWidget):
         self.chamberTempSpinBox = self.findChild(QSpinBox, "chamberTempSpinBox")
         self.setChamberTempButton = self.findChild(QPushButton, "setChamberTempButton")
         self.cooldownButton = self.findChild(QPushButton, "cooldownButton")
-
         self.homeBuildModuleButton = self.findChild(QPushButton, "homeBuildModuleButton")
         self.undockButton = self.findChild(QPushButton, "undockButton")
         self.dockButton = self.findChild(QPushButton, "dockButton")
         self.homeFeedButton = self.findChild(QPushButton, "homeFeedButton")
-        self.homeZButton = self.findChild(QPushButton, "homeZButton")
         self.step01Button = self.findChild(QPushButton, "step01Button")
         self.step1Button = self.findChild(QPushButton, "step1Button")
         self.step10Button = self.findChild(QPushButton, "step10Button")
         self.step100Button = self.findChild(QPushButton, "step100Button")
+
+        # Z movements
+        self.homeZButton = self.findChild(QPushButton, "homeZButton")
         self.moveZMButton = self.findChild(QPushButton, "moveZMButton")
         self.moveZPButton = self.findChild(QPushButton, "moveZPButton")
+
+        # XY movements
+        self.homeXYButton = self.findChild(QPushButton, "homeXYButton")
+        self.moveXMButton = self.findChild(QPushButton, "moveXMButton")
+        self.moveXPButton = self.findChild(QPushButton, "moveXPButton")
+        self.moveYMButton = self.findChild(QPushButton, "moveYMButton")
+        self.moveYPButton = self.findChild(QPushButton, "moveYPButton")
+
         self.moveFeedMButton = self.findChild(QPushButton, "moveFeedMButton")
         self.moveFeedPButton = self.findChild(QPushButton, "moveFeedPButton")
         self.setBedTempButton = self.findChild(QPushButton, "setBedTempButton")
         self.bedTempSpinBox = self.findChild(QSpinBox, "bedTempSpinBox")
         self.setVolumeTempButton = self.findChild(QPushButton, "setVolumeTempButton")
         self.volumeTempSpinBox = self.findChild(QSpinBox, "volumeTempSpinBox")
-
         self.homeRecoaterButton = self.findChild(QPushButton, "homeRecoaterButton")
         self.recoatButton = self.findChild(QPushButton, "recoatButton")
         self.initialLevellingRecoatButton = self.findChild(QPushButton, "initialLevellingRecoatButton")
@@ -110,13 +119,25 @@ class ControlScreen(QWidget):
         self.setChamberTempButton.clicked.connect(lambda: self.update_setpoint(self.chamberTempSpinBox.value()))
         self.cooldownButton.clicked.connect(self.cooldown)
         self.homeFeedButton.clicked.connect(lambda: self.run_async_send_gcode("G28 Y\nM400"))
-        self.homeZButton.clicked.connect(lambda: self.run_async_send_gcode("G28 Z\nM400"))
+
+        # Z movements
+        self.homeZButton.clicked.connect(lambda: self.run_async_send_gcode("N50 G01 Z0 F500"))
+        self.moveZMButton.clicked.connect(lambda: self.run_async_send_gcode("N60 G01 Z-10 F200"))
+        self.moveZPButton.clicked.connect(lambda: self.run_async_send_gcode("N70 G01 Z10 F200"))
+       
+        # XY movements
+        
+        self.homeXYButton.clicked.connect(lambda: self.run_async_send_gcode("N70 G01 X0 Y0 F200"))
+        self.moveXMButton.clicked.connect(lambda: self.run_async_send_gcode("N20 G01 X-10 F500"))
+        self.moveXPButton.clicked.connect(lambda: self.run_async_send_gcode("N30 G01 X10 F500"))
+        self.moveYMButton.clicked.connect(lambda: self.run_async_send_gcode("N40 G01 Y-10 F500"))
+        self.moveYPButton.clicked.connect(lambda: self.run_async_send_gcode("N10 G01 Y10 F500"))
+
         self.step01Button.clicked.connect(lambda: self.setStep(0.1))
         self.step1Button.clicked.connect(lambda: self.setStep(1))
         self.step10Button.clicked.connect(lambda: self.setStep(10))
         self.step100Button.clicked.connect(lambda: self.setStep(100))
-        self.moveZMButton.clicked.connect(lambda: self.run_async_send_gcode(f"G91\nG0 Z-{self.step}\nG90\nM400"))
-        self.moveZPButton.clicked.connect(lambda: self.run_async_send_gcode(f"G91\nG0 Z{self.step}\nG90\nM400"))
+      
         self.moveFeedMButton.clicked.connect(lambda: self.run_async_send_gcode(f"G91\nG0 Y-{self.step}\nG90\nM400"))
         self.moveFeedPButton.clicked.connect(lambda: self.run_async_send_gcode(f"G91\nG0 Y{self.step}\nG90\nM400"))
         self.setBedTempButton.clicked.connect(lambda: self.run_async_send_gcode(f"SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET={self.bedTempSpinBox.value()}"))
