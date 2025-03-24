@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1333</width>
-    <height>714</height>
+    <height>981</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -152,7 +152,7 @@
 background-color: rgba(255, 255, 255, 0);</string>
            </property>
            <property name="text">
-            <string>STATUS</string>
+            <string>Machine Status</string>
            </property>
            <property name="scaledContents">
             <bool>true</bool>
@@ -199,7 +199,7 @@ background-color: rgba(255, 255, 255, 0);</string>
                <string/>
               </property>
               <property name="pixmap">
-               <pixmap resource="../resources/resource.qrc">:/Logos &amp; Branding/img/Logos/control_center_logo_black.png</pixmap>
+               <pixmap resource="../resources/resource.qrc">:/Logos &amp; Branding/img/Logos/cmetlogo.png</pixmap>
               </property>
               <property name="scaledContents">
                <bool>true</bool>
@@ -307,7 +307,7 @@ background-color: rgba(255, 255, 255, 0);</string>
               <x>0</x>
               <y>10</y>
               <width>100</width>
-              <height>16</height>
+              <height>20</height>
              </rect>
             </property>
             <property name="minimumSize">
@@ -331,7 +331,7 @@ background-color: rgba(255, 255, 255, 0);</string>
 background-color: rgba(255, 255, 255, 0);</string>
             </property>
             <property name="text">
-             <string>Laser Status</string>
+             <string>Light Engine</string>
             </property>
             <property name="scaledContents">
              <bool>true</bool>
@@ -373,7 +373,7 @@ background-color: rgba(255, 255, 255, 0);</string>
 background-color: rgba(255, 255, 255, 0);</string>
             </property>
             <property name="text">
-             <string>Scanner Status</string>
+             <string>Motion Stage</string>
             </property>
             <property name="scaledContents">
              <bool>true</bool>
@@ -496,7 +496,7 @@ background-color: rgba(255, 255, 255, 0);</string>
          <enum>QTabWidget::Rounded</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>3</number>
         </property>
         <property name="iconSize">
          <size>

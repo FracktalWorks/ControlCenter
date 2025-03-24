@@ -1,8 +1,7 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QTabWidget, QVBoxLayout
 from ui.home_screen.home_screen import HomeScreen
-from ui.control_screen.control_screen import Ui_Form
-#from ui.control_screen.control_screen import ControlScreen
+from ui.control_screen.control_screen import ControlScreen
 
 
 class TabScreen(QWidget):
@@ -53,7 +52,7 @@ class TabScreen(QWidget):
         control_tab = self.findChild(QWidget, 'control_tab')
         if control_tab:
             # Import ControlScreen only when needed
-            self.control_screen = Ui_Form(self.main_window)
+            self.control_screen = ControlScreen(self.main_window)
             self.main_window.control_screen = self.control_screen  # Store reference in main_window
             layout = QVBoxLayout(control_tab)
             layout.addWidget(self.control_screen)

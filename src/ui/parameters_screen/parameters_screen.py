@@ -40,34 +40,34 @@ class ParametersScreen(QWidget):
         self.saveChangesButton = self.findChild(QPushButton, "saveChangesButton")
         self.revertChangesButton = self.findChild(QPushButton, "revertChangesButton")
 
-        # Store initial values
-        self.initial_values = {
-            "layerHeight": self.printer_status.layerHeight,
-            "initialLevellingHeight": self.printer_status.initialLevellingHeight,
-            "heatedBufferHeight": self.printer_status.heatedBufferHeight,
-            "powderLoadingExtraHeightGap": self.printer_status.powderLoadingExtraHeightGap,
-            "bedTemperature": self.printer_status.bedTemperature,
-            "volumeTemperature": self.printer_status.volumeTemperature,
-            "chamberTemperature": self.printer_status.chamberTemperature,
-            "p": self.printer_status.p,
-            "i": self.printer_status.i,
-            "d": self.printer_status.d,
-            "powderLoadingSequence": self.printer_status.powderLoadingSequence,
-            "moveToStartingSequence": self.printer_status.moveToStartingSequence,
-            "prepareForPartRemovalSequence": self.printer_status.prepareForPartRemovalSequence,
-            "initialLevellingRecoatingSequence": self.printer_status.initialLevellingRecoatingSequence,
-            "heatedBufferRecoatingSequence": self.printer_status.heatedBufferRecoatingSequence,
-            "printingRecoatingSequence": self.printer_status.printingRecoatingSequence,
-            "partHeight": self.printer_status.partHeight,
-            "dosingHeight": self.printer_status.dosingHeight  # Add dosingHeight
-        }
+        # # Store initial values
+        # self.initial_values = {
+        #     "layerHeight": self.printer_status.layerHeight,
+        #     "initialLevellingHeight": self.printer_status.initialLevellingHeight,
+        #     "heatedBufferHeight": self.printer_status.heatedBufferHeight,
+        #     "powderLoadingExtraHeightGap": self.printer_status.powderLoadingExtraHeightGap,
+        #     "bedTemperature": self.printer_status.bedTemperature,
+        #     "volumeTemperature": self.printer_status.volumeTemperature,
+        #     "chamberTemperature": self.printer_status.chamberTemperature,
+        #     "p": self.printer_status.p,
+        #     "i": self.printer_status.i,
+        #     "d": self.printer_status.d,
+        #     "powderLoadingSequence": self.printer_status.powderLoadingSequence,
+        #     "moveToStartingSequence": self.printer_status.moveToStartingSequence,
+        #     "prepareForPartRemovalSequence": self.printer_status.prepareForPartRemovalSequence,
+        #     "initialLevellingRecoatingSequence": self.printer_status.initialLevellingRecoatingSequence,
+        #     "heatedBufferRecoatingSequence": self.printer_status.heatedBufferRecoatingSequence,
+        #     "printingRecoatingSequence": self.printer_status.printingRecoatingSequence,
+        #     "partHeight": self.printer_status.partHeight,
+        #     "dosingHeight": self.printer_status.dosingHeight  # Add dosingHeight
+        # }
 
-        # Connect buttons to methods
-        self.saveChangesButton.clicked.connect(self.save_changes)
-        self.revertChangesButton.clicked.connect(self.revert_changes)
+        # # Connect buttons to methods
+        # self.saveChangesButton.clicked.connect(self.save_changes)
+        # self.revertChangesButton.clicked.connect(self.revert_changes)
 
         # Load parameters from YAML file
-        self.load_parameters()
+        # self.load_parameters()
 
     def load_parameters(self):
         try:

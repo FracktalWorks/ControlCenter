@@ -157,7 +157,7 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 - Download QT Designer from: [QT Designer Download](https://build-system.fman.io/qt-designer-download)
 - You can refer to the readme file at [Julia-Touch-UI-Documentation](https://github.com/FracktalWorks/Julia-Touch-UI-Documentation). For this project, I'm using VSCode and Copilot to develop, so taking a slightly different approach to the toolchain.
 - Refer to this to understand how to properly use images inside a QT project: [text](https://www.youtube.com/watch?v=LceWgvYSVkQ)
-- Convert the resource file: `pyrcc5 -o src/ui/ui_files/resources/resource_rc.py src/ui/ui_files/resources/resource.qrc`
+- Convert the resource file: `pyrcc5 -o src/ui/resources/resource_rc.py src/ui/resources/resource.qrc`
 - https://stackoverflow.com/questions/26698628/mvc-design-with-qt-designer-and-pyqt-pyside MVC architecture example
 - https://medium.com/@mark_huber/a-clean-architecture-for-a-pyqt-gui-using-the-mvp-pattern-78ecbc8321c0 MVC details
 - https://developer.mantidproject.org/MVPTutorial/Introduction.html MVP tutorial

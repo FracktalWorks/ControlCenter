@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1594</width>
+    <width>1392</width>
     <height>953</height>
    </rect>
   </property>
@@ -59,74 +59,6 @@
             <property name="bottomMargin">
              <number>0</number>
             </property>
-            <item>
-             <widget class="QFrame" name="graphFrame">
-              <property name="frameShape">
-               <enum>QFrame::StyledPanel</enum>
-              </property>
-              <property name="frameShadow">
-               <enum>QFrame::Raised</enum>
-              </property>
-              <layout class="QGridLayout" name="gridLayout_3">
-               <property name="leftMargin">
-                <number>0</number>
-               </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>0</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
-               <item row="0" column="0">
-                <widget class="QWidget" name="chamberTempGraphWidget" native="true">
-                 <property name="minimumSize">
-                  <size>
-                   <width>200</width>
-                   <height>200</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16777215</width>
-                   <height>350</height>
-                  </size>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">background-color: rgb(232, 232, 232);
-</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="fileInfoLabel_4">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>30</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <family>Gotham</family>
-                <pointsize>16</pointsize>
-                <weight>50</weight>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">color:  grey;</string>
-              </property>
-              <property name="text">
-               <string>Chamber Temperature Graph</string>
-              </property>
-             </widget>
-            </item>
             <item>
              <widget class="QFrame" name="tempButtonLayerFrame">
               <property name="maximumSize">
@@ -182,712 +114,17 @@
                    <number>0</number>
                   </property>
                   <item>
-                   <widget class="QFrame" name="tempFrame">
-                    <property name="minimumSize">
+                   <spacer name="verticalSpacer_2">
+                    <property name="orientation">
+                     <enum>Qt::Vertical</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
                      <size>
-                      <width>0</width>
-                      <height>150</height>
+                      <width>20</width>
+                      <height>40</height>
                      </size>
                     </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>16777215</width>
-                      <height>200</height>
-                     </size>
-                    </property>
-                    <property name="frameShape">
-                     <enum>QFrame::StyledPanel</enum>
-                    </property>
-                    <property name="frameShadow">
-                     <enum>QFrame::Raised</enum>
-                    </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout_6">
-                     <property name="leftMargin">
-                      <number>0</number>
-                     </property>
-                     <property name="topMargin">
-                      <number>0</number>
-                     </property>
-                     <property name="rightMargin">
-                      <number>0</number>
-                     </property>
-                     <property name="bottomMargin">
-                      <number>0</number>
-                     </property>
-                     <item>
-                      <widget class="QFrame" name="bedTempFrame">
-                       <property name="frameShape">
-                        <enum>QFrame::StyledPanel</enum>
-                       </property>
-                       <property name="frameShadow">
-                        <enum>QFrame::Raised</enum>
-                       </property>
-                       <layout class="QVBoxLayout" name="verticalLayout_4">
-                        <property name="leftMargin">
-                         <number>0</number>
-                        </property>
-                        <property name="topMargin">
-                         <number>0</number>
-                        </property>
-                        <property name="rightMargin">
-                         <number>0</number>
-                        </property>
-                        <property name="bottomMargin">
-                         <number>0</number>
-                        </property>
-                        <item>
-                         <widget class="QFrame" name="frame_6">
-                          <property name="frameShape">
-                           <enum>QFrame::StyledPanel</enum>
-                          </property>
-                          <property name="frameShadow">
-                           <enum>QFrame::Raised</enum>
-                          </property>
-                          <layout class="QHBoxLayout" name="horizontalLayout_2">
-                           <property name="leftMargin">
-                            <number>0</number>
-                           </property>
-                           <property name="topMargin">
-                            <number>0</number>
-                           </property>
-                           <property name="rightMargin">
-                            <number>0</number>
-                           </property>
-                           <property name="bottomMargin">
-                            <number>0</number>
-                           </property>
-                           <item>
-                            <widget class="QFrame" name="frame_5">
-                             <property name="frameShape">
-                              <enum>QFrame::StyledPanel</enum>
-                             </property>
-                             <property name="frameShadow">
-                              <enum>QFrame::Raised</enum>
-                             </property>
-                             <layout class="QVBoxLayout" name="verticalLayout_3">
-                              <property name="spacing">
-                               <number>69</number>
-                              </property>
-                              <property name="leftMargin">
-                               <number>0</number>
-                              </property>
-                              <property name="topMargin">
-                               <number>0</number>
-                              </property>
-                              <property name="rightMargin">
-                               <number>0</number>
-                              </property>
-                              <property name="bottomMargin">
-                               <number>0</number>
-                              </property>
-                              <item>
-                               <widget class="QLabel" name="bedTargetTemperature">
-                                <property name="font">
-                                 <font>
-                                  <family>Gotham</family>
-                                  <pointsize>16</pointsize>
-                                  <weight>50</weight>
-                                  <bold>false</bold>
-                                  <underline>false</underline>
-                                  <strikeout>false</strikeout>
-                                 </font>
-                                </property>
-                                <property name="styleSheet">
-                                 <string notr="true">
-   color:  grey;
-background-color: rgba(255, 255, 255, 0);</string>
-                                </property>
-                                <property name="text">
-                                 <string>0</string>
-                                </property>
-                                <property name="alignment">
-                                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                                </property>
-                               </widget>
-                              </item>
-                              <item>
-                               <widget class="QLabel" name="bedActualTemperature">
-                                <property name="font">
-                                 <font>
-                                  <family>Gotham</family>
-                                  <pointsize>16</pointsize>
-                                  <weight>50</weight>
-                                  <bold>false</bold>
-                                  <underline>false</underline>
-                                  <strikeout>false</strikeout>
-                                 </font>
-                                </property>
-                                <property name="styleSheet">
-                                 <string notr="true">
-   color:  grey;
-background-color: rgba(0, 0, 0, 0);</string>
-                                </property>
-                                <property name="text">
-                                 <string>0</string>
-                                </property>
-                                <property name="alignment">
-                                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                                </property>
-                               </widget>
-                              </item>
-                             </layout>
-                            </widget>
-                           </item>
-                           <item>
-                            <widget class="QProgressBar" name="bedTempBar">
-                             <property name="font">
-                              <font>
-                               <family>Gotham</family>
-                               <pointsize>16</pointsize>
-                              </font>
-                             </property>
-                             <property name="styleSheet">
-                              <string notr="true">QProgressBar::chunk {
-    border-radius: 5px;
-	background-color: qlineargradient(spread:pad, x1:0.517, y1:0, x2:0.522, y2:0, stop:0.0336134 rgba(74, 183, 255, 255), stop:1 rgba(53, 173, 242, 255));
-}
-
-QProgressBar {
-    border: 1px solid grey;
-    border-radius: 5px;
-}
-</string>
-                             </property>
-                             <property name="maximum">
-                              <number>300</number>
-                             </property>
-                             <property name="value">
-                              <number>200</number>
-                             </property>
-                             <property name="alignment">
-                              <set>Qt::AlignCenter</set>
-                             </property>
-                             <property name="textVisible">
-                              <bool>false</bool>
-                             </property>
-                             <property name="orientation">
-                              <enum>Qt::Vertical</enum>
-                             </property>
-                             <property name="format">
-                              <string>%v</string>
-                             </property>
-                            </widget>
-                           </item>
-                           <item>
-                            <widget class="QLabel" name="celciusLabel_3">
-                             <property name="font">
-                              <font>
-                               <family>Gotham</family>
-                               <pointsize>16</pointsize>
-                               <weight>50</weight>
-                               <bold>false</bold>
-                               <underline>false</underline>
-                               <strikeout>false</strikeout>
-                              </font>
-                             </property>
-                             <property name="styleSheet">
-                              <string notr="true">
-   color:  grey;
-background-color: rgba(255, 255, 255, 0);</string>
-                             </property>
-                             <property name="text">
-                              <string>°C</string>
-                             </property>
-                            </widget>
-                           </item>
-                          </layout>
-                         </widget>
-                        </item>
-                        <item>
-                         <widget class="QLabel" name="printerStatus_4">
-                          <property name="minimumSize">
-                           <size>
-                            <width>100</width>
-                            <height>0</height>
-                           </size>
-                          </property>
-                          <property name="font">
-                           <font>
-                            <family>Gotham</family>
-                            <pointsize>12</pointsize>
-                            <weight>50</weight>
-                            <bold>false</bold>
-                            <underline>false</underline>
-                            <strikeout>false</strikeout>
-                           </font>
-                          </property>
-                          <property name="styleSheet">
-                           <string notr="true">
-   color:  grey;
-background-color: rgba(0, 0, 0, 0);</string>
-                          </property>
-                          <property name="text">
-                           <string>Bed</string>
-                          </property>
-                          <property name="scaledContents">
-                           <bool>true</bool>
-                          </property>
-                          <property name="alignment">
-                           <set>Qt::AlignCenter</set>
-                          </property>
-                          <property name="wordWrap">
-                           <bool>true</bool>
-                          </property>
-                         </widget>
-                        </item>
-                       </layout>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QFrame" name="ChamberTempFrame">
-                       <property name="frameShape">
-                        <enum>QFrame::StyledPanel</enum>
-                       </property>
-                       <property name="frameShadow">
-                        <enum>QFrame::Raised</enum>
-                       </property>
-                       <layout class="QVBoxLayout" name="verticalLayout_5">
-                        <property name="leftMargin">
-                         <number>0</number>
-                        </property>
-                        <property name="topMargin">
-                         <number>0</number>
-                        </property>
-                        <property name="rightMargin">
-                         <number>0</number>
-                        </property>
-                        <property name="bottomMargin">
-                         <number>0</number>
-                        </property>
-                        <item>
-                         <widget class="QFrame" name="frame_7">
-                          <property name="frameShape">
-                           <enum>QFrame::StyledPanel</enum>
-                          </property>
-                          <property name="frameShadow">
-                           <enum>QFrame::Raised</enum>
-                          </property>
-                          <layout class="QHBoxLayout" name="horizontalLayout_3">
-                           <property name="leftMargin">
-                            <number>0</number>
-                           </property>
-                           <property name="topMargin">
-                            <number>0</number>
-                           </property>
-                           <property name="rightMargin">
-                            <number>0</number>
-                           </property>
-                           <property name="bottomMargin">
-                            <number>0</number>
-                           </property>
-                           <item>
-                            <widget class="QFrame" name="frame_8">
-                             <property name="frameShape">
-                              <enum>QFrame::StyledPanel</enum>
-                             </property>
-                             <property name="frameShadow">
-                              <enum>QFrame::Raised</enum>
-                             </property>
-                             <layout class="QVBoxLayout" name="verticalLayout_6">
-                              <property name="spacing">
-                               <number>69</number>
-                              </property>
-                              <property name="leftMargin">
-                               <number>0</number>
-                              </property>
-                              <property name="topMargin">
-                               <number>0</number>
-                              </property>
-                              <property name="rightMargin">
-                               <number>0</number>
-                              </property>
-                              <property name="bottomMargin">
-                               <number>0</number>
-                              </property>
-                              <item>
-                               <widget class="QLabel" name="volumeTargetTemperature">
-                                <property name="font">
-                                 <font>
-                                  <family>Gotham</family>
-                                  <pointsize>16</pointsize>
-                                  <weight>50</weight>
-                                  <bold>false</bold>
-                                  <underline>false</underline>
-                                  <strikeout>false</strikeout>
-                                 </font>
-                                </property>
-                                <property name="styleSheet">
-                                 <string notr="true">
-   color:  grey;
-background-color: rgba(255, 255, 255, 0);</string>
-                                </property>
-                                <property name="text">
-                                 <string>0</string>
-                                </property>
-                                <property name="alignment">
-                                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                                </property>
-                               </widget>
-                              </item>
-                              <item>
-                               <widget class="QLabel" name="volumeActualTemperature">
-                                <property name="font">
-                                 <font>
-                                  <family>Gotham</family>
-                                  <pointsize>16</pointsize>
-                                  <weight>50</weight>
-                                  <bold>false</bold>
-                                  <underline>false</underline>
-                                  <strikeout>false</strikeout>
-                                 </font>
-                                </property>
-                                <property name="styleSheet">
-                                 <string notr="true">
-   color:  grey;
-background-color: rgba(0, 0, 0, 0);</string>
-                                </property>
-                                <property name="text">
-                                 <string>0</string>
-                                </property>
-                                <property name="alignment">
-                                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                                </property>
-                               </widget>
-                              </item>
-                             </layout>
-                            </widget>
-                           </item>
-                           <item>
-                            <widget class="QProgressBar" name="volumeTempBar">
-                             <property name="font">
-                              <font>
-                               <family>Gotham</family>
-                               <pointsize>16</pointsize>
-                              </font>
-                             </property>
-                             <property name="styleSheet">
-                              <string notr="true">QProgressBar::chunk {
-    border-radius: 5px;
-	background-color: qlineargradient(spread:pad, x1:0.517, y1:0, x2:0.522, y2:0, stop:0.0336134 rgba(74, 183, 255, 255), stop:1 rgba(53, 173, 242, 255));
-}
-
-QProgressBar {
-    border: 1px solid grey;
-    border-radius: 5px;
-}
-</string>
-                             </property>
-                             <property name="maximum">
-                              <number>300</number>
-                             </property>
-                             <property name="value">
-                              <number>200</number>
-                             </property>
-                             <property name="alignment">
-                              <set>Qt::AlignCenter</set>
-                             </property>
-                             <property name="textVisible">
-                              <bool>false</bool>
-                             </property>
-                             <property name="orientation">
-                              <enum>Qt::Vertical</enum>
-                             </property>
-                             <property name="format">
-                              <string>%v</string>
-                             </property>
-                            </widget>
-                           </item>
-                           <item>
-                            <widget class="QLabel" name="celciusLabel_4">
-                             <property name="font">
-                              <font>
-                               <family>Gotham</family>
-                               <pointsize>16</pointsize>
-                               <weight>50</weight>
-                               <bold>false</bold>
-                               <underline>false</underline>
-                               <strikeout>false</strikeout>
-                              </font>
-                             </property>
-                             <property name="styleSheet">
-                              <string notr="true">
-   color:  grey;
-background-color: rgba(255, 255, 255, 0);</string>
-                             </property>
-                             <property name="text">
-                              <string>°C</string>
-                             </property>
-                            </widget>
-                           </item>
-                          </layout>
-                         </widget>
-                        </item>
-                        <item>
-                         <widget class="QLabel" name="printerStatus_5">
-                          <property name="minimumSize">
-                           <size>
-                            <width>100</width>
-                            <height>0</height>
-                           </size>
-                          </property>
-                          <property name="font">
-                           <font>
-                            <family>Gotham</family>
-                            <pointsize>12</pointsize>
-                            <weight>50</weight>
-                            <bold>false</bold>
-                            <underline>false</underline>
-                            <strikeout>false</strikeout>
-                           </font>
-                          </property>
-                          <property name="styleSheet">
-                           <string notr="true">
-   color:  grey;
-background-color: rgba(0, 0, 0, 0);</string>
-                          </property>
-                          <property name="text">
-                           <string>Volume</string>
-                          </property>
-                          <property name="scaledContents">
-                           <bool>true</bool>
-                          </property>
-                          <property name="alignment">
-                           <set>Qt::AlignCenter</set>
-                          </property>
-                          <property name="wordWrap">
-                           <bool>true</bool>
-                          </property>
-                         </widget>
-                        </item>
-                       </layout>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QFrame" name="bedTempFrame_3">
-                       <property name="frameShape">
-                        <enum>QFrame::StyledPanel</enum>
-                       </property>
-                       <property name="frameShadow">
-                        <enum>QFrame::Raised</enum>
-                       </property>
-                       <layout class="QVBoxLayout" name="verticalLayout_7">
-                        <property name="leftMargin">
-                         <number>0</number>
-                        </property>
-                        <property name="topMargin">
-                         <number>0</number>
-                        </property>
-                        <property name="rightMargin">
-                         <number>0</number>
-                        </property>
-                        <property name="bottomMargin">
-                         <number>0</number>
-                        </property>
-                        <item>
-                         <widget class="QFrame" name="frame_9">
-                          <property name="frameShape">
-                           <enum>QFrame::StyledPanel</enum>
-                          </property>
-                          <property name="frameShadow">
-                           <enum>QFrame::Raised</enum>
-                          </property>
-                          <layout class="QHBoxLayout" name="horizontalLayout_4">
-                           <property name="leftMargin">
-                            <number>0</number>
-                           </property>
-                           <property name="topMargin">
-                            <number>0</number>
-                           </property>
-                           <property name="rightMargin">
-                            <number>0</number>
-                           </property>
-                           <property name="bottomMargin">
-                            <number>0</number>
-                           </property>
-                           <item>
-                            <widget class="QFrame" name="frame_10">
-                             <property name="frameShape">
-                              <enum>QFrame::StyledPanel</enum>
-                             </property>
-                             <property name="frameShadow">
-                              <enum>QFrame::Raised</enum>
-                             </property>
-                             <layout class="QVBoxLayout" name="verticalLayout_8">
-                              <property name="spacing">
-                               <number>69</number>
-                              </property>
-                              <property name="leftMargin">
-                               <number>0</number>
-                              </property>
-                              <property name="topMargin">
-                               <number>0</number>
-                              </property>
-                              <property name="rightMargin">
-                               <number>0</number>
-                              </property>
-                              <property name="bottomMargin">
-                               <number>0</number>
-                              </property>
-                              <item>
-                               <widget class="QLabel" name="chamberTargetTemperature">
-                                <property name="font">
-                                 <font>
-                                  <family>Gotham</family>
-                                  <pointsize>16</pointsize>
-                                  <weight>50</weight>
-                                  <bold>false</bold>
-                                  <underline>false</underline>
-                                  <strikeout>false</strikeout>
-                                 </font>
-                                </property>
-                                <property name="styleSheet">
-                                 <string notr="true">
-   color:  grey;
-background-color: rgba(255, 255, 255, 0);</string>
-                                </property>
-                                <property name="text">
-                                 <string>0</string>
-                                </property>
-                                <property name="alignment">
-                                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                                </property>
-                               </widget>
-                              </item>
-                              <item>
-                               <widget class="QLabel" name="chamberActualTemperature">
-                                <property name="font">
-                                 <font>
-                                  <family>Gotham</family>
-                                  <pointsize>16</pointsize>
-                                  <weight>50</weight>
-                                  <bold>false</bold>
-                                  <underline>false</underline>
-                                  <strikeout>false</strikeout>
-                                 </font>
-                                </property>
-                                <property name="styleSheet">
-                                 <string notr="true">
-   color:  grey;
-background-color: rgba(0, 0, 0, 0);</string>
-                                </property>
-                                <property name="text">
-                                 <string>0</string>
-                                </property>
-                                <property name="alignment">
-                                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                                </property>
-                               </widget>
-                              </item>
-                             </layout>
-                            </widget>
-                           </item>
-                           <item>
-                            <widget class="QProgressBar" name="chamberTempBar">
-                             <property name="font">
-                              <font>
-                               <family>Gotham</family>
-                               <pointsize>16</pointsize>
-                              </font>
-                             </property>
-                             <property name="styleSheet">
-                              <string notr="true">QProgressBar::chunk {
-    border-radius: 5px;
-	background-color: qlineargradient(spread:pad, x1:0.517, y1:0, x2:0.522, y2:0, stop:0.0336134 rgba(74, 183, 255, 255), stop:1 rgba(53, 173, 242, 255));
-}
-
-QProgressBar {
-    border: 1px solid grey;
-    border-radius: 5px;
-}
-</string>
-                             </property>
-                             <property name="maximum">
-                              <number>300</number>
-                             </property>
-                             <property name="value">
-                              <number>200</number>
-                             </property>
-                             <property name="alignment">
-                              <set>Qt::AlignCenter</set>
-                             </property>
-                             <property name="textVisible">
-                              <bool>false</bool>
-                             </property>
-                             <property name="orientation">
-                              <enum>Qt::Vertical</enum>
-                             </property>
-                             <property name="format">
-                              <string>%v</string>
-                             </property>
-                            </widget>
-                           </item>
-                           <item>
-                            <widget class="QLabel" name="celciusLabel_5">
-                             <property name="font">
-                              <font>
-                               <family>Gotham</family>
-                               <pointsize>16</pointsize>
-                               <weight>50</weight>
-                               <bold>false</bold>
-                               <underline>false</underline>
-                               <strikeout>false</strikeout>
-                              </font>
-                             </property>
-                             <property name="styleSheet">
-                              <string notr="true">
-   color:  grey;
-background-color: rgba(255, 255, 255, 0);</string>
-                             </property>
-                             <property name="text">
-                              <string>°C</string>
-                             </property>
-                            </widget>
-                           </item>
-                          </layout>
-                         </widget>
-                        </item>
-                        <item>
-                         <widget class="QLabel" name="printerStatus_6">
-                          <property name="minimumSize">
-                           <size>
-                            <width>100</width>
-                            <height>0</height>
-                           </size>
-                          </property>
-                          <property name="font">
-                           <font>
-                            <family>Gotham</family>
-                            <pointsize>12</pointsize>
-                            <weight>50</weight>
-                            <bold>false</bold>
-                            <underline>false</underline>
-                            <strikeout>false</strikeout>
-                           </font>
-                          </property>
-                          <property name="styleSheet">
-                           <string notr="true">
-   color:  grey;
-background-color: rgba(0, 0, 0, 0);</string>
-                          </property>
-                          <property name="text">
-                           <string>Chamber</string>
-                          </property>
-                          <property name="scaledContents">
-                           <bool>true</bool>
-                          </property>
-                          <property name="alignment">
-                           <set>Qt::AlignCenter</set>
-                          </property>
-                          <property name="wordWrap">
-                           <bool>true</bool>
-                          </property>
-                         </widget>
-                        </item>
-                       </layout>
-                      </widget>
-                     </item>
-                    </layout>
-                   </widget>
+                   </spacer>
                   </item>
                   <item>
                    <widget class="QFrame" name="frame_11">
@@ -1072,15 +309,17 @@ QPushButton:focus {
                     </property>
                     <layout class="QVBoxLayout" name="verticalLayout_10">
                      <item>
-                      <widget class="QFrame" name="frame_4">
-                       <property name="frameShape">
-                        <enum>QFrame::StyledPanel</enum>
+                      <spacer name="verticalSpacer_3">
+                       <property name="orientation">
+                        <enum>Qt::Vertical</enum>
                        </property>
-                       <property name="frameShadow">
-                        <enum>QFrame::Raised</enum>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>20</width>
+                         <height>40</height>
+                        </size>
                        </property>
-                       <layout class="QGridLayout" name="gridLayout"/>
-                      </widget>
+                      </spacer>
                      </item>
                      <item>
                       <widget class="QLabel" name="fileInfoLabel">
@@ -1146,7 +385,7 @@ QPushButton:focus {
 }</string>
                        </property>
                        <property name="text">
-                        <string>Load File</string>
+                        <string>Load File(s)</string>
                        </property>
                        <property name="icon">
                         <iconset resource="../resources/resource.qrc">
@@ -1191,7 +430,20 @@ QPushButton:focus {
                       <number>0</number>
                      </property>
                      <item>
-                      <widget class="QWidget" name="layerPreviewWidget" native="true">
+                      <spacer name="verticalSpacer_4">
+                       <property name="orientation">
+                        <enum>Qt::Vertical</enum>
+                       </property>
+                       <property name="sizeHint" stdset="0">
+                        <size>
+                         <width>20</width>
+                         <height>40</height>
+                        </size>
+                       </property>
+                      </spacer>
+                     </item>
+                     <item>
+                      <widget class="QWidget" name="previewWidget" native="true">
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                          <horstretch>0</horstretch>
@@ -1236,7 +488,7 @@ QPushButton:focus {
                         <string notr="true">color:  grey;</string>
                        </property>
                        <property name="text">
-                        <string>Layer Preview</string>
+                        <string>3D Preview</string>
                        </property>
                       </widget>
                      </item>
@@ -1330,7 +582,7 @@ QProgressBar {
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
-          <widget class="QWidget" name="thermalCameraWidget" native="true">
+          <widget class="QWidget" name="layerPreviewWidget" native="true">
            <property name="minimumSize">
             <size>
              <width>350</width>
@@ -1395,31 +647,7 @@ QProgressBar {
                <string notr="true">color:  grey;</string>
               </property>
               <property name="text">
-               <string>Thermal Camera     Max Temp:</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="maxTempLabel">
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>20</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <family>Gotham</family>
-                <pointsize>12</pointsize>
-                <weight>50</weight>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">color:  grey;</string>
-              </property>
-              <property name="text">
-               <string>maxTemp</string>
+               <string>Layer Preview</string>
               </property>
              </widget>
             </item>
@@ -1443,7 +671,7 @@ QProgressBar {
           </spacer>
          </item>
          <item>
-          <widget class="QWidget" name="rgbCameraWidget" native="true">
+          <widget class="QWidget" name="subLayerPreviewWidget" native="true">
            <property name="minimumSize">
             <size>
              <width>350</width>
@@ -1487,7 +715,7 @@ QProgressBar {
             <string notr="true">color:  grey;</string>
            </property>
            <property name="text">
-            <string>RGB Camera Feed</string>
+            <string>Sub-Layer Preview</string>
            </property>
           </widget>
          </item>

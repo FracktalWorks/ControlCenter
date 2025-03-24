@@ -4,16 +4,13 @@ from ui.tab_screen.tab_screen import TabScreen
 from config import Config
 from models.printer_status import PrinterStatus
 from PyQt5.QtCore import QTimer
-from temperatureController.chamberTemperatureController import ChamberTemperatureController  # Ensure this import is present
 from Feeltek.scanCard import Scancard  # Import Scancard
 from processAutomationController.processAutomationController import ProcessAutomationController
 from utils.helpers import run_async
 
 if not Config.DEVELOPMENT_MODE:
-    from temperatureController.heaterBoard import HeaterBoard
-    from thermalCamera.thermal_camera import ThermalCamera
-    from rgbCamera.rgbCamera import RGBCamera
-    from moonrakerClient.moonrakerClient import MoonrakerAPI
+    pass
+
 
 import ui.resources.resource_rc  # Ensure resources are loaded
 import traceback
@@ -35,37 +32,10 @@ class MainWindow(QMainWindow):
         self.layout.addWidget(self.stacked_widget)
         
         if not Config.DEVELOPMENT_MODE:
-            self.thermal_camera = ThermalCamera(roi=(2, 13, 59, 64))
-            self.thermal_camera.thermal_camera_frame_ready.connect(self.update_frame)
-            self.thermal_camera.max_temp_signal.connect(self.update_max_temp)  # Connect max_temp_signal to update_max_temp
-            self.thermal_camera.start()
-
-            self.rgb_camera = RGBCamera()
-            self.rgb_camera.rgb_camera_frame_ready.connect(self.update_rgb_frame)
-            self.rgb_camera.start()
-        else:
+            pass
             self.thermal_camera = None
             self.rgb_camera = None
 
-        # Initialize HeaterBoard and ChamberTemperatureController if not in development mode
-        if not Config.DEVELOPMENT_MODE:
-            self.chamber_temp_controller = ChamberTemperatureController(self.printer_status)
-        else:
-            self.chamber_temp_controller = None
-
-        # Initialize MoonrakerAPI if not in development mode
-        if not Config.DEVELOPMENT_MODE:
-            self.moonraker_api = MoonrakerAPI('http://10.20.1.135')
-        else:
-            self.moonraker_api = MockMoonrakerAPI()
-
-        # Initialize Scancard
-        self.scancard = Scancard(self) if not Config.DEVELOPMENT_MODE else MockScancard(self)
-
-        # Set up a QTimer to periodically check the Scancard status
-        self.scancard_timer = QTimer(self)
-        self.scancard_timer.timeout.connect(self.handle_scancard_status_change)
-        self.scancard_timer.start(5000)  # Check status every 5000 ms (5 seconds)
 
         # Load sub UIs based on configuration
         self.load_loading_screen()
@@ -96,124 +66,3 @@ class MainWindow(QMainWindow):
 
     def switch_to_tab_screen(self):
         self.switch_screen(self.tab_screen)
-
-    def update_frame(self, frame, chamberTemperatures):
-        if frame is not None and chamberTemperatures is not None:
-            # Convert temps values to regular float
-            converted_temps = {key: float(value) for key, value in chamberTemperatures.items()}
-            self.printer_status.updateTemperatures(frame, converted_temps)
-
-    def update_max_temp(self, max_temp):
-        self.printer_status.updateMaxTemp(max_temp)
-
-    def update_rgb_frame(self, frame):
-        if frame is not None:
-            self.printer_status.updateRGBFrame(frame)
-
-    # Add methods to interact with Scancard
-    def start_scancard_mark(self):
-        self.scancard.start_mark()
-
-    def stop_scancard_mark(self):
-        self.scancard.stop_mark()
-        
-    @run_async
-    def handle_scancard_status_change(self):
-        future = self.scancard.get_working_status()
-        future.add_done_callback(self.update_scancard_status)
-
-    def update_scancard_status(self, future):
-        try:
-            status = future.result()
-            self.printer_status.updateScancardStatus(status)
-            self.control_screen.scanCardStatusLabel.setText("Status: " + self.printer_status.scancard_status)
-            # print(f"Scancard status: {self.printer_status.scancard_status}")
-        except Exception as e:
-            print(f"Failed to update Scancard status: {e}")
-
-    def open_scancard_file(self, file_path: str):
-        close_future = self.scancard.close_file()
-        close_future.add_done_callback(lambda f: self._handle_close_file_result_and_open(f, file_path))
-
-    def _handle_close_file_result_and_open(self, future, file_path: str):
-        try:
-            result = future.result()
-            meaning = self._get_scancard_return_meaning(result)
-            print(f"Close file result: {result} - {meaning}")
-        except Exception as e:
-            print(f"Failed to close Scancard file: {e}")
-        finally:
-            self._open_scancard_file(file_path)
-
-    def _open_scancard_file(self, file_path: str):
-        future = self.scancard.open_file(file_path)
-        future.add_done_callback(lambda f: self._handle_open_file_result(f, file_path))
-
-    def _handle_open_file_result(self, future, file_path: str):
-        try:
-            result = future.result()
-            meaning = self._get_scancard_return_meaning(result)
-            print(f"Open file result: {result} - {meaning}")
-            self.update_file_info_label(file_path)
-        except Exception as e:
-            print(f"Failed to open Scancard file: {e}")
-
-    def _get_scancard_return_meaning(self, ret_value):
-        meanings = {
-            1: "Successfully executed",
-            0: "Not executed",
-            -1: "Failed to open",
-            -2: "File does not exist"
-        }
-        return meanings.get(ret_value, "Unknown return value")
-
-    def update_file_info_label(self, file_path: str):
-        self.home_screen.fileInfoLabel.setText(file_path)
-
-class MockMoonrakerAPI:
-    def __init__(self):
-        print("MockMoonrakerAPI initialized")
-
-    def send_gcode(self, cmd):
-        print(f"MockMoonrakerAPI.send_gcode called with cmd: {cmd}")
-
-    def query_status(self):
-        print("MockMoonrakerAPI.query_status called")
-        return {"status": "mock_status"}
-
-    def query_temperatures(self):
-        print("MockMoonrakerAPI.query_temperatures called")
-        return {"temperatures": "mock_temperatures"}
-
-class MockScancard:
-    def __init__(self, main_window):
-        print("MockScancard initialized")
-
-    def start_mark(self):
-        print("MockScancard.start_mark called")
-
-    def stop_mark(self):
-        print("MockScancard.stop_mark called")
-
-    def get_working_status(self):
-        print("MockScancard.get_working_status called")
-        return MockFuture()
-
-    def open_file(self, file_path):
-        print(f"MockScancard.open_file called with file_path: {file_path}")
-        return MockFuture()
-
-    def close_file(self):
-        print("MockScancard.close_file called")
-        return MockFuture()
-
-class MockFuture:
-    def add_done_callback(self, callback):
-        print("MockFuture.add_done_callback called")
-        callback(self)
-
-    def result(self):
-        print("MockFuture.result called")
-        return "mock_status"
-
-
