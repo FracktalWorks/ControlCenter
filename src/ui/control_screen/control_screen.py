@@ -1,6 +1,7 @@
 from PyQt5 import uic
-from PyQt5.QtWidgets import (QWidget, QPushButton, QSpinBox, QProgressBar, QSizePolicy, QVBoxLayout, QMessageBox, QLabel,
-                             QFileDialog, QGroupBox, QHBoxLayout, QListWidget)
+from PyQt5.QtWidgets import (QWidget, QPushButton, QSpinBox, QProgressBar, QSizePolicy, 
+                             QVBoxLayout, QMessageBox, QLabel, QFileDialog, QGroupBox, 
+                             QHBoxLayout, QListWidget)
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QTimer
 from PyQt5.QtGui import QImage
 import numpy as np
@@ -9,6 +10,7 @@ from utils.helpers import run_async
 import time
 from processAutomationController.processAutomationController import ProcessAutomationController
 from ui.layer_management.layer_queue_widget import LayerQueueWidget
+from ui.laser_parameters.laser_parameters_dialog import LaserParametersDialog
 
 class ControlScreen(QWidget):
     progress_update_signal = pyqtSignal(int)
@@ -22,6 +24,9 @@ class ControlScreen(QWidget):
 
         # Initialize UI elements
         self.initialize_ui_elements()
+
+        # Add Laser Parameters button
+        self.add_laser_parameters_button()
 
         # Initialize ProcessAutomationController
         self.process_automation_controller = ProcessAutomationController(main_window)
@@ -51,6 +56,38 @@ class ControlScreen(QWidget):
 
         # Connect the scancard status update signal to the label update slot
         self.main_window.printer_status.scancard_status_updated.connect(self.update_laser_status)
+
+    def add_laser_parameters_button(self):
+        """Add Laser Parameters button to the control screen."""
+        # Find the right panel or create a new layout
+        right_panel = self.findChild(QWidget, "rightPanel")
+        
+        # Create Laser Parameters Group Box
+        laser_params_group = QGroupBox("Laser Configuration")
+        laser_params_layout = QVBoxLayout()
+        
+        # Create Laser Parameters Button
+        self.laserParametersButton = QPushButton("Laser Parameters")
+        self.laserParametersButton.clicked.connect(self.open_laser_parameters)
+        
+        # Add button to layout
+        laser_params_layout.addWidget(self.laserParametersButton)
+        
+        # Set layout for group box
+        laser_params_group.setLayout(laser_params_layout)
+        
+        # Add to right panel or main layout
+        if right_panel and hasattr(right_panel, 'layout'):
+            right_panel.layout().addWidget(laser_params_group)
+        else:
+            # Fallback to main layout
+            if hasattr(self, 'layout'):
+                self.layout().addWidget(laser_params_group)
+
+    def open_laser_parameters(self):
+        """Open the Laser Parameters Dialog."""
+        dialog = LaserParametersDialog(self.main_window.scancard, self)
+        dialog.exec_()
 
     def load_ui(self):
         try:
@@ -95,12 +132,9 @@ class ControlScreen(QWidget):
         self.moveToStartingPositionButton = self.findChild(QPushButton, "moveToStartingPositionButton") 
         self.prepareForPartRemovalButton = self.findChild(QPushButton, "prepareForPartRemovalButton")  
 
-        self.maxTempLabel = self.findChild(QLabel, "maxTempLabel")  # Find the maxTempLabel
-
-        # Initialize scanCardStatusLabel
+        self.maxTempLabel = self.findChild(QLabel, "maxTempLabel")
         self.scanCardStatusLabel = self.findChild(QLabel, "scanCardStatusLabel")
 
-        # Initialize start and stop marking buttons
         self.startMarkingButton = self.findChild(QPushButton, "startMarkingButton")
         self.stopMarkingButton = self.findChild(QPushButton, "stopMarkingButton")
 
@@ -134,7 +168,6 @@ class ControlScreen(QWidget):
         self.moveToStartingPositionButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.move_to_starting_sequence))
         self.prepareForPartRemovalButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.prepare_for_part_removal_sequence))
 
-        # Connect start and stop marking buttons to Scancard functions
         self.startMarkingButton.clicked.connect(self.main_window.scancard.start_mark)
         self.stopMarkingButton.clicked.connect(self.main_window.scancard.stop_mark)
 
@@ -203,12 +236,15 @@ class ControlScreen(QWidget):
     def connect_signals(self):
         self.main_window.printer_status.temperatures_updated.connect(self.update_thermal_camera_widget)
         self.main_window.printer_status.rgb_frame_updated.connect(self.update_rgb_camera_widget)
-        self.main_window.printer_status.maxtemp_updated.connect(self.update_max_temp_label)  # Connect the maxtemp_updated signal
+        self.main_window.printer_status.maxtemp_updated.connect(self.update_max_temp_label)
 
     @pyqtSlot(float)
     def update_max_temp_label(self, max_temp):
         """Slot to update the text of maxTempLabel with the maximum temperature."""
         self.maxTempLabel.setText(f"Max Temp: {max_temp:.2f}°C")
+
+    
+
 
     def select_layers_folder(self):
         """Open a file dialog to select a folder containing layer files."""
@@ -228,6 +264,22 @@ class ControlScreen(QWidget):
         if state_file:
             self.main_window.resume_print_from_saved_state(state_file)
 
+    @pyqtSlot(np.ndarray, dict)
+    def update_thermal_camera_widget(self, frame, temps):
+        """Update the thermal camera widget."""
+        if frame is not None:
+            image = QImage(frame.data, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_BGR888)
+            self.thermalCameraWidget.setImage(image)
+
+    @pyqtSlot(np.ndarray)
+    def update_rgb_camera_widget(self, frame):
+        """Update the RGB camera widget."""
+        if frame is not None:
+            height, width, channel = frame.shape
+            bytes_per_line = 3 * width
+            image = QImage(frame.data, width, height, bytes_per_line, QImage.Format_RGB888).rgbSwapped()
+            self.rgbCameraWidget.setImage(image)
+
     def set_motion_control_buttons_enabled(self, enabled):
         """Enable or disable motion control buttons."""
         for button in self.motion_control_buttons:
@@ -246,7 +298,7 @@ class ControlScreen(QWidget):
     def confirm_heated_buffer_recoat(self):
         """Show a confirmation dialog before starting the heated buffer recoat."""
         reply = QMessageBox.question(self, 'Confirmation',
-                                     'Ensure that the build module is moved to the starting position and recoater is homed  before starting the heated buffer recoat. Do you want to proceed?',
+                                     'Ensure that the build module is moved to the starting position and recoater is homed before starting the heated buffer recoat. Do you want to proceed?',
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
             self.process_automation_controller.process_running = True
@@ -264,22 +316,6 @@ class ControlScreen(QWidget):
         """Update the chamber temperature setpoint in the PrinterStatus model."""
         self.main_window.printer_status.chamberTemperatureSetpoint = value
         print(f"Chamber temperature setpoint updated to {value}")
-
-    @pyqtSlot(np.ndarray, dict)
-    def update_thermal_camera_widget(self, frame, temps):
-        """Update the thermal camera widget."""
-        if frame is not None:
-            image = QImage(frame.data, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_BGR888)
-            self.thermalCameraWidget.setImage(image)
-
-    @pyqtSlot(np.ndarray)
-    def update_rgb_camera_widget(self, frame):
-        """Update the RGB camera widget."""
-        if frame is not None:
-            height, width, channel = frame.shape
-            bytes_per_line = 3 * width
-            image = QImage(frame.data, width, height, bytes_per_line, QImage.Format_RGB888).rgbSwapped()
-            self.rgbCameraWidget.setImage(image)
 
     def cooldown(self):
         """Cooldown the chamber."""
