@@ -1,8 +1,9 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 from utils.helpers import run_async
 import time
-
-# TBD clean play pause process. use printer printing status to diferentiate between control and main printing sequence
+import json
+import os
+from layerManager.printStateManager import PrintStateManager
 
 class ProcessAutomationController(QObject):
     progress_update_signal = pyqtSignal(int)
@@ -11,6 +12,10 @@ class ProcessAutomationController(QObject):
         super(ProcessAutomationController, self).__init__()
         self.main_window = main_window
         self.process_running = False
+        self.print_state_manager = PrintStateManager()
+        self.current_layer_index = -1
+        self.total_layers = 0
+        self.layer_files = []
 
         # Connect the progress update signal to the slot
         self.progress_update_signal.connect(self.update_progress_bar)
@@ -199,6 +204,41 @@ class ProcessAutomationController(QObject):
 
         self.set_motion_control_buttons_enabled(True)
 
+    def process_layer(self, layer_file):
+        """Process a single layer file."""
+        # Open the layer file
+        future = self.main_window.scancard.open_file(layer_file)
+        future.result()  # Wait for completion
+        
+        # Print the layer
+        print(f"Processing layer: {os.path.basename(layer_file)}")
+        
+        # Start marking
+        future = self.main_window.scancard.start_mark()
+        future.result()  # Wait for completion
+        
+        # Wait for marking to complete
+        self._wait_for_marking_complete()
+        
+        # Recoat for the next layer
+        self.dose_recoat_layer()
+        
+        # Save current state
+        self.print_state_manager.save_print_state({
+            'current_layer_index': self.current_layer_index,
+            'total_layers': self.total_layers,
+            'layer_files': self.layer_files
+        })
+        
+    def _wait_for_marking_complete(self):
+        """Wait for marking to complete."""
+        while True:
+            future = self.main_window.scancard.get_working_status()
+            status = future.result()
+            if status == "Waiting":
+                break
+            time.sleep(1)  # Sleep for a short duration
+
     def stop_process(self):
         """Stop the recoat process."""
         self.process_running = False
@@ -210,22 +250,23 @@ class ProcessAutomationController(QObject):
         for button in self.main_window.control_screen.motion_control_buttons:
             button.setEnabled(enabled)
 
+
 def replace_placeholders(sequence: str, printer_status) -> str:
-        """Replace placeholders in the sequence with actual values from the printer_status model."""
-        placeholders = {
-            "{layerHeight}": printer_status.layerHeight,
-            "{initialLevellingHeight}": printer_status.initialLevellingHeight,
-            "{heatedBufferHeight}": printer_status.heatedBufferHeight,
-            "{powderLoadingExtraHeightGap}": printer_status.powderLoadingExtraHeightGap,
-            "{bedTemperature}": printer_status.bedTemperature,
-            "{volumeTemperature}": printer_status.volumeTemperature,
-            "{chamberTemperature}": printer_status.chamberTemperature,
-            "{p}": printer_status.p,
-            "{i}": printer_status.i,
-            "{d}": printer_status.d,
-            "{powderLoadingHeight}": printer_status.initialLevellingHeight + 2 * printer_status.heatedBufferHeight + printer_status.partHeight,
-            "{dosingHeight}": printer_status.dosingHeight  # Add dosingHeight
-        }
-        for placeholder, value in placeholders.items():
-            sequence = sequence.replace(placeholder, str(value))
-        return sequence
+    """Replace placeholders in the sequence with actual values from the printer_status model."""
+    placeholders = {
+        "{layerHeight}": printer_status.layerHeight,
+        "{initialLevellingHeight}": printer_status.initialLevellingHeight,
+        "{heatedBufferHeight}": printer_status.heatedBufferHeight,
+        "{powderLoadingExtraHeightGap}": printer_status.powderLoadingExtraHeightGap,
+        "{bedTemperature}": printer_status.bedTemperature,
+        "{volumeTemperature}": printer_status.volumeTemperature,
+        "{chamberTemperature}": printer_status.chamberTemperature,
+        "{p}": printer_status.p,
+        "{i}": printer_status.i,
+        "{d}": printer_status.d,
+        "{powderLoadingHeight}": printer_status.initialLevellingHeight + 2 * printer_status.heatedBufferHeight + printer_status.partHeight,
+        "{dosingHeight}": printer_status.dosingHeight  # Add dosingHeight
+    }
+    for placeholder, value in placeholders.items():
+        sequence = sequence.replace(placeholder, str(value))
+    return sequence

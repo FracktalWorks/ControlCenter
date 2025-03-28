@@ -4,9 +4,12 @@ from ui.tab_screen.tab_screen import TabScreen
 from config import Config
 from models.printer_status import PrinterStatus
 from PyQt5.QtCore import QTimer
-from temperatureController.chamberTemperatureController import ChamberTemperatureController  # Ensure this import is present
-from Feeltek.scanCard import Scancard  # Import Scancard
+from temperatureController.chamberTemperatureController import ChamberTemperatureController
+from Feeltek.scanCard import Scancard
 from processAutomationController.processAutomationController import ProcessAutomationController
+from layerManager.layerQueueManager import LayerQueueManager
+from multiLayerPrintController import MultiLayerPrintController
+from layerManager.printStateManager import PrintStateManager
 from utils.helpers import run_async
 
 if not Config.DEVELOPMENT_MODE:
@@ -15,15 +18,17 @@ if not Config.DEVELOPMENT_MODE:
     from rgbCamera.rgbCamera import RGBCamera
     from moonrakerClient.moonrakerClient import MoonrakerAPI
 
-import ui.resources.resource_rc  # Ensure resources are loaded
+import ui.resources.resource_rc
 import traceback
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
 
-        self.printer_status = PrinterStatus()  # Create an instance of the PrinterStatus model
-        self.process_automation_controller = ProcessAutomationController(self)  # Initialize ProcessAutomationController
+        self.printer_status = PrinterStatus()
+        self.process_automation_controller = ProcessAutomationController(self)
+
+        
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -37,7 +42,7 @@ class MainWindow(QMainWindow):
         if not Config.DEVELOPMENT_MODE:
             self.thermal_camera = ThermalCamera(roi=(2, 13, 59, 64))
             self.thermal_camera.thermal_camera_frame_ready.connect(self.update_frame)
-            self.thermal_camera.max_temp_signal.connect(self.update_max_temp)  # Connect max_temp_signal to update_max_temp
+            self.thermal_camera.max_temp_signal.connect(self.update_max_temp)
             self.thermal_camera.start()
 
             self.rgb_camera = RGBCamera()
@@ -47,35 +52,34 @@ class MainWindow(QMainWindow):
             self.thermal_camera = None
             self.rgb_camera = None
 
-        # Initialize HeaterBoard and ChamberTemperatureController if not in development mode
         if not Config.DEVELOPMENT_MODE:
             self.chamber_temp_controller = ChamberTemperatureController(self.printer_status)
         else:
             self.chamber_temp_controller = None
 
-        # Initialize MoonrakerAPI if not in development mode
         if not Config.DEVELOPMENT_MODE:
             self.moonraker_api = MoonrakerAPI('http://10.20.1.135')
         else:
             self.moonraker_api = MockMoonrakerAPI()
 
-        # Initialize Scancard
         self.scancard = Scancard(self) if not Config.DEVELOPMENT_MODE else MockScancard(self)
 
-        # Set up a QTimer to periodically check the Scancard status
         self.scancard_timer = QTimer(self)
         self.scancard_timer.timeout.connect(self.handle_scancard_status_change)
-        self.scancard_timer.start(5000)  # Check status every 5000 ms (5 seconds)
+        self.scancard_timer.start(5000)
 
-        # Load sub UIs based on configuration
         self.load_loading_screen()
         self.load_tab_screen()
         self.switch_screen(self.loading_screen)
 
-        # Adjust the size of the main window to fit its contents
         self.adjustSize()
 
         self.process_automation_controller.progress_update_signal.connect(self.update_progress_bar)
+
+        # Initialize multi-layer printing components
+        self.layer_queue_manager = LayerQueueManager()
+        self.print_state_manager = PrintStateManager()
+        self.multi_layer_controller = MultiLayerPrintController(self)
 
     def update_progress_bar(self, value):
         self.home_screen.printProgressBar.setValue(value)
@@ -92,14 +96,13 @@ class MainWindow(QMainWindow):
     def switch_screen(self, widget):
         print(f"Switching to screen: {widget}")
         self.stacked_widget.setCurrentWidget(widget)
-        self.adjustSize()  # Adjust size after switching screens
+        self.adjustSize()
 
     def switch_to_tab_screen(self):
         self.switch_screen(self.tab_screen)
 
     def update_frame(self, frame, chamberTemperatures):
         if frame is not None and chamberTemperatures is not None:
-            # Convert temps values to regular float
             converted_temps = {key: float(value) for key, value in chamberTemperatures.items()}
             self.printer_status.updateTemperatures(frame, converted_temps)
 
@@ -110,7 +113,6 @@ class MainWindow(QMainWindow):
         if frame is not None:
             self.printer_status.updateRGBFrame(frame)
 
-    # Add methods to interact with Scancard
     def start_scancard_mark(self):
         self.scancard.start_mark()
 
@@ -127,7 +129,6 @@ class MainWindow(QMainWindow):
             status = future.result()
             self.printer_status.updateScancardStatus(status)
             self.control_screen.scanCardStatusLabel.setText("Status: " + self.printer_status.scancard_status)
-            # print(f"Scancard status: {self.printer_status.scancard_status}")
         except Exception as e:
             print(f"Failed to update Scancard status: {e}")
 
@@ -175,6 +176,14 @@ class MainWindow(QMainWindow):
 
     def update_file_info_label(self, file_path: str):
         self.home_screen.fileInfoLabel.setText(file_path)
+        
+    def resume_print_from_saved_state(self, state_file):
+        """Resume a print from a saved state file."""
+        if self.multi_layer_controller.load_print_state(state_file):
+            self.multi_layer_controller.resume_multi_layer_print()
+        else:
+            print("Failed to load print state")
+
 
 class MockMoonrakerAPI:
     def __init__(self):
@@ -191,15 +200,18 @@ class MockMoonrakerAPI:
         print("MockMoonrakerAPI.query_temperatures called")
         return {"temperatures": "mock_temperatures"}
 
+
 class MockScancard:
     def __init__(self, main_window):
         print("MockScancard initialized")
 
     def start_mark(self):
         print("MockScancard.start_mark called")
+        return MockFuture()
 
     def stop_mark(self):
         print("MockScancard.stop_mark called")
+        return MockFuture()
 
     def get_working_status(self):
         print("MockScancard.get_working_status called")
@@ -213,6 +225,7 @@ class MockScancard:
         print("MockScancard.close_file called")
         return MockFuture()
 
+
 class MockFuture:
     def add_done_callback(self, callback):
         print("MockFuture.add_done_callback called")
@@ -221,5 +234,3 @@ class MockFuture:
     def result(self):
         print("MockFuture.result called")
         return {"ret_value": 1}  # Simulated response
-
-

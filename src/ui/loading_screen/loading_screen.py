@@ -10,7 +10,7 @@ class LoadingScreen(QWidget):
 
         # Load the .ui file
         try:
-            uic.loadUi('src/ui/loading_screen/loading_screen.ui', self)
+            uic.loadUi('ui/loading_screen/loading_screen.ui', self)
             print("UI file loaded successfully")
         except Exception as e:
             print(f"Failed to load UI file: {e}")

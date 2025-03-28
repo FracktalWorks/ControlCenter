@@ -1,7 +1,6 @@
-#TBD: incase a gcode is yet to be executed, block the thread from executing another gcode in moonraker api
-
 from PyQt5 import uic
-from PyQt5.QtWidgets import (QWidget, QPushButton, QSpinBox, QProgressBar, QSizePolicy, QVBoxLayout, QMessageBox, QLabel)
+from PyQt5.QtWidgets import (QWidget, QPushButton, QSpinBox, QProgressBar, QSizePolicy, QVBoxLayout, QMessageBox, QLabel,
+                             QFileDialog, QGroupBox, QHBoxLayout, QListWidget)
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QTimer
 from PyQt5.QtGui import QImage
 import numpy as np
@@ -9,6 +8,7 @@ from ui.custom_widgets import ImageWidget
 from utils.helpers import run_async
 import time
 from processAutomationController.processAutomationController import ProcessAutomationController
+from ui.layer_management.layer_queue_widget import LayerQueueWidget
 
 class ControlScreen(QWidget):
     progress_update_signal = pyqtSignal(int)
@@ -32,6 +32,9 @@ class ControlScreen(QWidget):
         # Replace QWidget with custom ImageWidget
         self.setup_custom_widgets()
 
+        # Setup multi-layer controls
+        self.setup_multi_layer_controls()
+
         # Connect signals to slots
         self.connect_signals()
 
@@ -51,7 +54,7 @@ class ControlScreen(QWidget):
 
     def load_ui(self):
         try:
-            uic.loadUi('src/ui/control_screen/control_screen.ui', self)
+            uic.loadUi('ui/control_screen/control_screen.ui', self)
             print("ControlScreen UI loaded successfully")
         except Exception as e:
             print(f"Failed to load ControlScreen UI: {e}")
@@ -135,6 +138,47 @@ class ControlScreen(QWidget):
         self.startMarkingButton.clicked.connect(self.main_window.scancard.start_mark)
         self.stopMarkingButton.clicked.connect(self.main_window.scancard.stop_mark)
 
+    def setup_multi_layer_controls(self):
+        """Set up controls for multi-layer printing."""
+        try:
+            # Create group box for multi-layer printing
+            multi_layer_group = QGroupBox("Multi-Layer Print")
+            multi_layer_layout = QVBoxLayout()
+            
+            # Folder selection button
+            self.select_folder_btn = QPushButton("Select Layers Folder")
+            self.select_folder_btn.clicked.connect(self.select_layers_folder)
+            multi_layer_layout.addWidget(self.select_folder_btn)
+            
+            # Layer queue widget
+            self.layer_queue_widget = LayerQueueWidget()
+            multi_layer_layout.addWidget(self.layer_queue_widget)
+            
+            # Start/resume buttons
+            buttons_layout = QHBoxLayout()
+            self.start_multi_print_btn = QPushButton("Start Multi-Layer Print")
+            self.start_multi_print_btn.clicked.connect(self.start_multi_layer_print)
+            self.start_multi_print_btn.setEnabled(False)
+            buttons_layout.addWidget(self.start_multi_print_btn)
+            
+            self.resume_print_btn = QPushButton("Resume Previous Print")
+            self.resume_print_btn.clicked.connect(self.resume_print)
+            buttons_layout.addWidget(self.resume_print_btn)
+            
+            multi_layer_layout.addLayout(buttons_layout)
+            
+            multi_layer_group.setLayout(multi_layer_layout)
+            
+            # Find where to add in the existing layout
+            right_panel = self.findChild(QWidget, "rightPanel")
+            if right_panel and hasattr(right_panel, "layout"):
+                right_panel.layout().addWidget(multi_layer_group)
+            else:
+                # Fall back to adding to the main layout
+                self.layout().addWidget(multi_layer_group)
+        except Exception as e:
+            print(f"Error setting up multi-layer controls: {e}")
+
     @run_async
     def run_async_send_gcode(self, gcode):
         self.main_window.moonraker_api.send_gcode(gcode)
@@ -165,6 +209,24 @@ class ControlScreen(QWidget):
     def update_max_temp_label(self, max_temp):
         """Slot to update the text of maxTempLabel with the maximum temperature."""
         self.maxTempLabel.setText(f"Max Temp: {max_temp:.2f}°C")
+
+    def select_layers_folder(self):
+        """Open a file dialog to select a folder containing layer files."""
+        folder_path = QFileDialog.getExistingDirectory(self, "Select Layers Folder")
+        if folder_path:
+            layer_files = self.main_window.multi_layer_controller.load_layer_files(folder_path)
+            self.layer_queue_widget.set_layer_files(layer_files)
+            self.start_multi_print_btn.setEnabled(len(layer_files) > 0)
+
+    def start_multi_layer_print(self):
+        """Start the multi-layer print process."""
+        self.main_window.multi_layer_controller.start_multi_layer_print()
+
+    def resume_print(self):
+        """Open a file dialog to select a print state file and resume printing."""
+        state_file, _ = QFileDialog.getOpenFileName(self, "Select Print State File", "", "Print State Files (*.pstate)")
+        if state_file:
+            self.main_window.resume_print_from_saved_state(state_file)
 
     def set_motion_control_buttons_enabled(self, enabled):
         """Enable or disable motion control buttons."""
