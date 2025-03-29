@@ -1,18 +1,21 @@
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QTabWidget, QWidget, 
                              QFormLayout, QLabel, QDoubleSpinBox, QSpinBox, 
                              QComboBox, QCheckBox, QDialogButtonBox, QGroupBox,
-                             QScrollArea, QMessageBox)
+                             QScrollArea, QMessageBox, QProgressDialog, QHBoxLayout)
 from PyQt5.QtCore import Qt
 import yaml
 import os
 
 class LaserParametersDialog(QDialog):
-    def __init__(self, scancard, parent=None):
+    def __init__(self, scancard, parent=None, layer_count=0):
         super().__init__(parent)
         
         # Dialog setup
         self.setWindowTitle("Laser Marking Parameters")
         self.setGeometry(100, 100, 700, 900)
+
+        # Store the layer count from the layer queue manager
+        self.layer_count = layer_count
         
         # Main layout
         main_layout = QVBoxLayout()
@@ -278,6 +281,26 @@ class LaserParametersDialog(QDialog):
         
         self.tab_widget.addTab(fill_tab, "Fill Parameters")
         
+        # Add "Apply to All Layers" option
+        apply_options_layout = QHBoxLayout()
+        self.apply_all_layers_checkbox = QCheckBox("Apply to All Layers")
+        self.apply_all_layers_checkbox.setChecked(True)  # Default to checked
+        apply_options_layout.addWidget(self.apply_all_layers_checkbox)
+        
+        # Add max layer input
+        self.max_layer_label = QLabel("Maximum Layer:")
+        self.max_layer_spinbox = QSpinBox()
+        self.max_layer_spinbox.setRange(1, 255)
+
+        # Use the provided layer count or default to 10
+        self.max_layer_spinbox.setValue(self.layer_count if self.layer_count > 0 else 10)
+
+        apply_options_layout.addWidget(self.max_layer_label)
+        apply_options_layout.addWidget(self.max_layer_spinbox)
+        
+        # Add the options layout
+        main_layout.addLayout(apply_options_layout)
+        
         # Dialog Buttons
         button_box = QDialogButtonBox(
             QDialogButtonBox.Save | QDialogButtonBox.Cancel
@@ -392,7 +415,7 @@ class LaserParametersDialog(QDialog):
         self.rotate_angle_spinbox.setValue(100)
     
     def save_parameters(self):
-        """Save parameters to scancard."""
+        """Save parameters to scancard with improved error handling and cancellation support."""
         # Collect marking parameters
         marking_params = {
             "markSpeed": self.mark_speed_spinbox.value(),
@@ -435,32 +458,194 @@ class LaserParametersDialog(QDialog):
         }
         
         try:
-            # Update marking parameters for layer 1
-            future = self.scancard.set_markParameters_by_layer(1, marking_params)
-            response = future.result()
+            # Check if we should apply to all layers
+            apply_all = self.apply_all_layers_checkbox.isChecked()
+            max_layer = self.max_layer_spinbox.value() if apply_all else 1
             
-            if not response or response.get("ret_value") != 1:
-                raise Exception("Failed to set marking parameters")
-            
-            # Update fill parameters for index 1
-            future = self.scancard.set_entity_fill_property_by_index(1, 1, fill_params)
-            response = future.result()
-            
-            if not response or response.get("ret_value") != 1:
-                raise Exception("Failed to set fill parameters")
-            
-            # Download parameters to apply changes
-            future = self.scancard.download_parameters()
-            response = future.result()
-            
-            if not response or response.get("ret_value") != 1:
-                raise Exception("Failed to download parameters")
-            
-            QMessageBox.information(
-                self,
-                "Success",
-                "Parameters saved successfully"
-            )
+            if apply_all:
+                # Create progress dialog
+                progress = QProgressDialog("Validating layers...", "Cancel", 0, max_layer, self)
+                progress.setWindowModality(Qt.WindowModal)
+                progress.setMinimumDuration(0)
+                progress.setValue(0)
+                progress.show()
+                
+                # First validate all layers and entities exist
+                valid_layers = []
+                invalid_layers = []
+                
+                for layer in range(1, max_layer + 1):
+                    if progress.wasCanceled():
+                        if valid_layers:
+                            # Ask user if they want to proceed with validated layers only
+                            reply = QMessageBox.question(
+                                self, 
+                                "Validation Canceled", 
+                                f"Continue with {len(valid_layers)} validated layers only?",
+                                QMessageBox.Yes | QMessageBox.No, 
+                                QMessageBox.No
+                            )
+                            if reply != QMessageBox.Yes:
+                                progress.close()
+                                return
+                        else:
+                            progress.close()
+                            return
+                    
+                    progress.setValue(layer)
+                    progress.setLabelText(f"Validating layer {layer} of {max_layer}...")
+                    
+                    # Validate layer and entity
+                    future = self.scancard.validate_layer_entity(layer)
+                    result = future.result()
+                    
+                    if result.get("valid", False):
+                        valid_layers.append(layer)
+                    else:
+                        invalid_layers.append((layer, result.get("message", "Unknown error")))
+                
+                # Report validation results
+                if invalid_layers:
+                    message = "The following layers could not be validated:\n\n"
+                    message += "\n".join([f"Layer {layer}: {msg}" for layer, msg in invalid_layers])
+                    message += "\n\nDo you want to continue with valid layers only?"
+                    
+                    reply = QMessageBox.question(
+                        self, 
+                        "Validation Results", 
+                        message,
+                        QMessageBox.Yes | QMessageBox.No, 
+                        QMessageBox.No
+                    )
+                    if reply != QMessageBox.Yes:
+                        progress.close()
+                        return
+                
+                # Proceed with valid layers only
+                if not valid_layers:
+                    QMessageBox.critical(
+                        self,
+                        "Validation Error",
+                        "No valid layers found to apply parameters to."
+                    )
+                    progress.close()
+                    return
+                
+                # Reset progress for applying parameters
+                progress.setLabelText("Applying parameters...")
+                progress.setRange(0, len(valid_layers))
+                progress.setValue(0)
+                
+                # Track failures
+                failures = []
+                successful_layers = []
+                
+                # Apply to valid layers
+                for i, layer in enumerate(valid_layers):
+                    if progress.wasCanceled():
+                        if successful_layers:
+                            reply = QMessageBox.question(
+                                self, 
+                                "Operation Canceled", 
+                                f"Parameters were applied to {len(successful_layers)} layers.\n\n"
+                                "Do you want to download these changes to the device?",
+                                QMessageBox.Yes | QMessageBox.No, 
+                                QMessageBox.Yes
+                            )
+                            if reply == QMessageBox.Yes:
+                                break  # Continue to download step
+                            else:
+                                progress.close()
+                                return  # Cancel without downloading
+                        else:
+                            progress.close()
+                            return
+                    
+                    progress.setValue(i)
+                    progress.setLabelText(f"Applying parameters to layer {layer}...")
+                    
+                    # Update marking parameters for the current layer
+                    future = self.scancard.set_markParameters_by_layer(layer, marking_params)
+                    response = future.result()
+                    
+                    if not response or response.get("ret_value") != 1:
+                        failures.append(f"Layer {layer} marking parameters")
+                        continue
+                    
+                    # Update fill parameters for the current entity in the current layer
+                    future = self.scancard.set_entity_fill_property_by_index(layer, 1, fill_params)
+                    response = future.result()
+                    
+                    if not response or response.get("ret_value") != 1:
+                        failures.append(f"Layer {layer} fill parameters")
+                        continue
+                    
+                    successful_layers.append(layer)
+                
+                # Download parameters to apply changes
+                progress.setLabelText("Downloading parameters to device...")
+                progress.setValue(len(valid_layers))
+                
+                future = self.scancard.download_parameters()
+                response = future.result()
+                
+                if not response or response.get("ret_value") != 1:
+                    failures.append("Downloading parameters")
+                
+                progress.setValue(len(valid_layers))
+                progress.close()
+                
+                # Report results
+                if failures:
+                    QMessageBox.warning(
+                        self,
+                        "Parameter Update Warning",
+                        f"Parameters were applied to {len(successful_layers)} out of {len(valid_layers)} layers, but with some failures:\n" + 
+                        "\n".join(failures)
+                    )
+                else:
+                    QMessageBox.information(
+                        self,
+                        "Success",
+                        f"Parameters applied to {len(successful_layers)} layers successfully"
+                    )
+            else:
+                # Apply only to layer 1 (original behavior)
+                # Validate layer 1 first
+                future = self.scancard.validate_layer_entity(1)
+                result = future.result()
+                
+                if not result.get("valid", False):
+                    QMessageBox.critical(
+                        self,
+                        "Validation Error",
+                        f"Cannot apply parameters to layer 1: {result.get('message', 'Unknown error')}"
+                    )
+                    return
+                
+                future = self.scancard.set_markParameters_by_layer(1, marking_params)
+                response = future.result()
+                
+                if not response or response.get("ret_value") != 1:
+                    raise Exception("Failed to set marking parameters")
+                
+                future = self.scancard.set_entity_fill_property_by_index(1, 1, fill_params)
+                response = future.result()
+                
+                if not response or response.get("ret_value") != 1:
+                    raise Exception("Failed to set fill parameters")
+                
+                future = self.scancard.download_parameters()
+                response = future.result()
+                
+                if not response or response.get("ret_value") != 1:
+                    raise Exception("Failed to download parameters")
+                
+                QMessageBox.information(
+                    self,
+                    "Success",
+                    "Parameters saved to layer 1 successfully"
+                )
             
             # Save to YAML for future reference
             self.save_to_yaml(marking_params, fill_params)
@@ -480,7 +665,9 @@ class LaserParametersDialog(QDialog):
             # Combine all parameters
             all_params = {
                 "marking_parameters": marking_params,
-                "fill_parameters": fill_params
+                "fill_parameters": fill_params,
+                "apply_to_all_layers": self.apply_all_layers_checkbox.isChecked(),
+                "max_layer": self.max_layer_spinbox.value()
             }
             
             # Save to YAML

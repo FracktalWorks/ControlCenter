@@ -185,24 +185,50 @@ class Scancard:
         if data:
             self.req["data"] = data
 
-    def execute_command(self, cmd: str, data: Optional[Dict[str, Any]] = None) -> Future:
+    def execute_command(self, cmd: str, data: Optional[Dict[str, Any]] = None, retries=3, retry_delay=1.0) -> Future:
         def task():
-            try:
-                json_string = json.dumps({"sid": 0, "cmd": cmd, "data": data} if data else {"sid": 0, "cmd": cmd})
-                with socket.create_connection((self.HOST, self.PORT), timeout=self.timeout) as sock:
-                    sock.sendall(json_string.encode())
-                    ret = sock.recv(1024)
-                    if ret:
-                        ret_decoded = ret.decode('GB18030', errors='replace')
-                        json_end_index = ret_decoded.rfind('}') + 1
-                        json_content = ret_decoded[:json_end_index]
-                        response_data = json.loads(json_content)
-                        return {"ret_value": response_data.get("ret"), "response": response_data}
-                    else:
-                        return {"ret_value": -1}  # Simulated error response
-            except (socket.timeout, socket.error, json.JSONDecodeError) as e:
-                print(f"Error executing command: {e}")
-                return {"ret_value": -1}  # Simulated error response
+            attempts = 0
+            while attempts < retries:
+                try:
+                    json_string = json.dumps({"sid": 0, "cmd": cmd, "data": data} if data else {"sid": 0, "cmd": cmd})
+                    with socket.create_connection((self.HOST, self.PORT), timeout=self.timeout) as sock:
+                        sock.sendall(json_string.encode())
+                        ret = sock.recv(1024)
+                        if ret:
+                            ret_decoded = ret.decode('GB18030', errors='replace')
+                            json_end_index = ret_decoded.rfind('}') + 1
+                            json_content = ret_decoded[:json_end_index]
+                            response_data = json.loads(json_content)
+                            self.log_info(f"Command {cmd} executed successfully")
+                            return {"ret_value": response_data.get("ret"), "response": response_data}
+                        else:
+                            self.log_error(f"No response received for command: {cmd}")
+                            attempts += 1
+                            if attempts < retries:
+                                time.sleep(retry_delay)
+                                self.log_info(f"Retrying command {cmd}, attempt {attempts+1}/{retries}")
+                            continue
+                except (socket.timeout, socket.error) as e:
+                    self.log_error(f"Socket error executing command {cmd}: {e}")
+                    attempts += 1
+                    if attempts < retries:
+                        time.sleep(retry_delay)
+                        self.log_info(f"Retrying command {cmd}, attempt {attempts+1}/{retries}")
+                    continue
+                except json.JSONDecodeError as e:
+                    self.log_error(f"JSON decode error executing command {cmd}: {e}")
+                    attempts += 1
+                    if attempts < retries:
+                        time.sleep(retry_delay)
+                        self.log_info(f"Retrying command {cmd}, attempt {attempts+1}/{retries}")
+                    continue
+                except Exception as e:
+                    self.log_error(f"Unexpected error executing command {cmd}: {e}")
+                    break
+            
+            # If we've reached this point, all retries failed
+            self.log_error(f"Command {cmd} failed after {retries} attempts")
+            return {"ret_value": -1, "error": "Command failed after retries"}
 
         self.mutex.lock()
         future = self.executor.submit(task)
@@ -441,6 +467,78 @@ class Scancard:
     def vision_rotate(self, cX: float, cY: float, fAngle: float):
         """Rotate using vision system."""
         return self.execute_command("vision_rotate", {"cX": cX, "cY": cY, "fAngle": fAngle})
+
+    # Add this helper method to the Scancard class in src/Feeltek/scanCard.py
+
+    def get_max_layer_count(self):
+        """
+        Gets the maximum number of layers in the current job.
+        Uses get_entity_count as a proxy for the total number of layers.
+        
+        Returns:
+            int: The maximum layer count in the current job, or 1 if not determinable
+        """
+        try:
+            future = self.get_entity_count()
+            response = future.result()
+            
+            if response and response.get("ret_value") == 1:
+                # Get the count from the response data
+                count = response.get("response", {}).get("data", {}).get("count", 1)
+                return max(1, count)  # Ensure at least 1 layer
+            else:
+                return 1  # Default to 1 layer if we can't determine
+        except Exception as e:
+            print(f"Error getting max layer count: {e}")
+            return 1  # Default to 1 layer on error
+    
+    def validate_layer_entity(self, layer_id, entity_index=1, entity_subindex=1) -> Future:
+        """
+        Validates that a specific layer and entity exists.
+        
+        Args:
+            layer_id: The layer ID to validate
+            entity_index: The entity index to validate
+            entity_subindex: The entity subindex to validate
+            
+        Returns:
+            Future with result containing:
+                - valid: True if layer and entity exist, False otherwise
+                - message: Description of any validation issues
+        """
+        def task():
+            # First check if we can get marking parameters for this layer
+            try:
+                mark_params_future = self.get_markParameters_by_layer(layer_id)
+                mark_params_result = mark_params_future.result()
+                
+                if not mark_params_result or mark_params_result.get("ret_value") != 1:
+                    return {
+                        "valid": False, 
+                        "message": f"Layer {layer_id} does not exist or cannot be accessed"
+                    }
+                
+                # Next check if we can get fill properties for this entity
+                fill_props_future = self.get_entity_fill_property_by_index(entity_index, entity_subindex)
+                fill_props_result = fill_props_future.result()
+                
+                if not fill_props_result or fill_props_result.get("ret_value") != 1:
+                    return {
+                        "valid": False, 
+                        "message": f"Entity at index {entity_index},{entity_subindex} does not exist"
+                    }
+                
+                # Both checks passed
+                return {"valid": True, "message": "Layer and entity validated"}
+                
+            except Exception as e:
+                self.log_error(f"Error validating layer {layer_id}, entity {entity_index},{entity_subindex}: {e}")
+                return {"valid": False, "message": f"Validation error: {str(e)}"}
+        
+        self.mutex.lock()
+        future = self.executor.submit(task)
+        future.add_done_callback(lambda f: self.mutex.unlock())
+        return future                
 
     def process_multiple_files(self, file_paths: List[str], callback=None):
         """Process multiple files in sequence.

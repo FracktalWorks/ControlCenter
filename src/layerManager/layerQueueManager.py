@@ -146,3 +146,12 @@ class LayerQueueManager:
             return 0
             
         return int((self.current_layer_index + 1) / self.total_layers * 100)
+
+    def get_layer_count(self):
+        """
+        Get the total number of layers/files in the queue.
+        
+        Returns:
+            int: The total number of layers
+        """
+        return self.total_layers    

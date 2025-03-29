@@ -86,8 +86,22 @@ class ControlScreen(QWidget):
 
     def open_laser_parameters(self):
         """Open the Laser Parameters Dialog."""
-        dialog = LaserParametersDialog(self.main_window.scancard, self)
-        dialog.exec_()
+        try:
+            # Get layer count from the layer queue manager if available
+            layer_count = 0
+            
+            if hasattr(self.main_window, 'multi_layer_controller') and hasattr(self.main_window.multi_layer_controller, 'layer_manager'):
+                layer_count = self.main_window.multi_layer_controller.layer_manager.total_layers
+            
+            # Create and open the dialog
+            dialog = LaserParametersDialog(self.main_window.scancard, self, layer_count=layer_count)
+            dialog.exec_()
+            
+        except Exception as e:
+            print(f"Error opening laser parameters dialog: {e}")
+            # Use simpler initialization that should work in any mode
+            dialog = LaserParametersDialog(self.main_window.scancard, self)
+            dialog.exec_()
 
     def load_ui(self):
         try:
