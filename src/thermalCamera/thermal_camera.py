@@ -118,7 +118,7 @@ class ThermalCamera(QThread):
             max_temp_loc = np.unravel_index(np.argmax(frame, axis=None), frame.shape)
             max_temp_loc = (max_temp_loc[1] - x1, max_temp_loc[0] - y1)  # Adjust for ROI
             max_temp_loc = (max_temp_loc[0] * 600 // (x2 - x1), max_temp_loc[1] * 600 // (y2 - y1))  # Scale to resized frame
-            cv.rectangle(roi_frame, (max_temp_loc[0] - 5, max_temp_loc[1] - 5), (max_temp_loc[0] + 5, max_temp_loc[1] + 5), (255, 255, 255), 1)
+            cv.rectangle(roi_frame, (max_temp_loc[0] - 5, max_temp_loc[1] - 5), (max_temp_loc[0] + 5, max_temp_loc[1] + 5), (128, 128, 128), 1)
 
             # Emit the maximum temperature after dead pixel correction
             self.max_temp_signal.emit(frame.max())
@@ -140,12 +140,12 @@ class ThermalCamera(QThread):
             # Draw vertical lines
             for i in range(1, 3):
                 x = i * step_w
-                cv.line(frame, (x, 0), (x, h), (255, 255, 255), 1)
+                cv.line(frame, (x, 0), (x, h), (128, 128, 128), 1)
 
             # Draw horizontal lines
             for i in range(1, 3):
                 y = i * step_h
-                cv.line(frame, (0, y), (w, y), (255, 255, 255), 1)
+                cv.line(frame, (0, y), (w, y), (128, 128, 128), 1)
         except Exception as e:
             logging.error(f"Error drawing grid: {e}")
 
@@ -201,7 +201,7 @@ class ThermalCamera(QThread):
             # Overlay text for each section
             for section, temp in temps.items():
                 x, y = positions[section]
-                cv.putText(frame, f"{temp:.2f}C", (x, y), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1)
+                cv.putText(frame, f"{temp:.2f}C", (x, y), cv.FONT_HERSHEY_SIMPLEX, 1, (128, 128, 128), 1)
 
             #  # Draw section labels
             # for i, (section, (x, y)) in enumerate(positions.items(), 1):
