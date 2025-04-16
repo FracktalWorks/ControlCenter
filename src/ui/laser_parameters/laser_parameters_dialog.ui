@@ -1,0 +1,816 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>LaserMarkingParametersDialog</class>
+ <widget class="QDialog" name="LaserMarkingParametersDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>700</width>
+    <height>900</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Laser Marking Parameters</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="markingParametersTab">
+      <attribute name="title">
+       <string>Marking Parameters</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QScrollArea" name="scrollArea">
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="scrollAreaWidgetContents">
+          <layout class="QVBoxLayout" name="markingParamsLayout">
+           <item>
+            <widget class="QGroupBox" name="motionGroup">
+             <property name="title">
+              <string>Motion Parameters</string>
+             </property>
+             <layout class="QFormLayout" name="motionFormLayout">
+              <item row="0" column="0">
+               <widget class="QLabel" name="markSpeedLabel">
+                <property name="text">
+                 <string>Marking Speed:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QDoubleSpinBox" name="markSpeedSpinBox">
+                <property name="suffix">
+                 <string> mm/s</string>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>10000.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>100.000000000000000</double>
+                </property>
+                <property name="value">
+                 <double>3000.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="jumpSpeedLabel">
+                <property name="text">
+                 <string>Jump Speed:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QDoubleSpinBox" name="jumpSpeedSpinBox">
+                <property name="suffix">
+                 <string> mm/s</string>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>10000.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>100.000000000000000</double>
+                </property>
+                <property name="value">
+                 <double>5000.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QGroupBox" name="timingGroup">
+             <property name="title">
+              <string>Timing Parameters</string>
+             </property>
+             <layout class="QFormLayout" name="timingFormLayout">
+              <item row="0" column="0">
+               <widget class="QLabel" name="jumpDelayLabel">
+                <property name="text">
+                 <string>Jump Delay:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QSpinBox" name="jumpDelaySpinBox">
+                <property name="suffix">
+                 <string> μs</string>
+                </property>
+                <property name="minimum">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <number>10000</number>
+                </property>
+                <property name="singleStep">
+                 <number>10</number>
+                </property>
+                <property name="value">
+                 <number>100</number>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="laserOnDelayLabel">
+                <property name="text">
+                 <string>Laser On Delay:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QSpinBox" name="laserOnDelaySpinBox">
+                <property name="suffix">
+                 <string> μs</string>
+                </property>
+                <property name="minimum">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <number>10000</number>
+                </property>
+                <property name="singleStep">
+                 <number>10</number>
+                </property>
+                <property name="value">
+                 <number>100</number>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="polygonDelayLabel">
+                <property name="text">
+                 <string>Polygon Delay:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QSpinBox" name="polygonDelaySpinBox">
+                <property name="suffix">
+                 <string> μs</string>
+                </property>
+                <property name="minimum">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <number>10000</number>
+                </property>
+                <property name="singleStep">
+                 <number>10</number>
+                </property>
+                <property name="value">
+                 <number>100</number>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLabel" name="laserOffDelayLabel">
+                <property name="text">
+                 <string>Laser Off Delay:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QSpinBox" name="laserOffDelaySpinBox">
+                <property name="suffix">
+                 <string> μs</string>
+                </property>
+                <property name="minimum">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <number>10000</number>
+                </property>
+                <property name="singleStep">
+                 <number>10</number>
+                </property>
+                <property name="value">
+                 <number>100</number>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0">
+               <widget class="QLabel" name="polygonKillerTimeLabel">
+                <property name="text">
+                 <string>Polygon Killer Time:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="1">
+               <widget class="QSpinBox" name="polygonKillerTimeSpinBox">
+                <property name="suffix">
+                 <string> μs</string>
+                </property>
+                <property name="minimum">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <number>10000</number>
+                </property>
+                <property name="singleStep">
+                 <number>10</number>
+                </property>
+                <property name="value">
+                 <number>100</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QGroupBox" name="laserGroup">
+             <property name="title">
+              <string>Laser Parameters</string>
+             </property>
+             <layout class="QFormLayout" name="laserFormLayout">
+              <item row="0" column="0">
+               <widget class="QLabel" name="laserFrequencyLabel">
+                <property name="text">
+                 <string>Laser Frequency:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QSpinBox" name="laserFrequencySpinBox">
+                <property name="suffix">
+                 <string> kHz</string>
+                </property>
+                <property name="minimum">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <number>1000</number>
+                </property>
+                <property name="value">
+                 <number>100</number>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="currentLabel">
+                <property name="text">
+                 <string>Current:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QSpinBox" name="currentSpinBox">
+                <property name="suffix">
+                 <string> A</string>
+                </property>
+                <property name="minimum">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <number>1000</number>
+                </property>
+                <property name="value">
+                 <number>100</number>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="firstPulseKillerLengthLabel">
+                <property name="text">
+                 <string>First Pulse Killer Length:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QSpinBox" name="firstPulseKillerLengthSpinBox">
+                <property name="suffix">
+                 <string> μs</string>
+                </property>
+                <property name="minimum">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <number>1000</number>
+                </property>
+                <property name="value">
+                 <number>100</number>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLabel" name="pulseWidthLabel">
+                <property name="text">
+                 <string>Pulse Width:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QSpinBox" name="pulseWidthSpinBox">
+                <property name="suffix">
+                 <string> μs</string>
+                </property>
+                <property name="minimum">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <number>1000</number>
+                </property>
+                <property name="value">
+                 <number>100</number>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0">
+               <widget class="QLabel" name="firstPulseWidthLabel">
+                <property name="text">
+                 <string>First Pulse Width:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="1">
+               <widget class="QSpinBox" name="firstPulseWidthSpinBox">
+                <property name="suffix">
+                 <string> %</string>
+                </property>
+                <property name="minimum">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <number>100</number>
+                </property>
+                <property name="value">
+                 <number>100</number>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="0">
+               <widget class="QLabel" name="incrementStepLabel">
+                <property name="text">
+                 <string>Increment Step:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="1">
+               <widget class="QSpinBox" name="incrementStepSpinBox">
+                <property name="suffix">
+                 <string> %</string>
+                </property>
+                <property name="minimum">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <number>100</number>
+                </property>
+                <property name="value">
+                 <number>100</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="fillParametersTab">
+      <attribute name="title">
+       <string>Fill Parameters</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <widget class="QScrollArea" name="fillScrollArea">
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="fillScrollAreaWidgetContents">
+          <layout class="QVBoxLayout" name="fillParamsLayout">
+           <item>
+            <widget class="QGroupBox" name="fillParametersGroup">
+             <property name="title">
+              <string>Entity Fill Properties</string>
+             </property>
+             <layout class="QFormLayout" name="fillFormLayout">
+              <item row="0" column="0">
+               <widget class="QLabel" name="fillModeLabel">
+                <property name="text">
+                 <string>Fill Mode:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QComboBox" name="fillModeComboBox">
+                <item>
+                 <property name="text">
+                  <string>No Filling</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>One-way Filling</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Two-way Filling</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Bow-shaped Filling</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Back-shaped Filling</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="equalDistanceLabel">
+                <property name="text">
+                 <string>Evenly Distribute Fill Lines:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QCheckBox" name="equalDistanceCheckBox"/>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="secondFillLabel">
+                <property name="text">
+                 <string>Enable Second Padding:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QCheckBox" name="secondFillCheckBox"/>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLabel" name="rotateAngleLabel">
+                <property name="text">
+                 <string>Automatic Rotation Angle:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QCheckBox" name="rotateAngleCheckBox"/>
+              </item>
+              <item row="4" column="0">
+               <widget class="QLabel" name="fillAsOneLabel">
+                <property name="text">
+                 <string>Calculate Objects as a Whole:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="1">
+               <widget class="QCheckBox" name="fillAsOneCheckBox"/>
+              </item>
+              <item row="5" column="0">
+               <widget class="QLabel" name="moreIntactLabel">
+                <property name="text">
+                 <string>Optimize Two-way Filling:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="5" column="1">
+               <widget class="QCheckBox" name="moreIntactCheckBox"/>
+              </item>
+              <item row="6" column="0">
+               <widget class="QLabel" name="fill3DLabel">
+                <property name="text">
+                 <string>Use Triangle Fill Mode:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="6" column="1">
+               <widget class="QCheckBox" name="fill3DCheckBox"/>
+              </item>
+              <item row="7" column="0">
+               <widget class="QLabel" name="loopNumLabel">
+                <property name="text">
+                 <string>Number of Boundary Rings:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="7" column="1">
+               <widget class="QSpinBox" name="loopNumSpinBox">
+                <property name="minimum">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <number>100</number>
+                </property>
+                <property name="value">
+                 <number>1</number>
+                </property>
+               </widget>
+              </item>
+              <item row="8" column="0">
+               <widget class="QLabel" name="fillMarkTimesLabel">
+                <property name="text">
+                 <string>Number of Markings for Current Angle:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="8" column="1">
+               <widget class="QSpinBox" name="fillMarkTimesSpinBox">
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+                <property name="maximum">
+                 <number>100</number>
+                </property>
+               </widget>
+              </item>
+              <item row="9" column="0">
+               <widget class="QLabel" name="curMarkTimesLabel">
+                <property name="text">
+                 <string>Current Number of Markings:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="9" column="1">
+               <widget class="QSpinBox" name="curMarkTimesSpinBox">
+                <property name="minimum">
+                 <number>1</number>
+                </property>
+                <property name="maximum">
+                 <number>100</number>
+                </property>
+                <property name="value">
+                 <number>12</number>
+                </property>
+               </widget>
+              </item>
+              <item row="10" column="0">
+               <widget class="QLabel" name="layerIdLabel">
+                <property name="text">
+                 <string>Fill in Pen Number:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="10" column="1">
+               <widget class="QSpinBox" name="layerIdSpinBox">
+                <property name="minimum">
+                 <number>0</number>
+                </property>
+                <property name="maximum">
+                 <number>255</number>
+                </property>
+                <property name="value">
+                 <number>1</number>
+                </property>
+               </widget>
+              </item>
+              <item row="11" column="0">
+               <widget class="QLabel" name="fillSpaceLabel">
+                <property name="text">
+                 <string>Fill Line Space:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="11" column="1">
+               <widget class="QDoubleSpinBox" name="fillSpaceSpinBox">
+                <property name="minimum">
+                 <double>0.010000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>1000.000000000000000</double>
+                </property>
+                <property name="value">
+                 <double>100.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="12" column="0">
+               <widget class="QLabel" name="fillAngleLabel">
+                <property name="text">
+                 <string>Fill Angle:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="12" column="1">
+               <widget class="QDoubleSpinBox" name="fillAngleSpinBox">
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>360.000000000000000</double>
+                </property>
+                <property name="value">
+                 <double>100.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="13" column="0">
+               <widget class="QLabel" name="fillEdgeOffsetLabel">
+                <property name="text">
+                 <string>Fill Edge Offset:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="13" column="1">
+               <widget class="QDoubleSpinBox" name="fillEdgeOffsetSpinBox">
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>1000.000000000000000</double>
+                </property>
+                <property name="value">
+                 <double>100.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="14" column="0">
+               <widget class="QLabel" name="fillStartOffsetLabel">
+                <property name="text">
+                 <string>Fill Start Offset:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="14" column="1">
+               <widget class="QDoubleSpinBox" name="fillStartOffsetSpinBox">
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>1000.000000000000000</double>
+                </property>
+                <property name="value">
+                 <double>100.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="15" column="0">
+               <widget class="QLabel" name="fillEndOffsetLabel">
+                <property name="text">
+                 <string>Fill End Offset:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="15" column="1">
+               <widget class="QDoubleSpinBox" name="fillEndOffsetSpinBox">
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>1000.000000000000000</double>
+                </property>
+                <property name="value">
+                 <double>100.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="16" column="0">
+               <widget class="QLabel" name="fillLineReductionLabel">
+                <property name="text">
+                 <string>Fill Line Reduction:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="16" column="1">
+               <widget class="QDoubleSpinBox" name="fillLineReductionSpinBox">
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>1000.000000000000000</double>
+                </property>
+                <property name="value">
+                 <double>100.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="17" column="0">
+               <widget class="QLabel" name="loopSpaceLabel">
+                <property name="text">
+                 <string>Loop Space:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="17" column="1">
+               <widget class="QDoubleSpinBox" name="loopSpaceSpinBox">
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>1000.000000000000000</double>
+                </property>
+                <property name="value">
+                 <double>100.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="18" column="0">
+               <widget class="QLabel" name="secondAngleLabel">
+                <property name="text">
+                 <string>Second Fill Angle:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="18" column="1">
+               <widget class="QDoubleSpinBox" name="secondAngleSpinBox">
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>360.000000000000000</double>
+                </property>
+                <property name="value">
+                 <double>100.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="19" column="0">
+               <widget class="QLabel" name="rotateAngleDeltaLabel">
+                <property name="text">
+                 <string>Angle of Each Increment:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="19" column="1">
+               <widget class="QDoubleSpinBox" name="rotateAngleDeltaSpinBox">
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>360.000000000000000</double>
+                </property>
+                <property name="value">
+                 <double>100.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Save</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>LaserMarkingParametersDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>349</x>
+     <y>880</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>349</x>
+     <y>449</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>LaserMarkingParametersDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>349</x>
+     <y>880</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>349</x>
+     <y>449</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

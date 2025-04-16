@@ -1,7 +1,7 @@
-#TBD: incase a gcode is yet to be executed, block the thread from executing another gcode in moonraker api
-
 from PyQt5 import uic
-from PyQt5.QtWidgets import (QWidget, QPushButton, QSpinBox, QProgressBar, QSizePolicy, QVBoxLayout, QMessageBox, QLabel)
+from PyQt5.QtWidgets import (QWidget, QPushButton, QSpinBox, QProgressBar, QSizePolicy, 
+                             QVBoxLayout, QMessageBox, QLabel, QFileDialog, QGroupBox, 
+                             QHBoxLayout, QListWidget)
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QTimer
 from PyQt5.QtGui import QImage
 import numpy as np
@@ -9,6 +9,8 @@ from ui.custom_widgets import ImageWidget
 from utils.helpers import run_async
 import time
 from processAutomationController.processAutomationController import ProcessAutomationController
+from ui.layer_management.layer_queue_widget import LayerQueueWidget
+from ui.laser_parameters.laser_parameters_dialog import LaserParametersDialog
 
 class ControlScreen(QWidget):
     progress_update_signal = pyqtSignal(int)
@@ -23,6 +25,9 @@ class ControlScreen(QWidget):
         # Initialize UI elements
         self.initialize_ui_elements()
 
+        # Add Laser Parameters button
+        self.add_laser_parameters_button()
+
         # Initialize ProcessAutomationController
         self.process_automation_controller = ProcessAutomationController(main_window)
 
@@ -31,6 +36,9 @@ class ControlScreen(QWidget):
 
         # Replace QWidget with custom ImageWidget
         self.setup_custom_widgets()
+
+        # Setup multi-layer controls
+        self.setup_multi_layer_controls()
 
         # Connect signals to slots
         self.connect_signals()
@@ -49,9 +57,55 @@ class ControlScreen(QWidget):
         # Connect the scancard status update signal to the label update slot
         self.main_window.printer_status.scancard_status_updated.connect(self.update_laser_status)
 
+    def add_laser_parameters_button(self):
+        """Add Laser Parameters button to the control screen."""
+        # Find the right panel or create a new layout
+        right_panel = self.findChild(QWidget, "rightPanel")
+        
+        # Create Laser Parameters Group Box
+        laser_params_group = QGroupBox("Laser Configuration")
+        laser_params_layout = QVBoxLayout()
+        
+        # Create Laser Parameters Button
+        self.laserParametersButton = QPushButton("Laser Parameters")
+        self.laserParametersButton.clicked.connect(self.open_laser_parameters)
+        
+        # Add button to layout
+        laser_params_layout.addWidget(self.laserParametersButton)
+        
+        # Set layout for group box
+        laser_params_group.setLayout(laser_params_layout)
+        
+        # Add to right panel or main layout
+        if right_panel and hasattr(right_panel, 'layout'):
+            right_panel.layout().addWidget(laser_params_group)
+        else:
+            # Fallback to main layout
+            if hasattr(self, 'layout'):
+                self.layout().addWidget(laser_params_group)
+
+    def open_laser_parameters(self):
+        """Open the Laser Parameters Dialog."""
+        try:
+            # Get layer count from the layer queue manager if available
+            layer_count = 0
+            
+            if hasattr(self.main_window, 'multi_layer_controller') and hasattr(self.main_window.multi_layer_controller, 'layer_manager'):
+                layer_count = self.main_window.multi_layer_controller.layer_manager.total_layers
+            
+            # Create and open the dialog
+            dialog = LaserParametersDialog(self.main_window.scancard, self, layer_count=layer_count)
+            dialog.exec_()
+            
+        except Exception as e:
+            print(f"Error opening laser parameters dialog: {e}")
+            # Use simpler initialization that should work in any mode
+            dialog = LaserParametersDialog(self.main_window.scancard, self)
+            dialog.exec_()
+
     def load_ui(self):
         try:
-            uic.loadUi('src/ui/control_screen/control_screen.ui', self)
+            uic.loadUi('ui/control_screen/control_screen.ui', self)
             print("ControlScreen UI loaded successfully")
         except Exception as e:
             print(f"Failed to load ControlScreen UI: {e}")
@@ -92,12 +146,9 @@ class ControlScreen(QWidget):
         self.moveToStartingPositionButton = self.findChild(QPushButton, "moveToStartingPositionButton") 
         self.prepareForPartRemovalButton = self.findChild(QPushButton, "prepareForPartRemovalButton")  
 
-        self.maxTempLabel = self.findChild(QLabel, "maxTempLabel")  # Find the maxTempLabel
-
-        # Initialize scanCardStatusLabel
+        self.maxTempLabel = self.findChild(QLabel, "maxTempLabel")
         self.scanCardStatusLabel = self.findChild(QLabel, "scanCardStatusLabel")
 
-        # Initialize start and stop marking buttons
         self.startMarkingButton = self.findChild(QPushButton, "startMarkingButton")
         self.stopMarkingButton = self.findChild(QPushButton, "stopMarkingButton")
 
@@ -131,9 +182,49 @@ class ControlScreen(QWidget):
         self.moveToStartingPositionButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.move_to_starting_sequence))
         self.prepareForPartRemovalButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.prepare_for_part_removal_sequence))
 
-        # Connect start and stop marking buttons to Scancard functions
         self.startMarkingButton.clicked.connect(self.main_window.scancard.start_mark)
         self.stopMarkingButton.clicked.connect(self.main_window.scancard.stop_mark)
+
+    def setup_multi_layer_controls(self):
+        """Set up controls for multi-layer printing."""
+        try:
+            # Create group box for multi-layer printing
+            multi_layer_group = QGroupBox("Multi-Layer Print")
+            multi_layer_layout = QVBoxLayout()
+            
+            # Folder selection button
+            self.select_folder_btn = QPushButton("Select Layers Folder")
+            self.select_folder_btn.clicked.connect(self.select_layers_folder)
+            multi_layer_layout.addWidget(self.select_folder_btn)
+            
+            # Layer queue widget
+            self.layer_queue_widget = LayerQueueWidget()
+            multi_layer_layout.addWidget(self.layer_queue_widget)
+            
+            # Start/resume buttons
+            buttons_layout = QHBoxLayout()
+            self.start_multi_print_btn = QPushButton("Start Multi-Layer Print")
+            self.start_multi_print_btn.clicked.connect(self.start_multi_layer_print)
+            self.start_multi_print_btn.setEnabled(False)
+            buttons_layout.addWidget(self.start_multi_print_btn)
+            
+            self.resume_print_btn = QPushButton("Resume Previous Print")
+            self.resume_print_btn.clicked.connect(self.resume_print)
+            buttons_layout.addWidget(self.resume_print_btn)
+            
+            multi_layer_layout.addLayout(buttons_layout)
+            
+            multi_layer_group.setLayout(multi_layer_layout)
+            
+            # Find where to add in the existing layout
+            right_panel = self.findChild(QWidget, "rightPanel")
+            if right_panel and hasattr(right_panel, "layout"):
+                right_panel.layout().addWidget(multi_layer_group)
+            else:
+                # Fall back to adding to the main layout
+                self.layout().addWidget(multi_layer_group)
+        except Exception as e:
+            print(f"Error setting up multi-layer controls: {e}")
 
     @run_async
     def run_async_send_gcode(self, gcode):
@@ -159,12 +250,49 @@ class ControlScreen(QWidget):
     def connect_signals(self):
         self.main_window.printer_status.temperatures_updated.connect(self.update_thermal_camera_widget)
         self.main_window.printer_status.rgb_frame_updated.connect(self.update_rgb_camera_widget)
-        self.main_window.printer_status.maxtemp_updated.connect(self.update_max_temp_label)  # Connect the maxtemp_updated signal
+        self.main_window.printer_status.maxtemp_updated.connect(self.update_max_temp_label)
 
     @pyqtSlot(float)
     def update_max_temp_label(self, max_temp):
         """Slot to update the text of maxTempLabel with the maximum temperature."""
         self.maxTempLabel.setText(f"Max Temp: {max_temp:.2f}°C")
+
+    
+
+
+    def select_layers_folder(self):
+        """Open a file dialog to select a folder containing layer files."""
+        folder_path = QFileDialog.getExistingDirectory(self, "Select Layers Folder")
+        if folder_path:
+            layer_files = self.main_window.multi_layer_controller.load_layer_files(folder_path)
+            self.layer_queue_widget.set_layer_files(layer_files)
+            self.start_multi_print_btn.setEnabled(len(layer_files) > 0)
+
+    def start_multi_layer_print(self):
+        """Start the multi-layer print process."""
+        self.main_window.multi_layer_controller.start_multi_layer_print()
+
+    def resume_print(self):
+        """Open a file dialog to select a print state file and resume printing."""
+        state_file, _ = QFileDialog.getOpenFileName(self, "Select Print State File", "", "Print State Files (*.pstate)")
+        if state_file:
+            self.main_window.resume_print_from_saved_state(state_file)
+
+    @pyqtSlot(np.ndarray, dict)
+    def update_thermal_camera_widget(self, frame, temps):
+        """Update the thermal camera widget."""
+        if frame is not None:
+            image = QImage(frame.data, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_BGR888)
+            self.thermalCameraWidget.setImage(image)
+
+    @pyqtSlot(np.ndarray)
+    def update_rgb_camera_widget(self, frame):
+        """Update the RGB camera widget."""
+        if frame is not None:
+            height, width, channel = frame.shape
+            bytes_per_line = 3 * width
+            image = QImage(frame.data, width, height, bytes_per_line, QImage.Format_RGB888).rgbSwapped()
+            self.rgbCameraWidget.setImage(image)
 
     def set_motion_control_buttons_enabled(self, enabled):
         """Enable or disable motion control buttons."""
@@ -184,7 +312,7 @@ class ControlScreen(QWidget):
     def confirm_heated_buffer_recoat(self):
         """Show a confirmation dialog before starting the heated buffer recoat."""
         reply = QMessageBox.question(self, 'Confirmation',
-                                     'Ensure that the build module is moved to the starting position and recoater is homed  before starting the heated buffer recoat. Do you want to proceed?',
+                                     'Ensure that the build module is moved to the starting position and recoater is homed before starting the heated buffer recoat. Do you want to proceed?',
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
             self.process_automation_controller.process_running = True
@@ -202,22 +330,6 @@ class ControlScreen(QWidget):
         """Update the chamber temperature setpoint in the PrinterStatus model."""
         self.main_window.printer_status.chamberTemperatureSetpoint = value
         print(f"Chamber temperature setpoint updated to {value}")
-
-    @pyqtSlot(np.ndarray, dict)
-    def update_thermal_camera_widget(self, frame, temps):
-        """Update the thermal camera widget."""
-        if frame is not None:
-            image = QImage(frame.data, frame.shape[1], frame.shape[0], frame.strides[0], QImage.Format_BGR888)
-            self.thermalCameraWidget.setImage(image)
-
-    @pyqtSlot(np.ndarray)
-    def update_rgb_camera_widget(self, frame):
-        """Update the RGB camera widget."""
-        if frame is not None:
-            height, width, channel = frame.shape
-            bytes_per_line = 3 * width
-            image = QImage(frame.data, width, height, bytes_per_line, QImage.Format_RGB888).rgbSwapped()
-            self.rgbCameraWidget.setImage(image)
 
     def cooldown(self):
         """Cooldown the chamber."""

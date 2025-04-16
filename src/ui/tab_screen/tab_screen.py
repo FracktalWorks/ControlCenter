@@ -10,7 +10,7 @@ class TabScreen(QWidget):
         self.main_window = main_window
         # Load the .ui file for tab screen
         try:
-            uic.loadUi('src/ui/tab_screen/tab_screen.ui', self)
+            uic.loadUi('ui/tab_screen/tab_screen.ui', self)
             print("TabScreen UI loaded successfully")
         except Exception as e:
             print(f"Failed to load TabScreen UI: {e}")

@@ -9,7 +9,7 @@ class ParametersScreen(QWidget):
         self.printer_status = main_window.printer_status  # Assuming main_window has a printer_status attribute
 
         try:
-            uic.loadUi('src/ui/parameters_screen/parameters_screen.ui', self)
+            uic.loadUi('ui/parameters_screen/parameters_screen.ui', self)
             print("ParametersScreen UI loaded successfully")
         except Exception as e:
             print(f"Failed to load ParametersScreen UI: {e}")

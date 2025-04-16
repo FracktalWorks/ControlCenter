@@ -2,7 +2,7 @@ import threading
 import socket
 import json
 import time
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from concurrent.futures import ThreadPoolExecutor, Future
 from PyQt5.QtCore import QMutex
 
@@ -127,6 +127,7 @@ class Scancard:
             self.timeout = 5
             self.file = ""
             self.ret_value = 1
+            self.current_file = None
 
             self.req = {}
             self.function = ""
@@ -136,6 +137,10 @@ class Scancard:
 
             self.executor = ThreadPoolExecutor(max_workers=1)
             self.mutex = QMutex()
+
+            # Track file queues for multi-layer printing
+            self.file_queue = []
+            self.current_file_index = -1
 
         except Exception as e:
             print(f"E1: Variable initialization failed. {e}")
@@ -180,20 +185,50 @@ class Scancard:
         if data:
             self.req["data"] = data
 
-    def execute_command(self, cmd: str, data: Optional[Dict[str, Any]] = None) -> Future:
+    def execute_command(self, cmd: str, data: Optional[Dict[str, Any]] = None, retries=3, retry_delay=1.0) -> Future:
         def task():
-            try:
-                json_string = json.dumps({"sid": 0, "cmd": cmd, "data": data})
-                with socket.create_connection((self.HOST, self.PORT), timeout=self.timeout) as sock:
-                    sock.sendall(json_string.encode())
-                    ret = sock.recv(1024)
-                    if ret:
-                        response_data = json.loads(ret.decode('GB18030', errors='replace'))
-                        return {"ret_value": response_data.get("ret")}
-                    else:
-                        return {"ret_value": -1}  # Simulated error response
-            except (socket.timeout, socket.error, json.JSONDecodeError) as e:
-                return {"ret_value": -1}  # Simulated error response
+            attempts = 0
+            while attempts < retries:
+                try:
+                    json_string = json.dumps({"sid": 0, "cmd": cmd, "data": data} if data else {"sid": 0, "cmd": cmd})
+                    with socket.create_connection((self.HOST, self.PORT), timeout=self.timeout) as sock:
+                        sock.sendall(json_string.encode())
+                        ret = sock.recv(1024)
+                        if ret:
+                            ret_decoded = ret.decode('GB18030', errors='replace')
+                            json_end_index = ret_decoded.rfind('}') + 1
+                            json_content = ret_decoded[:json_end_index]
+                            response_data = json.loads(json_content)
+                            self.log_info(f"Command {cmd} executed successfully")
+                            return {"ret_value": response_data.get("ret"), "response": response_data}
+                        else:
+                            self.log_error(f"No response received for command: {cmd}")
+                            attempts += 1
+                            if attempts < retries:
+                                time.sleep(retry_delay)
+                                self.log_info(f"Retrying command {cmd}, attempt {attempts+1}/{retries}")
+                            continue
+                except (socket.timeout, socket.error) as e:
+                    self.log_error(f"Socket error executing command {cmd}: {e}")
+                    attempts += 1
+                    if attempts < retries:
+                        time.sleep(retry_delay)
+                        self.log_info(f"Retrying command {cmd}, attempt {attempts+1}/{retries}")
+                    continue
+                except json.JSONDecodeError as e:
+                    self.log_error(f"JSON decode error executing command {cmd}: {e}")
+                    attempts += 1
+                    if attempts < retries:
+                        time.sleep(retry_delay)
+                        self.log_info(f"Retrying command {cmd}, attempt {attempts+1}/{retries}")
+                    continue
+                except Exception as e:
+                    self.log_error(f"Unexpected error executing command {cmd}: {e}")
+                    break
+            
+            # If we've reached this point, all retries failed
+            self.log_error(f"Command {cmd} failed after {retries} attempts")
+            return {"ret_value": -1, "error": "Command failed after retries"}
 
         self.mutex.lock()
         future = self.executor.submit(task)
@@ -240,119 +275,323 @@ class Scancard:
         return future
 
     def open_file(self, file_path: str):
+        """Open a file on the scancard."""
+        self.current_file = file_path
         return self.execute_command("open_file", {"path": file_path})
 
     def close_file(self):
+        """Close the current file."""
+        self.current_file = None
         return self.execute_command("close_file")
 
     def save_file(self, file_path: str, cover: bool):
-        return self.execute_command("save_file", {"path": file_path, "cover": cover})
+        """Save a file on the scancard."""
+        return self.execute_command("save_file", {"path": file_path, "cover": 1 if cover else 0})
 
     def start_mark(self):
+        """Start the marking process."""
         future = self.execute_command("start_mark")
         return future
 
     def stop_mark(self):
+        """Stop the marking process."""
         future = self.execute_command("stop_mark")
         return future
 
     def start_preview(self):
+        """Start preview mode."""
         return self.execute_command("start_preview")
 
     def stop_preview(self):
+        """Stop preview mode."""
         return self.execute_command("stop_preview")
 
+    def set_file_queue(self, file_paths: List[str]):
+        """Set a queue of files to be processed in sequence."""
+        self.file_queue = file_paths
+        self.current_file_index = -1
+
+    def load_next_file(self) -> Future:
+        """Load the next file in the queue."""
+        if not self.file_queue or self.current_file_index >= len(self.file_queue) - 1:
+            return None
+
+        self.current_file_index += 1
+        file_path = self.file_queue[self.current_file_index]
+        return self.open_file(file_path)
+
+    def get_current_file_index(self) -> int:
+        """Get the current file index in the queue."""
+        return self.current_file_index
+
+    def get_file_queue_length(self) -> int:
+        """Get the length of the file queue."""
+        return len(self.file_queue)
+
     def get_markParameters_by_layer(self, layer_id: int):
+        """Get marking parameters for a layer."""
         return self.execute_command("get_markParameters_by_layer", {"layer_id": layer_id})
 
     def set_markParameters_by_layer(self, layer_id: int, params: Dict[str, Any]):
-        return self.execute_command("set_markParameters_by_layer", {"layer_id": layer_id, **params})
+        """Set marking parameters for a layer."""
+        data = {"layer_id": layer_id, **params}
+        return self.execute_command("set_markParameters_by_layer", data)
 
     def get_markParameters_by_index(self, index: int, in_index: int):
+        """Get marking parameters by index."""
         return self.execute_command("get_markParameters_by_index", {"index": index, "in_index": in_index})
 
     def set_markParameters_by_index(self, index: int, in_index: int, params: Dict[str, Any]):
-        return self.execute_command("set_markParameters_by_index", {"index": index, "in_index": in_index, **params})
+        """Set marking parameters by index."""
+        data = {"index": index, "in_index": in_index, **params}
+        return self.execute_command("set_markParameters_by_index", data)
 
     def download_parameters(self):
+        """Download marking parameters."""
         return self.execute_command("download_Parameters")
 
     def get_entity_fill_property_by_index(self, index: int, in_index: int):
+        """Get fill properties by index."""
         return self.execute_command("get_entity_fill_property_by_index", {"index": index, "in_index": in_index})
 
     def set_entity_fill_property_by_index(self, index: int, in_index: int, params: Dict[str, Any]):
-        return self.execute_command("set_entity_fill_property_by_index", {"index": index, "in_index": in_index, **params})
+        """Set fill properties by index."""
+        data = {"index": index, "in_index": in_index, **params}
+        return self.execute_command("set_entity_fill_property_by_index", data)
 
     def get_entity_count(self):
+        """Get the number of entities."""
         return self.execute_command("get_entity_count")
 
     def translate_entity(self, dx: float, dy: float):
+        """Translate all entities."""
         return self.execute_command("translate_entity", {"dx": dx, "dy": dy})
 
     def rotate_entity(self, cx: float, cy: float, fAngle: float):
+        """Rotate all entities."""
         return self.execute_command("rotate_entity", {"cx": cx, "cy": cy, "fAngle": fAngle})
 
     def translate_entity_by_index(self, index: int, dx: float, dy: float):
+        """Translate entity by index."""
         return self.execute_command("translate_entity_by_index", {"index": index, "dx": dx, "dy": dy})
 
     def rotate_entity_by_index(self, index: int, cx: float, cy: float, fAngle: float):
+        """Rotate entity by index."""
         return self.execute_command("rotate_entity_by_index", {"index": index, "cx": cx, "cy": cy, "fAngle": fAngle})
 
     def trans_by_model(self, dx: float, dy: float, dz: float, axis: str, fAngle: float, fScale: float):
+        """Model transformation."""
         return self.execute_command("TransByModel", {"dx": dx, "dy": dy, "dz": dz, "axis": axis, "fAngle": fAngle, "fScale": fScale})
 
     def get_name_by_index(self, index: int):
+        """Get name by index."""
         return self.execute_command("get_name_by_index", {"index": index})
 
     def set_name_by_index(self, index: int, name: str):
+        """Set name by index."""
         return self.execute_command("set_name_by_index", {"index": index, "name": name})
 
     def get_content_by_index(self, index: int):
+        """Get content by index."""
         return self.execute_command("get_content_by_index", {"index": index})
 
     def set_content_by_index(self, index: int, content: str):
+        """Set content by index."""
         return self.execute_command("set_content_by_index", {"index": index, "content": content})
 
     def get_pos_size_by_index(self, index: int):
+        """Get position and size by index."""
         return self.execute_command("get_pos_size_by_index", {"index": index})
 
     def set_pos_size_by_index(self, index: int, xPos: float, yPos: float, zPos: float, xSize: float, ySize: float, zSize: float):
-        return self.execute_command("set_pos_size_by_index", {"index": index, "xPos": xPos, "yPos": yPos, "zPos": zPos, "xSize": xSize, "ySize": ySize, "zSize": zSize})
+        """Set position and size by index."""
+        return self.execute_command("set_pos_size_by_index", {
+            "index": index, 
+            "xPos": xPos, 
+            "yPos": yPos, 
+            "zPos": zPos, 
+            "xSize": xSize, 
+            "ySize": ySize, 
+            "zSize": zSize
+        })
 
     def get_content_by_name(self, name: str):
+        """Get content by name."""
         return self.execute_command("get_content_by_name", {"name": name})
 
     def set_content_by_name(self, name: str, content: str):
+        """Set content by name."""
+        return self
+    def set_content_by_name(self, name: str, content: str):
+        """Set content by name."""
         return self.execute_command("set_content_by_name", {"name": name, "content": content})
 
     def delete_by_index(self, index: int):
+        """Delete object by index."""
         return self.execute_command("delete_by_index", {"index": index})
 
     def copy_by_index(self, index: int):
+        """Copy object by index."""
         return self.execute_command("copy_by_index", {"index": index})
 
     def mark_by_index(self, index: int):
+        """Mark object by index."""
         return self.execute_command("mark_by_index", {"index": index})
 
     def read_input(self):
+        """Read input pins."""
         return self.execute_command("read_input", {"data": 0xff})
 
     def set_output(self, output: int):
+        """Set output pins."""
         return self.execute_command("write_output", {"output": output})
 
     def clear_error(self):
+        """Clear current error."""
         return self.execute_command("clear_error")
 
     def get_error(self):
+        """Get current error."""
         future = self.execute_command("get_error")
         future.add_done_callback(lambda f: self.log_info(f"Error description: {self.ERROR_DESCRIPTIONS.get(self.ret_value, 'Unknown error')}"))
         return future
 
     def enable_vision(self, bEnVision: bool):
+        """Enable or disable vision system."""
         return self.execute_command("enable_vision", {"bEnVision": bEnVision})
 
     def vision_translate(self, dX: float, dY: float):
+        """Translate using vision system."""
         return self.execute_command("vision_translate", {"dX": dX, "dY": dY})
 
     def vision_rotate(self, cX: float, cY: float, fAngle: float):
+        """Rotate using vision system."""
         return self.execute_command("vision_rotate", {"cX": cX, "cY": cY, "fAngle": fAngle})
+
+    # Add this helper method to the Scancard class in src/Feeltek/scanCard.py
+
+    def get_max_layer_count(self):
+        """
+        Gets the maximum number of layers in the current job.
+        Uses get_entity_count as a proxy for the total number of layers.
+        
+        Returns:
+            int: The maximum layer count in the current job, or 1 if not determinable
+        """
+        try:
+            future = self.get_entity_count()
+            response = future.result()
+            
+            if response and response.get("ret_value") == 1:
+                # Get the count from the response data
+                count = response.get("response", {}).get("data", {}).get("count", 1)
+                return max(1, count)  # Ensure at least 1 layer
+            else:
+                return 1  # Default to 1 layer if we can't determine
+        except Exception as e:
+            print(f"Error getting max layer count: {e}")
+            return 1  # Default to 1 layer on error
+    
+    def validate_layer_entity(self, layer_id, entity_index=1, entity_subindex=1) -> Future:
+        """
+        Validates that a specific layer and entity exists.
+        
+        Args:
+            layer_id: The layer ID to validate
+            entity_index: The entity index to validate
+            entity_subindex: The entity subindex to validate
+            
+        Returns:
+            Future with result containing:
+                - valid: True if layer and entity exist, False otherwise
+                - message: Description of any validation issues
+        """
+        def task():
+            # First check if we can get marking parameters for this layer
+            try:
+                mark_params_future = self.get_markParameters_by_layer(layer_id)
+                mark_params_result = mark_params_future.result()
+                
+                if not mark_params_result or mark_params_result.get("ret_value") != 1:
+                    return {
+                        "valid": False, 
+                        "message": f"Layer {layer_id} does not exist or cannot be accessed"
+                    }
+                
+                # Next check if we can get fill properties for this entity
+                fill_props_future = self.get_entity_fill_property_by_index(entity_index, entity_subindex)
+                fill_props_result = fill_props_future.result()
+                
+                if not fill_props_result or fill_props_result.get("ret_value") != 1:
+                    return {
+                        "valid": False, 
+                        "message": f"Entity at index {entity_index},{entity_subindex} does not exist"
+                    }
+                
+                # Both checks passed
+                return {"valid": True, "message": "Layer and entity validated"}
+                
+            except Exception as e:
+                self.log_error(f"Error validating layer {layer_id}, entity {entity_index},{entity_subindex}: {e}")
+                return {"valid": False, "message": f"Validation error: {str(e)}"}
+        
+        self.mutex.lock()
+        future = self.executor.submit(task)
+        future.add_done_callback(lambda f: self.mutex.unlock())
+        return future                
+
+    def process_multiple_files(self, file_paths: List[str], callback=None):
+        """Process multiple files in sequence.
+        
+        Args:
+            file_paths: List of file paths to process
+            callback: Optional callback function to call after each file is processed
+        
+        Returns:
+            Future object that will be completed when all files are processed
+        """
+        def task():
+            results = []
+            for i, file_path in enumerate(file_paths):
+                # Close any open file
+                close_result = self.close_file().result()
+                
+                # Open new file
+                open_result = self.open_file(file_path).result()
+                if open_result.get("ret_value") != 1:
+                    results.append({
+                        "file": file_path,
+                        "success": False,
+                        "error": f"Failed to open file: {self.ERROR_DESCRIPTIONS.get(open_result.get('ret_value'), 'Unknown error')}"
+                    })
+                    continue
+                
+                # Mark the file
+                mark_result = self.start_mark().result()
+                if mark_result.get("ret_value") != 1:
+                    results.append({
+                        "file": file_path,
+                        "success": False,
+                        "error": f"Failed to mark file: {self.ERROR_DESCRIPTIONS.get(mark_result.get('ret_value'), 'Unknown error')}"
+                    })
+                    continue
+                
+                # Wait for marking to complete
+                while True:
+                    status = self.get_working_status().result()
+                    if status == "Waiting":
+                        break
+                    time.sleep(0.5)
+                
+                results.append({
+                    "file": file_path,
+                    "success": True
+                })
+                
+                # Call callback if provided
+                if callback:
+                    callback(i, len(file_paths), file_path)
+            
+            return results
+        
+        return self.executor.submit(task)
