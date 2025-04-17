@@ -6,6 +6,9 @@ from models.printer_status import PrinterStatus
 from PyQt5.QtCore import QTimer
 from Feeltek.scanCard import Scancard  # Import Scancard
 from processAutomationController.processAutomationController import ProcessAutomationController
+from pi_instruments.pi_intruments import pi_control
+from processAutomationController.processAutomationController import ProcessAutomationController
+
 from utils.helpers import run_async
 
 if not Config.DEVELOPMENT_MODE:

@@ -27,4 +27,4 @@ def main():
         logging.error("Exception occurred", exc_info=True)
 
 if __name__ == "__main__":
-    main()
+    main()    

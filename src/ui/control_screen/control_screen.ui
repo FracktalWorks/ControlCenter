@@ -110,7 +110,6 @@
            <font>
             <family>Gotham</family>
             <pointsize>16</pointsize>
-            <weight>50</weight>
             <bold>false</bold>
            </font>
           </property>
@@ -630,7 +629,6 @@ QPushButton:focus {
             <font>
              <family>Gotham</family>
              <pointsize>16</pointsize>
-             <weight>50</weight>
              <bold>false</bold>
             </font>
            </property>
@@ -895,7 +893,6 @@ QPushButton:focus {
             <font>
              <family>Gotham</family>
              <pointsize>16</pointsize>
-             <weight>50</weight>
              <bold>false</bold>
             </font>
            </property>
@@ -1549,7 +1546,6 @@ QPushButton:focus {
            <font>
             <family>Gotham</family>
             <pointsize>16</pointsize>
-            <weight>50</weight>
             <bold>false</bold>
            </font>
           </property>
@@ -2013,7 +2009,6 @@ QPushButton:focus {
             <font>
              <family>Gotham</family>
              <pointsize>16</pointsize>
-             <weight>50</weight>
              <bold>false</bold>
             </font>
            </property>
@@ -2278,7 +2273,6 @@ QPushButton:focus {
             <font>
              <family>Gotham</family>
              <pointsize>16</pointsize>
-             <weight>50</weight>
              <bold>false</bold>
             </font>
            </property>
@@ -3100,7 +3094,6 @@ QPushButton:focus {
            <font>
             <family>Gotham</family>
             <pointsize>16</pointsize>
-            <weight>50</weight>
             <bold>false</bold>
            </font>
           </property>

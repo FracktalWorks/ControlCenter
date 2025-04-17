@@ -8,36 +8,42 @@ import  pi_instruments
 class ProcessAutomationController(QObject):
     progress_update_signal = pyqtSignal(int)
 
-    def send_command(command, output_widget):
-        """Send a command to the motion controller and display the response."""
-        try:
-            response = pi_instruments.send_command(command)
-            if response:
-                output_widget.append(f"Command Sent: {command}")
-                output_widget.append(f"Response: {response}")
-                
-                # Wait for the movement to complete
-                time.sleep(0.5)
-                
-                # Send ?FPOS command to get current position
-                position_response = pi_instruments.send_command("?FPOS")
-                output_widget.append(f"Current Position: {position_response}")
-        except Exception as e:
-            output_widget.append(f"Error: {e}")
-            log_error(e)
+    def setup_connections(self, control_screen):
+        control_screen.homeBuildModuleButton.clicked.connect(lambda: self.run_async_process(self.home_build_module))
+        control_screen.undockButton.clicked.connect(lambda: self.run_async_process(self.undock))
+        control_screen.dockButton.clicked.connect(lambda: self.run_async_process(self.dock))
+        control_screen.setChamberTempButton.clicked.connect(lambda: self.run_async_process(lambda: self.set_chamber_temperature(control_screen.chamberTempSpinBox.value())))
+        control_screen.cooldownButton.clicked.connect(control_screen.cooldown)
+        control_screen.homeFeedButton.clicked.connect(lambda: self.run_async_process(self.home_feed))
 
-    def send_gcode_file(file_path, output_widget):
-        """Read G-code from a file and send each line to the controller."""
-        try:
-            with open(file_path, 'r') as file:
-                for line in file:
-                    command = line.strip()
-                    if command:
-                        pi_instruments.send_command(command, output_widget)
-                        time.sleep(0.2)  # Short delay to avoid command overlap
-        except FileNotFoundError:
-            output_widget.append(f"Error: File {file_path} not found.")
-            log_error(f"File {file_path} not found.")
+        # Z movements
+        control_screen.homeZButton.clicked.connect(lambda: self.run_async_process(self.home_z))
+        control_screen.moveZMButton.clicked.connect(lambda: self.run_async_process(self.move_z_minus))
+        control_screen.moveZPButton.clicked.connect(lambda: self.run_async_process(self.move_z_plus))
+
+        # XY movements
+        control_screen.homeXYButton.clicked.connect(lambda: self.run_async_process(self.home_xy))
+        control_screen.moveXMButton.clicked.connect(lambda: self.run_async_process(self.move_x_minus))
+        control_screen.moveXPButton.clicked.connect(lambda: self.run_async_process(self.move_x_plus))
+        control_screen.moveYMButton.clicked.connect(lambda: self.run_async_process(self.move_y_minus))
+        control_screen.moveYPButton.clicked.connect(lambda: self.run_async_process(self.move_y_plus))
+
+        # Feed movements
+        control_screen.moveFeedMButton.clicked.connect(lambda: self.run_async_process(lambda: self.move_feed_minus(control_screen.step)))
+        control_screen.moveFeedPButton.clicked.connect(lambda: self.run_async_process(lambda: self.move_feed_plus(control_screen.step)))
+
+        # Temperature settings
+        control_screen.setBedTempButton.clicked.connect(lambda: self.run_async_process(lambda: self.set_bed_temperature(control_screen.bedTempSpinBox.value())))
+        control_screen.setVolumeTempButton.clicked.connect(lambda: self.run_async_process(lambda: self.set_volume_temperature(control_screen.volumeTempSpinBox.value())))
+
+        # Other buttons
+        control_screen.stopProcessButton.clicked.connect(self.stop_process)
+        control_screen.homeRecoaterButton.clicked.connect(lambda: self.run_async_process(self.home_recoater))
+        control_screen.recoatButton.clicked.connect(lambda: self.run_async_process(self.recoat))
+        control_screen.moveToStartingPositionButton.clicked.connect(lambda: self.run_async_process(self.move_to_starting_sequence))
+        control_screen.prepareForPartRemovalButton.clicked.connect(lambda: self.run_async_process(self.prepare_for_part_removal_sequence))
+
+    
     
     def __init__(self, main_window):
         super(ProcessAutomationController, self).__init__()

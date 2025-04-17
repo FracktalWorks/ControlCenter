@@ -110,51 +110,51 @@ class ControlScreen(QWidget):
         self.startMarkingButton = self.findChild(QPushButton, "startMarkingButton")
         self.stopMarkingButton = self.findChild(QPushButton, "stopMarkingButton")
 
-    def setup_connections(self):
-        self.step = 10
-        self.setStep(10)
-        self.homeBuildModuleButton.clicked.connect(lambda: self.run_async_send_gcode("G28 Z Y\nM400"))
-        self.undockButton.clicked.connect(lambda: self.run_async_send_gcode("goDown\nM400"))
-        self.dockButton.clicked.connect(lambda: self.run_async_send_gcode("liftUp\nM400"))
-        self.setChamberTempButton.clicked.connect(lambda: self.update_setpoint(self.chamberTempSpinBox.value()))
-        self.cooldownButton.clicked.connect(self.cooldown)
-        self.homeFeedButton.clicked.connect(lambda: self.run_async_send_gcode("G28 Y\nM400"))
+    # def setup_connections(self):
+    #     self.step = 10
+    #     self.setStep(10)
+    #     self.homeBuildModuleButton.clicked.connect(lambda: self.run_async_send_gcode("G28 Z Y\nM400"))
+    #     self.undockButton.clicked.connect(lambda: self.run_async_send_gcode("goDown\nM400"))
+    #     self.dockButton.clicked.connect(lambda: self.run_async_send_gcode("liftUp\nM400"))
+    #     self.setChamberTempButton.clicked.connect(lambda: self.update_setpoint(self.chamberTempSpinBox.value()))
+    #     self.cooldownButton.clicked.connect(self.cooldown)
+    #     self.homeFeedButton.clicked.connect(lambda: self.run_async_send_gcode("G28 Y\nM400"))
 
-        # Z movements
-        self.homeZButton.clicked.connect(lambda: self.run_async_send_gcode("N50 G01 Z0 F500"))
-        self.moveZMButton.clicked.connect(lambda: self.run_async_send_gcode("N60 G01 Z-10 F200"))
-        self.moveZPButton.clicked.connect(lambda: self.run_async_send_gcode("N70 G01 Z10 F200"))
+    #     # Z movements
+    #     self.homeZButton.clicked.connect(lambda: self.run_async_send_gcode("N50 G01 Z0 F500"))
+    #     self.moveZMButton.clicked.connect(lambda: self.run_async_send_gcode("N60 G01 Z-10 F200"))
+    #     self.moveZPButton.clicked.connect(lambda: self.run_async_send_gcode("N70 G01 Z10 F200"))
        
-        # XY movements
+    #     # XY movements
         
-        self.homeXYButton.clicked.connect(lambda: self.run_async_send_gcode("N70 G01 X0 Y0 F200"))
-        self.moveXMButton.clicked.connect(lambda: self.run_async_send_gcode("N20 G01 X-10 F500"))
-        self.moveXPButton.clicked.connect(lambda: self.run_async_send_gcode("N30 G01 X10 F500"))
-        self.moveYMButton.clicked.connect(lambda: self.run_async_send_gcode("N40 G01 Y-10 F500"))
-        self.moveYPButton.clicked.connect(lambda: self.run_async_send_gcode("N10 G01 Y10 F500"))
+    #     self.homeXYButton.clicked.connect(lambda: self.run_async_send_gcode("N70 G01 X0 Y0 F200"))
+    #     self.moveXMButton.clicked.connect(lambda: self.run_async_send_gcode("N20 G01 X-10 F500"))
+    #     self.moveXPButton.clicked.connect(lambda: self.run_async_send_gcode("N30 G01 X10 F500"))
+    #     self.moveYMButton.clicked.connect(lambda: self.run_async_send_gcode("N40 G01 Y-10 F500"))
+    #     self.moveYPButton.clicked.connect(lambda: self.run_async_send_gcode("N10 G01 Y10 F500"))
 
-        self.step01Button.clicked.connect(lambda: self.setStep(0.1))
-        self.step1Button.clicked.connect(lambda: self.setStep(1))
-        self.step10Button.clicked.connect(lambda: self.setStep(10))
-        self.step100Button.clicked.connect(lambda: self.setStep(100))
+    #     self.step01Button.clicked.connect(lambda: self.setStep(0.1))
+    #     self.step1Button.clicked.connect(lambda: self.setStep(1))
+    #     self.step10Button.clicked.connect(lambda: self.setStep(10))
+    #     self.step100Button.clicked.connect(lambda: self.setStep(100))
       
-        self.moveFeedMButton.clicked.connect(lambda: self.run_async_send_gcode(f"G91\nG0 Y-{self.step}\nG90\nM400"))
-        self.moveFeedPButton.clicked.connect(lambda: self.run_async_send_gcode(f"G91\nG0 Y{self.step}\nG90\nM400"))
-        self.setBedTempButton.clicked.connect(lambda: self.run_async_send_gcode(f"SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET={self.bedTempSpinBox.value()}"))
-        self.setVolumeTempButton.clicked.connect(self.setVolumeHeaterTemp)
-        self.initialLevellingRecoatButton.clicked.connect(self.confirm_initial_levelling_recoat)
-        self.heatedBufferRecoatButton.clicked.connect(self.confirm_heated_buffer_recoat)
-        self.doseRecoatLayerButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.dose_recoat_layer))
-        self.preparePowderLoadingButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.prepare_powder_loading))
-        self.stopProcessButton.clicked.connect(self.process_automation_controller.stop_process)
-        self.homeRecoaterButton.clicked.connect(lambda: self.run_async_send_gcode("homeRecoater"))
-        self.recoatButton.clicked.connect(lambda: self.run_async_send_gcode("recoat"))
-        self.moveToStartingPositionButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.move_to_starting_sequence))
-        self.prepareForPartRemovalButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.prepare_for_part_removal_sequence))
+    #     self.moveFeedMButton.clicked.connect(lambda: self.run_async_send_gcode(f"G91\nG0 Y-{self.step}\nG90\nM400"))
+    #     self.moveFeedPButton.clicked.connect(lambda: self.run_async_send_gcode(f"G91\nG0 Y{self.step}\nG90\nM400"))
+    #     self.setBedTempButton.clicked.connect(lambda: self.run_async_send_gcode(f"SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET={self.bedTempSpinBox.value()}"))
+    #     self.setVolumeTempButton.clicked.connect(self.setVolumeHeaterTemp)
+    #     self.initialLevellingRecoatButton.clicked.connect(self.confirm_initial_levelling_recoat)
+    #     self.heatedBufferRecoatButton.clicked.connect(self.confirm_heated_buffer_recoat)
+    #     self.doseRecoatLayerButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.dose_recoat_layer))
+    #     self.preparePowderLoadingButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.prepare_powder_loading))
+    #     self.stopProcessButton.clicked.connect(self.process_automation_controller.stop_process)
+    #     self.homeRecoaterButton.clicked.connect(lambda: self.run_async_send_gcode("homeRecoater"))
+    #     self.recoatButton.clicked.connect(lambda: self.run_async_send_gcode("recoat"))
+    #     self.moveToStartingPositionButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.move_to_starting_sequence))
+    #     self.prepareForPartRemovalButton.clicked.connect(lambda: self.run_async_process(self.process_automation_controller.prepare_for_part_removal_sequence))
 
-        # Connect start and stop marking buttons to Scancard functions
-        self.startMarkingButton.clicked.connect(self.main_window.scancard.start_mark)
-        self.stopMarkingButton.clicked.connect(self.main_window.scancard.stop_mark)
+        # # Connect start and stop marking buttons to Scancard functions
+        # self.startMarkingButton.clicked.connect(self.main_window.scancard.start_mark)
+        # self.stopMarkingButton.clicked.connect(self.main_window.scancard.stop_mark)
 
     @run_async
     def run_async_send_gcode(self, gcode):
