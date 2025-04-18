@@ -160,7 +160,6 @@ QTabBar:focus {
       <font>
        <family>Gotham Light</family>
        <pointsize>15</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -486,7 +485,6 @@ QPushButton:focus {
       <font>
        <family>Gotham Light</family>
        <pointsize>15</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -527,7 +525,6 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham Light</family>
        <pointsize>14</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -551,7 +548,6 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham Light</family>
        <pointsize>14</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -2320,7 +2316,6 @@ QPushButton:focus {
       <font>
        <family>MS Shell Dlg 2</family>
        <pointsize>20</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -2344,7 +2339,6 @@ QPushButton:focus {
       <font>
        <family>MS Shell Dlg 2</family>
        <pointsize>20</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -2513,7 +2507,6 @@ QPushButton:focus {
       <font>
        <family>MS Shell Dlg 2</family>
        <pointsize>20</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -2537,7 +2530,6 @@ QPushButton:focus {
       <font>
        <family>MS Shell Dlg 2</family>
        <pointsize>20</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -2823,7 +2815,6 @@ QSpinBox::down-button:pressed {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
