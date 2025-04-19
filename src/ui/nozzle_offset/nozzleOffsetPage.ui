@@ -80,7 +80,7 @@ url(:/icons/img/chevron-pointing-to-the-left.png)</string>
     <string/>
    </property>
    <property name="icon">
-    <iconset resource="resources/resource.qrc">
+    <iconset resource="../resources/resource.qrc">
      <normaloff>:/Navigation/img/Navigation/arrows-4.png</normaloff>:/Navigation/img/Navigation/arrows-4.png</iconset>
    </property>
    <property name="iconSize">
@@ -173,7 +173,7 @@ QPushButton:focus {
     <string/>
    </property>
    <property name="icon">
-    <iconset resource="resources/resource.qrc">
+    <iconset resource="../resources/resource.qrc">
      <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
    </property>
    <property name="iconSize">
@@ -310,7 +310,7 @@ QDoubleSpinBox::down-button:pressed {
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap resource="resources/resource.qrc">:/Icons/img/icons/Nozzle Offset.png</pixmap>
+    <pixmap resource="../resources/resource.qrc">:/Icons/img/icons/Nozzle Offset.png</pixmap>
    </property>
    <property name="scaledContents">
     <bool>true</bool>
@@ -373,6 +373,7 @@ QDoubleSpinBox::down-button:pressed {
   </widget>
  </widget>
  <resources>
+  <include location="../resources/resource.qrc"/>
   <include location="resources/resource.qrc"/>
  </resources>
  <connections/>

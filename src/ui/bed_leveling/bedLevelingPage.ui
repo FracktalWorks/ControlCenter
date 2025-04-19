@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>stepPage</class>
- <widget class="QWidget" name="stepPage">
+ <class>bedLevelingPage</class>
+ <widget class="QWidget" name="bedLevelingPage">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -51,7 +51,7 @@
     </size>
    </property>
    <property name="currentIndex">
-    <number>7</number>
+    <number>8</number>
    </property>
    <widget class="QWidget" name="quickStep1Page">
     <widget class="QPushButton" name="quickStep1NextButton">
@@ -521,7 +521,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows.png</normaloff>:/Navigation/img/Navigation/arrows.png</iconset>
      </property>
      <property name="iconSize">
@@ -720,7 +720,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows.png</normaloff>:/Navigation/img/Navigation/arrows.png</iconset>
      </property>
      <property name="iconSize">
@@ -1504,7 +1504,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows-5.png</normaloff>:/Navigation/img/Navigation/arrows-5.png</iconset>
      </property>
      <property name="iconSize">
@@ -1627,7 +1627,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows.png</normaloff>:/Navigation/img/Navigation/arrows.png</iconset>
      </property>
      <property name="iconSize">
@@ -1915,7 +1915,7 @@ QPushButton:focus {
   </widget>
  </widget>
  <resources>
-  <include location="resources/resource.qrc"/>
+  <include location="../resources/resource.qrc"/>
  </resources>
  <connections/>
 </ui>

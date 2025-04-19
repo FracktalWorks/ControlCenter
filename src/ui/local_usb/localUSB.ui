@@ -104,7 +104,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows-4.png</normaloff>:/Navigation/img/Navigation/arrows-4.png</iconset>
      </property>
      <property name="iconSize">
@@ -176,7 +176,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows-5.png</normaloff>:/Navigation/img/Navigation/arrows-5.png</iconset>
      </property>
      <property name="iconSize">
@@ -254,7 +254,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
      </property>
      <property name="iconSize">
@@ -326,7 +326,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows.png</normaloff>:/Navigation/img/Navigation/arrows.png</iconset>
      </property>
      <property name="iconSize">
@@ -403,7 +403,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Icons/img/icons/delete.png</normaloff>:/Icons/img/icons/delete.png</iconset>
      </property>
      <property name="iconSize">
@@ -550,7 +550,7 @@ QPushButton:default {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows-4.png</normaloff>:/Navigation/img/Navigation/arrows-4.png</iconset>
      </property>
      <property name="iconSize">
@@ -613,7 +613,7 @@ QPushButton:default {
       <string>USB</string>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Icons/img/icons/usb.png</normaloff>:/Icons/img/icons/usb.png</iconset>
      </property>
      <property name="iconSize">
@@ -687,7 +687,7 @@ QPushButton:default {
       <string>Local </string>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Icons/img/icons/folder.png</normaloff>:/Icons/img/icons/folder.png</iconset>
      </property>
      <property name="iconSize">
@@ -743,7 +743,7 @@ QToolButton:default {
       <string>Save to Local</string>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Icons/img/icons/icon.png</normaloff>:/Icons/img/icons/icon.png</iconset>
      </property>
      <property name="iconSize">
@@ -804,7 +804,7 @@ QPushButton:default {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows-4.png</normaloff>:/Navigation/img/Navigation/arrows-4.png</iconset>
      </property>
      <property name="iconSize">
@@ -848,7 +848,7 @@ QPushButton:default {
       <string/>
      </property>
      <property name="pixmap">
-      <pixmap resource="resources/resource.qrc">:/Logos &amp; Branding/img/Logos/thumbnail.png</pixmap>
+      <pixmap resource="../resources/resource.qrc">:/Logos &amp; Branding/img/Logos/thumbnail.png</pixmap>
      </property>
      <property name="scaledContents">
       <bool>true</bool>
@@ -898,7 +898,7 @@ QToolButton:default {
       <string>Print</string>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Icons/img/icons/printer.png</normaloff>:/Icons/img/icons/printer.png</iconset>
      </property>
      <property name="iconSize">
@@ -1065,7 +1065,7 @@ QToolButton:default {
       <string>Print</string>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Icons/img/icons/printer.png</normaloff>:/Icons/img/icons/printer.png</iconset>
      </property>
      <property name="iconSize">
@@ -1182,7 +1182,7 @@ QPushButton:default {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows-4.png</normaloff>:/Navigation/img/Navigation/arrows-4.png</iconset>
      </property>
      <property name="iconSize">
@@ -1407,7 +1407,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows-4.png</normaloff>:/Navigation/img/Navigation/arrows-4.png</iconset>
      </property>
      <property name="iconSize">
@@ -1479,7 +1479,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows-5.png</normaloff>:/Navigation/img/Navigation/arrows-5.png</iconset>
      </property>
      <property name="iconSize">
@@ -1557,7 +1557,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
      </property>
      <property name="iconSize">
@@ -1629,7 +1629,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows.png</normaloff>:/Navigation/img/Navigation/arrows.png</iconset>
      </property>
      <property name="iconSize">
@@ -1706,7 +1706,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Icons/img/icons/icon.png</normaloff>:/Icons/img/icons/icon.png</iconset>
      </property>
      <property name="iconSize">
@@ -1809,6 +1809,7 @@ QListView::item:selected:focus {
   </widget>
  </widget>
  <resources>
+  <include location="../resources/resource.qrc"/>
   <include location="resources/resource.qrc"/>
  </resources>
  <connections/>

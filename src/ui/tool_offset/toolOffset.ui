@@ -103,7 +103,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows-4.png</normaloff>:/Navigation/img/Navigation/arrows-4.png</iconset>
      </property>
      <property name="iconSize">
@@ -424,7 +424,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
      </property>
      <property name="iconSize">
@@ -478,7 +478,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
      </property>
      <property name="iconSize">
@@ -709,7 +709,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
      </property>
      <property name="iconSize">
@@ -769,7 +769,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="resources/resource.qrc">
+      <iconset resource="../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows-4.png</normaloff>:/Navigation/img/Navigation/arrows-4.png</iconset>
      </property>
      <property name="iconSize">
@@ -795,7 +795,7 @@ QPushButton:focus {
   </widget>
  </widget>
  <resources>
-  <include location="resources/resource.qrc"/>
+  <include location="../resources/resource.qrc"/>
  </resources>
  <connections/>
 </ui>

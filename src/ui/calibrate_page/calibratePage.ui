@@ -75,7 +75,7 @@ QToolButton:focus {
     <string>Tool Offsets Z</string>
    </property>
    <property name="icon">
-    <iconset resource="resources/resource.qrc">
+    <iconset resource="../resources/resource.qrc">
      <normaloff>:/Icons/img/icons/Tool Z Offset Icon.png</normaloff>:/Icons/img/icons/Tool Z Offset Icon.png</iconset>
    </property>
    <property name="iconSize">
@@ -132,7 +132,7 @@ QToolButton:focus {
     <string>Test Prints</string>
    </property>
    <property name="icon">
-    <iconset resource="resources/resource.qrc">
+    <iconset resource="../resources/resource.qrc">
      <normaloff>:/Icons/img/icons/3d-printing.png</normaloff>:/Icons/img/icons/3d-printing.png</iconset>
    </property>
    <property name="iconSize">
@@ -190,7 +190,7 @@ QToolButton:focus {
 Calibration</string>
    </property>
    <property name="icon">
-    <iconset resource="resources/resource.qrc">
+    <iconset resource="../resources/resource.qrc">
      <normaloff>:/Icons/img/icons/Input Shaper.png</normaloff>:/Icons/img/icons/Input Shaper.png</iconset>
    </property>
    <property name="iconSize">
@@ -249,7 +249,7 @@ QToolButton:focus {
     <string>IDEX Config</string>
    </property>
    <property name="icon">
-    <iconset resource="resources/resource.qrc">
+    <iconset resource="../resources/resource.qrc">
      <normaloff>:/Icons/img/icons/IDEX.png</normaloff>:/Icons/img/icons/IDEX.png</iconset>
    </property>
    <property name="iconSize">
@@ -308,7 +308,7 @@ QToolButton:focus {
     <string>Probe Offset</string>
    </property>
    <property name="icon">
-    <iconset resource="resources/resource.qrc">
+    <iconset resource="../resources/resource.qrc">
      <normaloff>:/Icons/img/icons/Nozzle Offset Icon.png</normaloff>:/Icons/img/icons/Nozzle Offset Icon.png</iconset>
    </property>
    <property name="iconSize">
@@ -388,7 +388,7 @@ QToolButton:focus {
     <string>Calibration Wizard</string>
    </property>
    <property name="icon">
-    <iconset resource="resources/resource.qrc">
+    <iconset resource="../resources/resource.qrc">
      <normaloff>:/Icons/img/icons/magic-wand.png</normaloff>:/Icons/img/icons/magic-wand.png</iconset>
    </property>
    <property name="iconSize">
@@ -447,7 +447,7 @@ QPushButton:default {
     <string/>
    </property>
    <property name="icon">
-    <iconset resource="resources/resource.qrc">
+    <iconset resource="../resources/resource.qrc">
      <normaloff>:/Navigation/img/Navigation/arrows-4.png</normaloff>:/Navigation/img/Navigation/arrows-4.png</iconset>
    </property>
    <property name="iconSize">
@@ -514,7 +514,7 @@ QToolButton:focus {
     <string>Tool Offset X/Y</string>
    </property>
    <property name="icon">
-    <iconset resource="resources/resource.qrc">
+    <iconset resource="../resources/resource.qrc">
      <normaloff>:/Icons/img/icons/Tool Offset Icon.png</normaloff>:/Icons/img/icons/Tool Offset Icon.png</iconset>
    </property>
    <property name="iconSize">
@@ -529,7 +529,7 @@ QToolButton:focus {
   </widget>
  </widget>
  <resources>
-  <include location="resources/resource.qrc"/>
+  <include location="../resources/resource.qrc"/>
  </resources>
  <connections/>
 </ui>
