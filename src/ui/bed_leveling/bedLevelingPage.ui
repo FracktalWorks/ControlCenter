@@ -51,7 +51,7 @@
     </size>
    </property>
    <property name="currentIndex">
-    <number>8</number>
+    <number>4</number>
    </property>
    <widget class="QWidget" name="quickStep1Page">
     <widget class="QPushButton" name="quickStep1NextButton">
@@ -117,6 +117,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -295,6 +296,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -439,6 +441,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -656,6 +659,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -743,7 +747,7 @@ QPushButton:focus {
      </property>
     </widget>
    </widget>
-   <widget class="QWidget" name="indexConfigStep1Page">
+   <widget class="QWidget" name="idexConfigStep1Page">
     <widget class="QLabel" name="Nozzlelevel1">
      <property name="geometry">
       <rect>
@@ -823,6 +827,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -849,6 +854,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -916,7 +922,7 @@ QPushButton:focus {
      </property>
     </widget>
    </widget>
-   <widget class="QWidget" name="indexConfigStep2Page">
+   <widget class="QWidget" name="idexConfigStep2Page">
     <widget class="QLabel" name="CalibrationPoint1_2">
      <property name="geometry">
       <rect>
@@ -1046,6 +1052,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1072,6 +1079,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1086,7 +1094,7 @@ QPushButton:focus {
      </property>
     </widget>
    </widget>
-   <widget class="QWidget" name="indexConfigStep3Page">
+   <widget class="QWidget" name="idexConfigStep3Page">
     <widget class="QLabel" name="calibrateLabel_11">
      <property name="geometry">
       <rect>
@@ -1100,6 +1108,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1126,6 +1135,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1256,7 +1266,7 @@ QPushButton:focus {
      </property>
     </widget>
    </widget>
-   <widget class="QWidget" name="indexConfigStep4Page">
+   <widget class="QWidget" name="idexConfigStep4Page">
     <widget class="QLabel" name="calibrateLabel_17">
      <property name="geometry">
       <rect>
@@ -1270,6 +1280,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1362,6 +1373,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1426,7 +1438,7 @@ QPushButton:focus {
      </property>
     </widget>
    </widget>
-   <widget class="QWidget" name="indexConfigStep5Page">
+   <widget class="QWidget" name="idexConfigStep5Page">
     <widget class="QLabel" name="toolZOffsetLabel_6">
      <property name="geometry">
       <rect>
@@ -1440,6 +1452,7 @@ QPushButton:focus {
       <font>
        <family>MS Shell Dlg 2</family>
        <pointsize>10</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1662,6 +1675,7 @@ QPushButton:focus {
       <font>
        <family>MS Shell Dlg 2</family>
        <pointsize>10</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1704,6 +1718,7 @@ QPushButton:focus {
       <font>
        <family>MS Shell Dlg 2</family>
        <pointsize>10</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1832,6 +1847,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
