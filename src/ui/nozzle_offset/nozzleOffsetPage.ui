@@ -47,6 +47,7 @@
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
+     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -115,6 +116,7 @@ url(:/icons/img/chevron-pointing-to-the-left.png)</string>
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
+     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -141,6 +143,7 @@ url(:/icons/img/chevron-pointing-to-the-left.png)</string>
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
+     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -196,6 +199,7 @@ QPushButton:focus {
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
+     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -221,7 +225,7 @@ border-top-left-radius: 15px;
 }
 
 QDoubleSpinBox::up-arrow { 
-image: url(./templates/img/arrows.png);
+image: url(:/Navigation/img/Navigation/arrows.png);
     width: 40px;
      height: 40px;
 padding: 5px;
@@ -245,7 +249,7 @@ border-bottom-left-radius: 15px;
 }
 
 QDoubleSpinBox::down-arrow { 
-image: url(./templates/img/arrows-5.png);
+image: url(:/Navigation/img/Navigation/arrows-5.png);
     width: 40px;
     height: 40px;
 padding: 5px;
@@ -300,6 +304,7 @@ QDoubleSpinBox::down-button:pressed {
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
+     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -329,6 +334,7 @@ QDoubleSpinBox::down-button:pressed {
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
+     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -355,6 +361,7 @@ QDoubleSpinBox::down-button:pressed {
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
+     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -374,7 +381,7 @@ QDoubleSpinBox::down-button:pressed {
  </widget>
  <resources>
   <include location="../resources/resource.qrc"/>
-  <include location="resources/resource.qrc"/>
+  <include location="../resources/resource.qrc"/>
  </resources>
  <connections/>
 </ui>
