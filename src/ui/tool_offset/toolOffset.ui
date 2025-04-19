@@ -138,6 +138,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -161,6 +162,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -501,6 +503,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -526,6 +529,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -549,6 +553,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -596,7 +601,7 @@ border-top-left-radius: 15px;
 }
 
 QDoubleSpinBox::up-arrow { 
-image: url(./templates/img/arrows.png);
+image: url(:/Navigation/img/Navigation/arrows.png);
     width: 40px;
      height: 40px;
 padding: 5px;
@@ -620,7 +625,7 @@ border-bottom-left-radius: 15px;
 }
 
 QDoubleSpinBox::down-arrow { 
-image: url(./templates/img/arrows-5.png);
+image: url(:/Navigation/img/Navigation/arrows-5.png);
     width: 40px;
     height: 40px;
 padding: 5px;

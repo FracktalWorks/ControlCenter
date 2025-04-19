@@ -132,6 +132,7 @@ QPushButton:default {
       <font>
        <family>Gotham Medium</family>
        <pointsize>14</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
        <underline>false</underline>
        <strikeout>false</strikeout>
@@ -332,6 +333,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>10</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -513,13 +515,13 @@ border-radius: 5px;
  }
 
 QScrollBar::up-arrow:vertical {
- image: url(./templates/img/arrows.png);
+ image: url(:/Navigation/img/Navigation/arrows.png);
     width: 40px;
     height: 40px;
  padding: 5px;
  }
 QScrollBar::down-arrow:vertical {
- image: url(./templates/img/arrows-5.png);
+ image: url(:/Navigation/img/Navigation/arrows-5.png);
     width: 40px;
     height: 40px;
  padding: 5px;
@@ -566,7 +568,7 @@ border-right: 1px solid black;
 
 QComboBox::down-arrow {
 
-image: url(./templates/img/arrows-5.png);
+image: url(:/Navigation/img/Navigation/arrows-5.png);
 width: 30px;
 height: 30px;
 
@@ -619,6 +621,7 @@ QComboBox QAbstractItemView {
       <font>
        <family>Gotham Medium</family>
        <pointsize>14</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
        <underline>false</underline>
        <strikeout>false</strikeout>
@@ -652,6 +655,7 @@ QComboBox QAbstractItemView {
       <font>
        <family>Gotham Medium</family>
        <pointsize>14</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
        <underline>false</underline>
        <strikeout>false</strikeout>
@@ -675,15 +679,16 @@ QComboBox QAbstractItemView {
      <property name="geometry">
       <rect>
        <x>70</x>
-       <y>60</y>
+       <y>75</y>
        <width>721</width>
-       <height>96</height>
+       <height>61</height>
       </rect>
      </property>
      <property name="font">
       <font>
        <family>Gotham</family>
        <pointsize>10</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -713,6 +718,7 @@ QComboBox QAbstractItemView {
       <font>
        <family>Gotham</family>
        <pointsize>18</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -840,6 +846,7 @@ QPushButton:focus {
       <font>
        <family>Gotham Medium</family>
        <pointsize>14</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
        <underline>false</underline>
        <strikeout>false</strikeout>
@@ -863,15 +870,16 @@ QPushButton:focus {
      <property name="geometry">
       <rect>
        <x>80</x>
-       <y>260</y>
+       <y>280</y>
        <width>711</width>
-       <height>96</height>
+       <height>61</height>
       </rect>
      </property>
      <property name="font">
       <font>
        <family>Gotham</family>
        <pointsize>10</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -901,6 +909,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>14</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -962,13 +971,13 @@ border-radius: 5px;
  }
 
 QScrollBar::up-arrow:vertical {
- image: url(./templates/img/arrows.png);
+ image: url(:/Navigation/img/Navigation/arrows.png);
     width: 40px;
     height: 40px;
  padding: 5px;
  }
 QScrollBar::down-arrow:vertical {
- image: url(./templates/img/arrows-5.png);
+ image: url(:/Navigation/img/Navigation/arrows-5.png);
     width: 40px;
     height: 40px;
  padding: 5px;
@@ -1015,7 +1024,7 @@ border-right: 1px solid black;
 
 QComboBox::down-arrow {
 
-image: url(./templates/img/arrows-5.png);
+image: url(:/Navigation/img/Navigation/arrows-5.png);
 width: 30px;
 height: 30px;
 
@@ -1068,6 +1077,7 @@ QComboBox QAbstractItemView {
       <font>
        <family>Gotham Medium</family>
        <pointsize>14</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
        <underline>false</underline>
        <strikeout>false</strikeout>
@@ -1092,7 +1102,7 @@ QComboBox QAbstractItemView {
  </widget>
  <resources>
   <include location="../resources/resource.qrc"/>
-  <include location="resources/resource.qrc"/>
+  <include location="../resources/resource.qrc"/>
  </resources>
  <connections/>
 </ui>
