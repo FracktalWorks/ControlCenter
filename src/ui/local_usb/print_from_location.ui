@@ -51,7 +51,7 @@
 </string>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>2</number>
    </property>
    <widget class="QWidget" name="fileListLocalPage">
     <widget class="QPushButton" name="USBStorageBackButton">
@@ -636,7 +636,6 @@ QPushButton:default {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -928,7 +927,6 @@ QToolButton:default {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -955,7 +953,6 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -983,7 +980,6 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1011,7 +1007,6 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1099,7 +1094,6 @@ QToolButton:default {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
        <underline>false</underline>
        <strikeout>false</strikeout>
@@ -1132,7 +1126,6 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
-       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -1224,7 +1217,6 @@ QPushButton:default {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
-       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -1248,7 +1240,6 @@ QPushButton:default {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
-       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -1272,7 +1263,6 @@ QPushButton:default {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1300,7 +1290,6 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
-       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -1325,7 +1314,6 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
-       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -1353,7 +1341,6 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>

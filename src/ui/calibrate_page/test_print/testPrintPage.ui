@@ -132,7 +132,6 @@ QPushButton:default {
       <font>
        <family>Gotham Medium</family>
        <pointsize>14</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
        <underline>false</underline>
        <strikeout>false</strikeout>
@@ -146,7 +145,7 @@ QPushButton:default {
       <string/>
      </property>
      <property name="pixmap">
-      <pixmap resource="../resources/resource.qrc">:/Icons/img/icons/exclamation-mark.png</pixmap>
+      <pixmap resource="../../resources/resource.qrc">:/Icons/img/icons/exclamation-mark.png</pixmap>
      </property>
      <property name="scaledContents">
       <bool>true</bool>
@@ -333,7 +332,6 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>10</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -621,7 +619,6 @@ QComboBox QAbstractItemView {
       <font>
        <family>Gotham Medium</family>
        <pointsize>14</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
        <underline>false</underline>
        <strikeout>false</strikeout>
@@ -636,7 +633,7 @@ QComboBox QAbstractItemView {
       <string/>
      </property>
      <property name="pixmap">
-      <pixmap resource="../resources/resource.qrc">:/Icons/img/icons/Nozzle.png</pixmap>
+      <pixmap resource="../../resources/resource.qrc">:/Icons/img/icons/Nozzle.png</pixmap>
      </property>
      <property name="scaledContents">
       <bool>true</bool>
@@ -655,7 +652,6 @@ QComboBox QAbstractItemView {
       <font>
        <family>Gotham Medium</family>
        <pointsize>14</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
        <underline>false</underline>
        <strikeout>false</strikeout>
@@ -669,7 +665,7 @@ QComboBox QAbstractItemView {
       <string/>
      </property>
      <property name="pixmap">
-      <pixmap resource="../resources/resource.qrc">:/Icons/img/icons/exclamation-mark.png</pixmap>
+      <pixmap resource="../../resources/resource.qrc">:/Icons/img/icons/exclamation-mark.png</pixmap>
      </property>
      <property name="scaledContents">
       <bool>true</bool>
@@ -688,7 +684,6 @@ QComboBox QAbstractItemView {
       <font>
        <family>Gotham</family>
        <pointsize>10</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -718,7 +713,6 @@ QComboBox QAbstractItemView {
       <font>
        <family>Gotham</family>
        <pointsize>18</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -773,7 +767,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="../resources/resource.qrc">
+      <iconset resource="../../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows-4.png</normaloff>:/Navigation/img/Navigation/arrows-4.png</iconset>
      </property>
      <property name="iconSize">
@@ -846,7 +840,6 @@ QPushButton:focus {
       <font>
        <family>Gotham Medium</family>
        <pointsize>14</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
        <underline>false</underline>
        <strikeout>false</strikeout>
@@ -860,7 +853,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="pixmap">
-      <pixmap resource="../resources/resource.qrc">:/Icons/img/icons/Nozzle.png</pixmap>
+      <pixmap resource="../../resources/resource.qrc">:/Icons/img/icons/Nozzle.png</pixmap>
      </property>
      <property name="scaledContents">
       <bool>true</bool>
@@ -879,7 +872,6 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>10</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -909,7 +901,6 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>14</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1077,7 +1068,6 @@ QComboBox QAbstractItemView {
       <font>
        <family>Gotham Medium</family>
        <pointsize>14</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
        <underline>false</underline>
        <strikeout>false</strikeout>
@@ -1091,7 +1081,7 @@ QComboBox QAbstractItemView {
       <string/>
      </property>
      <property name="pixmap">
-      <pixmap resource="../resources/resource.qrc">:/Icons/img/icons/exclamation-mark.png</pixmap>
+      <pixmap resource="../../resources/resource.qrc">:/Icons/img/icons/exclamation-mark.png</pixmap>
      </property>
      <property name="scaledContents">
       <bool>true</bool>
@@ -1101,8 +1091,8 @@ QComboBox QAbstractItemView {
   </widget>
  </widget>
  <resources>
-  <include location="../resources/resource.qrc"/>
-  <include location="../resources/resource.qrc"/>
+  <include location="../../resources/resource.qrc"/>
+  <include location="../../resources/resource.qrc"/>
  </resources>
  <connections/>
 </ui>

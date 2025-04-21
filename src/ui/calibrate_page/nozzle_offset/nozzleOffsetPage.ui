@@ -47,7 +47,6 @@
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
-     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -81,7 +80,7 @@ url(:/icons/img/chevron-pointing-to-the-left.png)</string>
     <string/>
    </property>
    <property name="icon">
-    <iconset resource="../resources/resource.qrc">
+    <iconset resource="../../resources/resource.qrc">
      <normaloff>:/Navigation/img/Navigation/arrows-4.png</normaloff>:/Navigation/img/Navigation/arrows-4.png</iconset>
    </property>
    <property name="iconSize">
@@ -116,7 +115,6 @@ url(:/icons/img/chevron-pointing-to-the-left.png)</string>
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
-     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -143,7 +141,6 @@ url(:/icons/img/chevron-pointing-to-the-left.png)</string>
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
-     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -176,7 +173,7 @@ QPushButton:focus {
     <string/>
    </property>
    <property name="icon">
-    <iconset resource="../resources/resource.qrc">
+    <iconset resource="../../resources/resource.qrc">
      <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
    </property>
    <property name="iconSize">
@@ -199,7 +196,6 @@ QPushButton:focus {
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
-     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -304,7 +300,6 @@ QDoubleSpinBox::down-button:pressed {
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
-     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -315,7 +310,7 @@ QDoubleSpinBox::down-button:pressed {
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap resource="../resources/resource.qrc">:/Icons/img/icons/Nozzle Offset.png</pixmap>
+    <pixmap resource="../../resources/resource.qrc">:/Icons/img/icons/Nozzle Offset.png</pixmap>
    </property>
    <property name="scaledContents">
     <bool>true</bool>
@@ -334,7 +329,6 @@ QDoubleSpinBox::down-button:pressed {
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
-     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -361,7 +355,6 @@ QDoubleSpinBox::down-button:pressed {
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
-     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -380,7 +373,7 @@ QDoubleSpinBox::down-button:pressed {
   </widget>
  </widget>
  <resources>
-  <include location="../resources/resource.qrc"/>
+  <include location="../../resources/resource.qrc"/>
   <include location="../resources/resource.qrc"/>
  </resources>
  <connections/>

@@ -26,7 +26,7 @@
     <string notr="true">background-color: rgb(40, 40, 40);</string>
    </property>
    <property name="currentIndex">
-    <number>3</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="networkSettingsPage">
     <widget class="QPushButton" name="networkInfoButton">
@@ -347,7 +347,6 @@ QPushButton:focus {
        <font>
         <family>MS Shell Dlg 2</family>
         <pointsize>16</pointsize>
-        <weight>75</weight>
         <bold>true</bold>
        </font>
       </property>
@@ -402,7 +401,6 @@ QPushButton:focus {
        <font>
         <family>MS Shell Dlg 2</family>
         <pointsize>16</pointsize>
-        <weight>50</weight>
         <bold>false</bold>
        </font>
       </property>
@@ -432,7 +430,6 @@ QPushButton:focus {
        <font>
         <family>MS Shell Dlg 2</family>
         <pointsize>16</pointsize>
-        <weight>75</weight>
         <bold>true</bold>
        </font>
       </property>
@@ -490,7 +487,6 @@ QPushButton:focus {
        <font>
         <family>MS Shell Dlg 2</family>
         <pointsize>16</pointsize>
-        <weight>50</weight>
         <bold>false</bold>
        </font>
       </property>
@@ -517,7 +513,6 @@ QPushButton:focus {
        <font>
         <family>MS Shell Dlg 2</family>
         <pointsize>16</pointsize>
-        <weight>75</weight>
         <bold>true</bold>
        </font>
       </property>
@@ -572,7 +567,6 @@ QPushButton:focus {
        <font>
         <family>MS Shell Dlg 2</family>
         <pointsize>16</pointsize>
-        <weight>50</weight>
         <bold>false</bold>
        </font>
       </property>
@@ -603,7 +597,6 @@ QPushButton:focus {
       <font>
        <family>MS Shell Dlg 2</family>
        <pointsize>18</pointsize>
-       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -765,7 +758,7 @@ QScrollBar::up-arrow:vertical {
  padding: 5px;
  }
 QScrollBar::down-arrow:vertical {
- image: url(./templates/img/arrows-5.png);
+	image: url(:/Navigation/img/Navigation/arrows-5.png);
     width: 40px;
     height: 40px;
  padding: 5px;
@@ -812,7 +805,7 @@ border-right: 1px solid black;
 
 QComboBox::down-arrow {
 
-image: url(./templates/img/arrows-5.png);
+	image: url(:/Navigation/img/Navigation/arrows-5.png);
 width: 30px;
 height: 30px;
 
@@ -850,7 +843,6 @@ QComboBox QAbstractItemView {
       <font>
        <family>MS Shell Dlg 2</family>
        <pointsize>16</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1107,7 +1099,6 @@ QComboBox QAbstractItemView {
       <font>
        <family>Gotham Light</family>
        <pointsize>16</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1231,7 +1222,6 @@ QPushButton:focus {
       <font>
        <family>Gotham Light</family>
        <pointsize>16</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1334,7 +1324,6 @@ QPushButton:default {
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
-          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1353,7 +1342,6 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
-          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1372,7 +1360,6 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
-          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1391,7 +1378,6 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
-          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1410,7 +1396,6 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
-          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1429,7 +1414,6 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
-          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1448,7 +1432,6 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
-          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1467,7 +1450,6 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
-          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1486,7 +1468,6 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
-          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1505,7 +1486,6 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
-          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1524,7 +1504,6 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
-          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1543,7 +1522,6 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
-          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1616,7 +1594,6 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham</family>
        <pointsize>12</pointsize>
-       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>

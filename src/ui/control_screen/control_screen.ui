@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>797</width>
-    <height>479</height>
+    <width>801</width>
+    <height>482</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,8 +21,8 @@
     <rect>
      <x>0</x>
      <y>-10</y>
-     <width>1000</width>
-     <height>491</height>
+     <width>800</width>
+     <height>480</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -33,14 +33,14 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>791</width>
-     <height>0</height>
+     <width>800</width>
+     <height>480</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
-     <width>16777215</width>
-     <height>16777215</height>
+     <width>800</width>
+     <height>480</height>
     </size>
    </property>
    <property name="font">
@@ -2692,8 +2692,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
      </property>
      <property name="iconSize">
       <size>
