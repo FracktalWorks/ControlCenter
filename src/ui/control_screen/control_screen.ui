@@ -6,9 +6,21 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>801</width>
-    <height>482</height>
+    <width>800</width>
+    <height>480</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>800</width>
+    <height>480</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>800</width>
+    <height>480</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>Form</string>
@@ -22,7 +34,7 @@
      <x>0</x>
      <y>-10</y>
      <width>800</width>
-     <height>480</height>
+     <height>491</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -33,14 +45,14 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>800</width>
-     <height>480</height>
+     <width>0</width>
+     <height>0</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
-     <width>800</width>
-     <height>480</height>
+     <width>166000</width>
+     <height>116900</height>
     </size>
    </property>
    <property name="font">
@@ -607,8 +619,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/snowflake.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/snowflake.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Icons/img/icons/snowflake.png</normaloff>:/Icons/img/icons/snowflake.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -667,8 +679,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/fan-black-silhouette-off.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/fan-black-silhouette-off.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Icons/img/icons/fan-black-silhouette-off.png</normaloff>:/Icons/img/icons/fan-black-silhouette-off.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -738,8 +750,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/fan-black-silhouette.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/fan-black-silhouette.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Icons/img/icons/fan-black-silhouette.png</normaloff>:/Icons/img/icons/fan-black-silhouette.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -997,8 +1009,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -1052,8 +1064,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/verification-mark.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -1112,9 +1124,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/NozzleSelect_0.png</normaloff>
-       <normalon>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/NozzleSelect_1.png</normalon>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/NozzleSelect_0.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Icons/img/icons/NozzleSelect_0.png</normaloff>:/Icons/img/icons/NozzleSelect_0.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -1703,8 +1714,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/arrows.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/arrows.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Navigation/img/Navigation/arrows.png</normaloff>:/Navigation/img/Navigation/arrows.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -1776,8 +1787,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/arrows-5.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/arrows-5.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Navigation/img/Navigation/arrows-5.png</normaloff>:/Navigation/img/Navigation/arrows-5.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -1849,8 +1860,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/arrows-2.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/arrows-2.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Navigation/img/Navigation/arrows-2.png</normaloff>:/Navigation/img/Navigation/arrows-2.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -1922,8 +1933,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/arrows-4.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/arrows-4.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Navigation/img/Navigation/arrows-4.png</normaloff>:/Navigation/img/Navigation/arrows-4.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -1993,8 +2004,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/home-icon-silhouette.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/home-icon-silhouette.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Icons/img/icons/home-icon-silhouette.png</normaloff>:/Icons/img/icons/home-icon-silhouette.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -2064,8 +2075,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/home-icon-silhouette.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/home-icon-silhouette.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Icons/img/icons/home-icon-silhouette.png</normaloff>:/Icons/img/icons/home-icon-silhouette.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -2135,8 +2146,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/motor.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/motor.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Icons/img/icons/motor.png</normaloff>:/Icons/img/icons/motor.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -2208,8 +2219,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/arrows.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/arrows.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Navigation/img/Navigation/arrows.png</normaloff>:/Navigation/img/Navigation/arrows.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -2281,8 +2292,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/arrows-5.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/arrows-5.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Navigation/img/Navigation/arrows-5.png</normaloff>:/Navigation/img/Navigation/arrows-5.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -2400,8 +2411,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/remove.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/remove.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Navigation/img/Navigation/remove.png</normaloff>:/Navigation/img/Navigation/remove.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -2472,8 +2483,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/add.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/add.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Navigation/img/Navigation/add.png</normaloff>:/Navigation/img/Navigation/add.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -2590,8 +2601,8 @@ QPushButton:focus {
       <string>1</string>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/NozzleSelect.png</normaloff>../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/NozzleSelect.png</iconset>
+      <iconset resource="../resources/resource.qrc">
+       <normaloff>:/Icons/img/icons/NozzleSelect.png</normaloff>:/Icons/img/icons/NozzleSelect.png</iconset>
      </property>
      <property name="iconSize">
       <size>

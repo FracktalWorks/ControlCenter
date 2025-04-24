@@ -374,7 +374,7 @@ QDoubleSpinBox::down-button:pressed {
  </widget>
  <resources>
   <include location="../../resources/resource.qrc"/>
-  <include location="../resources/resource.qrc"/>
+  <include location="../../resources/resource.qrc"/>
  </resources>
  <connections/>
 </ui>
