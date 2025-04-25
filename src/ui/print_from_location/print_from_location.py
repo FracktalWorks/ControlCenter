@@ -39,15 +39,15 @@ class PrintFromLocation(QWidget):
         self.fileSelectedUSBBackButton = self.findChild(QPushButton, 'fileSelectedUSBBackButton')
         
         # Selected file buttons - Local
-        self.fileSelectedPrintButton = self.findChild(QPushButton, 'fileSelectedPrintButton')
-        self.fileSelectedBackButton = self.findChild(QPushButton, 'fileSelectedBackButton')
+        self.fileSelectedPrintButton = self.findChild(QPushButton, 'fileSelectedLocalPrintButton')
+        self.fileSelectedBackButton = self.findChild(QPushButton, 'fileSelectedLocalBackButton')
 
         # Find other UI elements
-        self.fileListWidget = self.findChild(QListWidget, 'fileListWidget')  # Local files
+        self.fileListWidget = self.findChild(QListWidget, 'fileListWidgetLocal')  # Local files
         self.fileListWidgetUSB = self.findChild(QListWidget, 'fileListWidgetUSB')  # USB files
-        self.fileSelectedName = self.findChild(QLabel, 'fileSelectedName')  # Local file name
+        self.fileSelectedName = self.findChild(QLabel, 'fileSelectedLocalName')  # Local file name
         self.fileSelectedUSBName = self.findChild(QLabel, 'fileSelectedUSBName')  # USB file name
-        self.printPreviewSelected = self.findChild(QLabel, 'printPreviewSelected')  # Local preview
+        self.printPreviewSelected = self.findChild(QLabel, 'printPreviewSelectedLocal')  # Local preview
         self.printPreviewSelectedUSB = self.findChild(QLabel, 'printPreviewSelectedUSB')  # USB preview
 
         # Find stacked widget and pages
@@ -125,7 +125,7 @@ class PrintFromLocation(QWidget):
         
         # Check file selection related buttons
         file_selection_buttons = {
-            "fileSelectedPrintButton": self.fileSelectedPrintButton,
+            "fileSelectedLocalPrintButton": self.fileSelectedLocalPrintButton,
             "fileSelectedBackButton": self.fileSelectedBackButton,
             "fileSelectedUSBPrintButton": self.fileSelectedUSBPrintButton,
             "fileSelectedUSBTransferButton": self.fileSelectedUSBTransferButton,

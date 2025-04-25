@@ -51,10 +51,10 @@
 </string>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="fileListLocalPage">
-    <widget class="QPushButton" name="USBStorageBackButton">
+    <widget class="QPushButton" name="localStorageBackButton">
      <property name="geometry">
       <rect>
        <x>690</x>
@@ -126,7 +126,7 @@ QPushButton:focus {
       <bool>false</bool>
      </property>
     </widget>
-    <widget class="QPushButton" name="USBStorageScrollDown">
+    <widget class="QPushButton" name="localStorageScrollDown">
      <property name="geometry">
       <rect>
        <x>590</x>
@@ -204,7 +204,7 @@ QPushButton:focus {
       <bool>false</bool>
      </property>
     </widget>
-    <widget class="QPushButton" name="USBStorageSelectButton">
+    <widget class="QPushButton" name="localStorageSelectButton">
      <property name="geometry">
       <rect>
        <x>690</x>
@@ -276,7 +276,7 @@ QPushButton:focus {
       <bool>false</bool>
      </property>
     </widget>
-    <widget class="QPushButton" name="USBStorageScrollUp">
+    <widget class="QPushButton" name="localStorageScrollUp">
      <property name="geometry">
       <rect>
        <x>590</x>
@@ -354,7 +354,7 @@ QPushButton:focus {
       <bool>false</bool>
      </property>
     </widget>
-    <widget class="QPushButton" name="USBStorageDeleteButton">
+    <widget class="QPushButton" name="localStorageDeleteButton">
      <property name="geometry">
       <rect>
        <x>690</x>
@@ -425,7 +425,7 @@ QPushButton:focus {
       <bool>false</bool>
      </property>
     </widget>
-    <widget class="QListWidget" name="fileListWidgetUSB">
+    <widget class="QListWidget" name="fileListWidgetLocal">
      <property name="geometry">
       <rect>
        <x>0</x>
@@ -1021,7 +1021,7 @@ background-color: rgba(255, 255, 255, 0);</string>
       <bool>true</bool>
      </property>
     </widget>
-    <widget class="QToolButton" name="fileSelectedPrintButton">
+    <widget class="QToolButton" name="fileSelectedLocalPrintButton">
      <property name="geometry">
       <rect>
        <x>0</x>
@@ -1081,7 +1081,7 @@ QToolButton:default {
       <enum>Qt::ToolButtonTextUnderIcon</enum>
      </property>
     </widget>
-    <widget class="QLabel" name="fileSelected">
+    <widget class="QLabel" name="fileSelectedLocalName">
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -1137,7 +1137,7 @@ background-color: rgba(255, 255, 255, 0);</string>
       <string>Length:</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="fileSelectedBackButton">
+    <widget class="QPushButton" name="fileSelectedLocalBackButton">
      <property name="geometry">
       <rect>
        <x>400</x>
@@ -1355,9 +1355,22 @@ background-color: rgba(255, 255, 255, 0);</string>
       <bool>true</bool>
      </property>
     </widget>
+    <widget class="QLabel" name="printPreviewSelectedLocal">
+     <property name="geometry">
+      <rect>
+       <x>370</x>
+       <y>50</y>
+       <width>341</width>
+       <height>261</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>TextLabel</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QWidget" name="fileListUSBPage">
-    <widget class="QPushButton" name="USBStorageBackButton_2">
+    <widget class="QPushButton" name="USBStorageBackButton">
      <property name="geometry">
       <rect>
        <x>690</x>
@@ -1429,7 +1442,7 @@ QPushButton:focus {
       <bool>false</bool>
      </property>
     </widget>
-    <widget class="QPushButton" name="USBStorageScrollDown_2">
+    <widget class="QPushButton" name="USBStorageScrollDown">
      <property name="geometry">
       <rect>
        <x>590</x>
@@ -1507,7 +1520,7 @@ QPushButton:focus {
       <bool>false</bool>
      </property>
     </widget>
-    <widget class="QPushButton" name="USBStorageSelectButton_2">
+    <widget class="QPushButton" name="USBStorageSelectButton">
      <property name="geometry">
       <rect>
        <x>690</x>
@@ -1579,7 +1592,7 @@ QPushButton:focus {
       <bool>false</bool>
      </property>
     </widget>
-    <widget class="QPushButton" name="USBStorageScrollUp_2">
+    <widget class="QPushButton" name="USBStorageScrollUp">
      <property name="geometry">
       <rect>
        <x>590</x>
@@ -1728,7 +1741,7 @@ QPushButton:focus {
       <bool>false</bool>
      </property>
     </widget>
-    <widget class="QListWidget" name="fileListWidgetUSB_2">
+    <widget class="QListWidget" name="fileListWidgetUSB">
      <property name="geometry">
       <rect>
        <x>0</x>
