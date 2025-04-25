@@ -50,7 +50,7 @@
     <string notr="true">background-color: rgb(40, 40, 40);</string>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="toolOffsetXYPage">
     <widget class="QPushButton" name="toolOffsetXYBackButton">
@@ -171,7 +171,7 @@ QPushButton:focus {
       <string>Y offset: </string>
      </property>
     </widget>
-    <widget class="QDoubleSpinBox" name="toolOffsetXDoubleSpinBox_3">
+    <widget class="QDoubleSpinBox" name="toolOffsetXDoubleSpinBox">
      <property name="geometry">
       <rect>
        <x>220</x>
@@ -277,7 +277,7 @@ QDoubleSpinBox::down-button:pressed {
       <double>0.000000000000000</double>
      </property>
     </widget>
-    <widget class="QDoubleSpinBox" name="toolOffsetYDoubleSpinBox_3">
+    <widget class="QDoubleSpinBox" name="toolOffsetYDoubleSpinBox">
      <property name="geometry">
       <rect>
        <x>220</x>
@@ -380,7 +380,7 @@ QDoubleSpinBox::down-button:pressed {
       <double>0.025000000000000</double>
      </property>
     </widget>
-    <widget class="QPushButton" name="toolOffsetXSetButton_3">
+    <widget class="QPushButton" name="toolOffsetXSetButton">
      <property name="geometry">
       <rect>
        <x>440</x>
@@ -434,7 +434,7 @@ QPushButton:focus {
       </size>
      </property>
     </widget>
-    <widget class="QPushButton" name="toolOffsetYSetButton_3">
+    <widget class="QPushButton" name="toolOffsetYSetButton">
      <property name="geometry">
       <rect>
        <x>440</x>
@@ -559,7 +559,7 @@ QPushButton:focus {
       <string>Z offset:</string>
      </property>
     </widget>
-    <widget class="QDoubleSpinBox" name="toolOffsetZDoubleSpinBox_3">
+    <widget class="QDoubleSpinBox" name="toolOffsetZDoubleSpinBox">
      <property name="geometry">
       <rect>
        <x>270</x>
@@ -665,7 +665,7 @@ QDoubleSpinBox::down-button:pressed {
       <double>0.000000000000000</double>
      </property>
     </widget>
-    <widget class="QPushButton" name="toolOffsetZSetButton_3">
+    <widget class="QPushButton" name="toolOffsetZSetButton">
      <property name="geometry">
       <rect>
        <x>490</x>
@@ -719,7 +719,7 @@ QPushButton:focus {
       </size>
      </property>
     </widget>
-    <widget class="QPushButton" name="toolOffsetZBackButton_3">
+    <widget class="QPushButton" name="toolOffsetZBackButton">
      <property name="geometry">
       <rect>
        <x>0</x>

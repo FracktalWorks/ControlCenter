@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>nozzleOffsetPage_2</class>
- <widget class="QWidget" name="nozzleOffsetPage_2">
+ <class>nozzleOffsetPage</class>
+ <widget class="QWidget" name="nozzleOffsetPage">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -28,7 +28,7 @@
   <property name="styleSheet">
    <string notr="true">background-color: rgb(40, 40, 40);</string>
   </property>
-  <widget class="QPushButton" name="nozzleOffsetBackButton_2">
+  <widget class="QPushButton" name="nozzleOffsetBackButton">
    <property name="geometry">
     <rect>
      <x>-1</x>
@@ -128,7 +128,7 @@ url(:/icons/img/chevron-pointing-to-the-left.png)</string>
     <bool>true</bool>
    </property>
   </widget>
-  <widget class="QPushButton" name="nozzleOffsetSetButton_2">
+  <widget class="QPushButton" name="nozzleOffsetSetButton">
    <property name="geometry">
     <rect>
      <x>488</x>
@@ -183,7 +183,7 @@ QPushButton:focus {
     </size>
    </property>
   </widget>
-  <widget class="QDoubleSpinBox" name="nozzleOffsetDoubleSpinBox_2">
+  <widget class="QDoubleSpinBox" name="nozzleOffsetDoubleSpinBox">
    <property name="geometry">
     <rect>
      <x>170</x>
