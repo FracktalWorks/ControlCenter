@@ -15,23 +15,69 @@ class SoftwareUpdate(QWidget):
 
         # Find buttons by their object names
         self.softwareUpdateBackButton = self.findChild(QPushButton, 'softwareUpdateBackButton')
+        if not self.softwareUpdateBackButton:
+            print("softwareUpdateBackButton not found")
+        else:
+            print("softwareUpdateBackButton found")
+            
         self.performUpdateButton = self.findChild(QPushButton, 'performUpdateButton')
+        if not self.performUpdateButton:
+            print("performUpdateButton not found")
+        else:
+            print("performUpdateButton found")
 
         # Find other UI elements
-        self.updateListWidget = self.findChild(QListWidget, 'updateListWidget')
+        self.updateListWidget = self.findChild(QListWidget, 'updateListWidget') 
+        if not self.updateListWidget:
+            print("updateListWidget not found")
+        else:
+            print("updateListWidget found")
+            
         self.logTextEdit = self.findChild(QTextEdit, 'logTextEdit')
+        if not self.logTextEdit:
+            print("logTextEdit not found")
+        else:
+            print("logTextEdit found")
 
         # Find stacked widget and pages
         self.stackedWidget = self.findChild(QStackedWidget, 'stackedWidget')
+        if not self.stackedWidget:
+            print("stackedWidget not found")
+        else:
+            print("stackedWidget found")
+            
         self.softwareUpdateProgressPage = self.findChild(QWidget, 'softwareUpdateProgressPage')
+        if not self.softwareUpdateProgressPage:
+            print("softwareUpdateProgressPage not found")
+        else:
+            print("softwareUpdateProgressPage found")
+            
         self.OTAUpdatePage = self.findChild(QWidget, 'OTAUpdatePage')
+        if not self.OTAUpdatePage:
+            print("OTAUpdatePage not found") 
+        else:
+            print("OTAUpdatePage found")
 
-        # Check if all elements are found
-        if not all([
-            self.softwareUpdateBackButton, self.performUpdateButton, self.updateListWidget,
-            self.logTextEdit, self.stackedWidget, self.softwareUpdateProgressPage, self.OTAUpdatePage
-        ]):
-            raise ValueError("One or more UI elements not found in the UI file")
+        # Check each element individually to identify which ones are missing
+        missing_elements = []
+        if not self.softwareUpdateBackButton:
+            missing_elements.append("softwareUpdateBackButton")
+        if not self.performUpdateButton:
+            missing_elements.append("performUpdateButton")
+        if not self.updateListWidget:
+            missing_elements.append("updateListWidget")
+        if not self.logTextEdit:
+            missing_elements.append("logTextEdit")
+        if not self.stackedWidget:
+            missing_elements.append("stackedWidget")
+        if not self.softwareUpdateProgressPage:
+            missing_elements.append("softwareUpdateProgressPage")
+        if not self.OTAUpdatePage:
+            missing_elements.append("OTAUpdatePage")
+        
+        # # If there are missing elements, raise an error with the list of missing elements
+        # if missing_elements:
+        #     raise ValueError(f"Missing UI elements: {', '.join(missing_elements)}")
 
         # Connect buttons to their respective functions
         self.softwareUpdateBackButton.clicked.connect(self.go_back_to_settings_screen)

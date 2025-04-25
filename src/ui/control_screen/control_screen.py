@@ -1,5 +1,6 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QSpinBox, QTabWidget
+from utils.helpers import check_ui_elements
 
 class ControlScreen(QWidget):
     def __init__(self, main_window):
@@ -9,9 +10,9 @@ class ControlScreen(QWidget):
         # Load the .ui file
         try:
             uic.loadUi('src/ui/control_screen/control_screen.ui', self)
-            print("UI file loaded successfully")
+            print("ControlScreen UI loaded successfully")
         except Exception as e:
-            print(f"Failed to load UI file: {e}")
+            print(f"Failed to load ControlScreen UI file: {e}")
 
         # Find buttons by their object names
         self.controlBackButton = self.findChild(QPushButton, 'controlBackButton')
@@ -47,8 +48,6 @@ class ControlScreen(QWidget):
         self.toggleFilamentSensorButton = self.findChild(QPushButton, 'toggleFilamentSensorButton')
         self.setFlowRateButton = self.findChild(QPushButton, 'setFlowRateButton')
 
-
-
         # Find spin boxes
         self.feedRateSpinBox = self.findChild(QSpinBox, 'feedRateSpinBox')
         self.toolTempSpinBox = self.findChild(QSpinBox, 'toolTempSpinBox')
@@ -58,27 +57,105 @@ class ControlScreen(QWidget):
         # Find tab widget
         self.controlTabWidget = self.findChild(QTabWidget, 'controlTabWidget')
 
-        # Check if all elements are found
-        if not all([
-            self.controlBackButton, self.setFeedRateButton, self.moveZPBabyStep, self.moveZMBabyStep,
-            self.cooldownButton, self.fanOnButton, self.fanOffButton, self.feedRateSpinBox,
-            self.toolTempSpinBox, self.bedTempSpinBox, self.controlTabWidget
-        ]):
-            raise ValueError("One or more UI elements not found in the UI file")
+        # Check if UI elements exist and report missing ones
+        self._check_widgets_existence()
 
-        # Connect buttons to their respective functions
-        self.controlBackButton.clicked.connect(self.main_window.switch_to_previous_screen)
-        self.setFeedRateButton.clicked.connect(self.set_feed_rate)
-        self.moveZPBabyStep.clicked.connect(self.move_z_positive)
-        self.moveZMBabyStep.clicked.connect(self.move_z_negative)
-        self.cooldownButton.clicked.connect(self.cooldown)
-        self.fanOnButton.clicked.connect(self.turn_fan_on)
-        self.fanOffButton.clicked.connect(self.turn_fan_off)
+        # Connect buttons to their respective functions - with safety checks
+        self._connect_buttons()
+
+    def _check_widgets_existence(self):
+        """Check if UI elements exist and report missing ones"""
+        # Group widgets for better reporting
+        navigation_buttons = {
+            "controlBackButton": self.controlBackButton
+        }
+        check_ui_elements(self, navigation_buttons, "ControlScreen - Navigation Buttons")
+        
+        temperature_buttons = {
+            "cooldownButton": self.cooldownButton,
+            "fanOnButton": self.fanOnButton,
+            "fanOffButton": self.fanOffButton,
+            "toolToggleTemperatureButton": self.toolToggleTemperatureButton,
+            "tool180PreheatButton": self.tool180PreheatButton,
+            "tool250PreheatButton": self.tool250PreheatButton,
+            "setToolTempButton": self.setToolTempButton,
+            "bed60PreheatButton": self.bed60PreheatButton,
+            "bed100PreheatButton": self.bed100PreheatButton,
+            "setBedTempButton": self.setBedTempButton
+        }
+        check_ui_elements(self, temperature_buttons, "ControlScreen - Temperature Controls")
+        
+        movement_buttons = {
+            "moveYPButton": self.moveYPButton,
+            "moveYMButton": self.moveYMButton,
+            "moveXMButton": self.moveXMButton,
+            "moveXPButton": self.moveXPButton,
+            "homeXYButton": self.homeXYButton,
+            "moveZMButton": self.moveZMButton,
+            "moveZPButton": self.moveZPButton,
+            "homeZButton": self.homeZButton,
+            "moveZPBabyStep": self.moveZPBabyStep,
+            "moveZMBabyStep": self.moveZMBabyStep
+        }
+        check_ui_elements(self, movement_buttons, "ControlScreen - Movement Controls")
+        
+        extruder_buttons = {
+            "toolToggleMotionButton": self.toolToggleMotionButton,
+            "extruderButton": self.extruderButton,
+            "retractButton": self.retractButton,
+            "changeFilamentButton": self.changeFilamentButton,
+            "toggleFilamentSensorButton": self.toggleFilamentSensorButton
+        }
+        check_ui_elements(self, extruder_buttons, "ControlScreen - Extruder Controls")
+        
+        settings_buttons = {
+            "step1mmButton": self.step1mmButton,
+            "step10mmButton": self.step10mmButton,
+            "step100mmButton": self.step100mmButton,
+            "motorOffButton": self.motorOffButton,
+            "setFeedRateButton": self.setFeedRateButton,
+            "setFlowRateButton": self.setFlowRateButton
+        }
+        check_ui_elements(self, settings_buttons, "ControlScreen - Settings Controls")
+        
+        input_widgets = {
+            "feedRateSpinBox": self.feedRateSpinBox,
+            "toolTempSpinBox": self.toolTempSpinBox,
+            "bedTempSpinBox": self.bedTempSpinBox,
+            "flowRateSpinBox": self.flowRateSpinBox,
+            "controlTabWidget": self.controlTabWidget
+        }
+        check_ui_elements(self, input_widgets, "ControlScreen - Input Widgets")
+
+    def _connect_buttons(self):
+        """Connect buttons with safety checks"""
+        # Connect navigation buttons
+        if self.controlBackButton:
+            self.controlBackButton.clicked.connect(self.main_window.switch_to_previous_screen)
+        
+        # Connect temperature control buttons
+        if self.setFeedRateButton:
+            self.setFeedRateButton.clicked.connect(self.set_feed_rate)
+        if self.moveZPBabyStep:
+            self.moveZPBabyStep.clicked.connect(self.move_z_positive)
+        if self.moveZMBabyStep:
+            self.moveZMBabyStep.clicked.connect(self.move_z_negative)
+        if self.cooldownButton:
+            self.cooldownButton.clicked.connect(self.cooldown)
+        if self.fanOnButton:
+            self.fanOnButton.clicked.connect(self.turn_fan_on)
+        if self.fanOffButton:
+            self.fanOffButton.clicked.connect(self.turn_fan_off)
+        
+        # Add more button connections here as needed...
 
     def set_feed_rate(self):
         """Set the feed rate based on the spin box value."""
-        feed_rate = self.feedRateSpinBox.value()
-        print(f"Feed rate set to: {feed_rate}%")
+        if self.feedRateSpinBox:
+            feed_rate = self.feedRateSpinBox.value()
+            print(f"Feed rate set to: {feed_rate}%")
+        else:
+            print("Feed rate spin box not found")
 
     def move_z_positive(self):
         """Move the Z-axis in the positive direction."""

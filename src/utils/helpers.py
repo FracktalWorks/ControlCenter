@@ -17,3 +17,31 @@ def convert_to_percentage(value, total):
     if total == 0:
         return 0
     return (value / total) * 100
+
+def check_ui_elements(ui_class, elements_dict, screen_name):
+    """
+    Check if UI elements exist and print warnings for missing ones.
+    
+    Args:
+        ui_class: The class instance containing the UI elements
+        elements_dict: Dictionary of {element_name: element_object}
+        screen_name: Name of the screen for logging purposes
+    
+    Returns:
+        A dict containing only the elements that were found (not None)
+    """
+    found_elements = {}
+    missing_elements = []
+    
+    for name, element in elements_dict.items():
+        if element is None:
+            missing_elements.append(name)
+        else:
+            found_elements[name] = element
+    
+    if missing_elements:
+        print(f"WARNING: The following UI elements are missing from {screen_name}:")
+        for name in missing_elements:
+            print(f"  - {name}")
+    
+    return found_elements

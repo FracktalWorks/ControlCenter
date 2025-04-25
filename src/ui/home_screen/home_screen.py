@@ -1,5 +1,6 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton
+from utils.helpers import check_ui_elements
 
 class HomeScreen(QWidget):
     def __init__(self, main_window):
@@ -9,9 +10,9 @@ class HomeScreen(QWidget):
         # Load the .ui file
         try:
             uic.loadUi('src/ui/home_screen/home_screen.ui', self)
-            print("UI file loaded successfully")
+            print("HomeScreen UI loaded successfully")
         except Exception as e:
-            print(f"Failed to load UI file: {e}")
+            print(f"Failed to load HomeScreen UI file: {e}")
 
         # Find buttons by their object names
         self.doorLockButton = self.findChild(QToolButton, 'doorLockButton')
@@ -20,41 +21,64 @@ class HomeScreen(QWidget):
         self.playPauseButton = self.findChild(QPushButton, 'playPauseButton')
         self.controlButton = self.findChild(QPushButton, 'controlButton')
 
-        # Debug prints to check if buttons are found
-        # print(f"doorLockButton: {self.doorLockButton}")
-        # print(f"menuButton: {self.menuButton}")
-        # print(f"stopButton: {self.stopButton}")
-        # print(f"playPauseButton: {self.playPauseButton}")
-        # print(f"controlButton: {self.controlButton}")
+        # Check if UI elements exist and report missing ones
+        self._check_widgets_existence()
 
-        # Check if buttons are found
-        if not all([self.doorLockButton, self.menuButton, self.stopButton, self.playPauseButton, self.controlButton]):
-            raise ValueError("One or more buttons not found in the UI file")
+        # Connect buttons to their respective functions - with safety checks
+        self._connect_buttons()
 
-        # Connect buttons to their respective functions
-        self.doorLockButton.clicked.connect(self.toggle_door_lock)
-        self.menuButton.clicked.connect(self.open_menu)
-        self.stopButton.clicked.connect(self.stop_print)
-        self.playPauseButton.clicked.connect(self.play_pause_print)
-        self.controlButton.clicked.connect(self.open_control_panel)
+    def _check_widgets_existence(self):
+        """Check if UI elements exist and report missing ones"""
+        # Group widgets for better reporting
+        home_screen_buttons = {
+            "doorLockButton": self.doorLockButton,
+            "menuButton": self.menuButton,
+            "stopButton": self.stopButton,
+            "playPauseButton": self.playPauseButton,
+            "controlButton": self.controlButton
+        }
+        
+        # Use the helper function to check and report missing widgets
+        check_ui_elements(self, home_screen_buttons, "HomeScreen")
+    
+    def _connect_buttons(self):
+        """Connect buttons with safety checks"""
+        if self.doorLockButton:
+            self.doorLockButton.clicked.connect(self.toggle_door_lock)
+        
+        if self.menuButton:
+            self.menuButton.clicked.connect(self.open_menu)
+        
+        if self.stopButton:
+            self.stopButton.clicked.connect(self.stop_print)
+        
+        if self.playPauseButton:
+            self.playPauseButton.clicked.connect(self.play_pause_print)
+        
+        if self.controlButton:
+            self.controlButton.clicked.connect(self.open_control_panel)
 
     def toggle_door_lock(self):
         # Placeholder for toggle door lock logic
         print("Toggle Door Lock button clicked")
+        # This functionality will be connected to OctoPrint API later
 
     def open_menu(self):
         # Logic to open the menu screen
-        self.main_window.switch_screen(self.main_window.menu_screen)
+        self.main_window.switch_to_menu_screen()
         print("Menu button clicked")
 
     def stop_print(self):
         # Placeholder for stop print logic
         print("Stop Print button clicked")
+        # This functionality will be connected to OctoPrint API later
 
     def play_pause_print(self):
         # Placeholder for play/pause print logic
         print("Play/Pause button clicked")
+        # This functionality will be connected to OctoPrint API later
 
     def open_control_panel(self):
-        # Placeholder for open control panel logic
+        # Logic to open the control panel screen
+        self.main_window.switch_to_control_screen()
         print("Control Panel button clicked")

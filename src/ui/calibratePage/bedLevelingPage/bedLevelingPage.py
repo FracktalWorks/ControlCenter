@@ -1,5 +1,6 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget
+from utils.helpers import check_ui_elements
 
 class BedLeveling(QWidget):
     def __init__(self, main_window):
@@ -9,9 +10,9 @@ class BedLeveling(QWidget):
         # Load the .ui file
         try:
             uic.loadUi('src/ui/calibratePage/bedLevelingPage/bedLevelingPage.ui', self)
-            print("UI file loaded successfully")
+            print("BedLeveling UI loaded successfully")
         except Exception as e:
-            print(f"Failed to load UI file: {e}")
+            print(f"Failed to load BedLeveling UI file: {e}")
 
         # Find buttons by their object names
         self.moveZPT1CaliberateButton = self.findChild(QPushButton, 'moveZPT1CaliberateButton')
@@ -35,35 +36,86 @@ class BedLeveling(QWidget):
         self.quickStep3Page = self.findChild(QWidget, 'quickStep3Page')
         self.quickStep4Page = self.findChild(QWidget, 'quickStep4Page')
 
-        # Check if buttons and pages are found
-        if not all([
-            self.stackedWidget, self.moveZPT1CaliberateButton, self.moveZMT1CaliberateButton,
-            self.nozzleHeightStep1NextButton, self.nozzleHeightStep1CancelButton,
-            self.quickStep1NextButton, self.quickStep1CancelButton,
-            self.quickStep2NextButton, self.quickStep2CancelButton,
-            self.quickStep3NextButton, self.quickStep3CancelButton,
-            self.quickStep4NextButton, self.quickStep4CancelButton,
-            self.nozzleHeightStep1Page, self.quickStep1Page, self.quickStep2Page,
-            self.quickStep3Page, self.quickStep4Page
-        ]):
-            raise ValueError("One or more buttons or pages not found in the UI file")
+        # Check if UI elements exist and report missing ones
+        self._check_widgets_existence()
 
-        # Connect buttons to their respective functions
-        self.moveZPT1CaliberateButton.clicked.connect(self.move_z_pt1)
-        self.moveZMT1CaliberateButton.clicked.connect(self.move_z_mt1)
-        self.nozzleHeightStep1NextButton.clicked.connect(self.go_to_quick_step1)
-        self.nozzleHeightStep1CancelButton.clicked.connect(self.cancel_bed_leveling)
-        self.quickStep1NextButton.clicked.connect(self.go_to_quick_step2)
-        self.quickStep1CancelButton.clicked.connect(self.cancel_bed_leveling)
-        self.quickStep2NextButton.clicked.connect(self.go_to_quick_step3)
-        self.quickStep2CancelButton.clicked.connect(self.cancel_bed_leveling)
-        self.quickStep3NextButton.clicked.connect(self.go_to_quick_step4)
-        self.quickStep3CancelButton.clicked.connect(self.cancel_bed_leveling)
-        self.quickStep4NextButton.clicked.connect(self.finish_bed_leveling)
-        self.quickStep4CancelButton.clicked.connect(self.cancel_bed_leveling)
+        # Connect buttons to their respective functions - with safety checks
+        self._connect_buttons()
 
         # Set the default screen to nozzleHeightStep1Page
-        self.stackedWidget.setCurrentWidget(self.nozzleHeightStep1Page)
+        if self.stackedWidget and self.nozzleHeightStep1Page:
+            self.stackedWidget.setCurrentWidget(self.nozzleHeightStep1Page)
+
+    def _check_widgets_existence(self):
+        """Check if UI elements exist and report missing ones"""
+        # Group widgets for better reporting
+        pages = {
+            "stackedWidget": self.stackedWidget,
+            "nozzleHeightStep1Page": self.nozzleHeightStep1Page,
+            "quickStep1Page": self.quickStep1Page,
+            "quickStep2Page": self.quickStep2Page,
+            "quickStep3Page": self.quickStep3Page,
+            "quickStep4Page": self.quickStep4Page
+        }
+        check_ui_elements(self, pages, "BedLeveling - Pages")
+        
+        step1_buttons = {
+            "moveZPT1CaliberateButton": self.moveZPT1CaliberateButton,
+            "moveZMT1CaliberateButton": self.moveZMT1CaliberateButton,
+            "nozzleHeightStep1NextButton": self.nozzleHeightStep1NextButton,
+            "nozzleHeightStep1CancelButton": self.nozzleHeightStep1CancelButton
+        }
+        check_ui_elements(self, step1_buttons, "BedLeveling - Step 1 Buttons")
+        
+        quick_step_buttons = {
+            "quickStep1NextButton": self.quickStep1NextButton,
+            "quickStep1CancelButton": self.quickStep1CancelButton,
+            "quickStep2NextButton": self.quickStep2NextButton,
+            "quickStep2CancelButton": self.quickStep2CancelButton,
+            "quickStep3NextButton": self.quickStep3NextButton,
+            "quickStep3CancelButton": self.quickStep3CancelButton,
+            "quickStep4NextButton": self.quickStep4NextButton,
+            "quickStep4CancelButton": self.quickStep4CancelButton
+        }
+        check_ui_elements(self, quick_step_buttons, "BedLeveling - Quick Step Buttons")
+    
+    def _connect_buttons(self):
+        """Connect buttons with safety checks"""
+        if self.moveZPT1CaliberateButton:
+            self.moveZPT1CaliberateButton.clicked.connect(self.move_z_pt1)
+        
+        if self.moveZMT1CaliberateButton:
+            self.moveZMT1CaliberateButton.clicked.connect(self.move_z_mt1)
+        
+        if self.nozzleHeightStep1NextButton:
+            self.nozzleHeightStep1NextButton.clicked.connect(self.go_to_quick_step1)
+        
+        if self.nozzleHeightStep1CancelButton:
+            self.nozzleHeightStep1CancelButton.clicked.connect(self.cancel_bed_leveling)
+        
+        if self.quickStep1NextButton:
+            self.quickStep1NextButton.clicked.connect(self.go_to_quick_step2)
+        
+        if self.quickStep1CancelButton:
+            self.quickStep1CancelButton.clicked.connect(self.cancel_bed_leveling)
+        
+        if self.quickStep2NextButton:
+            self.quickStep2NextButton.clicked.connect(self.go_to_quick_step3)
+        
+        if self.quickStep2CancelButton:
+            self.quickStep2CancelButton.clicked.connect(self.cancel_bed_leveling)
+        
+        if self.quickStep3NextButton:
+            self.quickStep3NextButton.clicked.connect(self.go_to_quick_step4)
+        
+        if self.quickStep3CancelButton:
+            self.quickStep3CancelButton.clicked.connect(self.cancel_bed_leveling)
+        
+        if self.quickStep4NextButton:
+            self.quickStep4NextButton.clicked.connect(self.finish_bed_leveling)
+        
+        if self.quickStep4CancelButton:
+            self.quickStep4CancelButton.clicked.connect(self.cancel_bed_leveling)
 
     def move_z_pt1(self):
         """Logic to move Z-axis to PT1."""
@@ -76,22 +128,26 @@ class BedLeveling(QWidget):
     def go_to_quick_step1(self):
         """Navigate to Quick Step 1."""
         print("Navigating to Quick Step 1")
-        self.stackedWidget.setCurrentWidget(self.quickStep1Page)
+        if self.stackedWidget and self.quickStep1Page:
+            self.stackedWidget.setCurrentWidget(self.quickStep1Page)
 
     def go_to_quick_step2(self):
         """Navigate to Quick Step 2."""
         print("Navigating to Quick Step 2")
-        self.stackedWidget.setCurrentWidget(self.quickStep2Page)
+        if self.stackedWidget and self.quickStep2Page:
+            self.stackedWidget.setCurrentWidget(self.quickStep2Page)
 
     def go_to_quick_step3(self):
         """Navigate to Quick Step 3."""
         print("Navigating to Quick Step 3")
-        self.stackedWidget.setCurrentWidget(self.quickStep3Page)
+        if self.stackedWidget and self.quickStep3Page:
+            self.stackedWidget.setCurrentWidget(self.quickStep3Page)
 
     def go_to_quick_step4(self):
         """Navigate to Quick Step 4."""
         print("Navigating to Quick Step 4")
-        self.stackedWidget.setCurrentWidget(self.quickStep4Page)
+        if self.stackedWidget and self.quickStep4Page:
+            self.stackedWidget.setCurrentWidget(self.quickStep4Page)
 
     def finish_bed_leveling(self):
         """Finish bed leveling process."""

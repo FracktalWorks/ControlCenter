@@ -138,6 +138,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -161,6 +162,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -501,6 +503,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -512,7 +515,7 @@ QPushButton:focus {
      </property>
     </widget>
    </widget>
-   <widget class="QWidget" name="toolOffsetZpage">
+   <widget class="QWidget" name="toolOffsetZPage">
     <widget class="QLabel" name="toolOffsetLabel_6">
      <property name="geometry">
       <rect>
@@ -526,6 +529,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -549,6 +553,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>

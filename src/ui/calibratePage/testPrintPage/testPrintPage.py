@@ -1,5 +1,6 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget
+from utils.helpers import check_ui_elements
 
 class TestPrintPage(QWidget):
     def __init__(self, main_window):
@@ -9,9 +10,9 @@ class TestPrintPage(QWidget):
         # Load the .ui file
         try:
             uic.loadUi('src/ui/calibratePage/testPrintPage/testPrintPage.ui', self)
-            print("UI file loaded successfully")
+            print("TestPrintPage UI loaded successfully")
         except Exception as e:
-            print(f"Failed to load UI file: {e}")
+            print(f"Failed to load TestPrintPage UI file: {e}")
 
         # Find buttons by their object names
         self.testPrintsNextButton = self.findChild(QPushButton, 'testPrintsNextButton')
@@ -28,26 +29,67 @@ class TestPrintPage(QWidget):
         self.testPrintPage1 = self.findChild(QWidget, 'testPrintPage1')
         self.testPrintPage2 = self.findChild(QWidget, 'testPrintPage2')
 
-        # Check if all elements are found
-        if not all([ self.testPrintsNextButton, self.testPrintsBackButton,
-            self.testPrintsCancelButton, self.singleNozzlePrintButton, self.movementTestPrintButton,
-            self.dualCaliberationPrintButton, self.dualNozzlePrintButton, self.bedLevelPrintButton,
-            self.stackedWidget, self.testPrintPage2
-        ]):
-            raise ValueError("One or more UI elements not found in the UI file")
+        # Check if UI elements exist and report missing ones
+        self._check_widgets_existence()
 
-        # Connect buttons to their respective functions
-        self.testPrintsNextButton.clicked.connect(self.main_window.switch_to_next_screen)
-        self.testPrintsBackButton.clicked.connect(self.main_window.switch_to_previous_screen)
-        self.testPrintsCancelButton.clicked.connect(self.main_window.switch_to_previous_screen)
-        self.singleNozzlePrintButton.clicked.connect(self.single_nozzle_test_print)
-        self.movementTestPrintButton.clicked.connect(self.movement_stress_test)
-        self.dualCaliberationPrintButton.clicked.connect(self.dual_calibration_print)
-        self.dualNozzlePrintButton.clicked.connect(self.dual_nozzle_test_print)
-        self.bedLevelPrintButton.clicked.connect(self.bed_leveling_print)
+        # Connect buttons to their respective functions - with safety checks
+        self._connect_buttons()
 
         # Set the default screen
-        self.stackedWidget.setCurrentWidget(self.testPrintPage2)
+        if self.stackedWidget and self.testPrintPage2:
+            self.stackedWidget.setCurrentWidget(self.testPrintPage2)
+
+    def _check_widgets_existence(self):
+        """Check if UI elements exist and report missing ones"""
+        # Group widgets for better reporting
+        pages = {
+            "stackedWidget": self.stackedWidget,
+            "testPrintPage1": self.testPrintPage1,
+            "testPrintPage2": self.testPrintPage2
+        }
+        check_ui_elements(self, pages, "TestPrintPage - Pages")
+        
+        navigation_buttons = {
+            "testPrintsNextButton": self.testPrintsNextButton,
+            "testPrintsBackButton": self.testPrintsBackButton,
+            "testPrintsCancelButton": self.testPrintsCancelButton
+        }
+        check_ui_elements(self, navigation_buttons, "TestPrintPage - Navigation Buttons")
+        
+        print_buttons = {
+            "singleNozzlePrintButton": self.singleNozzlePrintButton,
+            "movementTestPrintButton": self.movementTestPrintButton,
+            "dualCaliberationPrintButton": self.dualCaliberationPrintButton,
+            "dualNozzlePrintButton": self.dualNozzlePrintButton,
+            "bedLevelPrintButton": self.bedLevelPrintButton
+        }
+        check_ui_elements(self, print_buttons, "TestPrintPage - Print Buttons")
+    
+    def _connect_buttons(self):
+        """Connect buttons with safety checks"""
+        if self.testPrintsNextButton:
+            self.testPrintsNextButton.clicked.connect(self.main_window.switch_to_next_screen)
+        
+        if self.testPrintsBackButton:
+            self.testPrintsBackButton.clicked.connect(self.main_window.switch_to_previous_screen)
+        
+        if self.testPrintsCancelButton:
+            self.testPrintsCancelButton.clicked.connect(self.main_window.switch_to_previous_screen)
+        
+        if self.singleNozzlePrintButton:
+            self.singleNozzlePrintButton.clicked.connect(self.single_nozzle_test_print)
+        
+        if self.movementTestPrintButton:
+            self.movementTestPrintButton.clicked.connect(self.movement_stress_test)
+        
+        if self.dualCaliberationPrintButton:
+            self.dualCaliberationPrintButton.clicked.connect(self.dual_calibration_print)
+        
+        if self.dualNozzlePrintButton:
+            self.dualNozzlePrintButton.clicked.connect(self.dual_nozzle_test_print)
+        
+        if self.bedLevelPrintButton:
+            self.bedLevelPrintButton.clicked.connect(self.bed_leveling_print)
 
     def single_nozzle_test_print(self):
         """Logic for single nozzle test print."""

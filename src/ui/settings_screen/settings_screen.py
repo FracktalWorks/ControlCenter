@@ -3,6 +3,7 @@ import importlib.util
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QVBoxLayout, QScrollArea
 from PyQt5.QtGui import QFont
+from utils.helpers import check_ui_elements
 
 class SettingsScreen(QWidget):
     def __init__(self, main_window):
@@ -14,7 +15,12 @@ class SettingsScreen(QWidget):
         """
         super(SettingsScreen, self).__init__()
         self.main_window = main_window
-        uic.loadUi('src/ui/settings_screen/settings_screen.ui', self)
+        
+        try:
+            uic.loadUi('src/ui/settings_screen/settings_screen.ui', self)
+            print("Settings screen UI file loaded successfully")
+        except Exception as e:
+            print(f"Failed to load settings screen UI file: {e}")
 
         # Find the stacked widget
         self.stackedWidget = self.findChild(QStackedWidget, 'mainSettingsStackedWidget')
@@ -24,29 +30,74 @@ class SettingsScreen(QWidget):
 
         # Find the scroll area and its contents
         self.scrollArea = self.findChild(QScrollArea, 'scrollArea')
-        self.scrollAreaWidgetContents = self.scrollArea.findChild(QWidget, 'scrollAreaWidgetContents')
-        self.verticalLayout = self.scrollAreaWidgetContents.findChild(QVBoxLayout, 'verticalLayout')
+        if self.scrollArea:
+            self.scrollAreaWidgetContents = self.scrollArea.findChild(QWidget, 'scrollAreaWidgetContents')
+            if self.scrollAreaWidgetContents:
+                self.verticalLayout = self.scrollAreaWidgetContents.findChild(QVBoxLayout, 'verticalLayout')
+            else:
+                print("Failed to find scrollAreaWidgetContents")
+                self.verticalLayout = None
+        else:
+            self.scrollAreaWidgetContents = None
+            self.verticalLayout = None
 
-        # Add the back button to the main layout
+        # Find the buttons
         self.settingsBackButton = self.findChild(QPushButton, 'settingsBackButton')
-        self.settingsBackButton.clicked.connect(self.go_back)
-        self.verticalLayout.insertWidget(0, self.settingsBackButton)
-
-        # Find the new buttons
         self.restorePrintSettingsButton = self.findChild(QPushButton, 'restorePrintSettingsButton')
         self.restoreFactoryDefaultsButton = self.findChild(QPushButton, 'restoreFactoryDefaultsButton')
         self.restartButton = self.findChild(QPushButton, 'restartButton')
-
-        # Connect the new buttons to their respective functions
-        self.restorePrintSettingsButton.clicked.connect(self.restore_print_settings)
-        self.restoreFactoryDefaultsButton.clicked.connect(self.restore_factory_defaults)
-        self.restartButton.clicked.connect(self.restart_system)
+        
+        # Check if UI elements exist and report missing ones
+        self._check_widgets_existence()
+        
+        # Connect buttons with safety checks
+        self._connect_buttons()
 
         # Scan the "Settings Screen" folder for subfolders containing .ui files
         self.load_settings_widgets()
 
         # Set the default page to mainSettingsPage
-        self.stackedWidget.setCurrentWidget(self.mainSettingsPage)
+        if self.stackedWidget and self.mainSettingsPage:
+            self.stackedWidget.setCurrentWidget(self.mainSettingsPage)
+
+    def _check_widgets_existence(self):
+        """Check if UI elements exist and report missing ones"""
+        # Group widgets for better reporting
+        main_widgets = {
+            "stackedWidget": self.stackedWidget,
+            "mainSettingsPage": self.mainSettingsPage,
+            "scrollArea": self.scrollArea,
+            "scrollAreaWidgetContents": self.scrollAreaWidgetContents,
+            "verticalLayout": self.verticalLayout
+        }
+        check_ui_elements(self, main_widgets, "SettingsScreen - Main Widgets")
+        
+        buttons = {
+            "settingsBackButton": self.settingsBackButton,
+            "restorePrintSettingsButton": self.restorePrintSettingsButton,
+            "restoreFactoryDefaultsButton": self.restoreFactoryDefaultsButton,
+            "restartButton": self.restartButton
+        }
+        check_ui_elements(self, buttons, "SettingsScreen - Buttons")
+    
+    def _connect_buttons(self):
+        """Connect buttons with safety checks"""
+        if self.settingsBackButton:
+            self.settingsBackButton.clicked.connect(self.go_back)
+            if self.verticalLayout:
+                self.verticalLayout.insertWidget(0, self.settingsBackButton)
+        
+        if self.restorePrintSettingsButton:
+            self.restorePrintSettingsButton.clicked.connect(self.restore_print_settings)
+        
+        if self.restoreFactoryDefaultsButton:
+            self.restoreFactoryDefaultsButton.clicked.connect(self.restore_factory_defaults)
+        
+        if self.restartButton:
+            self.restartButton.clicked.connect(self.restart_system)
+            # Ensure the restart button is at the bottom of the button list
+            if self.verticalLayout and self.restartButton:
+                self.verticalLayout.addWidget(self.restartButton)
 
     def go_back(self):
         """
@@ -58,51 +109,59 @@ class SettingsScreen(QWidget):
         """
         Load settings widgets from subfolders in the "Settings Screen" folder.
         """
+        if not (self.stackedWidget and self.verticalLayout):
+            print("Cannot load settings widgets: stackedWidget or verticalLayout is missing")
+            return
+            
         settings_folder = 'src/ui/settings_screen'
-        for subfolder in os.listdir(settings_folder):
-            subfolder_path = os.path.join(settings_folder, subfolder)
-            if os.path.isdir(subfolder_path):
-                ui_file = os.path.join(subfolder_path, f'{subfolder}.ui')
-                py_file = os.path.join(subfolder_path, f'{subfolder}.py')
-                if os.path.exists(ui_file) and os.path.exists(py_file):
-                    print(f"Loading widget: {subfolder}")
-                    # Create a button for the subfolder
-                    button = QPushButton(subfolder.replace('_', ' ').title())
-                    button.setMinimumHeight(100)
-                    button.setFont(QFont("Gotham Light", 16))
-                    button.setStyleSheet("""
-                        QPushButton {
-                            border: 1px solid rgb(87, 87, 87);
-                            background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-                        }
-                        QPushButton:pressed {
-                            background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #dadbde, stop: 1 #f6f7fa);
-                        }
-                        QPushButton:flat {
-                            border: none; /* no border for a flat push button */
-                        }
-                        QPushButton:default {
-                            border-color: navy; /* make the default button prominent */
-                        }
-                    """)
-                    button.clicked.connect(lambda _, sf=subfolder: self.load_widget(sf))
-                    self.verticalLayout.addWidget(button)
+        try:
+            for subfolder in os.listdir(settings_folder):
+                subfolder_path = os.path.join(settings_folder, subfolder)
+                if os.path.isdir(subfolder_path):
+                    ui_file = os.path.join(subfolder_path, f'{subfolder}.ui')
+                    py_file = os.path.join(subfolder_path, f'{subfolder}.py')
+                    if os.path.exists(ui_file) and os.path.exists(py_file):
+                        print(f"Loading widget: {subfolder}")
+                        try:
+                            # Create a button for the subfolder
+                            button = QPushButton(subfolder.replace('_', ' ').title())
+                            button.setMinimumHeight(100)
+                            button.setFont(QFont("Gotham Light", 16))
+                            button.setStyleSheet("""
+                                QPushButton {
+                                    border: 1px solid rgb(87, 87, 87);
+                                    background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+                                }
+                                QPushButton:pressed {
+                                    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #dadbde, stop: 1 #f6f7fa);
+                                }
+                                QPushButton:flat {
+                                    border: none; /* no border for a flat push button */
+                                }
+                                QPushButton:default {
+                                    border-color: navy; /* make the default button prominent */
+                                }
+                            """)
+                            button.clicked.connect(lambda _, sf=subfolder: self.load_widget(sf))
+                            self.verticalLayout.addWidget(button)
 
-                    # Load the widget and add it to the stacked widget
-                    widget_instance = self.create_widget_instance(ui_file, py_file)
-                    page = QWidget()
-                    layout = QVBoxLayout(page)
-                    layout.setContentsMargins(0, 0, 0, 0)  # Remove margins
-                    layout.setSpacing(0)  # Remove spacing
-                    layout.addWidget(widget_instance)
-                    self.stackedWidget.addWidget(page)
-                    print(f"Added widget: {widget_instance.objectName()}")
+                            # Load the widget and add it to the stacked widget
+                            widget_instance = self.create_widget_instance(ui_file, py_file)
+                            page = QWidget()
+                            layout = QVBoxLayout(page)
+                            layout.setContentsMargins(0, 0, 0, 0)  # Remove margins
+                            layout.setSpacing(0)  # Remove spacing
+                            layout.addWidget(widget_instance)
+                            self.stackedWidget.addWidget(page)
+                            print(f"Added widget: {widget_instance.objectName()}")
+                        except Exception as e:
+                            print(f"Error loading widget {subfolder}: {e}")
+        except Exception as e:
+            print(f"Error loading settings widgets: {e}")
 
         # Ensure the mainSettingsPage is set as the default page after loading all widgets
-        self.stackedWidget.setCurrentWidget(self.mainSettingsPage)
-
-        # Ensure the restart button is at the bottom of the button list
-        self.verticalLayout.addWidget(self.restartButton)
+        if self.stackedWidget and self.mainSettingsPage:
+            self.stackedWidget.setCurrentWidget(self.mainSettingsPage)
 
     def load_widget(self, widget_name):
         """
