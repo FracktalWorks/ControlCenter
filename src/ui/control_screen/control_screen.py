@@ -28,12 +28,32 @@ class ControlScreen(QWidget):
         self.bed60PreheatButton = self.findChild(QPushButton, 'bed60PreheatButton')
         self.bed100PreheatButton = self.findChild(QPushButton, 'bed100PreheatButton')
         self.setBedTempButton = self.findChild(QPushButton, 'setBedTempButton')
-        
+        self.moveYPButton = self.findChild(QPushButton, 'moveYPButton')
+        self.moveYMButton = self.findChild(QPushButton, 'moveYMButton')
+        self.moveXMButton = self.findChild(QPushButton, 'moveXMButton')
+        self.moveXPButton = self.findChild(QPushButton, 'moveXPButton')
+        self.homeXYButton = self.findChild(QPushButton, 'homeXYButton')
+        self.moveZMButton = self.findChild(QPushButton, 'moveZMButton')
+        self.moveZPButton = self.findChild(QPushButton, 'moveZPButton')
+        self.homeZButton = self.findChild(QPushButton, 'homeZButton')
+        self.toolToggleMotionButton = self.findChild(QPushButton, 'toolToggleMotionButton')
+        self.extruderButton = self.findChild(QPushButton, 'extruderButton')
+        self.retractButton = self.findChild(QPushButton, 'retractButton')
+        self.step1mmButton = self.findChild(QPushButton, 'step1mmButton')
+        self.step10mmButton = self.findChild(QPushButton, 'step10mmButton')
+        self.step100mmButton = self.findChild(QPushButton, 'step100mmButton')
+        self.motorOffButton = self.findChild(QPushButton, 'motorOffButton')
+        self.changeFilamentButton = self.findChild(QPushButton, 'changeFilamentButton')
+        self.toggleFilamentSensorButton = self.findChild(QPushButton, 'toggleFilamentSensorButton')
+        self.setFlowRateButton = self.findChild(QPushButton, 'setFlowRateButton')
+
+
 
         # Find spin boxes
         self.feedRateSpinBox = self.findChild(QSpinBox, 'feedRateSpinBox')
         self.toolTempSpinBox = self.findChild(QSpinBox, 'toolTempSpinBox')
         self.bedTempSpinBox = self.findChild(QSpinBox, 'bedTempSpinBox')
+        self.flowRateSpinBox = self.findChild(QSpinBox, 'flowRateSpinBox')
 
         # Find tab widget
         self.controlTabWidget = self.findChild(QTabWidget, 'controlTabWidget')

@@ -354,7 +354,7 @@ QPushButton:focus {
       <bool>false</bool>
      </property>
     </widget>
-    <widget class="QPushButton" name="USBStorageSaveButton">
+    <widget class="QPushButton" name="USBStorageDeleteButton">
      <property name="geometry">
       <rect>
        <x>690</x>
@@ -1657,7 +1657,7 @@ QPushButton:focus {
       <bool>false</bool>
      </property>
     </widget>
-    <widget class="QPushButton" name="USBStorageSaveButton_2">
+    <widget class="QPushButton" name="USBStorageSaveButton">
      <property name="geometry">
       <rect>
        <x>690</x>

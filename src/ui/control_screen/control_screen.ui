@@ -124,7 +124,7 @@ QTabBar:focus {
     <enum>QTabWidget::Rounded</enum>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>0</number>
    </property>
    <property name="iconSize">
     <size>
@@ -1451,7 +1451,7 @@ QPushButton:focus {
     <attribute name="title">
      <string/>
     </attribute>
-    <widget class="QPushButton" name="step1Button">
+    <widget class="QPushButton" name="step1mmButton">
      <property name="geometry">
       <rect>
        <x>180</x>
@@ -1521,7 +1521,7 @@ QPushButton:focus {
       <bool>false</bool>
      </property>
     </widget>
-    <widget class="QPushButton" name="step10Button">
+    <widget class="QPushButton" name="step10mmButton">
      <property name="geometry">
       <rect>
        <x>300</x>
@@ -1591,7 +1591,7 @@ QPushButton:focus {
       <bool>false</bool>
      </property>
     </widget>
-    <widget class="QPushButton" name="step100Button">
+    <widget class="QPushButton" name="step100mmButton">
      <property name="geometry">
       <rect>
        <x>430</x>
@@ -2627,9 +2627,9 @@ QPushButton:focus {
      </property>
     </widget>
     <zorder>moveByLabel</zorder>
-    <zorder>step1Button</zorder>
-    <zorder>step10Button</zorder>
-    <zorder>step100Button</zorder>
+    <zorder>step1mmButton</zorder>
+    <zorder>step10mmButton</zorder>
+    <zorder>step100mmButton</zorder>
     <zorder>moveYPButton</zorder>
     <zorder>moveYMButton</zorder>
     <zorder>moveXPButton</zorder>
