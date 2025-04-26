@@ -25,6 +25,9 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
+  <property name="autoFillBackground">
+   <bool>true</bool>
+  </property>
   <property name="styleSheet">
    <string notr="true">background-color: rgb(40, 40, 40);</string>
   </property>
@@ -347,7 +350,7 @@ QDoubleSpinBox::down-button:pressed {
     <rect>
      <x>240</x>
      <y>320</y>
-     <width>211</width>
+     <width>541</width>
      <height>21</height>
     </rect>
    </property>
