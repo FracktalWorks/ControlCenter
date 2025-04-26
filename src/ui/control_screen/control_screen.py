@@ -1,5 +1,5 @@
 from PyQt5 import uic
-from PyQt5.QtWidgets import QWidget, QPushButton, QSpinBox, QTabWidget
+from PyQt5.QtWidgets import QWidget, QPushButton, QSpinBox, QTabWidget, QToolButton
 from utils.helpers import check_ui_elements
 
 class ControlScreen(QWidget):
@@ -44,8 +44,8 @@ class ControlScreen(QWidget):
         self.step10mmButton = self.findChild(QPushButton, 'step10mmButton')
         self.step100mmButton = self.findChild(QPushButton, 'step100mmButton')
         self.motorOffButton = self.findChild(QPushButton, 'motorOffButton')
-        self.changeFilamentButton = self.findChild(QPushButton, 'changeFilamentButton')
-        self.toggleFilamentSensorButton = self.findChild(QPushButton, 'toggleFilamentSensorButton')
+        self.changeFilamentButton = self.findChild(QToolButton, 'changeFilamentButton')
+        self.toggleFilamentSensorButton = self.findChild(QToolButton, 'toggleFilamentSensorButton')
         self.setFlowRateButton = self.findChild(QPushButton, 'setFlowRateButton')
 
         # Find spin boxes

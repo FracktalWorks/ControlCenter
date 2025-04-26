@@ -27,11 +27,6 @@ class SoftwareUpdate(QWidget):
             print("performUpdateButton found")
 
         # Find other UI elements
-        self.updateListWidget = self.findChild(QListWidget, 'updateListWidget') 
-        if not self.updateListWidget:
-            print("updateListWidget not found")
-        else:
-            print("updateListWidget found")
             
         self.logTextEdit = self.findChild(QTextEdit, 'logTextEdit')
         if not self.logTextEdit:
@@ -57,6 +52,12 @@ class SoftwareUpdate(QWidget):
             print("OTAUpdatePage not found") 
         else:
             print("OTAUpdatePage found")
+    
+        self.updateListWidget = self.findChild(QListWidget, 'updateListWidget') 
+        if not self.updateListWidget:
+            print("updateListWidget not found")
+        else:
+            print("updateListWidget found")
 
         # Check each element individually to identify which ones are missing
         missing_elements = []
