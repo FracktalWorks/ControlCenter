@@ -83,37 +83,37 @@ class BedLeveling(QWidget):
         """Connect buttons with safety checks"""
         if self.moveZPT1CaliberateButton:
             self.moveZPT1CaliberateButton.clicked.connect(self.move_z_pt1)
-        
+
         if self.moveZMT1CaliberateButton:
             self.moveZMT1CaliberateButton.clicked.connect(self.move_z_mt1)
-        
+
         if self.nozzleHeightStep1NextButton:
             self.nozzleHeightStep1NextButton.clicked.connect(self.go_to_quick_step1)
-        
+
         if self.nozzleHeightStep1CancelButton:
             self.nozzleHeightStep1CancelButton.clicked.connect(self.cancel_bed_leveling)
-        
+
         if self.quickStep1NextButton:
             self.quickStep1NextButton.clicked.connect(self.go_to_quick_step2)
-        
+
         if self.quickStep1CancelButton:
             self.quickStep1CancelButton.clicked.connect(self.cancel_bed_leveling)
-        
+
         if self.quickStep2NextButton:
             self.quickStep2NextButton.clicked.connect(self.go_to_quick_step3)
-        
+
         if self.quickStep2CancelButton:
             self.quickStep2CancelButton.clicked.connect(self.cancel_bed_leveling)
-        
+
         if self.quickStep3NextButton:
             self.quickStep3NextButton.clicked.connect(self.go_to_quick_step4)
-        
+
         if self.quickStep3CancelButton:
             self.quickStep3CancelButton.clicked.connect(self.cancel_bed_leveling)
-        
+
         if self.quickStep4NextButton:
             self.quickStep4NextButton.clicked.connect(self.finish_bed_leveling)
-        
+
         if self.quickStep4CancelButton:
             self.quickStep4CancelButton.clicked.connect(self.cancel_bed_leveling)
 

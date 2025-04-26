@@ -50,30 +50,30 @@ class CalibratePage(QWidget):
     def _connect_buttons(self):
         """Connect buttons with safety checks"""
         if self.calibration_wizard_button:
-            self.calibration_wizard_button.clicked.connect(self.open_bed_leveling)
-        
+            self.calibration_wizard_button.clicked.connect(self.navigate_to_bed_leveling)
+
         if self.test_prints_button:
             self.test_prints_button.clicked.connect(self.main_window.switch_to_test_prints)
-        
+
         if self.input_shaper_calibrate_button:
             self.input_shaper_calibrate_button.clicked.connect(self.main_window.switch_to_input_shaper_calibration)
-        
+
         if self.nozzle_offset_button:
             self.nozzle_offset_button.clicked.connect(self.main_window.switch_to_nozzle_offset)
-        
+
         if self.tool_offset_z_button:
             self.tool_offset_z_button.clicked.connect(self.main_window.switch_to_tool_offset_z)
-        
+
         if self.tool_offset_xy_button:
             self.tool_offset_xy_button.clicked.connect(self.main_window.switch_to_tool_offset_xy)
-        
+
         if self.idex_calibration_wizard_button:
             self.idex_calibration_wizard_button.clicked.connect(self.main_window.switch_to_idex_calibration_wizard)
-        
+
         if self.back_button:
             self.back_button.clicked.connect(self.main_window.switch_to_previous_screen)
-    
-    def open_bed_leveling(self):
-        # The calibration wizard is actually the bed leveling wizard in the original code
+
+    def navigate_to_bed_leveling(self):
+        """Navigate to the BedLeveling page."""
         self.main_window.switch_to_bed_leveling()
-        print("Bed leveling (calibration wizard) button clicked")
+        print("Navigating to BedLeveling page")
