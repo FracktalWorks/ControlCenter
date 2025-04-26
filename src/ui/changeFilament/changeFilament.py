@@ -151,4 +151,6 @@ class ChangeFilament(QWidget):
     def finish_unloading_filament(self):
         """Finish the filament unloading process."""
         print("Filament unloading process finished")
+        if self.stackedWidget and self.changeFilamentPage:
+            self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
         self.main_window.switch_to_previous_screen()

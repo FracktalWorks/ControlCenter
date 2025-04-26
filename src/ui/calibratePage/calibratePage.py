@@ -68,7 +68,7 @@ class CalibratePage(QWidget):
             self.tool_offset_xy_button.clicked.connect(self._navigate_to_tool_offset_xy)
 
         if self.idex_calibration_wizard_button:
-            self.idex_calibration_wizard_button.clicked.connect(self.main_window.switch_to_idex_calibration_wizard)
+            self.idex_calibration_wizard_button.clicked.connect(self.navigate_to_idex_calibration)
 
         if self.back_button:
             self.back_button.clicked.connect(self._handle_back_button)
@@ -92,6 +92,15 @@ class CalibratePage(QWidget):
         self.main_window.switch_to_menu_screen()
 
     def navigate_to_bed_leveling(self):
-        """Navigate to the BedLeveling page."""
+        """Navigate to the BedLeveling page and reset to the first step."""
         self.main_window.switch_to_bed_leveling()
-        print("Navigating to BedLeveling page")
+        if self.main_window.bed_leveling_screen.stackedWidget:
+            self.main_window.bed_leveling_screen.stackedWidget.setCurrentIndex(0)
+        print("Navigating to BedLeveling page and resetting to the first step")
+
+    def navigate_to_idex_calibration(self):
+        """Navigate to the IDEX Calibration Wizard page and reset to the first step."""
+        self.main_window.switch_to_idex_calibration_wizard()
+        if self.main_window.idex_calibration_screen.stackedWidget:
+            self.main_window.idex_calibration_screen.stackedWidget.setCurrentIndex(0)
+        print("Navigating to IDEX Calibration Wizard page and resetting to the first step")

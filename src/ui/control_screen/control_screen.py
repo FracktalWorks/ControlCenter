@@ -1,5 +1,5 @@
 from PyQt5 import uic
-from PyQt5.QtWidgets import QWidget, QPushButton, QSpinBox, QTabWidget, QToolButton
+from PyQt5.QtWidgets import QWidget, QPushButton, QSpinBox, QTabWidget, QToolButton, QStackedWidget
 from utils.helpers import check_ui_elements
 
 class ControlScreen(QWidget):
@@ -147,7 +147,17 @@ class ControlScreen(QWidget):
         if self.fanOffButton:
             self.fanOffButton.clicked.connect(self.turn_fan_off)
         
+        # Connect change filament button
+        if self.changeFilamentButton:
+            self.changeFilamentButton.clicked.connect(self.navigate_to_change_filament)
+        
         # Add more button connections here as needed...
+
+    def navigate_to_change_filament(self):
+        """Navigate to the change filament page."""
+        if hasattr(self.main_window, 'reset_change_filament_process'):
+            self.main_window.reset_change_filament_process()
+        self.main_window.switch_to_change_filament_screen()
 
     def set_feed_rate(self):
         """Set the feed rate based on the spin box value."""
@@ -176,3 +186,10 @@ class ControlScreen(QWidget):
     def turn_fan_off(self):
         """Turn the fan off."""
         print("Fan turned off")
+
+    # def open_change_filament_ui(self):
+    #     """Navigate to the change filament UI."""
+    #     # Assuming main_window has a QStackedWidget to manage screens
+    #     stacked_widget = self.main_window.findChild(QStackedWidget, 'stackedWidget')
+    #     if stacked_widget:
+    #         stacked_widget.setCurrentIndex(stacked_widget.indexOf(self.main_window.change_filament_screen))
