@@ -70,19 +70,19 @@ class ToolOffset(QWidget):
     def _connect_buttons(self):
         """Connect buttons with safety checks"""
         if self.toolOffsetXYBackButton:
-            self.toolOffsetXYBackButton.clicked.connect(self.main_window.switch_to_previous_screen)
-        
+            self.toolOffsetXYBackButton.clicked.connect(self.main_window.switch_to_calibrate_screen)
+
         if self.toolOffsetXSetButton:
             self.toolOffsetXSetButton.clicked.connect(self.set_tool_offset_x)
-        
+
         if self.toolOffsetYSetButton:
             self.toolOffsetYSetButton.clicked.connect(self.set_tool_offset_y)
-        
+
         if self.toolOffsetZSetButton:
             self.toolOffsetZSetButton.clicked.connect(self.set_tool_offset_z)
-        
+
         if self.toolOffsetZBackButton:
-            self.toolOffsetZBackButton.clicked.connect(self.go_to_xy_page)
+            self.toolOffsetZBackButton.clicked.connect(self.main_window.switch_to_calibrate_screen)
 
     def set_tool_offset_x(self):
         """Set the X offset for the tool."""
@@ -108,8 +108,7 @@ class ToolOffset(QWidget):
         else:
             print("Z offset spin box not found")
 
-    def go_to_xy_page(self):
-        """Navigate back to the XY offset page."""
-        print("Navigating to XY Offset Page")
-        if self.stackedWidget and self.toolOffsetXYPage:
-            self.stackedWidget.setCurrentWidget(self.toolOffsetXYPage)
+    # def go_to_calibrate_page(self):
+    #     """Navigate back to the CalibratePage."""
+    #     print("Navigating back to CalibratePage")
+    #     self.main_window.switch_to_calibrate_screen()

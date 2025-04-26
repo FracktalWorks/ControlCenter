@@ -71,10 +71,10 @@ class TestPrintPage(QWidget):
             self.testPrintsNextButton.clicked.connect(self.main_window.switch_to_next_screen)
         
         if self.testPrintsBackButton:
-            self.testPrintsBackButton.clicked.connect(self.main_window.switch_to_previous_screen)
+            self.testPrintsBackButton.clicked.connect(self._handle_back_button)
         
         if self.testPrintsCancelButton:
-            self.testPrintsCancelButton.clicked.connect(self.main_window.switch_to_previous_screen)
+            self.testPrintsCancelButton.clicked.connect(self._handle_back_button)
         
         if self.singleNozzlePrintButton:
             self.singleNozzlePrintButton.clicked.connect(self.single_nozzle_test_print)
@@ -90,6 +90,12 @@ class TestPrintPage(QWidget):
         
         if self.bedLevelPrintButton:
             self.bedLevelPrintButton.clicked.connect(self.bed_leveling_print)
+
+    def _handle_back_button(self):
+        """Handle back button logic and reset stacked widget if necessary."""
+        if self.stackedWidget:
+            self.stackedWidget.setCurrentIndex(0)
+        self.main_window.switch_to_previous_screen()
 
     def single_nozzle_test_print(self):
         """Logic for single nozzle test print."""

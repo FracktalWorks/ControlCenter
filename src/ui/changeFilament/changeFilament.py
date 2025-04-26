@@ -84,8 +84,14 @@ class ChangeFilament(QWidget):
     def _connect_buttons(self):
         """Connect buttons with safety checks"""
         if self.changeFilamentBackButton:
-            self.changeFilamentBackButton.clicked.connect(self.main_window.switch_to_previous_screen)
-        
+            self.changeFilamentBackButton.clicked.connect(self._handle_back_button)
+
+        if self.changeFilamentBackButton2:
+            self.changeFilamentBackButton2.clicked.connect(self._handle_back_button)
+
+        if self.changeFilamentBackButton3:
+            self.changeFilamentBackButton3.clicked.connect(self._handle_back_button)
+
         if self.changeFilamentLoadButton:
             self.changeFilamentLoadButton.clicked.connect(self.start_loading_filament)
         
@@ -95,12 +101,6 @@ class ChangeFilament(QWidget):
         if self.toolToggleChangeFilamentButton:
             self.toolToggleChangeFilamentButton.clicked.connect(self.toggle_tool)
         
-        if self.changeFilamentBackButton2:
-            self.changeFilamentBackButton2.clicked.connect(self.main_window.switch_to_previous_screen)
-        
-        if self.changeFilamentBackButton3:
-            self.changeFilamentBackButton3.clicked.connect(self.main_window.switch_to_previous_screen)
-        
         if self.loadedTillExtruderButton:
             self.loadedTillExtruderButton.clicked.connect(self.filament_loaded_till_extruder)
         
@@ -109,6 +109,12 @@ class ChangeFilament(QWidget):
         
         if self.unloadDoneButton:
             self.unloadDoneButton.clicked.connect(self.finish_unloading_filament)
+
+    def _handle_back_button(self):
+        """Handle back button logic and reset stacked widget if necessary."""
+        if self.stackedWidget:
+            self.stackedWidget.setCurrentIndex(0)
+        self.main_window.switch_to_previous_screen()
 
     def start_loading_filament(self):
         """Start the filament loading process."""

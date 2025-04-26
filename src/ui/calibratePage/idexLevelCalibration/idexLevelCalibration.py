@@ -151,4 +151,6 @@ class IdexLevelCalibration(QWidget):
     def cancel_calibration(self):
         """Cancel the IDEX calibration process."""
         print("IDEX Calibration process canceled")
+        if self.stackedWidget:
+            self.stackedWidget.setCurrentIndex(0)
         self.main_window.switch_to_previous_screen()

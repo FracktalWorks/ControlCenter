@@ -116,6 +116,10 @@ class MainWindow(QMainWindow):
         else:
             # Default to home screen if no history exists
             self.switch_to_home_screen()
+
+        # Ensure the stacked widget's current page is updated for multi-step wizards
+        if hasattr(self.current_screen, 'stackedWidget') and self.current_screen.stackedWidget:
+            self.current_screen.stackedWidget.setCurrentIndex(0)
             
     def switch_to_next_screen(self):
         """Used in multi-step flows like wizards to go to the next screen."""
@@ -176,4 +180,6 @@ class MainWindow(QMainWindow):
         # Placeholder if you implement this screen later
         print("Input Shaper Calibration not yet implemented")
         # self.switch_screen(self.input_shaper_screen)
+
+
 

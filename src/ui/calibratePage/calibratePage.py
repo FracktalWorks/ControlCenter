@@ -59,19 +59,37 @@ class CalibratePage(QWidget):
             self.input_shaper_calibrate_button.clicked.connect(self.main_window.switch_to_input_shaper_calibration)
 
         if self.nozzle_offset_button:
-            self.nozzle_offset_button.clicked.connect(self.main_window.switch_to_nozzle_offset)
+            self.nozzle_offset_button.clicked.connect(self._navigate_to_nozzle_offset)
 
         if self.tool_offset_z_button:
-            self.tool_offset_z_button.clicked.connect(self.main_window.switch_to_tool_offset_z)
+            self.tool_offset_z_button.clicked.connect(self._navigate_to_tool_offset_z)
 
         if self.tool_offset_xy_button:
-            self.tool_offset_xy_button.clicked.connect(self.main_window.switch_to_tool_offset_xy)
+            self.tool_offset_xy_button.clicked.connect(self._navigate_to_tool_offset_xy)
 
         if self.idex_calibration_wizard_button:
             self.idex_calibration_wizard_button.clicked.connect(self.main_window.switch_to_idex_calibration_wizard)
 
         if self.back_button:
-            self.back_button.clicked.connect(self.main_window.switch_to_previous_screen)
+            self.back_button.clicked.connect(self._handle_back_button)
+
+    def _navigate_to_nozzle_offset(self):
+        """Navigate to the Nozzle Offset page and update history."""
+        self.main_window.switch_screen(self.main_window.nozzle_offset_screen)
+
+    def _navigate_to_tool_offset_z(self):
+        """Navigate to the Tool Offset Z page and update history."""
+        self.main_window.switch_screen(self.main_window.tool_offset_screen)
+        self.main_window.tool_offset_screen.stackedWidget.setCurrentWidget(self.main_window.tool_offset_screen.toolOffsetZPage)
+
+    def _navigate_to_tool_offset_xy(self):
+        """Navigate to the Tool Offset XY page and update history."""
+        self.main_window.switch_screen(self.main_window.tool_offset_screen)
+        self.main_window.tool_offset_screen.stackedWidget.setCurrentWidget(self.main_window.tool_offset_screen.toolOffsetXYPage)
+
+    def _handle_back_button(self):
+        """Handle back button logic for CalibratePage."""
+        self.main_window.switch_to_menu_screen()
 
     def navigate_to_bed_leveling(self):
         """Navigate to the BedLeveling page."""
