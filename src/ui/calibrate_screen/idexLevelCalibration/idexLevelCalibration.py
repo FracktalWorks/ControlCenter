@@ -131,3 +131,8 @@ class IdexLevelCalibration(QWidget):
             self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
                 self.main_window.calibrate_screen.main_calibrate_page)
             print("Returning to main calibration page from IDEX calibration")
+    
+    def reset_wizard(self):
+        """Reset the IDEX Level Calibration wizard to its initial state."""
+        self._navigate_to_step(1)
+        print("IDEX Level Calibration wizard reset to initial state")

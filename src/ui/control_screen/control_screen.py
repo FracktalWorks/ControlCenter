@@ -397,8 +397,9 @@ class ControlScreen(QWidget):
             # Add implementation to control the printer
     
     def navigate_to_change_filament(self):
-        """Open the change filament screen"""
+        """Open the change filament screen and reset the wizard."""
         self.logger.info("Navigating to change filament screen")
+        self.main_window.change_filament_screen.reset_wizard()
         self.main_window.switch_to_change_filament_screen()
     
     def toggle_filament_sensor(self):

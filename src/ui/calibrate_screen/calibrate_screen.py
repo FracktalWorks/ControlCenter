@@ -143,7 +143,7 @@ class CalibrateScreen(QWidget):
         for name, info in self.tool_buttons.items():
             button = info["instance"]
             target = info["target"]
-            
+
             if button:
                 if target == "input_shaper":
                     button.clicked.connect(self._input_shaper_not_implemented)
@@ -151,10 +151,14 @@ class CalibrateScreen(QWidget):
                     button.clicked.connect(self._show_tool_offset_z)
                 elif target == "tool_offset_xy":
                     button.clicked.connect(self._show_tool_offset_xy)
+                elif target == "bed_leveling":
+                    button.clicked.connect(self.navigate_to_bed_leveling)
+                elif target == "idex_calibration":
+                    button.clicked.connect(self.navigate_to_idex_calibration)
                 else:
-                    button.clicked.connect(lambda checked=False, t=target: self.show_calibrate_screen(t))
+                    button.clicked.connect(lambda t=target: self.show_calibrate_screen(t))
                 logger.debug(f"Connected {name} to handler for {target}")
-        
+
         # Connect push buttons
         for name, info in self.push_buttons.items():
             button = info["instance"]
@@ -242,3 +246,33 @@ class CalibrateScreen(QWidget):
             logger.debug(f"On sub-screen, returning to main calibration page")
             self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
             logger.debug(f"After navigation: Current widget is now {self.calibration_stacked_widget.currentWidget().objectName()}")
+
+    def navigate_to_bed_leveling(self):
+        """Open the Bed Leveling screen and reset the wizard."""
+        logger.info("Navigating to Bed Leveling screen")
+        bed_leveling_screen = self.screens.get("bed_leveling")
+        if bed_leveling_screen:
+            bed_leveling_screen.reset_wizard()
+        self._reset_and_show_screen("bed_leveling")
+
+    def navigate_to_idex_calibration(self):
+        """Open the IDEX Level Calibration screen and reset the wizard."""
+        logger.info("Navigating to IDEX Level Calibration screen")
+        idex_calibration_screen = self.screens.get("idex_calibration")
+        if idex_calibration_screen:
+            idex_calibration_screen.reset_wizard()
+        self._reset_and_show_screen("idex_calibration")
+
+    def _reset_and_show_screen(self, screen_name):
+        """Reset the wizard and show the specified screen.
+
+        Args:
+            screen_name (str): The name of the screen to reset and display.
+        """
+        screen = self.screens.get(screen_name)
+        if screen and hasattr(screen, "reset_wizard"):
+            screen.reset_wizard()
+        
+        if self.calibration_stacked_widget and screen:
+            self.calibration_stacked_widget.setCurrentWidget(screen)
+            logger.info(f"Navigated to {screen_name}")

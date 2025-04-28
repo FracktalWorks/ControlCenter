@@ -222,3 +222,8 @@ class BedLeveling(QWidget):
         self.logger.info("Moving Z-axis -0.1mm for calibration")
         # Actual implementation would send commands to the printer
         # Example: self.main_window.octoprint_client.move_z(amount=-0.1)
+
+    def reset_wizard(self):
+        """Reset the Bed Leveling wizard to its initial state."""
+        self._navigate_to_page("quickStep1Page")
+        self.logger.info("Bed Leveling wizard reset to initial state")

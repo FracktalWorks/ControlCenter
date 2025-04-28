@@ -232,3 +232,13 @@ class ChangeFilament(QWidget):
         # Return to initial page before going back
         self._show_page('changeFilamentPage')
         self.main_window.switch_to_previous_screen()
+
+    def reset_wizard(self):
+        """Reset the Change Filament wizard to its initial state."""
+        # Reset to the first page
+        self._show_page('changeFilamentPage')
+        
+        # Clear the status message
+        self._update_status("")
+        
+        self.logger.info("Change Filament wizard reset to initial state")
