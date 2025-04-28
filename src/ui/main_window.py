@@ -5,13 +5,7 @@ from ui.menu_screen.menu_screen import MenuScreen
 from ui.settings_screen.settings_screen import SettingsScreen
 from ui.control_screen.control_screen import ControlScreen
 from ui.print_from_location.print_from_location import PrintFromLocation
-from ui.control_screen.changeFilament.changeFilament import ChangeFilament
 from ui.calibrate_screen.calibrate_screen import CalibrateScreen
-from ui.calibrate_screen.nozzleOffsetPage.nozzleOffsetPage import NozzleOffsetPage
-from ui.calibrate_screen.toolOffset.toolOffset import ToolOffset
-from ui.calibrate_screen.bedLevelingPage.bedLevelingPage import BedLeveling
-from ui.calibrate_screen.idexLevelCalibration.idexLevelCalibration import IdexLevelCalibration
-from ui.calibrate_screen.testPrintPage.testPrintPage import TestPrintPage
 from utils import logger
 import ui.resources.resource_rc  # Ensure resources are loaded
 
@@ -43,7 +37,6 @@ class MainWindow(QMainWindow):
             self.load_settings_screen()
             self.load_control_screen()
             self.load_print_location_screen()
-            self.load_change_filament_screen()
             self.load_calibration_screens()
 
             # Start with the loading screen
@@ -119,40 +112,14 @@ class MainWindow(QMainWindow):
             logger.exception("Failed to load print location screen")
             raise
 
-    def load_change_filament_screen(self):
-        logger.debug("Loading change filament screen")
-        try:
-            self.change_filament_screen = ChangeFilament(self)
-            self.stacked_widget.addWidget(self.change_filament_screen)
-            logger.debug("Change filament screen loaded successfully")
-        except Exception as e:
-            logger.exception("Failed to load change filament screen")
-            raise
-
     def load_calibration_screens(self):
         logger.debug("Loading calibration screens")
         try:
             # Main calibration screen
             self.calibrate_screen = CalibrateScreen(self)
             self.stacked_widget.addWidget(self.calibrate_screen)
-
-            # Calibration sub-screens
-            self.nozzle_offset_screen = NozzleOffsetPage(self)
-            self.stacked_widget.addWidget(self.nozzle_offset_screen)
-
-            self.tool_offset_screen = ToolOffset(self)
-            self.stacked_widget.addWidget(self.tool_offset_screen)
             
-            self.bed_leveling_screen = BedLeveling(self)
-            self.stacked_widget.addWidget(self.bed_leveling_screen)
-            
-            self.idex_calibration_screen = IdexLevelCalibration(self)
-            self.stacked_widget.addWidget(self.idex_calibration_screen)
-            
-            self.test_print_screen = TestPrintPage(self)
-            self.stacked_widget.addWidget(self.test_print_screen)
-            
-            logger.debug("Calibration screens loaded successfully")
+            logger.debug("Calibration screen loaded successfully")
         except Exception as e:
             logger.exception("Failed to load calibration screens")
             raise
@@ -163,7 +130,19 @@ class MainWindow(QMainWindow):
         logger.debug(f"Switching to screen: {widget.__class__.__name__}")
         logger.debug(f"Current screen before switch: {self.current_screen.__class__.__name__ if self.current_screen else None}")
         
-        if self.current_screen is not None:
+        # Check if we're navigating between a main screen and its subscreens
+        is_subscreen_navigation = False
+        
+        # Check if current screen has subscreens and the widget is one of those subscreens
+        if self.current_screen and hasattr(self.current_screen, 'screens'):
+            is_subscreen_navigation = any(widget == subscreen for subscreen in self.current_screen.screens.values())
+        
+        # Check if widget has subscreens and the current_screen is one of those subscreens
+        if widget and hasattr(widget, 'screens') and self.current_screen:
+            is_subscreen_navigation = is_subscreen_navigation or any(self.current_screen == subscreen for subscreen in widget.screens.values())
+        
+        # Only update history if not navigating between a screen and its subscreens
+        if self.current_screen is not None and not is_subscreen_navigation:
             self.screen_history.append(self.current_screen)
             logger.debug(f"Added {self.current_screen.__class__.__name__} to history")
         
@@ -206,51 +185,34 @@ class MainWindow(QMainWindow):
         self.switch_screen(self.home_screen)
 
     def switch_to_loading_screen(self):
+        logger.debug("Switching to loading screen")
         self.switch_screen(self.loading_screen)
 
     def switch_to_menu_screen(self):
+        logger.debug("Switching to menu screen")
         self.switch_screen(self.menu_screen)
 
     def switch_to_settings_screen(self):
+        logger.debug("Switching to settings screen")
         self.switch_screen(self.settings_screen)
 
     def switch_to_control_screen(self):
+        logger.debug("Switching to control screen")
         self.switch_screen(self.control_screen)
 
     def switch_to_print_location_screen(self):
+        logger.debug("Switching to print location screen")
         self.switch_screen(self.print_location_screen)
 
-    def switch_to_change_filament_screen(self):
-        self.switch_screen(self.change_filament_screen)
-
-    # Calibration screen navigation methods
     def switch_to_calibrate_screen(self):
+        logger.debug("Switching to calibration screen")
         self.switch_screen(self.calibrate_screen)
 
-    def switch_to_nozzle_offset(self):
-        self.switch_screen(self.nozzle_offset_screen)
-
-    def switch_to_tool_offset_xy(self):
-        self.switch_screen(self.tool_offset_screen)
-        self.tool_offset_screen.stackedWidget.setCurrentWidget(self.tool_offset_screen.toolOffsetXYPage)
-
-    def switch_to_tool_offset_z(self):
-        self.switch_screen(self.tool_offset_screen)
-        self.tool_offset_screen.stackedWidget.setCurrentWidget(self.tool_offset_screen.toolOffsetZPage)
-
-    def switch_to_bed_leveling(self):
-        self.switch_screen(self.bed_leveling_screen)
-
-    def switch_to_idex_calibration_wizard(self):
-        self.switch_screen(self.idex_calibration_screen)
-
-    def switch_to_test_prints(self):
-        self.switch_screen(self.test_print_screen)
-
-    def switch_to_input_shaper_calibration(self):
-        # Placeholder if you implement this screen later
-        print("Input Shaper Calibration not yet implemented")
-        # self.switch_screen(self.input_shaper_screen)
+    # Delegate subscreen navigation to main screens that contain those subscreens
+    def switch_to_change_filament_screen(self):
+        # Let the ControlScreen handle the navigation to Change Filament
+        if hasattr(self.control_screen, 'open_change_filament_screen'):
+            self.control_screen.open_change_filament_screen()
 
     def show_error_dialog(self, title, message):
         """Display an error dialog with the given title and message."""

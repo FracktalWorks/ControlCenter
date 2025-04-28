@@ -25,33 +25,35 @@ def convert_to_percentage(value, total):
         return 0
     return (value / total) * 100
 
-def check_ui_elements(ui_class, elements_dict, screen_name):
+def check_ui_elements(ui_class, elements_list, screen_name):
     """
-    Check if UI elements exist and print warnings for missing ones.
-    
+    Check if UI elements exist and log warnings for missing ones.
+
     Args:
         ui_class: The class instance containing the UI elements
-        elements_dict: Dictionary of {element_name: element_object}
+        elements_list: List of UI element objects
         screen_name: Name of the screen for logging purposes
-    
-    Returns:
-        A dict containing only the elements that were found (not None)
     """
-    found_elements = {}
+    from utils import logger
     missing_elements = []
     
-    for name, element in elements_dict.items():
+    for element in elements_list:
         if element is None:
-            missing_elements.append(name)
-        else:
-            found_elements[name] = element
+            # Try to find the element's name from ui_class's attributes
+            element_name = "Unknown"
+            for attr_name, attr_value in vars(ui_class).items():
+                if attr_value is None and not attr_name.startswith('_'):
+                    element_name = attr_name
+                    break
+            missing_elements.append(element_name)
     
     if missing_elements:
-        logger.warning(f"The following UI elements are missing from {screen_name}:")
-        for name in missing_elements:
-            logger.warning(f"  - {name}")
-    
-    return found_elements
+        logger.warning(f"Missing UI elements in {screen_name}: {len(missing_elements)}")
+        for element in missing_elements:
+            logger.warning(f"  - {element}")
+    else:
+        pass
+        # logger.info(f"All UI elements validated successfully for {screen_name}")
 
 def run_async(func):
     """
@@ -65,64 +67,3 @@ def run_async(func):
 
     return async_func
 
-
-def getIP(interface):
-    try:
-        scan_result = (
-            subprocess.Popen(
-                "ifconfig | grep " + interface + " -A 1", stdout=subprocess.PIPE, shell=True
-            ).communicate()[0]
-        ).decode("utf-8")
-        rInetAddr = r"inet\s*([\d.]+)"
-        rInet6Addr = r"inet6"
-        mt6Ip = re.search(rInet6Addr, scan_result)
-        mtIp = re.search(rInetAddr, scan_result)
-        if not mt6Ip and mtIp and len(mtIp.groups()) == 1:
-            return str(mtIp.group(1))
-    except Exception as e:
-        logger.error("Error in getIP: {}".format(e))
-        return None
-
-
-def getMac(interface):
-    logger.info("Getting MAC for interface: {}".format(interface))
-    try:
-        mac = subprocess.Popen(
-            " cat /sys/class/net/" + interface + "/address",
-            stdout=subprocess.PIPE,
-            shell=True,
-        ).communicate()[0].rstrip()
-        if not mac:
-            return "Not found"
-        return mac.upper()
-    except Exception as e:
-        logger.error("Error in getMac: {}".format(e))
-        return "Error"
-
-
-def getWifiAp():
-    logger.info("Getting Wifi AP")
-    try:
-        ap = subprocess.Popen(
-            "iwgetid -r", stdout=subprocess.PIPE, shell=True
-        ).communicate()[0].rstrip()
-        if not ap:
-            return "Not connected"
-        return ap.decode("utf-8")
-    except Exception as e:
-        logger.error("Error in getWifiAp: {}".format(e))
-        return "Error"
-
-
-def getHostname():
-    logger.info("Getting Hostname")
-    try:
-        hostname = subprocess.Popen(
-            "cat /etc/hostname", stdout=subprocess.PIPE, shell=True
-        ).communicate()[0].rstrip()
-        if not hostname:
-            return "Not connected"
-        return hostname.decode("utf-8") + ".local"
-    except Exception as e:
-        logger.error("Error in getHostname: {}".format(e))
-        return "Error"

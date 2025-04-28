@@ -124,7 +124,7 @@ QTabBar:focus {
     <enum>QTabWidget::Rounded</enum>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>3</number>
    </property>
    <property name="iconSize">
     <size>
@@ -172,6 +172,7 @@ QTabBar:focus {
       <font>
        <family>Gotham Light</family>
        <pointsize>15</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -497,6 +498,7 @@ QPushButton:focus {
       <font>
        <family>Gotham Light</family>
        <pointsize>15</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -537,6 +539,7 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham Light</family>
        <pointsize>14</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -560,6 +563,7 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham Light</family>
        <pointsize>14</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1125,7 +1129,8 @@ QPushButton:focus {
      </property>
      <property name="icon">
       <iconset resource="../resources/resource.qrc">
-       <normaloff>:/Icons/img/icons/NozzleSelect_0.png</normaloff>:/Icons/img/icons/NozzleSelect_0.png</iconset>
+       <normaloff>:/Icons/img/icons/NozzleSelect_0.png</normaloff>
+       <normalon>:/Icons/img/icons/NozzleSelect_1.png</normalon>:/Icons/img/icons/NozzleSelect_0.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -2327,6 +2332,7 @@ QPushButton:focus {
       <font>
        <family>MS Shell Dlg 2</family>
        <pointsize>20</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -2350,6 +2356,7 @@ QPushButton:focus {
       <font>
        <family>MS Shell Dlg 2</family>
        <pointsize>20</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -2518,6 +2525,7 @@ QPushButton:focus {
       <font>
        <family>MS Shell Dlg 2</family>
        <pointsize>20</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -2541,6 +2549,7 @@ QPushButton:focus {
       <font>
        <family>MS Shell Dlg 2</family>
        <pointsize>20</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -2826,6 +2835,7 @@ QSpinBox::down-button:pressed {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -2913,38 +2923,42 @@ QToolButton :focus {
       </font>
      </property>
      <property name="styleSheet">
-      <string notr="true">QToolButton  {
-     border: 1px solid rgb(87, 87, 87);
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-
-
-}
-
-QToolButton :pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-	/* #dadbde #f6f7fa */
-}
-
-
-QToolButton :flat {
-    border: none; /* no border for a flat push button */
-}
-
-QToolButton :default {
-    border-color: navy; /* make the default button prominent */
-}
-
-QToolButton :focus {
-	outline: none;
-}</string>
+      <string notr="true">            QToolButton {
+                border: 1px solid rgb(87, 87, 87);
+                background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, 
+                                                stop:0 rgba(180, 180, 180, 255), 
+                                                stop:1 rgba(255, 255, 255, 255));
+            }
+            
+            QToolButton:checked {
+                background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                                stop: 0 #dadbde, stop: 1 #f6f7fa);
+            }
+            
+            QToolButton:pressed {
+                background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                                stop: 0 #dadbde, stop: 1 #f6f7fa);
+            }
+            
+            QToolButton:flat {
+                border: none;
+            }
+            
+            QToolButton:default {
+                border-color: navy;
+            }
+            
+            QToolButton:focus {
+                outline: none;
+            }</string>
      </property>
      <property name="text">
-      <string>Toggle Filament Sensor</string>
+      <string>Filament Sensor ON/OFF</string>
      </property>
      <property name="icon">
       <iconset resource="../resources/resource.qrc">
-       <normaloff>:/Icons/img/icons/filamentSensorOn.png</normaloff>:/Icons/img/icons/filamentSensorOn.png</iconset>
+       <normaloff>:/Icons/img/icons/filamentSensorOff.png</normaloff>
+       <normalon>:/Icons/img/icons/filamentSensorOn.png</normalon>:/Icons/img/icons/filamentSensorOff.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -2999,8 +3013,12 @@ QToolButton :focus {
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
     /*border-bottom-right-radius: 15px;*/
 
-
 }
+
+            QToolButton:checked {
+                background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                                stop: 0 #dadbde, stop: 1 #f6f7fa);
+            }
 
 QPushButton:pressed {
     background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,

@@ -13,7 +13,7 @@ import requests
 from PyQt5.QtCore import QThread, pyqtSignal
 
 from utils.logger import setup_logger
-from utils.async_helpers import run_async
+from utils.helpers import run_async
 
 logger = setup_logger()
 

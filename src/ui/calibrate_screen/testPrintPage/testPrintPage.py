@@ -15,155 +15,110 @@ class TestPrintPage(QWidget):
         self.logger = setup_logger('TestPrintPage')
         
         # Load the UI
-        self._load_ui()
-        
-        # Initialize UI components
-        self._initialize_ui_components()
-        
-        # Check if UI elements exist and report missing ones
-        self._check_widgets_existence()
-        
-        # Connect signals to slots
-        self._connect_buttons()
-
-        # Set the default screen to second page
-        self._navigate_to_page("testPrintPage2")
-
-    def _load_ui(self):
         """Load the UI file with proper error handling"""
         try:
             uic.loadUi('src/ui/calibrate_screen/testPrintPage/testPrintPage.ui', self)
             self.logger.info("TestPrintPage UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load TestPrintPage UI file: {e}", exc_info=True)
-
-    def _initialize_ui_components(self):
-        """Initialize all UI components with proper typing using dictionaries for organization"""
+        
+        # Initialize UI components
         # Container widgets
-        self.container_widgets = {
-            "stackedWidget": {"type": QStackedWidget, "instance": None}
-        }
-        
+        self.stackedWidget = self.findChild(QStackedWidget, "stackedWidget")
+
         # Pages in the stacked widget
-        self.page_widgets = {
-            "testPrintPage1": {"type": QWidget, "instance": None},
-            "testPrintPage2": {"type": QWidget, "instance": None}
-        }
-        
+        self.testPrintPage1 = self.findChild(QWidget, "testPrintPage1")
+        self.testPrintPage2 = self.findChild(QWidget, "testPrintPage2")
+
         # Navigation buttons
-        self.nav_buttons = {
-            "testPrintsNextButton": {"type": QPushButton, "instance": None},
-            "testPrintsBackButton": {"type": QPushButton, "instance": None},
-            "testPrintsCancelButton": {"type": QPushButton, "instance": None}
-        }
-        
+        self.testPrintsNextButton = self.findChild(QPushButton, "testPrintsNextButton")
+        self.testPrintsBackButton = self.findChild(QPushButton, "testPrintsBackButton")
+        self.testPrintsCancelButton = self.findChild(QPushButton, "testPrintsCancelButton")
+
         # Print action buttons
-        self.print_buttons = {
-            "singleNozzlePrintButton": {"type": QPushButton, "instance": None},
-            "movementTestPrintButton": {"type": QPushButton, "instance": None},
-            "dualCaliberationPrintButton": {"type": QPushButton, "instance": None},
-            "dualNozzlePrintButton": {"type": QPushButton, "instance": None},
-            "bedLevelPrintButton": {"type": QPushButton, "instance": None}
-        }
-        
-        # Combine all component dictionaries for easier iteration
-        self.all_components = {}
-        self.all_components.update(self.container_widgets)
-        self.all_components.update(self.page_widgets)
-        self.all_components.update(self.nav_buttons)
-        self.all_components.update(self.print_buttons)
-        
-        # Find all components using the dictionary
-        self._find_components()
-        
-        # Store reference to essential stacked widget for convenience
-        self.stackedWidget = self.container_widgets["stackedWidget"]["instance"]
+        self.singleNozzlePrintButton = self.findChild(QPushButton, "singleNozzlePrintButton")
+        self.movementTestPrintButton = self.findChild(QPushButton, "movementTestPrintButton")
+        self.dualCaliberationPrintButton = self.findChild(QPushButton, "dualCaliberationPrintButton")
+        self.dualNozzlePrintButton = self.findChild(QPushButton, "dualNozzlePrintButton")
+        self.bedLevelPrintButton = self.findChild(QPushButton, "bedLevelPrintButton")
 
-    def _find_components(self):
-        """Find all UI components based on their object names"""
-        for name, component_info in self.all_components.items():
-            component_type = component_info["type"]
-            component = self.findChild(component_type, name)
-            component_info["instance"] = component
-            
-            # Debug output
-            if component:
-                self.logger.debug(f"Found {component_type.__name__} '{name}'")
-            else:
-                self.logger.warning(f"Could not find {component_type.__name__} '{name}' in UI")
+        # Validate all UI elements
+        check_ui_elements(self, [
+            self.stackedWidget, self.testPrintPage1, self.testPrintPage2,
+            self.testPrintsNextButton, self.testPrintsBackButton, self.testPrintsCancelButton,
+            self.singleNozzlePrintButton, self.movementTestPrintButton, self.dualCaliberationPrintButton,
+            self.dualNozzlePrintButton, self.bedLevelPrintButton
+        ], "TestPrintPage UI Elements")
+        
+        
+        # Connect signals to slots
+        if self.testPrintsNextButton:
+            self.testPrintsNextButton.clicked.connect(self._next_page)
 
-    def _check_widgets_existence(self):
-        """Check if UI elements exist and report missing ones"""
-        # Create mappings of component categories for reporting
-        component_groups = {
-            "TestPrintPage - Containers": {name: info["instance"] for name, info in self.container_widgets.items()},
-            "TestPrintPage - Pages": {name: info["instance"] for name, info in self.page_widgets.items()},
-            "TestPrintPage - Navigation Buttons": {name: info["instance"] for name, info in self.nav_buttons.items()},
-            "TestPrintPage - Print Buttons": {name: info["instance"] for name, info in self.print_buttons.items()}
-        }
-        
-        # Check each component group
-        for group_name, components in component_groups.items():
-            check_ui_elements(self, components, group_name)
-    
-    def _connect_buttons(self):
-        """Connect buttons to their respective functions with safety checks"""
-        # Navigation button for going to next screen
-        next_button = self.nav_buttons.get("testPrintsNextButton", {}).get("instance")
-        if next_button:
-            next_button.clicked.connect(self.main_window.switch_to_next_screen)
-            self.logger.debug("Connected next button to switch_to_next_screen")
-        
-        # Navigation buttons for going back/cancel
-        back_button_names = ["testPrintsBackButton", "testPrintsCancelButton"]
-        for button_name in back_button_names:
-            button = self.nav_buttons.get(button_name, {}).get("instance")
-            if button:
-                button.clicked.connect(self._return_to_main_calibration)
-                self.logger.debug(f"Connected {button_name} to return_to_main_calibration")
-            else:
-                self.logger.warning(f"Could not connect {button_name} - button not found")
-        
-        # Print action buttons - map button names to their handler methods
-        button_handlers = {
-            "singleNozzlePrintButton": self._single_nozzle_test_print,
-            "movementTestPrintButton": self._movement_stress_test,
-            "dualCaliberationPrintButton": self._dual_calibration_print,
-            "dualNozzlePrintButton": self._dual_nozzle_test_print,
-            "bedLevelPrintButton": self._bed_leveling_print
-        }
-        
-        # Connect each print button to its handler
-        for button_name, handler in button_handlers.items():
-            button = self.print_buttons.get(button_name, {}).get("instance")
-            if button:
-                button.clicked.connect(handler)
-                self.logger.debug(f"Connected {button_name} to its handler")
-            else:
-                self.logger.warning(f"Could not connect {button_name} - button not found")
+        if self.testPrintsBackButton:
+            self.testPrintsBackButton.clicked.connect(self._return_to_main_calibration)
+
+        if self.testPrintsCancelButton:
+            self.testPrintsCancelButton.clicked.connect(self._return_to_main_calibration)
+
+        if self.singleNozzlePrintButton:
+            self.singleNozzlePrintButton.clicked.connect(self._single_nozzle_test_print)
+
+        if self.movementTestPrintButton:
+            self.movementTestPrintButton.clicked.connect(self._movement_stress_test)
+
+        if self.dualCaliberationPrintButton:
+            self.dualCaliberationPrintButton.clicked.connect(self._dual_calibration_print)
+
+        if self.dualNozzlePrintButton:
+            self.dualNozzlePrintButton.clicked.connect(self._dual_nozzle_test_print)
+
+        if self.bedLevelPrintButton:
+            self.bedLevelPrintButton.clicked.connect(self._bed_leveling_print)
+
+        # Set the default screen to second page
+        self._navigate_to_page("testPrintPage2")
+
 
     def _navigate_to_page(self, page_name):
         """Navigate to a specific page in the stackedWidget"""
         if not self.stackedWidget:
             self.logger.error("Cannot navigate - stacked widget is missing")
             return False
-            
-        target_page = self.page_widgets.get(page_name, {}).get("instance")
-        if target_page:
+        
+        # Use direct attribute access instead of page_widgets dictionary
+        if hasattr(self, page_name):
+            target_page = getattr(self, page_name)
             self.stackedWidget.setCurrentWidget(target_page)
             self.logger.debug(f"Navigating to {page_name}")
             return True
         else:
             self.logger.error(f"Cannot navigate to {page_name} - page not found")
             return False
+            
+    def _next_page(self):
+        """Navigate to the next page if available, or perform another action"""
+        if self.stackedWidget:
+            current_index = self.stackedWidget.currentIndex()
+            if current_index < self.stackedWidget.count() - 1:
+                self.stackedWidget.setCurrentIndex(current_index + 1)
+                self.logger.debug(f"Moving to next test print page: {current_index + 1}")
+            else:
+                self.logger.debug("Already at last test print page")
+        else:
+            self.logger.error("Cannot navigate - stackedWidget is missing")
 
     def _return_to_main_calibration(self):
         """Return to the main calibration page"""
+        self.logger.info("Returning to main calibration page from test prints")
         if hasattr(self.main_window, 'calibrate_screen'):
-            # Use the standard navigation logic in CalibrateScreen
-            self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
-                self.main_window.calibrate_screen.main_calibrate_page)
-            self.logger.info("Returning to main calibration page from test prints")
+            if hasattr(self.main_window.calibrate_screen, 'calibration_stacked_widget') and \
+               hasattr(self.main_window.calibrate_screen, 'main_calibrate_page'):
+                self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
+                    self.main_window.calibrate_screen.main_calibrate_page)
+                self.logger.debug("Successfully returned to main calibration page")
+            else:
+                self.logger.error("Cannot return to main calibration - required widgets not found")
         else:
             self.logger.error("Cannot return to main calibration - main_window.calibrate_screen not found")
 

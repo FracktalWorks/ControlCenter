@@ -11,102 +11,59 @@ class MenuScreen(QWidget):
         # Setup logger
         self.logger = setup_logger('menu_screen')
 
-        # Load the UI
-        self._load_ui()
-        
-        # Initialize UI components
-        self._initialize_ui_components()
-        
-        # Check if UI elements exist and report missing ones
-        self._check_widgets_existence()
-        
-        # Connect signals to slots
-        self._connect_buttons()
-
-    def _load_ui(self):
-        """Load the UI file with proper error handling"""
+        # Load the UI with proper error handling
         try:
             uic.loadUi('src/ui/menu_screen/menu_screen.ui', self)
             self.logger.info("MenuScreen UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load MenuScreen UI file: {e}")
-
-    def _initialize_ui_components(self):
-        """Initialize all UI components with proper typing using dictionaries for organization"""
+            
+        # Initialize UI components directly
         # Navigation tool buttons
-        self.tool_buttons = {
-            "menuPrintButton": {"type": QToolButton, "instance": None},
-            "menuControlButton": {"type": QToolButton, "instance": None},
-            "menuCalibrateButton": {"type": QToolButton, "instance": None},
-            "menuCartButton": {"type": QToolButton, "instance": None},
-            "menuSettingsButton": {"type": QToolButton, "instance": None}
-        }
+        self.menuPrintButton = self.findChild(QToolButton, "menuPrintButton")
+        self.menuControlButton = self.findChild(QToolButton, "menuControlButton")
+        self.menuCalibrateButton = self.findChild(QToolButton, "menuCalibrateButton")
+        self.menuCartButton = self.findChild(QToolButton, "menuCartButton")
+        self.menuSettingsButton = self.findChild(QToolButton, "menuSettingsButton")
         
         # Basic navigation buttons
-        self.push_buttons = {
-            "menuBackButton": {"type": QPushButton, "instance": None}
-        }
+        self.menuBackButton = self.findChild(QPushButton, "menuBackButton")
         
-        # Combine all component dictionaries for easier iteration
-        self.all_components = {}
-        self.all_components.update(self.tool_buttons)
-        self.all_components.update(self.push_buttons)
-        
-        # Find all components using the dictionary
-        self._find_components()
-
-    def _find_components(self):
-        """Find all UI components based on their object names"""
-        for name, component_info in self.all_components.items():
-            component_type = component_info["type"]
-            component = self.findChild(component_type, name)
-            component_info["instance"] = component
-            
-            # Store a direct reference for easy access
-            setattr(self, name, component)
-            
-            # Debug output
-            if component:
-                self.logger.debug(f"Found {component_type.__name__} '{name}'")
-            else:
-                self.logger.warning(f"Could not find {component_type.__name__} '{name}' in UI")
-
-    def _check_widgets_existence(self):
-        """Check if UI elements exist and report missing ones"""
-        # Create mappings of component categories for reporting
-        component_groups = {
-            "MenuScreen - Tool Buttons": {name: info["instance"] for name, info in self.tool_buttons.items()},
-            "MenuScreen - Push Buttons": {name: info["instance"] for name, info in self.push_buttons.items()}
-        }
-        
-        # Check each component group
-        for group_name, components in component_groups.items():
-            check_ui_elements(self, components, group_name)
-    
-    def _connect_buttons(self):
-        """Connect buttons to their respective functions with safety checks"""
-        # Map buttons to their handler functions
-        button_connections = [
-            {"dict": self.tool_buttons, "name": "menuPrintButton", "handler": self.open_print},
-            {"dict": self.tool_buttons, "name": "menuControlButton", "handler": self.open_control},
-            {"dict": self.tool_buttons, "name": "menuCalibrateButton", "handler": self.open_calibrate},
-            {"dict": self.tool_buttons, "name": "menuCartButton", "handler": self.open_cart},
-            {"dict": self.tool_buttons, "name": "menuSettingsButton", "handler": self.open_settings},
-            {"dict": self.push_buttons, "name": "menuBackButton", "handler": self.go_back}
+        # Validate UI components with the simplified check_ui_elements function
+        all_ui_elements = [
+            self.menuPrintButton,
+            self.menuControlButton, 
+            self.menuCalibrateButton,
+            self.menuCartButton,
+            self.menuSettingsButton,
+            self.menuBackButton
         ]
+        check_ui_elements(self, all_ui_elements, "MenuScreen")
         
-        # Connect each button to its handler with safety check
-        for connection in button_connections:
-            button_dict = connection["dict"]
-            button_name = connection["name"]
-            handler = connection["handler"]
+        # Connect buttons to their respective methods directly
+        if self.menuPrintButton:
+            self.menuPrintButton.clicked.connect(self.open_print)
+            self.logger.debug("Connected menuPrintButton to handler")
             
-            button = button_dict.get(button_name, {}).get("instance")
-            if button:
-                button.clicked.connect(handler)
-                self.logger.debug(f"Connected {button_name} to handler")
-            else:
-                self.logger.warning(f"Could not connect {button_name} - button not found")
+        if self.menuControlButton:
+            self.menuControlButton.clicked.connect(self.open_control)
+            self.logger.debug("Connected menuControlButton to handler")
+            
+        if self.menuCalibrateButton:
+            self.menuCalibrateButton.clicked.connect(self.open_calibrate)
+            self.logger.debug("Connected menuCalibrateButton to handler")
+            
+        if self.menuCartButton:
+            self.menuCartButton.clicked.connect(self.open_cart)
+            self.logger.debug("Connected menuCartButton to handler")
+            
+        if self.menuSettingsButton:
+            self.menuSettingsButton.clicked.connect(self.open_settings)
+            self.logger.debug("Connected menuSettingsButton to handler")
+            
+        if self.menuBackButton:
+            self.menuBackButton.clicked.connect(self.go_back)
+            self.logger.debug("Connected menuBackButton to handler")
 
     def open_print(self):
         """Navigate to the print location screen"""

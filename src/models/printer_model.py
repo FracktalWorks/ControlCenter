@@ -6,7 +6,7 @@ import time
 from PyQt5.QtCore import QObject, pyqtSignal
 from utils.logger import setup_logger
 
-logger = setup_logger()
+logger = setup_logger("printer_model")
 
 class PrinterModel(QObject):
     """

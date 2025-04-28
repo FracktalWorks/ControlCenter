@@ -2,7 +2,7 @@ from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QLabel, QProgressBar
 from PyQt5.QtCore import QTimer
 from utils.helpers import check_ui_elements
-from models.printer_status import PrinterStatus  # Import the printer status model
+from models.printer_model import PrinterModel  # Import the printer status model
 from utils import logger  # Import the logger
 from utils.styles import printer_status_green, printer_status_red, printer_status_amber
 
@@ -23,115 +23,59 @@ class HomeScreen(QWidget):
         self.time_left = "00:00:00"
 
         # Load the UI
-        self._load_ui()
-        
-        # Initialize UI components
-        self._initialize_ui_components()
-        
-        # Check if UI elements exist and report missing ones
-        self._check_widgets_existence()
-        
-        # Connect signals to slots
-        self._connect_signals()
-        
-        # Set up update timer
-        self._setup_update_timer()
-
-    def _load_ui(self):
-        """Load the UI file with proper error handling"""
         try:
             uic.loadUi('src/ui/home_screen/home_screen.ui', self)
             logger.info("HomeScreen UI loaded successfully")
         except Exception as e:
             logger.exception(f"Failed to load HomeScreen UI file: {e}")
-
-    def _initialize_ui_components(self):
-        """Initialize all UI components with proper typing using dictionaries for organization"""
-        # Define component mappings by type
-        self.control_buttons = {
-            # Control buttons (by type and name)
-            "doorLockButton": {"type": QToolButton, "instance": None},
-            "menuButton": {"type": QPushButton, "instance": None},
-            "stopButton": {"type": QPushButton, "instance": None},
-            "playPauseButton": {"type": QPushButton, "instance": None},
-            "controlButton": {"type": QPushButton, "instance": None},
-        }
         
-        self.temperature_displays = {
-            # Tool 0
-            "tool0TargetTemperature": {"type": QLabel, "instance": None},
-            "tool0ActualTemperature": {"type": QLabel, "instance": None},
-            "tool0TempBar": {"type": QProgressBar, "instance": None},
-            
-            # Tool 1
-            "tool1TargetTemperature": {"type": QLabel, "instance": None},
-            "tool1ActualTemperature": {"type": QLabel, "instance": None},
-            "tool1TempBar": {"type": QProgressBar, "instance": None},
-            
-            # Bed
-            "bedTargetTemperature": {"type": QLabel, "instance": None},
-            "bedActualTemperatute": {"type": QLabel, "instance": None},
-            "bedTempBar": {"type": QProgressBar, "instance": None},
-        }
-        
-        self.status_components = {
-            # Status components
-            "printerStatus": {"type": QLabel, "instance": None},
-            "printerStatusColour": {"type": QLabel, "instance": None},
-            "ipStatus": {"type": QLabel, "instance": None},
-        }
-        
-        self.print_info_components = {
-            # Print information
-            "fileName": {"type": QLabel, "instance": None},
-            "printTime": {"type": QLabel, "instance": None},
-            "timeLeft": {"type": QLabel, "instance": None},
-            "printProgressBar": {"type": QProgressBar, "instance": None},
-            "printPreviewMain": {"type": QLabel, "instance": None},
-        }
-        
-        # Combine all component dictionaries for easier iteration
-        self.all_components = {}
-        self.all_components.update(self.control_buttons)
-        self.all_components.update(self.temperature_displays)
-        self.all_components.update(self.status_components)
-        self.all_components.update(self.print_info_components)
-        
-        # Find all components using the dictionary
-        self._find_components()
-        
-        # Initial UI state
-        self._update_temperature_displays()
-        self._update_print_info()
-        self._update_printer_status("Disconnected")
-        
-    def _find_components(self):
-        """Find all UI components based on their object names"""
-        for name, component_info in self.all_components.items():
-            component_type = component_info["type"]
-            component = self.findChild(component_type, name)
-            component_info["instance"] = component
-            
-            # Store a direct reference for easy access
-            setattr(self, name, component)
-            
-            # Debug output
-            if component:
-                logger.debug(f"Found {component_type.__name__} '{name}'")
-            else:
-                logger.warning(f"Could not find {component_type.__name__} '{name}' in UI")
-
-    def _check_widgets_existence(self):
-        """Check if UI elements exist and report missing ones"""
-        # Create a dictionary with component name to instance mapping
-        ui_components = {name: info["instance"] for name, info in self.all_components.items()}
-        
-        # Use the helper function to check and report missing widgets
-        check_ui_elements(self, ui_components, "HomeScreen")
-    
-    def _connect_signals(self):
-        """Connect UI signals to their handlers with safety checks"""
+        # Initialize UI components by group
         # Control buttons
+        self.doorLockButton = self.findChild(QToolButton, "doorLockButton")
+        self.menuButton = self.findChild(QPushButton, "menuButton")
+        self.stopButton = self.findChild(QPushButton, "stopButton")
+        self.playPauseButton = self.findChild(QPushButton, "playPauseButton")
+        self.controlButton = self.findChild(QPushButton, "controlButton")
+        
+        # Temperature displays - Tool 0
+        self.tool0TargetTemperature = self.findChild(QLabel, "tool0TargetTemperature")
+        self.tool0ActualTemperature = self.findChild(QLabel, "tool0ActualTemperature")
+        self.tool0TempBar = self.findChild(QProgressBar, "tool0TempBar")
+        
+        # Temperature displays - Tool 1
+        self.tool1TargetTemperature = self.findChild(QLabel, "tool1TargetTemperature")
+        self.tool1ActualTemperature = self.findChild(QLabel, "tool1ActualTemperature")
+        self.tool1TempBar = self.findChild(QProgressBar, "tool1TempBar")
+        
+        # Temperature displays - Bed
+        self.bedTargetTemperature = self.findChild(QLabel, "bedTargetTemperature")
+        self.bedActualTemperatute = self.findChild(QLabel, "bedActualTemperatute")
+        self.bedTempBar = self.findChild(QProgressBar, "bedTempBar")
+        
+        # Status components
+        self.printerStatus = self.findChild(QLabel, "printerStatus")
+        self.printerStatusColour = self.findChild(QLabel, "printerStatusColour")
+        self.ipStatus = self.findChild(QLabel, "ipStatus")
+        
+        # Print information
+        self.fileName = self.findChild(QLabel, "fileName")
+        self.printTime = self.findChild(QLabel, "printTime")
+        self.timeLeft = self.findChild(QLabel, "timeLeft")
+        self.printProgressBar = self.findChild(QProgressBar, "printProgressBar")
+        self.printPreviewMain = self.findChild(QLabel, "printPreviewMain")
+        
+        # Validate UI components
+        all_components = [
+            self.doorLockButton, self.menuButton, self.stopButton, self.playPauseButton, self.controlButton,
+            self.tool0TargetTemperature, self.tool0ActualTemperature, self.tool0TempBar,
+            self.tool1TargetTemperature, self.tool1ActualTemperature, self.tool1TempBar,
+            self.bedTargetTemperature, self.bedActualTemperatute, self.bedTempBar,
+            self.printerStatus, self.printerStatusColour, self.ipStatus,
+            self.fileName, self.printTime, self.timeLeft, self.printProgressBar, self.printPreviewMain
+        ]
+        check_ui_elements(self, all_components, "HomeScreen")
+        
+        # Connect button signals to their handlers
         if self.doorLockButton:
             self.doorLockButton.clicked.connect(self.toggle_door_lock)
         
@@ -146,13 +90,50 @@ class HomeScreen(QWidget):
         
         if self.controlButton:
             self.controlButton.clicked.connect(self.open_control_panel)
-
-    def _setup_update_timer(self):
-        """Set up timer for periodic UI updates"""
+        
+        # Initialize UI state
+        # Update temperature displays
+        if self.tool0ActualTemperature and self.tool0TargetTemperature:
+            self.tool0ActualTemperature.setText("0.0")
+            self.tool0TargetTemperature.setText("0.0")
+            if self.tool0TempBar:
+                self.tool0TempBar.setValue(0)
+        
+        if self.tool1ActualTemperature and self.tool1TargetTemperature:
+            self.tool1ActualTemperature.setText("0.0")
+            self.tool1TargetTemperature.setText("0.0")
+            if self.tool1TempBar:
+                self.tool1TempBar.setValue(0)
+        
+        if self.bedActualTemperatute and self.bedTargetTemperature:
+            self.bedActualTemperatute.setText("0.0")
+            self.bedTargetTemperature.setText("0.0")
+            if self.bedTempBar:
+                self.bedTempBar.setValue(0)
+        
+        # Update print info
+        if self.fileName:
+            self.fileName.setText(self.current_file)
+        if self.printTime:
+            self.printTime.setText(self.print_time)
+        if self.timeLeft:
+            self.timeLeft.setText(self.time_left)
+        if self.printProgressBar:
+            self.printProgressBar.setValue(self.print_progress)
+        
+        # Update printer status
+        if self.printerStatus:
+            self.printerStatus.setText("Disconnected")
+        if self.printerStatusColour:
+            self.printerStatusColour.setStyleSheet(printer_status_red)
+        if self.ipStatus:
+            self.ipStatus.setText("Not Connected")
+        
+        # Set up update timer
         self.update_timer = QTimer(self)
         self.update_timer.timeout.connect(self.update_ui_from_printer_status)
         self.update_timer.start(1000)  # Update every second
-    
+
     def update_ui_from_printer_status(self):
         """Update UI based on current printer status"""
         if hasattr(self.main_window, 'octoprint_client'):

@@ -16,163 +16,77 @@ class CalibrateScreen(QWidget):
         self.main_window = main_window
 
         # Load the UI
-        self._load_ui()
-        
-        # Initialize UI components
-        self._initialize_ui_components()
-        
-        # Check if UI elements exist and report missing ones
-        self._check_widgets_existence()
-        
-        # Initialize all calibration sub-screens
-        self._initialize_calibration_subscreens()
-        
-        # Connect buttons to their respective functions
-        self._connect_buttons()
-        
-        # Make sure the main calibration page is shown initially
-        self._show_main_page()
-
-    def _load_ui(self):
-        """Load the UI file with proper error handling"""
         try:
             uic.loadUi('src/ui/calibrate_screen/calibrate_screen.ui', self)
             logger.info("CalibrateScreen UI loaded successfully")
         except Exception as e:
             logger.exception(f"Failed to load CalibrateScreen UI file: {e}")
 
-    def _initialize_ui_components(self):
-        """Initialize all UI components with proper typing using dictionaries for organization"""
-        # Container widgets
-        self.container_widgets = {
-            "mainCalibrateStackedWidget": {"type": QStackedWidget, "instance": None},
-            "mainCalibratePage": {"type": QWidget, "instance": None}
-        }
-        
-        # Tool buttons for navigation to calibration sub-screens
-        self.tool_buttons = {
-            "calibrationWizardButton": {"type": QToolButton, "instance": None, "target": "bed_leveling"},
-            "testPrintsButton": {"type": QToolButton, "instance": None, "target": "test_prints"},
-            "inputShaperCalibrateButton": {"type": QToolButton, "instance": None, "target": "input_shaper"},
-            "nozzleOffsetButton": {"type": QToolButton, "instance": None, "target": "nozzle_offset"},
-            "toolOffsetZButton": {"type": QToolButton, "instance": None, "target": "tool_offset_z"},
-            "toolOffsetXYButton": {"type": QToolButton, "instance": None, "target": "tool_offset_xy"},
-            "idexCalibrationWizardButton": {"type": QToolButton, "instance": None, "target": "idex_calibration"}
-        }
-        
-        # Push buttons for navigation controls
-        self.push_buttons = {
-            "calibrateBackButton": {"type": QPushButton, "instance": None, "target": "back"}
-        }
-        
-        # Combine all component dictionaries for easier iteration
-        self.all_components = {}
-        self.all_components.update(self.container_widgets)
-        self.all_components.update(self.tool_buttons)
-        self.all_components.update(self.push_buttons)
-        
-        # Find all components using the dictionary
-        self._find_components()
-        
-        # Store references to essential widgets for convenience
-        self.calibration_stacked_widget = self.container_widgets["mainCalibrateStackedWidget"]["instance"]
-        self.main_calibrate_page = self.container_widgets["mainCalibratePage"]["instance"]
-        
-        if not self.calibration_stacked_widget:
-            logger.error("Could not find mainCalibrateStackedWidget in UI file")
-        if not self.main_calibrate_page:
-            logger.error("Could not find mainCalibratePage in UI file")
-            
-        logger.debug(f"Found main calibrate page: {self.main_calibrate_page}")
+        # Initialize UI components
+        self.calibration_stacked_widget = self.findChild(QStackedWidget, "mainCalibrateStackedWidget")
+        self.main_calibrate_page = self.findChild(QWidget, "mainCalibratePage")
 
-    def _find_components(self):
-        """Find all UI components based on their object names"""
-        for name, component_info in self.all_components.items():
-            component_type = component_info["type"]
-            component = self.findChild(component_type, name)
-            component_info["instance"] = component
-            
-            # Debug output
-            if component:
-                logger.debug(f"Found {component_type.__name__} '{name}'")
-            else:
-                logger.warning(f"Could not find {component_type.__name__} '{name}' in UI")
+        self.calibrationWizardButton = self.findChild(QToolButton, "calibrationWizardButton")
+        self.testPrintsButton = self.findChild(QToolButton, "testPrintsButton")
+        self.inputShaperCalibrateButton = self.findChild(QToolButton, "inputShaperCalibrateButton")
+        self.nozzleOffsetButton = self.findChild(QToolButton, "nozzleOffsetButton")
+        self.toolOffsetZButton = self.findChild(QToolButton, "toolOffsetZButton")
+        self.toolOffsetXYButton = self.findChild(QToolButton, "toolOffsetXYButton")
+        self.idexCalibrationWizardButton = self.findChild(QToolButton, "idexCalibrationWizardButton")
 
-    def _check_widgets_existence(self):
-        """Check if UI elements exist and report missing ones"""
-        # Create mappings of component categories for reporting
-        component_groups = {
-            "CalibrateScreen - Containers": {name: info["instance"] for name, info in self.container_widgets.items()},
-            "CalibrateScreen - Tool Buttons": {name: info["instance"] for name, info in self.tool_buttons.items()},
-            "CalibrateScreen - Push Buttons": {name: info["instance"] for name, info in self.push_buttons.items()}
-        }
-        
-        # Check each component group
-        for group_name, components in component_groups.items():
-            check_ui_elements(self, components, group_name)
+        self.calibrateBackButton = self.findChild(QPushButton, "calibrateBackButton")
 
-    def _initialize_calibration_subscreens(self):
-        """Initialize all calibration sub-screens to be managed within this class"""
-        if not self.calibration_stacked_widget:
-            logger.error("Cannot initialize sub-screens - stacked widget is missing")
-            return
-            
-        self.screens = {
-            "nozzle_offset": NozzleOffsetPage(self.main_window),
-            "tool_offset": ToolOffset(self.main_window),
-            "bed_leveling": BedLeveling(self.main_window),
-            "test_prints": TestPrintPage(self.main_window),
-            "idex_calibration": IdexLevelCalibration(self.main_window)
-        }
+        # Validate UI components
+        check_ui_elements(self, [
+            self.calibration_stacked_widget, self.main_calibrate_page,
+            self.calibrationWizardButton, self.testPrintsButton, self.inputShaperCalibrateButton,
+            self.nozzleOffsetButton, self.toolOffsetZButton, self.toolOffsetXYButton, self.idexCalibrationWizardButton,
+            self.calibrateBackButton
+        ], "CalibrateScreen")
 
-        for name, screen in self.screens.items():
-            screen.setObjectName(name)
-            self.calibration_stacked_widget.addWidget(screen)
+        # Initialize all sub-screens
+        self.screens = {}
+        self._initialize_sub_screens()
 
-        logger.debug(f"Stacked widget has {self.calibration_stacked_widget.count()} pages")
-        for i in range(self.calibration_stacked_widget.count()):
-            widget = self.calibration_stacked_widget.widget(i)
-            logger.debug(f"Page {i}: {widget.objectName()}")
+        # Connect buttons to their respective methods
+        if self.calibrationWizardButton:
+            self.calibrationWizardButton.clicked.connect(lambda: self.navigate_to_bed_leveling())
+        if self.testPrintsButton:
+            self.testPrintsButton.clicked.connect(lambda: self.show_calibrate_screen("test_prints"))
+        if self.inputShaperCalibrateButton:
+            self.inputShaperCalibrateButton.clicked.connect(self._input_shaper_not_implemented)
+        if self.nozzleOffsetButton:
+            self.nozzleOffsetButton.clicked.connect(lambda: self.show_calibrate_screen("nozzle_offset"))
+        if self.toolOffsetZButton:
+            self.toolOffsetZButton.clicked.connect(self._show_tool_offset_z)
+        if self.toolOffsetXYButton:
+            self.toolOffsetXYButton.clicked.connect(self._show_tool_offset_xy)
+        if self.idexCalibrationWizardButton:
+            self.idexCalibrationWizardButton.clicked.connect(self.navigate_to_idex_calibration)
+        if self.calibrateBackButton:
+            self.calibrateBackButton.clicked.connect(self._handle_back_button)
 
-        # Add this screen to the main window's stacked widget
-        self.main_window.stacked_widget.addWidget(self)
-
-    def _connect_buttons(self):
-        """Connect buttons to their respective functions with safety checks"""
-        # Connect tool buttons
-        for name, info in self.tool_buttons.items():
-            button = info["instance"]
-            target = info["target"]
-
-            if button:
-                if target == "input_shaper":
-                    button.clicked.connect(self._input_shaper_not_implemented)
-                elif target == "tool_offset_z":
-                    button.clicked.connect(self._show_tool_offset_z)
-                elif target == "tool_offset_xy":
-                    button.clicked.connect(self._show_tool_offset_xy)
-                elif target == "bed_leveling":
-                    button.clicked.connect(self.navigate_to_bed_leveling)
-                elif target == "idex_calibration":
-                    button.clicked.connect(self.navigate_to_idex_calibration)
-                else:
-                    button.clicked.connect(lambda t=target: self.show_calibrate_screen(t))
-                logger.debug(f"Connected {name} to handler for {target}")
-
-        # Connect push buttons
-        for name, info in self.push_buttons.items():
-            button = info["instance"]
-            target = info["target"]
-            
-            if button and target == "back":
-                button.clicked.connect(self._handle_back_button)
-                logger.debug(f"Connected {name} to back handler")
-
-    def _show_main_page(self):
-        """Show the main calibration page"""
+        # Show the main calibration page initially
         if self.calibration_stacked_widget and self.main_calibrate_page:
             self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
-            logger.debug("Set current widget to main_calibrate_page")
+            logger.debug("Set current widget to mainCalibratePage")
+
+    def _initialize_sub_screens(self):
+        """Initialize all calibration sub-screens"""
+        try:
+            # Create instances of each sub-screen
+            self.screens["bed_leveling"] = BedLeveling(self.main_window)
+            self.screens["nozzle_offset"] = NozzleOffsetPage(self.main_window)
+            self.screens["tool_offset"] = ToolOffset(self.main_window)
+            self.screens["test_prints"] = TestPrintPage(self.main_window)
+            self.screens["idex_calibration"] = IdexLevelCalibration(self.main_window)
+
+            # Add each screen to the stacked widget
+            for name, screen in self.screens.items():
+                self.calibration_stacked_widget.addWidget(screen)
+                logger.info(f"Added {name} screen to calibration stacked widget")
+        except Exception as e:
+            logger.exception(f"Error initializing sub-screens: {e}")
 
     def _input_shaper_not_implemented(self):
         """Print a message when inputShaperCalibrateButton is clicked"""
@@ -183,10 +97,9 @@ class CalibrateScreen(QWidget):
         self.show_calibrate_screen("tool_offset")
         # Access the tool offset screen and set it to show Z tab
         tool_offset_screen = self.screens.get("tool_offset")
-        if tool_offset_screen and hasattr(tool_offset_screen, "stackedWidget") and hasattr(tool_offset_screen, "page_widgets"):
-            z_page = tool_offset_screen.page_widgets.get("toolOffsetZPage", {}).get("instance")
-            if tool_offset_screen.stackedWidget and z_page:
-                tool_offset_screen.stackedWidget.setCurrentWidget(z_page)
+        if tool_offset_screen and hasattr(tool_offset_screen, "stackedWidget"):
+            if hasattr(tool_offset_screen, "toolOffsetZPage"):
+                tool_offset_screen.stackedWidget.setCurrentWidget(tool_offset_screen.toolOffsetZPage)
                 logger.debug("Showing Tool Offset Z tab")
             else:
                 logger.error("Tool Offset Z page not found")
@@ -196,10 +109,9 @@ class CalibrateScreen(QWidget):
         self.show_calibrate_screen("tool_offset")
         # Access the tool offset screen and set it to show XY tab
         tool_offset_screen = self.screens.get("tool_offset")
-        if tool_offset_screen and hasattr(tool_offset_screen, "stackedWidget") and hasattr(tool_offset_screen, "page_widgets"):
-            xy_page = tool_offset_screen.page_widgets.get("toolOffsetXYPage", {}).get("instance")
-            if tool_offset_screen.stackedWidget and xy_page:
-                tool_offset_screen.stackedWidget.setCurrentWidget(xy_page)
+        if tool_offset_screen and hasattr(tool_offset_screen, "stackedWidget"):
+            if hasattr(tool_offset_screen, "toolOffsetXYPage"):
+                tool_offset_screen.stackedWidget.setCurrentWidget(tool_offset_screen.toolOffsetXYPage)
                 logger.debug("Showing Tool Offset XY tab")
             else:
                 logger.error("Tool Offset XY page not found")
@@ -218,9 +130,15 @@ class CalibrateScreen(QWidget):
             self.main_window.switch_screen(self)
 
         # If no specific target is requested, show the main calibration page
-        if not target_screen or target_screen not in self.screens:
-            self._show_main_page()
-            logger.debug(f"Current widget is now: {self.calibration_stacked_widget.currentWidget().objectName()}")
+        if not target_screen:
+            if self.calibration_stacked_widget and self.main_calibrate_page:
+                self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
+                logger.debug("Showing main calibration page")
+            return
+
+        # Check if the requested screen exists
+        if target_screen not in self.screens:
+            logger.error(f"Requested screen '{target_screen}' not found in available screens")
             return
 
         # Navigate to the requested sub-screen
@@ -235,7 +153,7 @@ class CalibrateScreen(QWidget):
             return
             
         current_widget = self.calibration_stacked_widget.currentWidget()
-        logger.debug(f"Back button pressed. Current widget: {current_widget.objectName()}")
+        logger.debug(f"Back button pressed. Current widget: {current_widget.objectName() if hasattr(current_widget, 'objectName') else 'unknown'}")
 
         if current_widget == self.main_calibrate_page:
             # If we're on the main calibrate page, use navigation history to go back
@@ -243,36 +161,21 @@ class CalibrateScreen(QWidget):
             self.main_window.switch_to_previous_screen()
         else:
             # If we're on a sub-screen, return to the main calibrate page
-            logger.debug(f"On sub-screen, returning to main calibration page")
+            logger.debug("On sub-screen, returning to main calibration page")
             self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
-            logger.debug(f"After navigation: Current widget is now {self.calibration_stacked_widget.currentWidget().objectName()}")
 
     def navigate_to_bed_leveling(self):
         """Open the Bed Leveling screen and reset the wizard."""
         logger.info("Navigating to Bed Leveling screen")
         bed_leveling_screen = self.screens.get("bed_leveling")
-        if bed_leveling_screen:
+        if bed_leveling_screen and hasattr(bed_leveling_screen, "reset_wizard"):
             bed_leveling_screen.reset_wizard()
-        self._reset_and_show_screen("bed_leveling")
+        self.show_calibrate_screen("bed_leveling")
 
     def navigate_to_idex_calibration(self):
         """Open the IDEX Level Calibration screen and reset the wizard."""
         logger.info("Navigating to IDEX Level Calibration screen")
         idex_calibration_screen = self.screens.get("idex_calibration")
-        if idex_calibration_screen:
+        if idex_calibration_screen and hasattr(idex_calibration_screen, "reset_wizard"):
             idex_calibration_screen.reset_wizard()
-        self._reset_and_show_screen("idex_calibration")
-
-    def _reset_and_show_screen(self, screen_name):
-        """Reset the wizard and show the specified screen.
-
-        Args:
-            screen_name (str): The name of the screen to reset and display.
-        """
-        screen = self.screens.get(screen_name)
-        if screen and hasattr(screen, "reset_wizard"):
-            screen.reset_wizard()
-        
-        if self.calibration_stacked_widget and screen:
-            self.calibration_stacked_widget.setCurrentWidget(screen)
-            logger.info(f"Navigated to {screen_name}")
+        self.show_calibrate_screen("idex_calibration")

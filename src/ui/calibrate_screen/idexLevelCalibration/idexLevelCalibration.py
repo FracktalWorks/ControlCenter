@@ -1,6 +1,7 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget
 from utils.helpers import check_ui_elements
+from utils.logger import setup_logger
 
 class IdexLevelCalibration(QWidget):
     """
@@ -10,129 +11,104 @@ class IdexLevelCalibration(QWidget):
     def __init__(self, main_window):
         super(IdexLevelCalibration, self).__init__()
         self.main_window = main_window
-        
-        # Define UI elements by category
-        self.ui_elements = {
-            "containers": {
-                "stackedWidget": {"type": QStackedWidget, "instance": None}
-            },
-            "pages": {
-                "idexConfigStep1Page": {"type": QWidget, "instance": None},
-                "idexConfigStep2Page": {"type": QWidget, "instance": None},
-                "idexConfigStep3Page": {"type": QWidget, "instance": None},
-                "idexConfigStep4Page": {"type": QWidget, "instance": None},
-                "idexConfigStep5Page": {"type": QWidget, "instance": None}
-            },
-            "navigation_buttons": {
-                "idexConfigStep1NextButton": {"type": QPushButton, "instance": None},
-                "idexConfigStep1CancelButton": {"type": QPushButton, "instance": None},
-                "idexConfigStep2NextButton": {"type": QPushButton, "instance": None},
-                "idexConfigStep2CancelButton": {"type": QPushButton, "instance": None},
-                "idexConfigStep3NextButton": {"type": QPushButton, "instance": None},
-                "idexConfigStep3CancelButton": {"type": QPushButton, "instance": None},
-                "idexConfigStep4NextButton": {"type": QPushButton, "instance": None},
-                "idexConfigStep4CancelButton": {"type": QPushButton, "instance": None},
-                "idexConfigStep5NextButton": {"type": QPushButton, "instance": None},
-                "idexConfigStep5CancelButton": {"type": QPushButton, "instance": None}
-            }
-        }
+        self.logger = setup_logger('idex_calibration')
+        self.logger.info("Initializing IDEX Level Calibration screen")
 
         # Load the .ui file
         try:
             uic.loadUi('src/ui/calibrate_screen/idexLevelCalibration/idexLevelCalibration.ui', self)
-            print("IdexLevelCalibration UI loaded successfully")
+            self.logger.info("IdexLevelCalibration UI loaded successfully")
         except Exception as e:
-            print(f"Failed to load IdexLevelCalibration UI file: {e}")
+            self.logger.error(f"Failed to load IdexLevelCalibration UI file: {e}")
 
         # Initialize UI elements
-        self._initialize_ui_elements()
+        self.stacked_widget = self.findChild(QStackedWidget, "stackedWidget")
+        self.page1 = self.findChild(QWidget, "idexConfigStep1Page")
+        self.page2 = self.findChild(QWidget, "idexConfigStep2Page")
+        self.page3 = self.findChild(QWidget, "idexConfigStep3Page")
+        self.page4 = self.findChild(QWidget, "idexConfigStep4Page")
+        self.page5 = self.findChild(QWidget, "idexConfigStep5Page")
+
+        self.next_button1 = self.findChild(QPushButton, "idexConfigStep1NextButton")
+        self.next_button2 = self.findChild(QPushButton, "idexConfigStep2NextButton")
+        self.next_button3 = self.findChild(QPushButton, "idexConfigStep3NextButton")
+        self.next_button4 = self.findChild(QPushButton, "idexConfigStep4NextButton")
+        self.next_button5 = self.findChild(QPushButton, "idexConfigStep5NextButton")
+
+        self.cancel_button1 = self.findChild(QPushButton, "idexConfigStep1CancelButton")
+        self.cancel_button2 = self.findChild(QPushButton, "idexConfigStep2CancelButton")
+        self.cancel_button3 = self.findChild(QPushButton, "idexConfigStep3CancelButton")
+        self.cancel_button4 = self.findChild(QPushButton, "idexConfigStep4CancelButton")
+        self.cancel_button5 = self.findChild(QPushButton, "idexConfigStep5CancelButton")
+
+        # Validate UI elements
+        check_ui_elements(self, [
+            self.stacked_widget, self.page1, self.page2, self.page3, self.page4, self.page5,
+            self.next_button1, self.next_button2, self.next_button3, self.next_button4, self.next_button5,
+            self.cancel_button1, self.cancel_button2, self.cancel_button3, self.cancel_button4, self.cancel_button5
+        ], "IDEX Level Calibration")
 
         # Connect buttons to their respective functions
-        self._connect_buttons()
+        if self.next_button1:
+            self.next_button1.clicked.connect(lambda: self._navigate_to_step(2))
+        if self.next_button2:
+            self.next_button2.clicked.connect(lambda: self._navigate_to_step(3))
+        if self.next_button3:
+            self.next_button3.clicked.connect(lambda: self._navigate_to_step(4))
+        if self.next_button4:
+            self.next_button4.clicked.connect(lambda: self._navigate_to_step(5))
+        if self.next_button5:
+            self.next_button5.clicked.connect(self._finish_calibration)
+
+        if self.cancel_button1:
+            self.cancel_button1.clicked.connect(self._cancel_calibration)
+        if self.cancel_button2:
+            self.cancel_button2.clicked.connect(self._cancel_calibration)
+        if self.cancel_button3:
+            self.cancel_button3.clicked.connect(self._cancel_calibration)
+        if self.cancel_button4:
+            self.cancel_button4.clicked.connect(self._cancel_calibration)
+        if self.cancel_button5:
+            self.cancel_button5.clicked.connect(self._cancel_calibration)
 
         # Set the default screen
-        self._navigate_to_step(1)
+        self.reset_wizard()
 
-    def _initialize_ui_elements(self):
-        """Initialize UI elements from the loaded UI file"""
-        # Initialize containers
-        for element_name, element_info in self.ui_elements["containers"].items():
-            element_info["instance"] = self.findChild(element_info["type"], element_name)
-
-        # Initialize pages
-        for element_name, element_info in self.ui_elements["pages"].items():
-            element_info["instance"] = self.findChild(element_info["type"], element_name)
-
-        # Initialize navigation buttons
-        for element_name, element_info in self.ui_elements["navigation_buttons"].items():
-            element_info["instance"] = self.findChild(element_info["type"], element_name)
-
-        # Create a simple lookup dictionary for page numbers
-        self.pages = {
-            f"step{i}": self.ui_elements["pages"][f"idexConfigStep{i}Page"]["instance"]
-            for i in range(1, 6)
-        }
-        
-        # Check if UI elements exist and report missing ones
-        self._check_widgets_existence()
-    
-    def _check_widgets_existence(self):
-        """Check if UI elements exist and report missing ones"""
-        # Check containers
-        for category, elements in self.ui_elements.items():
-            missing_elements = {name: info for name, info in elements.items() if info["instance"] is None}
-            if missing_elements:
-                print(f"Missing UI elements in {category}: {', '.join(missing_elements.keys())}")
-    
-    def _connect_buttons(self):
-        """Connect buttons with safety checks"""
-        # Connect Next buttons for steps 1-4
-        for step in range(1, 5):
-            next_btn = self.ui_elements["navigation_buttons"][f"idexConfigStep{step}NextButton"]["instance"]
-            if next_btn:
-                next_btn.clicked.connect(lambda checked=False, s=step+1: self._navigate_to_step(s))
-        
-        # Connect Step 5 Next button to finish method
-        final_next_btn = self.ui_elements["navigation_buttons"]["idexConfigStep5NextButton"]["instance"]
-        if final_next_btn:
-            final_next_btn.clicked.connect(self._finish_calibration)
-        
-        # Connect all Cancel buttons
-        for step in range(1, 6):
-            cancel_btn = self.ui_elements["navigation_buttons"][f"idexConfigStep{step}CancelButton"]["instance"]
-            if cancel_btn:
-                cancel_btn.clicked.connect(self._cancel_calibration)
 
     def _navigate_to_step(self, step_number):
         """Navigate to a specific step in the calibration process"""
-        target_page = self.pages.get(f"step{step_number}")
-        stacked_widget = self.ui_elements["containers"]["stackedWidget"]["instance"]
-        
-        if stacked_widget and target_page:
-            print(f"Navigating to IDEX Calibration Step {step_number}")
-            stacked_widget.setCurrentWidget(target_page)
+        target_page = getattr(self, f"page{step_number}", None)
+
+        if self.stacked_widget and target_page:
+            self.logger.info(f"Navigating to IDEX Calibration Step {step_number}")
+            self.stacked_widget.setCurrentWidget(target_page)
         else:
-            print(f"Error: Cannot navigate to IDEX Calibration Step {step_number}")
+            self.logger.error(f"Error: Cannot navigate to IDEX Calibration Step {step_number}")
 
     def _cancel_calibration(self):
         """Cancel the IDEX calibration process and return to main calibration page"""
-        print("IDEX Calibration process canceled")
+        self.logger.info("IDEX Calibration process canceled")
         self._return_to_main_calibration()
-    
+
     def _finish_calibration(self):
         """Finish the IDEX calibration process and return to main calibration page"""
-        print("IDEX Calibration process finished")
+        self.logger.info("IDEX Calibration process completed successfully")
         self._return_to_main_calibration()
-    
+
     def _return_to_main_calibration(self):
         """Common method to return to the main calibration screen"""
         if hasattr(self.main_window, 'calibrate_screen'):
-            # Use standard navigation logic in CalibrateScreen
-            self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
-                self.main_window.calibrate_screen.main_calibrate_page)
-            print("Returning to main calibration page from IDEX calibration")
-    
+            if hasattr(self.main_window.calibrate_screen, 'calibration_stacked_widget') and \
+               hasattr(self.main_window.calibrate_screen, 'main_calibrate_page'):
+                self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
+                    self.main_window.calibrate_screen.main_calibrate_page)
+                self.logger.info("Returned to main calibration page")
+            else:
+                self.logger.error("Cannot return to main calibration - required widgets not found")
+        else:
+            self.logger.error("Cannot return to main calibration - calibrate_screen not found")
+
     def reset_wizard(self):
         """Reset the IDEX Level Calibration wizard to its initial state."""
         self._navigate_to_step(1)
-        print("IDEX Level Calibration wizard reset to initial state")
+        self.logger.info("IDEX Level Calibration wizard reset to initial state")

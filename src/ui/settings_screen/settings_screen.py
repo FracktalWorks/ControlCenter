@@ -14,157 +14,93 @@ class SettingsScreen(QWidget):
         # Setup logger
         self.logger = setup_logger('settings_screen')
 
-        # Load the UI
-        self._load_ui()
-        
-        # Initialize UI components
-        self._initialize_ui_components()
-        
-        # Check if UI elements exist and report missing ones
-        self._check_widgets_existence()
-        
-        # Connect buttons to their respective functions
-        self._connect_buttons()
-
-        # Scan the "Settings Screen" folder for subfolders containing .ui files
-        self._load_settings_widgets()
-
-        # Set the default page to mainSettingsPage
-        self._set_default_page()
-
-    def _load_ui(self):
-        """Load the UI file with proper error handling"""
+        # Load the UI with proper error handling
         try:
             uic.loadUi('src/ui/settings_screen/settings_screen.ui', self)
             self.logger.info("Settings screen UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load settings screen UI file: {e}")
+            return
 
-    def _initialize_ui_components(self):
-        """Initialize all UI components with proper typing using dictionaries for organization"""
+        # Initialize UI components using findChild
         # Container widgets
-        self.container_widgets = {
-            "mainSettingsStackedWidget": {"type": QStackedWidget, "instance": None},
-            "mainSettingsPage": {"type": QWidget, "instance": None},
-            "scrollArea": {"type": QScrollArea, "instance": None}
-        }
+        self.stackedWidget = self.findChild(QStackedWidget, "mainSettingsStackedWidget")
+        self.mainSettingsPage = self.findChild(QWidget, "mainSettingsPage")
+        self.scrollArea = self.findChild(QScrollArea, "scrollArea")
         
         # Button widgets for navigation and actions
-        self.action_buttons = {
-            "settingsBackButton": {"type": QPushButton, "instance": None},
-            "restorePrintSettingsButton": {"type": QPushButton, "instance": None},
-            "restoreFactoryDefaultsButton": {"type": QPushButton, "instance": None},
-            "restartButton": {"type": QPushButton, "instance": None}
-        }
-        
-        # Combine all component dictionaries for easier iteration
-        self.all_components = {}
-        self.all_components.update(self.container_widgets)
-        self.all_components.update(self.action_buttons)
-        
-        # Find all components using the dictionary
-        self._find_components()
-        
-        # Store references to essential widgets for convenience
-        self.stackedWidget = self.container_widgets["mainSettingsStackedWidget"]["instance"]
-        self.mainSettingsPage = self.container_widgets["mainSettingsPage"]["instance"]
-        self.scrollArea = self.container_widgets["scrollArea"]["instance"]
-        
-        # Find the layout and scroll area contents which need special handling
+        self.backButton = self.findChild(QPushButton, "settingsBackButton")
+        self.restorePrintSettingsButton = self.findChild(QPushButton, "restorePrintSettingsButton")
+        self.restoreFactoryDefaultsButton = self.findChild(QPushButton, "restoreFactoryDefaultsButton")
+        self.restartButton = self.findChild(QPushButton, "restartButton")
+
+        # Special widget handling for scroll area
         if self.scrollArea:
             self.scrollAreaWidgetContents = self.scrollArea.findChild(QWidget, 'scrollAreaWidgetContents')
             if self.scrollAreaWidgetContents:
                 self.verticalLayout = self.scrollAreaWidgetContents.findChild(QVBoxLayout, 'verticalLayout')
-                print("Found scrollAreaWidgetContents and verticalLayout")
+                self.logger.debug("Found scrollAreaWidgetContents and verticalLayout")
             else:
-                print("Failed to find scrollAreaWidgetContents")
+                self.logger.warning("Failed to find scrollAreaWidgetContents")
                 self.scrollAreaWidgetContents = None
                 self.verticalLayout = None
         else:
             self.scrollAreaWidgetContents = None
             self.verticalLayout = None
 
-    def _find_components(self):
-        """Find all UI components based on their object names"""
-        for name, component_info in self.all_components.items():
-            component_type = component_info["type"]
-            component = self.findChild(component_type, name)
-            component_info["instance"] = component
+        # Validate UI components using simplified check_ui_elements function
+        check_ui_elements(self, [
+            self.stackedWidget,
+            self.mainSettingsPage,
+            self.scrollArea,
+            self.backButton,
+            self.restorePrintSettingsButton,
+            self.restoreFactoryDefaultsButton,
+            self.restartButton,
+            self.scrollAreaWidgetContents,
+            self.verticalLayout
+        ], "Settings Screen")
+
+        # Connect buttons to their respective functions directly
+        if self.backButton:
+            self.backButton.clicked.connect(self.go_back)
+            self.logger.debug("Connected settingsBackButton to handler")
+        
+        if self.restorePrintSettingsButton:
+            self.restorePrintSettingsButton.clicked.connect(self.restore_print_settings)
+            self.logger.debug("Connected restorePrintSettingsButton to handler")
             
-            # Debug output
-            if component:
-                self.logger.debug(f"Found {component_type.__name__} '{name}'")
-            else:
-                self.logger.warning(f"Could not find {component_type.__name__} '{name}' in UI")
+        if self.restoreFactoryDefaultsButton:
+            self.restoreFactoryDefaultsButton.clicked.connect(self.restore_factory_defaults)
+            self.logger.debug("Connected restoreFactoryDefaultsButton to handler")
+            
+        if self.restartButton:
+            self.restartButton.clicked.connect(self.restart_system)
+            self.logger.debug("Connected restartButton to handler")
 
-    def _check_widgets_existence(self):
-        """Check if UI elements exist and report missing ones"""
-        # Create mappings of component categories for reporting
-        component_groups = {
-            "SettingsScreen - Containers": {name: info["instance"] for name, info in self.container_widgets.items()},
-            "SettingsScreen - Action Buttons": {name: info["instance"] for name, info in self.action_buttons.items()}
-        }
-        
-        # Additional widgets that were found through special means
-        additional_widgets = {
-            "scrollAreaWidgetContents": self.scrollAreaWidgetContents,
-            "verticalLayout": self.verticalLayout
-        }
-        
-        # Check each component group
-        for group_name, components in component_groups.items():
-            check_ui_elements(self, components, group_name)
-        
-        # Check additional widgets
-        check_ui_elements(self, additional_widgets, "SettingsScreen - Special Widgets")
-
-    def _connect_buttons(self):
-        """Connect buttons to their respective functions with safety checks"""
-        # Map buttons to their handler functions
-        button_handlers = {
-            "settingsBackButton": self.go_back,
-            "restorePrintSettingsButton": self.restore_print_settings,
-            "restoreFactoryDefaultsButton": self.restore_factory_defaults,
-            "restartButton": self.restart_system
-        }
-        
-        # Connect each button to its handler
-        for button_name, handler in button_handlers.items():
-            button = self.action_buttons.get(button_name, {}).get("instance")
-            if button:
-                button.clicked.connect(handler)
-                self.logger.debug(f"Connected {button_name} to handler")
-            else:
-                self.logger.warning(f"Could not connect {button_name} - button not found")
-        
         # Special layout handling for certain buttons
         if self.verticalLayout:
             # Add back button at the top
-            back_button = self.action_buttons.get("settingsBackButton", {}).get("instance")
-            if back_button:
-                self.verticalLayout.insertWidget(0, back_button)
+            if self.backButton:
+                self.verticalLayout.insertWidget(0, self.backButton)
                 self.logger.debug("Added back button to the top of the vertical layout")
                 
             # Add restart button at the bottom
-            restart_button = self.action_buttons.get("restartButton", {}).get("instance")
-            if restart_button:
-                self.verticalLayout.addWidget(restart_button)
+            if self.restartButton:
+                self.verticalLayout.addWidget(self.restartButton)
                 self.logger.debug("Added restart button to the bottom of the vertical layout")
 
-    def _set_default_page(self):
-        """Set the default page in stacked widget"""
+        # Set the default page in stacked widget
         if self.stackedWidget and self.mainSettingsPage:
             self.stackedWidget.setCurrentWidget(self.mainSettingsPage)
             self.logger.debug("Set default page to mainSettingsPage")
         else:
             self.logger.warning("Could not set default page - required widgets missing")
 
-    def go_back(self):
-        """Switch back to the main menu screen."""
-        self.logger.info("Back button clicked, returning to menu screen")
-        self.main_window.switch_screen(self.main_window.menu_screen)
+        # Load settings widgets from subfolders
+        self.load_settings_widgets()
 
-    def _load_settings_widgets(self):
+    def load_settings_widgets(self):
         """Load settings widgets from subfolders in the "Settings Screen" folder."""
         if not (self.stackedWidget and self.verticalLayout):
             self.logger.error("Cannot load settings widgets: stackedWidget or verticalLayout is missing")
@@ -181,14 +117,14 @@ class SettingsScreen(QWidget):
                         self.logger.info(f"Loading widget: {subfolder}")
                         try:
                             # Create a button for the subfolder
-                            button = self._create_settings_button(
+                            button = self.create_settings_button(
                                 subfolder.replace('_', ' ').title(),
                                 lambda _, sf=subfolder: self.load_widget(sf)
                             )
                             self.verticalLayout.addWidget(button)
 
                             # Load the widget and add it to the stacked widget
-                            widget_instance = self._create_widget_instance(ui_file, py_file)
+                            widget_instance = self.create_widget_instance(ui_file, py_file)
                             page = QWidget()
                             layout = QVBoxLayout(page)
                             layout.setContentsMargins(0, 0, 0, 0)
@@ -201,10 +137,7 @@ class SettingsScreen(QWidget):
         except Exception as e:
             self.logger.error(f"Error loading settings widgets: {e}")
 
-        # Ensure the mainSettingsPage is set as the default page after loading all widgets
-        self._set_default_page()
-
-    def _create_settings_button(self, text, handler):
+    def create_settings_button(self, text, handler):
         """Create a styled settings button with the given text and handler"""
         button = QPushButton(text)
         button.setMinimumHeight(100)
@@ -246,7 +179,7 @@ class SettingsScreen(QWidget):
                 self.logger.info(f"Switched to widget: {widget_name}")
                 break
 
-    def _create_widget_instance(self, ui_file, py_file):
+    def create_widget_instance(self, ui_file, py_file):
         """
         Create an instance of a widget from the specified .ui and .py files.
 
@@ -275,10 +208,15 @@ class SettingsScreen(QWidget):
                     backend_instance = backend_class(self, parent)
                     self.backend = backend_instance
                 except AttributeError as e:
-                    self.logger.error(f"Error creating widget instance: {e}")
-                    self.logger.error(f"Expected class name: {class_name}")
+                    parent.logger.error(f"Error creating widget instance: {e}")
+                    parent.logger.error(f"Expected class name: {class_name}")
 
         return DynamicWidget(self)
+
+    def go_back(self):
+        """Switch back to the main menu screen."""
+        self.logger.info("Back button clicked, returning to menu screen")
+        self.main_window.switch_screen(self.main_window.menu_screen)
 
     def restore_print_settings(self):
         """Restore the print settings to their default values."""

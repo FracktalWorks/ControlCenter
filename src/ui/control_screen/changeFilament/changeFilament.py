@@ -7,148 +7,85 @@ class ChangeFilament(QWidget):
     def __init__(self, main_window):
         super(ChangeFilament, self).__init__()
         self.main_window = main_window
+        self.parent_screen = None  # Will be set by parent when screen is initialized
         
         # Setup logger
         self.logger = setup_logger(f"{self.__class__.__name__}")
         self.logger.info("Initializing ChangeFilament widget")
         
         # Load UI
-        self._load_ui()
-        
-        # Initialize UI components
-        self._initialize_ui_components()
-        
-        # Check if UI elements exist and report missing ones
-        self._check_widgets_existence()
-        
-        # Connect signals to slots
-        self._connect_signals()
-
-        # Set the default screen
-        self._show_page('changeFilamentPage')
-
-    def _load_ui(self):
-        """Load the UI file with error handling"""
         try:
             uic.loadUi('src/ui/control_screen/changeFilament/changeFilament.ui', self)
             self.logger.info("ChangeFilament UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load ChangeFilament UI file: {e}", exc_info=True)
-
-    def _initialize_ui_components(self):
-        """Initialize all UI components with proper typing using dictionaries for organization"""
-        # Container widgets
-        self.container_widgets = {
-            "stackedWidget": {"type": QStackedWidget, "instance": None}
-        }
+            return
         
-        # Pages in the stacked widget
-        self.page_widgets = {
-            "changeFilamentPage": {"type": QWidget, "instance": None},
-            "changeFilamentProgressPage": {"type": QWidget, "instance": None},
-            "changeFilamentLoadPage": {"type": QWidget, "instance": None},
-            "changeFilamentExtrudePage": {"type": QWidget, "instance": None},
-            "changeFilamentRetractPage": {"type": QWidget, "instance": None}
-        }
+        # Initialize UI components
+        self.stackedWidget = self.findChild(QStackedWidget, "stackedWidget")
+        self.changeFilamentPage = self.findChild(QWidget, "changeFilamentPage")
+        self.changeFilamentProgressPage = self.findChild(QWidget, "changeFilamentProgressPage")
+        self.changeFilamentLoadPage = self.findChild(QWidget, "changeFilamentLoadPage")
+        self.changeFilamentExtrudePage = self.findChild(QWidget, "changeFilamentExtrudePage")
+        self.changeFilamentRetractPage = self.findChild(QWidget, "changeFilamentRetractPage")
+        self.changeFilamentBackButton = self.findChild(QPushButton, "changeFilamentBackButton")
+        self.changeFilamentBackButton2 = self.findChild(QPushButton, "changeFilamentBackButton2")
+        self.changeFilamentBackButton3 = self.findChild(QPushButton, "changeFilamentBackButton3")
+        self.changeFilamentLoadButton = self.findChild(QPushButton, "changeFilamentLoadButton")
+        self.changeFilamentUnloadButton = self.findChild(QPushButton, "changeFilamentUnloadButton")
+        self.toolToggleChangeFilamentButton = self.findChild(QPushButton, "toolToggleChangeFilamentButton")
+        self.loadedTillExtruderButton = self.findChild(QPushButton, "loadedTillExtruderButton")
+        self.loadDoneButton = self.findChild(QPushButton, "loadDoneButton")
+        self.unloadDoneButton = self.findChild(QPushButton, "unloadDoneButton")
+        self.changeFilamentComboBox = self.findChild(QComboBox, "changeFilamentComboBox")
+        self.changeFilamentProgress = self.findChild(QProgressBar, "changeFilamentProgress")
+        self.changeFilamentStatus = self.findChild(QLabel, "changeFilamentStatus")
         
-        # Navigation buttons
-        self.nav_buttons = {
-            "changeFilamentBackButton": {"type": QPushButton, "instance": None},
-            "changeFilamentBackButton2": {"type": QPushButton, "instance": None},
-            "changeFilamentBackButton3": {"type": QPushButton, "instance": None}
-        }
+        # Validate UI components
+        components = [
+            self.stackedWidget,
+            self.changeFilamentPage, self.changeFilamentProgressPage, 
+            self.changeFilamentLoadPage, self.changeFilamentExtrudePage, 
+            self.changeFilamentRetractPage,
+            self.changeFilamentBackButton, self.changeFilamentBackButton2, 
+            self.changeFilamentBackButton3,
+            self.changeFilamentLoadButton, self.changeFilamentUnloadButton, 
+            self.toolToggleChangeFilamentButton, self.loadedTillExtruderButton, 
+            self.loadDoneButton, self.unloadDoneButton,
+            self.changeFilamentComboBox, self.changeFilamentProgress, 
+            self.changeFilamentStatus
+        ]
+        check_ui_elements(self, components, "ChangeFilament")
         
-        # Action buttons
-        self.action_buttons = {
-            "changeFilamentLoadButton": {"type": QPushButton, "instance": None},
-            "changeFilamentUnloadButton": {"type": QPushButton, "instance": None},
-            "toolToggleChangeFilamentButton": {"type": QPushButton, "instance": None},
-            "loadedTillExtruderButton": {"type": QPushButton, "instance": None},
-            "loadDoneButton": {"type": QPushButton, "instance": None},
-            "unloadDoneButton": {"type": QPushButton, "instance": None}
-        }
+        # Connect signals to slots
+        if self.changeFilamentBackButton:
+            self.changeFilamentBackButton.clicked.connect(self._handle_back_button)
+        if self.changeFilamentBackButton2:
+            self.changeFilamentBackButton2.clicked.connect(self._handle_back_button)
+        if self.changeFilamentBackButton3:
+            self.changeFilamentBackButton3.clicked.connect(self._handle_back_button)
+        if self.changeFilamentLoadButton:
+            self.changeFilamentLoadButton.clicked.connect(self.start_loading_filament)
+        if self.changeFilamentUnloadButton:
+            self.changeFilamentUnloadButton.clicked.connect(self.start_unloading_filament)
+        if self.toolToggleChangeFilamentButton:
+            self.toolToggleChangeFilamentButton.clicked.connect(self.toggle_tool)
+        if self.loadedTillExtruderButton:
+            self.loadedTillExtruderButton.clicked.connect(self.filament_loaded_till_extruder)
+        if self.loadDoneButton:
+            self.loadDoneButton.clicked.connect(self.finish_loading_filament)
+        if self.unloadDoneButton:
+            self.unloadDoneButton.clicked.connect(self.finish_unloading_filament)
         
-        # Status and control elements
-        self.status_controls = {
-            "changeFilamentComboBox": {"type": QComboBox, "instance": None},
-            "changeFilamentProgress": {"type": QProgressBar, "instance": None},
-            "changeFilamentStatus": {"type": QLabel, "instance": None}
-        }
-        
-        # Combine all component dictionaries for easier iteration
-        self.all_components = {}
-        self.all_components.update(self.container_widgets)
-        self.all_components.update(self.page_widgets)
-        self.all_components.update(self.nav_buttons)
-        self.all_components.update(self.action_buttons)
-        self.all_components.update(self.status_controls)
-        
-        # Find all components using the dictionary
-        self._find_components()
-        
-        # Store reference to essential stacked widget for convenience
-        self.stackedWidget = self.container_widgets["stackedWidget"]["instance"]
-
-    def _find_components(self):
-        """Find all UI components based on their object names"""
-        for name, component_info in self.all_components.items():
-            component_type = component_info["type"]
-            component = self.findChild(component_type, name)
-            component_info["instance"] = component
-            
-            # Log component discovery
-            if component:
-                self.logger.debug(f"Found {component_type.__name__} '{name}'")
-            else:
-                self.logger.warning(f"Could not find {component_type.__name__} '{name}' in UI")
-
-    def _check_widgets_existence(self):
-        """Check if UI elements exist and report missing ones"""
-        # Create mappings of component categories for reporting
-        component_groups = {
-            "ChangeFilament - Containers": {name: info["instance"] for name, info in self.container_widgets.items()},
-            "ChangeFilament - Pages": {name: info["instance"] for name, info in self.page_widgets.items()},
-            "ChangeFilament - Navigation Buttons": {name: info["instance"] for name, info in self.nav_buttons.items()},
-            "ChangeFilament - Action Buttons": {name: info["instance"] for name, info in self.action_buttons.items()},
-            "ChangeFilament - Status Controls": {name: info["instance"] for name, info in self.status_controls.items()}
-        }
-        
-        # Check each component group
-        for group_name, components in component_groups.items():
-            check_ui_elements(self, components, group_name)
-
-    def _connect_signals(self):
-        """Connect signals to slots using dictionary-based approach with safety checks"""
-        # Map navigation buttons to back handler
-        for button_name, button_info in self.nav_buttons.items():
-            button = button_info["instance"]
-            if button:
-                button.clicked.connect(self._handle_back_button)
-                self.logger.debug(f"Connected {button_name} to back handler")
-        
-        # Map action buttons to their respective handlers
-        action_handlers = {
-            "changeFilamentLoadButton": self.start_loading_filament,
-            "changeFilamentUnloadButton": self.start_unloading_filament,
-            "toolToggleChangeFilamentButton": self.toggle_tool,
-            "loadedTillExtruderButton": self.filament_loaded_till_extruder,
-            "loadDoneButton": self.finish_loading_filament,
-            "unloadDoneButton": self.finish_unloading_filament
-        }
-        
-        for button_name, handler in action_handlers.items():
-            button = self.action_buttons.get(button_name, {}).get("instance")
-            if button:
-                button.clicked.connect(handler)
-                self.logger.debug(f"Connected {button_name} to its handler")
+        # Set the default screen
+        self._show_page('changeFilamentPage')
 
     def _show_page(self, page_name):
-        """Show a specific page in the stacked widget"""
+        """Show a specific page in the stacked widget."""
         if not self.stackedWidget:
             self.logger.error("Cannot show page - stacked widget is missing")
             return False
-            
-        page = self.page_widgets.get(page_name, {}).get("instance")
+        page = getattr(self, page_name, None)
         if page:
             self.stackedWidget.setCurrentWidget(page)
             self.logger.info(f"Showing page: {page_name}")
@@ -159,9 +96,8 @@ class ChangeFilament(QWidget):
 
     def _update_status(self, message):
         """Update the status label with a message"""
-        status_label = self.status_controls.get("changeFilamentStatus", {}).get("instance")
-        if status_label:
-            status_label.setText(message)
+        if self.changeFilamentStatus:
+            self.changeFilamentStatus.setText(message)
             self.logger.info(f"Status updated: {message}")
         else:
             self.logger.warning("Could not update status - label not found")
@@ -170,14 +106,21 @@ class ChangeFilament(QWidget):
         """Handle back button logic with proper safety checks"""
         if self.stackedWidget:
             # Reset to first page in this widget's stack
-            first_page = self.page_widgets.get("changeFilamentPage", {}).get("instance")
-            if first_page:
-                self.stackedWidget.setCurrentWidget(first_page)
+            if self.changeFilamentPage:
+                self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
             self.logger.debug("Back button: reset to first page")
             
-        # Return to previous screen in main window
-        self.main_window.switch_to_previous_screen()
-        self.logger.info("Back button: returning to previous screen")
+        # Return to parent screen directly, bypassing history 
+        if self.parent_screen:
+            self.logger.info("Returning directly to parent control screen")
+            # Set current screen directly without modifying history
+            self.main_window.current_screen = self.parent_screen
+            self.main_window.stacked_widget.setCurrentWidget(self.parent_screen)
+        else:
+            # Fallback to previous screen if parent_screen not set
+            self.logger.warning("parent_screen not set, using switch_to_previous_screen")
+            self.main_window.switch_to_previous_screen()
+        self.logger.info("Back button: returning to parent screen")
 
     def start_loading_filament(self):
         """Start the filament loading process"""
@@ -199,7 +142,7 @@ class ChangeFilament(QWidget):
 
     def toggle_tool(self):
         """Toggle between extruder tools (dual extruder support)"""
-        tool_button = self.action_buttons.get("toolToggleChangeFilamentButton", {}).get("instance")
+        tool_button = self.toolToggleChangeFilamentButton
         if tool_button and tool_button.isChecked():
             self.logger.info("Toggling to Tool 1")
             # Add logic for Tool 1
@@ -221,17 +164,29 @@ class ChangeFilament(QWidget):
         self.logger.info("Filament loading process finished")
         self._update_status("Filament loaded successfully")
         
-        # Return to previous screen
-        self.main_window.switch_to_previous_screen()
+        # Return to parent control screen directly instead of using navigation history
+        if self.parent_screen:
+            self.logger.info("Returning to parent control screen after loading filament")
+            self.main_window.switch_screen(self.parent_screen)
+        else:
+            self.logger.warning("parent_screen not set, using fallback navigation")
+            self.main_window.switch_to_previous_screen()
 
     def finish_unloading_filament(self):
         """Finish the filament unloading process"""
         self.logger.info("Filament unloading process finished")
         self._update_status("Filament unloaded successfully")
         
-        # Return to initial page before going back
+        # Reset to the first page
         self._show_page('changeFilamentPage')
-        self.main_window.switch_to_previous_screen()
+        
+        # Return to parent control screen directly instead of using navigation history
+        if self.parent_screen:
+            self.logger.info("Returning to parent control screen after unloading filament")
+            self.main_window.switch_screen(self.parent_screen)
+        else:
+            self.logger.warning("parent_screen not set, using fallback navigation")
+            self.main_window.switch_to_previous_screen()
 
     def reset_wizard(self):
         """Reset the Change Filament wizard to its initial state."""
