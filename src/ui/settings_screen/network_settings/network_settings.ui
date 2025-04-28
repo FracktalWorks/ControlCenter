@@ -347,6 +347,7 @@ QPushButton:focus {
        <font>
         <family>MS Shell Dlg 2</family>
         <pointsize>16</pointsize>
+        <weight>75</weight>
         <bold>true</bold>
        </font>
       </property>
@@ -401,6 +402,7 @@ QPushButton:focus {
        <font>
         <family>MS Shell Dlg 2</family>
         <pointsize>16</pointsize>
+        <weight>50</weight>
         <bold>false</bold>
        </font>
       </property>
@@ -430,6 +432,7 @@ QPushButton:focus {
        <font>
         <family>MS Shell Dlg 2</family>
         <pointsize>16</pointsize>
+        <weight>75</weight>
         <bold>true</bold>
        </font>
       </property>
@@ -487,6 +490,7 @@ QPushButton:focus {
        <font>
         <family>MS Shell Dlg 2</family>
         <pointsize>16</pointsize>
+        <weight>50</weight>
         <bold>false</bold>
        </font>
       </property>
@@ -513,6 +517,7 @@ QPushButton:focus {
        <font>
         <family>MS Shell Dlg 2</family>
         <pointsize>16</pointsize>
+        <weight>75</weight>
         <bold>true</bold>
        </font>
       </property>
@@ -567,6 +572,7 @@ QPushButton:focus {
        <font>
         <family>MS Shell Dlg 2</family>
         <pointsize>16</pointsize>
+        <weight>50</weight>
         <bold>false</bold>
        </font>
       </property>
@@ -597,6 +603,7 @@ QPushButton:focus {
       <font>
        <family>MS Shell Dlg 2</family>
        <pointsize>18</pointsize>
+       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -843,6 +850,7 @@ QComboBox QAbstractItemView {
       <font>
        <family>MS Shell Dlg 2</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -861,7 +869,7 @@ QComboBox QAbstractItemView {
     <widget class="QCheckBox" name="hiddenCheckBox">
      <property name="geometry">
       <rect>
-       <x>0</x>
+       <x>10</x>
        <y>130</y>
        <width>161</width>
        <height>41</height>
@@ -884,10 +892,10 @@ QCheckBox::indicator {
 }
 
 QCheckBox::indicator:checked {
-    image: url(./templates/img/check-box.png);
+    image: url(:/Icons/img/icons/check-box.png)
 }
 QCheckBox::indicator:unchecked {
-    image: url(./templates/img/blank-check-box.png);
+    image: url(:/Icons/img/icons/blank-check-box.png);
 }
 
 
@@ -1099,6 +1107,7 @@ QComboBox QAbstractItemView {
       <font>
        <family>Gotham Light</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1222,6 +1231,7 @@ QPushButton:focus {
       <font>
        <family>Gotham Light</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1324,6 +1334,7 @@ QPushButton:default {
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
+          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1342,6 +1353,7 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
+          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1360,6 +1372,7 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
+          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1378,6 +1391,7 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
+          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1396,6 +1410,7 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
+          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1414,6 +1429,7 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
+          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1432,6 +1448,7 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
+          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1450,6 +1467,7 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
+          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1468,6 +1486,7 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
+          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1486,6 +1505,7 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
+          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1504,6 +1524,7 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
+          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1522,6 +1543,7 @@ background-color: rgba(255, 255, 255, 0);</string>
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
+          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -1594,6 +1616,7 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham</family>
        <pointsize>12</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
