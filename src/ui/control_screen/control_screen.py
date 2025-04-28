@@ -3,411 +3,409 @@ from PyQt5.QtWidgets import QWidget, QPushButton, QSpinBox, QTabWidget, QToolBut
 from utils.helpers import check_ui_elements
 
 class ControlScreen(QWidget):
-    """
-    Control Screen widget that provides printer control functionality:
-    - Feed Rate and Bed Height Adjustment (Tab 1)
-    - Temperature Control for Tool and Bed (Tab 2)
-    - Motion Control for X, Y, Z axes and Extruder (Tab 3)
-    - Filament Control including flow rate and filament sensor (Tab 4)
-    """
     def __init__(self, main_window):
         super(ControlScreen, self).__init__()
         self.main_window = main_window
-
-        # Load the .ui file
+        
+        # Current movement step size
+        self.step_size = 10  # Default to 10mm
+        
+        # Load UI and initialize elements
+        self._load_ui()
+        self._initialize_widgets()
+        self._check_widgets_existence()
+        self._connect_buttons()
+        
+        # Default to tab 0
+        if self.controlTabWidget:
+            self.controlTabWidget.setCurrentIndex(0)
+            
+    def _load_ui(self):
+        """Load the UI file with error handling"""
         try:
             uic.loadUi('src/ui/control_screen/control_screen.ui', self)
             print("ControlScreen UI loaded successfully")
         except Exception as e:
             print(f"Failed to load ControlScreen UI file: {e}")
 
-        # Find tab widget
-        self.controlTabWidget = self.findChild(QTabWidget, 'controlTabWidget')
-
+    def _initialize_widgets(self):
+        """Find and initialize all UI elements using a dictionary-based approach"""
+        # Find tab widget with type information
+        self.tab_components = {
+            "controlTabWidget": {"type": QTabWidget, "instance": None}
+        }
+        
         # Navigation button (global - always visible)
-        self.controlBackButton = self.findChild(QPushButton, 'controlBackButton')
+        self.navigation_buttons = {
+            "controlBackButton": {"type": QPushButton, "instance": None}
+        }
 
         # ----- TAB 1: FEED RATE TAB -----
         # Feed rate control and bed height adjustment during print
-        self.feedRateSpinBox = self.findChild(QSpinBox, 'feedRateSpinBox')
-        self.setFeedRateButton = self.findChild(QPushButton, 'setFeedRateButton')
-        # Z-axis baby stepping for fine bed height adjustment during print
-        self.moveZPBabyStep = self.findChild(QPushButton, 'moveZPBabyStep')  # Z+ (baby step)
-        self.moveZMBabyStep = self.findChild(QPushButton, 'moveZMBabyStep')  # Z- (baby step)
+        self.feed_rate_controls = {
+            "feedRateSpinBox": {"type": QSpinBox, "instance": None},
+            "setFeedRateButton": {"type": QPushButton, "instance": None},
+            "moveZPBabyStep": {"type": QPushButton, "instance": None},
+            "moveZMBabyStep": {"type": QPushButton, "instance": None}
+        }
 
         # ----- TAB 2: TEMPERATURE TAB -----
-        # Fan control
-        self.fanOnButton = self.findChild(QPushButton, 'fanOnButton')
-        self.fanOffButton = self.findChild(QPushButton, 'fanOffButton') 
-        self.cooldownButton = self.findChild(QPushButton, 'cooldownButton')
-        # Tool (extruder) temperature control
-        self.toolToggleTemperatureButton = self.findChild(QPushButton, 'toolToggleTemperatureButton')  # Switch between tools
-        self.tool180PreheatButton = self.findChild(QPushButton, 'tool180PreheatButton')  # PLA preset
-        self.tool250PreheatButton = self.findChild(QPushButton, 'tool250PreheatButton')  # ABS/PETG preset
-        self.toolTempSpinBox = self.findChild(QSpinBox, 'toolTempSpinBox')
-        self.setToolTempButton = self.findChild(QPushButton, 'setToolTempButton')
-        # Bed temperature control
-        self.bed60PreheatButton = self.findChild(QPushButton, 'bed60PreheatButton')  # PLA preset
-        self.bed100PreheatButton = self.findChild(QPushButton, 'bed100PreheatButton')  # ABS preset
-        self.bedTempSpinBox = self.findChild(QSpinBox, 'bedTempSpinBox')
-        self.setBedTempButton = self.findChild(QPushButton, 'setBedTempButton')
+        self.temperature_controls = {
+            # Fan control
+            "fanOnButton": {"type": QPushButton, "instance": None},
+            "fanOffButton": {"type": QPushButton, "instance": None},
+            "cooldownButton": {"type": QPushButton, "instance": None},
+            # Tool (extruder) temperature control
+            "toolToggleTemperatureButton": {"type": QPushButton, "instance": None},
+            "tool180PreheatButton": {"type": QPushButton, "instance": None},
+            "tool250PreheatButton": {"type": QPushButton, "instance": None},
+            "toolTempSpinBox": {"type": QSpinBox, "instance": None},
+            "setToolTempButton": {"type": QPushButton, "instance": None},
+            # Bed temperature control
+            "bed60PreheatButton": {"type": QPushButton, "instance": None},
+            "bed100PreheatButton": {"type": QPushButton, "instance": None},
+            "bedTempSpinBox": {"type": QSpinBox, "instance": None},
+            "setBedTempButton": {"type": QPushButton, "instance": None}
+        }
 
         # ----- TAB 3: MOTION TAB -----
-        # Movement increment control
-        self.step1mmButton = self.findChild(QPushButton, 'step1mmButton')
-        self.step10mmButton = self.findChild(QPushButton, 'step10mmButton')
-        self.step100mmButton = self.findChild(QPushButton, 'step100mmButton')
-        self.motorOffButton = self.findChild(QPushButton, 'motorOffButton')
-        # Tool selection for motion
-        self.toolToggleMotionButton = self.findChild(QPushButton, 'toolToggleMotionButton')
-        # X/Y movement controls
-        self.moveXPButton = self.findChild(QPushButton, 'moveXPButton')  # X+
-        self.moveXMButton = self.findChild(QPushButton, 'moveXMButton')  # X-
-        self.moveYPButton = self.findChild(QPushButton, 'moveYPButton')  # Y+
-        self.moveYMButton = self.findChild(QPushButton, 'moveYMButton')  # Y-
-        self.homeXYButton = self.findChild(QPushButton, 'homeXYButton')  # Home X/Y
-        # Z movement controls
-        self.moveZPButton = self.findChild(QPushButton, 'moveZPButton')  # Z+
-        self.moveZMButton = self.findChild(QPushButton, 'moveZMButton')  # Z-
-        self.homeZButton = self.findChild(QPushButton, 'homeZButton')    # Home Z
-        # Extruder controls
-        self.extruderButton = self.findChild(QPushButton, 'extruderButton')  # Extrude
-        self.retractButton = self.findChild(QPushButton, 'retractButton')    # Retract
+        self.motion_controls = {
+            # Movement increment control
+            "step1mmButton": {"type": QPushButton, "instance": None},
+            "step10mmButton": {"type": QPushButton, "instance": None},
+            "step100mmButton": {"type": QPushButton, "instance": None},
+            "motorOffButton": {"type": QPushButton, "instance": None},
+            # Tool selection for motion
+            "toolToggleMotionButton": {"type": QPushButton, "instance": None},
+            # X/Y movement controls
+            "moveXPButton": {"type": QPushButton, "instance": None},
+            "moveXMButton": {"type": QPushButton, "instance": None},
+            "moveYPButton": {"type": QPushButton, "instance": None},
+            "moveYMButton": {"type": QPushButton, "instance": None},
+            "homeXYButton": {"type": QPushButton, "instance": None},
+            # Z movement controls
+            "moveZPButton": {"type": QPushButton, "instance": None},
+            "moveZMButton": {"type": QPushButton, "instance": None},
+            "homeZButton": {"type": QPushButton, "instance": None},
+            # Extruder controls
+            "extruderButton": {"type": QPushButton, "instance": None},
+            "retractButton": {"type": QPushButton, "instance": None}
+        }
 
         # ----- TAB 4: FILAMENT TAB -----
-        # Flow rate control
-        self.flowRateSpinBox = self.findChild(QSpinBox, 'flowRateSpinBox')
-        self.setFlowRateButton = self.findChild(QPushButton, 'setFlowRateButton')
-        # Filament management
-        self.changeFilamentButton = self.findChild(QToolButton, 'changeFilamentButton')
-        self.toggleFilamentSensorButton = self.findChild(QToolButton, 'toggleFilamentSensorButton')
+        self.filament_controls = {
+            # Flow rate control
+            "flowRateSpinBox": {"type": QSpinBox, "instance": None},
+            "setFlowRateButton": {"type": QPushButton, "instance": None},
+            # Filament management
+            "changeFilamentButton": {"type": QToolButton, "instance": None},
+            "toggleFilamentSensorButton": {"type": QToolButton, "instance": None}
+        }
+        
+        # Combine all component dictionaries for easier iteration
+        self.all_components = {}
+        self.all_components.update(self.tab_components)
+        self.all_components.update(self.navigation_buttons)
+        self.all_components.update(self.feed_rate_controls)
+        self.all_components.update(self.temperature_controls)
+        self.all_components.update(self.motion_controls)
+        self.all_components.update(self.filament_controls)
+        
+        # Find all components using the dictionary
+        self._find_components()
+        
+        # Store reference to controlTabWidget for easy access
+        self.controlTabWidget = self.tab_components.get("controlTabWidget").get("instance")
+        
+        # Log initialization status
+        print("Control Screen widgets initialized")
 
-        # Check if UI elements exist and report missing ones
-        self._check_widgets_existence()
-
-        # Connect buttons to their respective functions - with safety checks
-        self._connect_buttons()
+    def _find_components(self):
+        """Find all UI components based on their object names"""
+        for name, component_info in self.all_components.items():
+            component_type = component_info["type"]
+            component = self.findChild(component_type, name)
+            component_info["instance"] = component
+            
+            # Store a direct reference for easy access
+            setattr(self, name, component)
+            
+            # Debug output
+            if component:
+                print(f"Found {component_type.__name__} '{name}'")
+            else:
+                print(f"WARNING: Could not find {component_type.__name__} '{name}' in UI")
 
     def _check_widgets_existence(self):
         """Check if UI elements exist and report missing ones"""
-        # Group widgets for better reporting
-        navigation_buttons = {
-            "controlBackButton": self.controlBackButton
+        # Create mappings of component categories for reporting
+        component_groups = {
+            "ControlScreen - Tab Widget": {name: info["instance"] for name, info in self.tab_components.items()},
+            "ControlScreen - Navigation Buttons": {name: info["instance"] for name, info in self.navigation_buttons.items()},
+            "ControlScreen - Feed Rate Controls": {name: info["instance"] for name, info in self.feed_rate_controls.items()},
+            "ControlScreen - Temperature Controls": {name: info["instance"] for name, info in self.temperature_controls.items()},
+            "ControlScreen - Motion Controls": {name: info["instance"] for name, info in self.motion_controls.items()},
+            "ControlScreen - Filament Controls": {name: info["instance"] for name, info in self.filament_controls.items()}
         }
-        check_ui_elements(self, navigation_buttons, "ControlScreen - Navigation Buttons")
         
-        temperature_buttons = {
-            "cooldownButton": self.cooldownButton,
-            "fanOnButton": self.fanOnButton,
-            "fanOffButton": self.fanOffButton,
-            "toolToggleTemperatureButton": self.toolToggleTemperatureButton,
-            "tool180PreheatButton": self.tool180PreheatButton,
-            "tool250PreheatButton": self.tool250PreheatButton,
-            "setToolTempButton": self.setToolTempButton,
-            "bed60PreheatButton": self.bed60PreheatButton,
-            "bed100PreheatButton": self.bed100PreheatButton,
-            "setBedTempButton": self.setBedTempButton
-        }
-        check_ui_elements(self, temperature_buttons, "ControlScreen - Temperature Controls")
-        
-        movement_buttons = {
-            "moveYPButton": self.moveYPButton,
-            "moveYMButton": self.moveYMButton,
-            "moveXMButton": self.moveXMButton,
-            "moveXPButton": self.moveXPButton,
-            "homeXYButton": self.homeXYButton,
-            "moveZMButton": self.moveZMButton,
-            "moveZPButton": self.moveZPButton,
-            "homeZButton": self.homeZButton,
-            "moveZPBabyStep": self.moveZPBabyStep,
-            "moveZMBabyStep": self.moveZMBabyStep
-        }
-        check_ui_elements(self, movement_buttons, "ControlScreen - Movement Controls")
-        
-        extruder_buttons = {
-            "toolToggleMotionButton": self.toolToggleMotionButton,
-            "extruderButton": self.extruderButton,
-            "retractButton": self.retractButton,
-            "changeFilamentButton": self.changeFilamentButton,
-            "toggleFilamentSensorButton": self.toggleFilamentSensorButton
-        }
-        check_ui_elements(self, extruder_buttons, "ControlScreen - Extruder Controls")
-        
-        settings_buttons = {
-            "step1mmButton": self.step1mmButton,
-            "step10mmButton": self.step10mmButton,
-            "step100mmButton": self.step100mmButton,
-            "motorOffButton": self.motorOffButton,
-            "setFeedRateButton": self.setFeedRateButton,
-            "setFlowRateButton": self.setFlowRateButton
-        }
-        check_ui_elements(self, settings_buttons, "ControlScreen - Settings Controls")
-        
-        input_widgets = {
-            "feedRateSpinBox": self.feedRateSpinBox,
-            "toolTempSpinBox": self.toolTempSpinBox,
-            "bedTempSpinBox": self.bedTempSpinBox,
-            "flowRateSpinBox": self.flowRateSpinBox,
-            "controlTabWidget": self.controlTabWidget
-        }
-        check_ui_elements(self, input_widgets, "ControlScreen - Input Widgets")
+        # Check each component group
+        for group_name, components in component_groups.items():
+            check_ui_elements(self, components, group_name)
 
     def _connect_buttons(self):
-        """Connect buttons to their respective functions with safety checks."""
-        # ----- NAVIGATION (GLOBAL) -----
-        if self.controlBackButton:
-            self.controlBackButton.clicked.connect(self.main_window.switch_to_previous_screen)
+        """Connect buttons to their respective functions with safety checks"""
+        # Navigation button
+        self._connect_button(self.navigation_buttons, "controlBackButton", self._go_back)
         
         # ----- TAB 1: FEED RATE TAB -----
-        # Feed rate control
-        if self.setFeedRateButton:
-            self.setFeedRateButton.clicked.connect(self.set_feed_rate)
-        # Bed height adjustment during print (baby stepping)
-        if self.moveZPBabyStep:
-            self.moveZPBabyStep.clicked.connect(self.move_z_positive_baby_step)
-        if self.moveZMBabyStep:
-            self.moveZMBabyStep.clicked.connect(self.move_z_negative_baby_step)
+        self._connect_button(self.feed_rate_controls, "setFeedRateButton", self.set_feed_rate)
+        self._connect_button(self.feed_rate_controls, "moveZPBabyStep", self.move_z_positive_baby_step)
+        self._connect_button(self.feed_rate_controls, "moveZMBabyStep", self.move_z_negative_baby_step)
         
         # ----- TAB 2: TEMPERATURE TAB -----
         # Fan control
-        if self.fanOnButton:
-            self.fanOnButton.clicked.connect(self.turn_fan_on)
-        if self.fanOffButton:
-            self.fanOffButton.clicked.connect(self.turn_fan_off)
+        self._connect_button(self.temperature_controls, "fanOnButton", self.turn_fan_on)
+        self._connect_button(self.temperature_controls, "fanOffButton", self.turn_fan_off)
+        self._connect_button(self.temperature_controls, "cooldownButton", self.cooldown)
+        
         # Temperature control
-        if self.cooldownButton:
-            self.cooldownButton.clicked.connect(self.cooldown)
-        if self.setToolTempButton:
-            self.setToolTempButton.clicked.connect(self.set_tool_temp)
-        if self.setBedTempButton:
-            self.setBedTempButton.clicked.connect(self.set_bed_temp)
-        # Tool toggle button
-        if self.toolToggleTemperatureButton:
-            self.toolToggleTemperatureButton.clicked.connect(self.toggle_tool_temperature)
-        # Preset temperatures
-        if self.tool180PreheatButton:
-            self.tool180PreheatButton.clicked.connect(self.preheat_tool_180)
-        if self.tool250PreheatButton:
-            self.tool250PreheatButton.clicked.connect(self.preheat_tool_250)
-        if self.bed60PreheatButton:
-            self.bed60PreheatButton.clicked.connect(self.preheat_bed_60)
-        if self.bed100PreheatButton:
-            self.bed100PreheatButton.clicked.connect(self.preheat_bed_100)
+        self._connect_button(self.temperature_controls, "setToolTempButton", self.set_tool_temp)
+        self._connect_button(self.temperature_controls, "setBedTempButton", self.set_bed_temp)
+        self._connect_button(self.temperature_controls, "toolToggleTemperatureButton", self.toggle_tool_temperature)
+        self._connect_button(self.temperature_controls, "tool180PreheatButton", self.preheat_tool_180)
+        self._connect_button(self.temperature_controls, "tool250PreheatButton", self.preheat_tool_250)
+        self._connect_button(self.temperature_controls, "bed60PreheatButton", self.preheat_bed_60)
+        self._connect_button(self.temperature_controls, "bed100PreheatButton", self.preheat_bed_100)
         
         # ----- TAB 3: MOTION TAB -----
         # Movement increment buttons
-        if self.step1mmButton:
-            self.step1mmButton.clicked.connect(lambda: self.set_move_step(1))
-        if self.step10mmButton:
-            self.step10mmButton.clicked.connect(lambda: self.set_move_step(10))
-        if self.step100mmButton:
-            self.step100mmButton.clicked.connect(lambda: self.set_move_step(100))
-        # Motor control
-        if self.motorOffButton:
-            self.motorOffButton.clicked.connect(self.motors_off)
+        self._connect_button(self.motion_controls, "step1mmButton", lambda: self.set_move_step(1))
+        self._connect_button(self.motion_controls, "step10mmButton", lambda: self.set_move_step(10))
+        self._connect_button(self.motion_controls, "step100mmButton", lambda: self.set_move_step(100))
+        self._connect_button(self.motion_controls, "motorOffButton", self.motors_off)
+        
         # Tool selection
-        if self.toolToggleMotionButton:
-            self.toolToggleMotionButton.clicked.connect(self.toggle_tool_motion)
-        # X/Y movement
-        if self.moveXPButton:
-            self.moveXPButton.clicked.connect(self.move_x_positive)
-        if self.moveXMButton:
-            self.moveXMButton.clicked.connect(self.move_x_negative)
-        if self.moveYPButton:
-            self.moveYPButton.clicked.connect(self.move_y_positive)
-        if self.moveYMButton:
-            self.moveYMButton.clicked.connect(self.move_y_negative)
-        if self.homeXYButton:
-            self.homeXYButton.clicked.connect(self.home_xy)
-        # Z movement
-        if self.moveZPButton:
-            self.moveZPButton.clicked.connect(self.move_z_positive)
-        if self.moveZMButton:
-            self.moveZMButton.clicked.connect(self.move_z_negative)
-        if self.homeZButton:
-            self.homeZButton.clicked.connect(self.home_z)
-        # Extruder control
-        if self.extruderButton:
-            self.extruderButton.clicked.connect(self.extrude)
-        if self.retractButton:
-            self.retractButton.clicked.connect(self.retract)
-            
+        self._connect_button(self.motion_controls, "toolToggleMotionButton", self.toggle_tool_motion)
+        
+        # Movement controls
+        self._connect_button(self.motion_controls, "moveXPButton", self.move_x_positive)
+        self._connect_button(self.motion_controls, "moveXMButton", self.move_x_negative)
+        self._connect_button(self.motion_controls, "moveYPButton", self.move_y_positive)
+        self._connect_button(self.motion_controls, "moveYMButton", self.move_y_negative)
+        self._connect_button(self.motion_controls, "homeXYButton", self.home_xy)
+        self._connect_button(self.motion_controls, "moveZPButton", self.move_z_positive)
+        self._connect_button(self.motion_controls, "moveZMButton", self.move_z_negative)
+        self._connect_button(self.motion_controls, "homeZButton", self.home_z)
+        
+        # Extruder controls
+        self._connect_button(self.motion_controls, "extruderButton", self.extrude)
+        self._connect_button(self.motion_controls, "retractButton", self.retract)
+        
         # ----- TAB 4: FILAMENT TAB -----
-        # Flow rate control
-        if self.setFlowRateButton:
-            self.setFlowRateButton.clicked.connect(self.set_flow_rate)
-        # Filament management
-        if self.changeFilamentButton:
-            self.changeFilamentButton.clicked.connect(self.navigate_to_change_filament)
-        if self.toggleFilamentSensorButton:
-            self.toggleFilamentSensorButton.clicked.connect(self.toggle_filament_sensor)
+        self._connect_button(self.filament_controls, "setFlowRateButton", self.set_flow_rate)
+        self._connect_button(self.filament_controls, "changeFilamentButton", self.navigate_to_change_filament)
+        self._connect_button(self.filament_controls, "toggleFilamentSensorButton", self.toggle_filament_sensor)
 
-    def navigate_to_change_filament(self):
-        """Navigate to the change filament page."""
-        if hasattr(self.main_window, 'reset_change_filament_process'):
-            self.main_window.reset_change_filament_process()
-        self.main_window.switch_to_change_filament_screen()
-
+    def _connect_button(self, button_dict, button_name, handler_function):
+        """Helper method to safely connect a button to its handler"""
+        if button_name in button_dict:
+            button = button_dict[button_name]["instance"]
+            if button:
+                button.clicked.connect(handler_function)
+                print(f"Connected {button_name} to handler")
+            else:
+                print(f"WARNING: Could not connect {button_name} - button not found")
+    
+    # ===== NAVIGATION FUNCTIONS =====
+    def _go_back(self):
+        """Handle back button - return to previous screen"""
+        self.main_window.switch_to_previous_screen()
+        print("Control Screen: returning to previous screen")
+    
+    # ===== TAB 1: FEED RATE FUNCTIONS =====
     def set_feed_rate(self):
-        """Set the feed rate based on the spin box value."""
-        if self.feedRateSpinBox:
-            feed_rate = self.feedRateSpinBox.value()
-            print(f"Feed rate set to: {feed_rate}%")
-        else:
-            print("Feed rate spin box not found")
-
-    def move_z_positive(self):
-        """Move the Z-axis in the positive direction."""
-        print("Moving Z-axis in the positive direction")
-
-    def move_z_negative(self):
-        """Move the Z-axis in the negative direction."""
-        print("Moving Z-axis in the negative direction")
-
-    def cooldown(self):
-        """Cooldown the printer."""
-        print("Cooldown initiated")
-
-    def turn_fan_on(self):
-        """Turn the fan on."""
-        print("Fan turned on")
-
-    def turn_fan_off(self):
-        """Turn the fan off."""
-        print("Fan turned off")
-
-    # ----- TAB 1: FEED RATE TAB METHODS -----
+        """Set the feed rate"""
+        spinbox = self.feed_rate_controls["feedRateSpinBox"]["instance"]
+        if spinbox:
+            value = spinbox.value()
+            print(f"Setting feed rate to {value}%")
+            # Add implementation to control the printer
+            
     def move_z_positive_baby_step(self):
-        """Adjust bed height during print with small Z positive movement (baby step)."""
-        print("Baby stepping Z+ for fine bed height adjustment")
-        # API call would go here
+        """Fine Z adjustment - move up slightly during print"""
+        print("Moving Z up slightly (baby step)")
+        # Add implementation to control the printer
         
     def move_z_negative_baby_step(self):
-        """Adjust bed height during print with small Z negative movement (baby step)."""
-        print("Baby stepping Z- for fine bed height adjustment")
-        # API call would go here
-
-    # ----- TAB 2: TEMPERATURE TAB METHODS -----
+        """Fine Z adjustment - move down slightly during print"""
+        print("Moving Z down slightly (baby step)")
+        # Add implementation to control the printer
+    
+    # ===== TAB 2: TEMPERATURE FUNCTIONS =====
+    def turn_fan_on(self):
+        """Turn the cooling fan on"""
+        print("Turning fan ON")
+        # Add implementation to control the printer
+        
+    def turn_fan_off(self):
+        """Turn the cooling fan off"""
+        print("Turning fan OFF")
+        # Add implementation to control the printer
+        
+    def cooldown(self):
+        """Cool down all heaters"""
+        print("Cooling down all heaters")
+        # Add implementation to control the printer
+    
     def set_tool_temp(self):
-        """Set the tool temperature based on the spin box value."""
-        if self.toolTempSpinBox:
-            tool_temp = self.toolTempSpinBox.value()
-            print(f"Tool temperature set to: {tool_temp}°C")
-            # API call would go here
-        
+        """Set the tool temperature to the specified value"""
+        spinbox = self.temperature_controls["toolTempSpinBox"]["instance"]
+        if spinbox:
+            value = spinbox.value()
+            is_tool1 = self.get_active_tool_temp()
+            tool_name = "Tool 1" if is_tool1 else "Tool 0"
+            print(f"Setting {tool_name} temperature to {value}°C")
+            # Add implementation to control the printer
+    
     def set_bed_temp(self):
-        """Set the bed temperature based on the spin box value."""
-        if self.bedTempSpinBox:
-            bed_temp = self.bedTempSpinBox.value()
-            print(f"Bed temperature set to: {bed_temp}°C")
-            # API call would go here
-            
+        """Set the bed temperature to the specified value"""
+        spinbox = self.temperature_controls["bedTempSpinBox"]["instance"]
+        if spinbox:
+            value = spinbox.value()
+            print(f"Setting bed temperature to {value}°C")
+            # Add implementation to control the printer
+    
     def toggle_tool_temperature(self):
-        """Toggle between extruders for temperature control."""
-        is_checked = self.toolToggleTemperatureButton.isChecked()
-        print(f"Temperature tool toggled to tool {2 if is_checked else 1}")
-        # Update icon or text to indicate which tool is selected
-        # API call would go here
-        
+        """Toggle between tool 0 and tool 1 for temperature control"""
+        is_tool1 = self.get_active_tool_temp()
+        print(f"Toggled to Tool {1 if is_tool1 else 0} for temperature control")
+        # Add implementation to update UI if needed
+    
+    def get_active_tool_temp(self):
+        """Get the currently active tool for temperature control"""
+        button = self.temperature_controls.get("toolToggleTemperatureButton", {}).get("instance")
+        return button and button.isChecked()
+    
     def preheat_tool_180(self):
-        """Preheat tool to 180°C (PLA preset)."""
-        print("Preheating tool to 180°C")
-        self.toolTempSpinBox.setValue(180)
-        # Optionally auto-apply the temperature
-        self.set_tool_temp()
-        
+        """Preheat tool to 180°C (PLA preset)"""
+        is_tool1 = self.get_active_tool_temp()
+        tool_name = "Tool 1" if is_tool1 else "Tool 0"
+        print(f"Preheating {tool_name} to 180°C")
+        # Add implementation to control the printer
+    
     def preheat_tool_250(self):
-        """Preheat tool to 250°C (ABS/PETG preset)."""
-        print("Preheating tool to 250°C")
-        self.toolTempSpinBox.setValue(250)
-        # Optionally auto-apply the temperature
-        self.set_tool_temp()
-        
+        """Preheat tool to 250°C (ABS/PETG preset)"""
+        is_tool1 = self.get_active_tool_temp()
+        tool_name = "Tool 1" if is_tool1 else "Tool 0"
+        print(f"Preheating {tool_name} to 250°C")
+        # Add implementation to control the printer
+    
     def preheat_bed_60(self):
-        """Preheat bed to 60°C (PLA preset)."""
+        """Preheat bed to 60°C (PLA preset)"""
         print("Preheating bed to 60°C")
-        self.bedTempSpinBox.setValue(60)
-        # Optionally auto-apply the temperature
-        self.set_bed_temp()
-        
+        # Add implementation to control the printer
+    
     def preheat_bed_100(self):
-        """Preheat bed to 100°C (ABS preset)."""
+        """Preheat bed to 100°C (ABS preset)"""
         print("Preheating bed to 100°C")
-        self.bedTempSpinBox.setValue(100)
-        # Optionally auto-apply the temperature
-        self.set_bed_temp()
-
-    # ----- TAB 3: MOTION TAB METHODS -----
-    def set_move_step(self, step_size):
-        """Set the movement step size in mm."""
-        print(f"Movement step size set to {step_size}mm")
-        # Update UI to reflect selected step size
-        # Store step size for use in movement commands
-        
+        # Add implementation to control the printer
+    
+    # ===== TAB 3: MOTION FUNCTIONS =====
+    def set_move_step(self, step):
+        """Set the movement step size"""
+        self.step_size = step
+        print(f"Set movement step size to {step}mm")
+        # Highlight the selected button and unhighlight others
+        for button_name, step_value in [("step1mmButton", 1), ("step10mmButton", 10), ("step100mmButton", 100)]:
+            button = self.motion_controls.get(button_name, {}).get("instance")
+            if button:
+                button.setFlat(step == step_value)
+    
     def motors_off(self):
-        """Turn off all stepper motors."""
-        print("All motors disabled")
-        # API call would go here
-        
+        """Turn off all stepper motors"""
+        print("Turning off all motors")
+        # Add implementation to control the printer
+    
     def toggle_tool_motion(self):
-        """Toggle between extruders for motion control."""
-        is_checked = self.toolToggleMotionButton.isChecked()
-        print(f"Motion tool toggled to tool {2 if is_checked else 1}")
-        # Update icon or text to indicate which tool is selected
-        # API call would go here
-        
+        """Toggle between tool 0 and tool 1 for motion control"""
+        button = self.motion_controls.get("toolToggleMotionButton", {}).get("instance")
+        is_tool1 = button and button.isChecked()
+        print(f"Toggled to Tool {1 if is_tool1 else 0} for motion control")
+        # Add implementation to update UI if needed
+    
     def move_x_positive(self):
-        """Move the X-axis in the positive direction."""
-        print("Moving X+")
-        # API call would go here
-        
+        """Move X axis in positive direction"""
+        print(f"Moving X+ by {self.step_size}mm")
+        # Add implementation to control the printer
+    
     def move_x_negative(self):
-        """Move the X-axis in the negative direction."""
-        print("Moving X-")
-        # API call would go here
-        
+        """Move X axis in negative direction"""
+        print(f"Moving X- by {self.step_size}mm")
+        # Add implementation to control the printer
+    
     def move_y_positive(self):
-        """Move the Y-axis in the positive direction."""
-        print("Moving Y+")
-        # API call would go here
-        
+        """Move Y axis in positive direction"""
+        print(f"Moving Y+ by {self.step_size}mm")
+        # Add implementation to control the printer
+    
     def move_y_negative(self):
-        """Move the Y-axis in the negative direction."""
-        print("Moving Y-")
-        # API call would go here
-        
+        """Move Y axis in negative direction"""
+        print(f"Moving Y- by {self.step_size}mm")
+        # Add implementation to control the printer
+    
     def home_xy(self):
-        """Home the X and Y axes."""
+        """Home X and Y axes"""
         print("Homing X and Y axes")
-        # API call would go here
+        # Add implementation to control the printer
+    
+    def move_z_positive(self):
+        """Move Z axis in positive direction"""
+        print(f"Moving Z+ by {self.step_size}mm")
+        # Add implementation to control the printer
+    
+    def move_z_negative(self):
+        """Move Z axis in negative direction"""
+        print(f"Moving Z- by {self.step_size}mm")
+        # Add implementation to control the printer
     
     def home_z(self):
-        """Home the Z axis."""
+        """Home Z axis"""
         print("Homing Z axis")
-        # API call would go here
-        
+        # Add implementation to control the printer
+    
     def extrude(self):
-        """Extrude filament at the current position."""
-        print("Extruding filament")
-        # API call would go here
-        
+        """Extrude filament"""
+        print(f"Extruding filament by {self.step_size}mm")
+        # Add implementation to control the printer
+    
     def retract(self):
-        """Retract filament at the current position."""
-        print("Retracting filament")
-        # API call would go here
-
-    # ----- TAB 4: FILAMENT TAB METHODS -----
+        """Retract filament"""
+        print(f"Retracting filament by {self.step_size}mm")
+        # Add implementation to control the printer
+    
+    # ===== TAB 4: FILAMENT FUNCTIONS =====
     def set_flow_rate(self):
-        """Set the flow rate based on the spin box value."""
-        if self.flowRateSpinBox:
-            flow_rate = self.flowRateSpinBox.value()
-            print(f"Flow rate set to: {flow_rate}%")
-            # API call would go here
-        
+        """Set the flow rate"""
+        spinbox = self.filament_controls["flowRateSpinBox"]["instance"]
+        if spinbox:
+            value = spinbox.value()
+            print(f"Setting flow rate to {value}%")
+            # Add implementation to control the printer
+    
+    def navigate_to_change_filament(self):
+        """Open the change filament screen"""
+        print("Navigating to change filament screen")
+        self.main_window.switch_to_change_filament_screen()
+    
     def toggle_filament_sensor(self):
-        """Toggle the filament runout sensor on/off."""
-        is_checked = self.toggleFilamentSensorButton.isChecked()
-        status = "enabled" if is_checked else "disabled"
-        print(f"Filament sensor {status}")
-        # Update icon to reflect status
-        # API call would go here
+        """Toggle the filament sensor on/off"""
+        button = self.filament_controls.get("toggleFilamentSensorButton", {}).get("instance")
+        is_on = button and button.isChecked()
+        status = "ON" if is_on else "OFF"
+        print(f"Toggling filament sensor {status}")
+        # Add implementation to control the printer
+        
+        # Update the button icon based on status
+        if button:
+            icon_name = "filamentSensorOn" if is_on else "filamentSensorOff"
+            # Update icon if needed

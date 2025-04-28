@@ -7,264 +7,334 @@ class PrintFromLocation(QWidget):
         super(PrintFromLocation, self).__init__()
         self.main_window = main_window
 
-        # Load the .ui file
+        # Load the UI
+        self._load_ui()
+        
+        # Initialize UI components
+        self._initialize_ui_components()
+        
+        # Check if UI elements exist and report missing ones
+        self._check_widgets_existence()
+        
+        # Connect signals to slots
+        self._connect_buttons()
+
+        # Set the default screen to printLocationPage if it exists
+        self._set_default_page()
+
+    def _load_ui(self):
+        """Load the UI file with proper error handling"""
         try:
             uic.loadUi('src/ui/print_from_location/print_from_location.ui', self)
             print("PrintFromLocation UI loaded successfully")
         except Exception as e:
             print(f"Failed to load PrintFromLocation UI file: {e}")
 
-        # Find buttons by their object names - USB storage
-        self.USBStorageBackButton = self.findChild(QPushButton, 'USBStorageBackButton')
-        self.USBStorageScrollDown = self.findChild(QPushButton, 'USBStorageScrollDown')
-        self.USBStorageScrollUp = self.findChild(QPushButton, 'USBStorageScrollUp')
-        self.USBStorageSelectButton = self.findChild(QPushButton, 'USBStorageSelectButton')
-        self.USBStorageSaveButton = self.findChild(QPushButton, 'USBStorageSaveButton')
+    def _initialize_ui_components(self):
+        """Initialize all UI components with proper typing using dictionaries for organization"""
+        # Main container widget
+        self.container_widgets = {
+            "stackedWidget": {"type": QStackedWidget, "instance": None}
+        }
         
-        # Find buttons by their object names - local storage
-        self.localStorageBackButton = self.findChild(QPushButton, 'localStorageBackButton')
-        self.localStorageScrollDown = self.findChild(QPushButton, 'localStorageScrollDown')
-        self.localStorageScrollUp = self.findChild(QPushButton, 'localStorageScrollUp')
-        self.localStorageSelectButton = self.findChild(QPushButton, 'localStorageSelectButton')
-        self.localStorageDeleteButton = self.findChild(QPushButton, 'localStorageDeleteButton')
+        # Pages for stacked widget
+        self.pages = {
+            "printLocationPage": {"type": QWidget, "instance": None},
+            "fileListLocalPage": {"type": QWidget, "instance": None},
+            "fileListUSBPage": {"type": QWidget, "instance": None},
+            "printSelectedLocalPage": {"type": QWidget, "instance": None},
+            "printSelectedUSBPage": {"type": QWidget, "instance": None}
+        }
+        
+        # USB storage related buttons
+        self.usb_storage_buttons = {
+            "USBStorageBackButton": {"type": QPushButton, "instance": None},
+            "USBStorageScrollDown": {"type": QPushButton, "instance": None},
+            "USBStorageScrollUp": {"type": QPushButton, "instance": None},
+            "USBStorageSelectButton": {"type": QPushButton, "instance": None},
+            "USBStorageSaveButton": {"type": QPushButton, "instance": None}
+        }
+        
+        # Local storage related buttons
+        self.local_storage_buttons = {
+            "localStorageBackButton": {"type": QPushButton, "instance": None},
+            "localStorageScrollDown": {"type": QPushButton, "instance": None},
+            "localStorageScrollUp": {"type": QPushButton, "instance": None},
+            "localStorageSelectButton": {"type": QPushButton, "instance": None},
+            "localStorageDeleteButton": {"type": QPushButton, "instance": None}
+        }
         
         # Location selection buttons
-        self.fromUsbButton = self.findChild(QPushButton, 'fromUsbButton')
-        self.fromLocalButton = self.findChild(QPushButton, 'fromLocalButton')
-        self.printLocationScreenBackButton = self.findChild(QPushButton, 'printLocationScreenBackButton')
+        self.location_buttons = {
+            "fromUsbButton": {"type": QPushButton, "instance": None},
+            "fromLocalButton": {"type": QPushButton, "instance": None},
+            "printLocationScreenBackButton": {"type": QPushButton, "instance": None}
+        }
         
         # Selected file buttons - USB
-        self.fileSelectedUSBPrintButton = self.findChild(QToolButton, 'fileSelectedUSBPrintButton')
-        self.fileSelectedUSBTransferButton = self.findChild(QToolButton, 'fileSelectedUSBTransferButton')
-        self.fileSelectedUSBBackButton = self.findChild(QPushButton, 'fileSelectedUSBBackButton')
+        self.usb_file_buttons = {
+            "fileSelectedUSBPrintButton": {"type": QToolButton, "instance": None},
+            "fileSelectedUSBTransferButton": {"type": QToolButton, "instance": None},
+            "fileSelectedUSBBackButton": {"type": QPushButton, "instance": None}
+        }
         
         # Selected file buttons - Local
-        self.fileSelectedPrintButton = self.findChild(QPushButton, 'fileSelectedLocalPrintButton')
-        self.fileSelectedBackButton = self.findChild(QPushButton, 'fileSelectedLocalBackButton')
-
-        # Find other UI elements
-        self.fileListWidget = self.findChild(QListWidget, 'fileListWidgetLocal')  # Local files
-        self.fileListWidgetUSB = self.findChild(QListWidget, 'fileListWidgetUSB')  # USB files
-        self.fileSelectedName = self.findChild(QLabel, 'fileSelectedLocalName')  # Local file name
-        self.fileSelectedUSBName = self.findChild(QLabel, 'fileSelectedUSBName')  # USB file name
-        self.printPreviewSelected = self.findChild(QLabel, 'printPreviewSelectedLocal')  # Local preview
-        self.printPreviewSelectedUSB = self.findChild(QLabel, 'printPreviewSelectedUSB')  # USB preview
-
-        # Find stacked widget and pages
-        self.stackedWidget = self.findChild(QStackedWidget, 'stackedWidget')
-        self.fileListLocalPage = self.findChild(QWidget, 'fileListLocalPage')
-        self.fileListUSBPage = self.findChild(QWidget, 'fileListUSBPage')
-        self.printLocationPage = self.findChild(QWidget, 'printLocationPage')
-        self.printSelectedLocalPage = self.findChild(QWidget, 'printSelectedLocalPage')
-        self.printSelectedUSBPage = self.findChild(QWidget, 'printSelectedUSBPage')
+        self.local_file_buttons = {
+            "fileSelectedLocalPrintButton": {"type": QPushButton, "instance": None},
+            "fileSelectedLocalBackButton": {"type": QPushButton, "instance": None}
+        }
         
-        # Check for critical widget existence
-        self._check_widgets_existence()
+        # List widgets and labels
+        self.list_widgets = {
+            "fileListWidgetLocal": {"type": QListWidget, "instance": None},
+            "fileListWidgetUSB": {"type": QListWidget, "instance": None}
+        }
+        
+        # Preview and info labels
+        self.info_labels = {
+            "fileSelectedLocalName": {"type": QLabel, "instance": None},
+            "fileSelectedUSBName": {"type": QLabel, "instance": None},
+            "printPreviewSelectedLocal": {"type": QLabel, "instance": None},
+            "printPreviewSelectedUSB": {"type": QLabel, "instance": None}
+        }
+        
+        # Combine all component dictionaries for easier iteration
+        self.all_components = {}
+        self.all_components.update(self.container_widgets)
+        self.all_components.update(self.pages)
+        self.all_components.update(self.usb_storage_buttons)
+        self.all_components.update(self.local_storage_buttons)
+        self.all_components.update(self.location_buttons)
+        self.all_components.update(self.usb_file_buttons)
+        self.all_components.update(self.local_file_buttons)
+        self.all_components.update(self.list_widgets)
+        self.all_components.update(self.info_labels)
+        
+        # Find all components using the dictionary
+        self._find_components()
 
-        # Connect all button signals with safety checks
-        self._connect_buttons()
-
-        # Set the default screen to printLocationPage if it exists
-        if self.stackedWidget and self.printLocationPage:
-            self.stackedWidget.setCurrentWidget(self.printLocationPage)
+    def _find_components(self):
+        """Find all UI components based on their object names"""
+        for name, component_info in self.all_components.items():
+            component_type = component_info["type"]
+            component = self.findChild(component_type, name)
+            component_info["instance"] = component
+            
+            # Store a direct reference for easy access
+            setattr(self, name, component)
+            
+            # Debug output
+            if component:
+                print(f"Found {component_type.__name__} '{name}'")
+            else:
+                print(f"WARNING: Could not find {component_type.__name__} '{name}' in UI")
 
     def _check_widgets_existence(self):
-        """Check if critical widgets were found and print warnings for missing ones"""
-        # Use the helper function to check and report missing widgets
-        # Group widgets logically for better reporting
-        
-        # Check main pages and container widgets
-        main_widgets = {
-            "stackedWidget": self.stackedWidget,
-            "printLocationPage": self.printLocationPage,
-            "fileListLocalPage": self.fileListLocalPage,
-            "fileListUSBPage": self.fileListUSBPage, 
-            "printSelectedLocalPage": self.printSelectedLocalPage,
-            "printSelectedUSBPage": self.printSelectedUSBPage
+        """Check if UI elements exist and report missing ones"""
+        # Create mappings of component categories for reporting
+        component_groups = {
+            "PrintFromLocation - Main Widgets": {name: info["instance"] for name, info in self.container_widgets.items()},
+            "PrintFromLocation - Pages": {name: info["instance"] for name, info in self.pages.items()},
+            "PrintFromLocation - USB Storage Buttons": {name: info["instance"] for name, info in self.usb_storage_buttons.items()},
+            "PrintFromLocation - Local Storage Buttons": {name: info["instance"] for name, info in self.local_storage_buttons.items()},
+            "PrintFromLocation - Location Selection Buttons": {name: info["instance"] for name, info in self.location_buttons.items()},
+            "PrintFromLocation - USB File Buttons": {name: info["instance"] for name, info in self.usb_file_buttons.items()},
+            "PrintFromLocation - Local File Buttons": {name: info["instance"] for name, info in self.local_file_buttons.items()},
+            "PrintFromLocation - List Widgets": {name: info["instance"] for name, info in self.list_widgets.items()},
+            "PrintFromLocation - Info Labels": {name: info["instance"] for name, info in self.info_labels.items()}
         }
-        check_ui_elements(self, main_widgets, "PrintFromLocation - Main Widgets")
         
-        # Check local storage related buttons
-        local_storage_buttons = {
-            "localStorageBackButton": self.localStorageBackButton,
-            "localStorageScrollDown": self.localStorageScrollDown,
-            "localStorageScrollUp": self.localStorageScrollUp,
-            "localStorageSelectButton": self.localStorageSelectButton,
-            "localStorageDeleteButton": self.localStorageDeleteButton
-        }
-        check_ui_elements(self, local_storage_buttons, "PrintFromLocation - Local Storage Buttons")
+        # Check each component group
+        for group_name, components in component_groups.items():
+            check_ui_elements(self, components, group_name)
+
+    def _set_default_page(self):
+        """Set the default page in stacked widget"""
+        stackedWidget = self.container_widgets["stackedWidget"]["instance"]
+        printLocationPage = self.pages["printLocationPage"]["instance"]
         
-        # Check USB storage related buttons
-        usb_storage_buttons = {
-            "USBStorageBackButton": self.USBStorageBackButton,
-            "USBStorageScrollDown": self.USBStorageScrollDown,
-            "USBStorageScrollUp": self.USBStorageScrollUp,
-            "USBStorageSelectButton": self.USBStorageSelectButton,
-            "USBStorageSaveButton": self.USBStorageSaveButton
-        }
-        check_ui_elements(self, usb_storage_buttons, "PrintFromLocation - USB Storage Buttons")
-        
-        # Check location selection buttons
-        location_buttons = {
-            "fromUsbButton": self.fromUsbButton,
-            "fromLocalButton": self.fromLocalButton,
-            "printLocationScreenBackButton": self.printLocationScreenBackButton
-        }
-        check_ui_elements(self, location_buttons, "PrintFromLocation - Location Selection Buttons")
-        
-        # Check list widgets and other UI elements
-        list_widgets = {
-            "fileListWidget": self.fileListWidget,
-            "fileListWidgetUSB": self.fileListWidgetUSB,
-            "fileSelectedName": self.fileSelectedName,
-            "fileSelectedUSBName": self.fileSelectedUSBName, 
-            "printPreviewSelected": self.printPreviewSelected,
-            "printPreviewSelectedUSB": self.printPreviewSelectedUSB
-        }
-        check_ui_elements(self, list_widgets, "PrintFromLocation - List Widgets and Labels")
-        
-        # Check file selection related buttons
-        file_selection_buttons = {
-            "fileSelectedLocalPrintButton": self.fileSelectedLocalPrintButton,
-            "fileSelectedBackButton": self.fileSelectedBackButton,
-            "fileSelectedUSBPrintButton": self.fileSelectedUSBPrintButton,
-            "fileSelectedUSBTransferButton": self.fileSelectedUSBTransferButton,
-            "fileSelectedUSBBackButton": self.fileSelectedUSBBackButton
-        }
-        check_ui_elements(self, file_selection_buttons, "PrintFromLocation - File Selection Buttons")
+        if stackedWidget and printLocationPage:
+            stackedWidget.setCurrentWidget(printLocationPage)
+            print("Set initial page to printLocationPage")
+        else:
+            print("WARNING: Could not set default page - required widgets missing")
 
     def _connect_buttons(self):
         """Connect all button signals with safety checks to prevent NoneType errors"""
-        # Connect buttons for USB storage navigation
-        if self.USBStorageBackButton and self.stackedWidget and self.printLocationPage:
-            self.USBStorageBackButton.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.printLocationPage))
-        
-        if self.USBStorageScrollDown and self.fileListWidgetUSB:
-            self.USBStorageScrollDown.clicked.connect(lambda: self.fileListWidgetUSB.setCurrentRow(self.fileListWidgetUSB.currentRow() + 1))
-        
-        if self.USBStorageScrollUp and self.fileListWidgetUSB:
-            self.USBStorageScrollUp.clicked.connect(lambda: self.fileListWidgetUSB.setCurrentRow(self.fileListWidgetUSB.currentRow() - 1))
-        
-        if self.USBStorageSelectButton:
-            self.USBStorageSelectButton.clicked.connect(self.printSelectedUSB)
-        
-        if self.USBStorageSaveButton:
-            self.USBStorageSaveButton.clicked.connect(self.transferToLocal)
-        
-        # Connect buttons for local storage navigation
-        if self.localStorageBackButton and self.stackedWidget and self.printLocationPage:
-            self.localStorageBackButton.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.printLocationPage))
-        elif self.localStorageBackButton:
-            print("Using fallback for localStorageBackButton")
-            self.localStorageBackButton.clicked.connect(self.main_window.switch_to_previous_screen)
+        # Map buttons to their handler functions
+        button_connections = [
+            # USB storage navigation
+            {"dict": self.usb_storage_buttons, "name": "USBStorageBackButton", "handler": self._usb_storage_back},
+            {"dict": self.usb_storage_buttons, "name": "USBStorageScrollDown", "handler": self._usb_scroll_down},
+            {"dict": self.usb_storage_buttons, "name": "USBStorageScrollUp", "handler": self._usb_scroll_up},
+            {"dict": self.usb_storage_buttons, "name": "USBStorageSelectButton", "handler": self.printSelectedUSB},
+            {"dict": self.usb_storage_buttons, "name": "USBStorageSaveButton", "handler": self.transferToLocal},
             
-        if self.localStorageScrollDown and self.fileListWidget:
-            self.localStorageScrollDown.clicked.connect(lambda: self.fileListWidget.setCurrentRow(self.fileListWidget.currentRow() + 1))
+            # Local storage navigation
+            {"dict": self.local_storage_buttons, "name": "localStorageBackButton", "handler": self._local_storage_back},
+            {"dict": self.local_storage_buttons, "name": "localStorageScrollDown", "handler": self._local_scroll_down},
+            {"dict": self.local_storage_buttons, "name": "localStorageScrollUp", "handler": self._local_scroll_up},
+            {"dict": self.local_storage_buttons, "name": "localStorageSelectButton", "handler": self.printSelectedLocal},
+            {"dict": self.local_storage_buttons, "name": "localStorageDeleteButton", "handler": self.deleteItem},
+            
+            # Location selection buttons
+            {"dict": self.location_buttons, "name": "fromUsbButton", "handler": self.fileListUSB},
+            {"dict": self.location_buttons, "name": "fromLocalButton", "handler": self.fileListLocal},
+            {"dict": self.location_buttons, "name": "printLocationScreenBackButton", "handler": self.main_window.switch_to_previous_screen},
+            
+            # Selected file buttons - USB
+            {"dict": self.usb_file_buttons, "name": "fileSelectedUSBPrintButton", "handler": self.printFile},
+            {"dict": self.usb_file_buttons, "name": "fileSelectedUSBTransferButton", "handler": self.transferToLocal},
+            {"dict": self.usb_file_buttons, "name": "fileSelectedUSBBackButton", "handler": self.fileListUSB},
+            
+            # Selected file buttons - Local
+            {"dict": self.local_file_buttons, "name": "fileSelectedLocalPrintButton", "handler": self.printFile},
+            {"dict": self.local_file_buttons, "name": "fileSelectedLocalBackButton", "handler": self.fileListLocal}
+        ]
         
-        if self.localStorageScrollUp and self.fileListWidget:
-            self.localStorageScrollUp.clicked.connect(lambda: self.fileListWidget.setCurrentRow(self.fileListWidget.currentRow() - 1))
+        # Connect each button to its handler with safety check
+        for connection in button_connections:
+            button_dict = connection["dict"]
+            button_name = connection["name"]
+            handler = connection["handler"]
+            
+            button = button_dict.get(button_name, {}).get("instance")
+            if button:
+                button.clicked.connect(handler)
+                print(f"Connected {button_name} to handler")
+            else:
+                print(f"WARNING: Could not connect {button_name} - button not found")
+
+    # Helper methods for button connections
+    def _usb_storage_back(self):
+        """Handle back button in USB storage page"""
+        stackedWidget = self.container_widgets["stackedWidget"]["instance"]
+        printLocationPage = self.pages["printLocationPage"]["instance"]
         
-        if self.localStorageSelectButton:
-            self.localStorageSelectButton.clicked.connect(self.printSelectedLocal)
+        if stackedWidget and printLocationPage:
+            stackedWidget.setCurrentWidget(printLocationPage)
+            print("USB Storage: going back to location selection")
+
+    def _local_storage_back(self):
+        """Handle back button in local storage page"""
+        stackedWidget = self.container_widgets["stackedWidget"]["instance"]
+        printLocationPage = self.pages["printLocationPage"]["instance"]
         
-        if self.localStorageDeleteButton:
-            self.localStorageDeleteButton.clicked.connect(self.deleteItem)
-        
-        # Connect location selection buttons
-        if self.fromUsbButton:
-            self.fromUsbButton.clicked.connect(self.fileListUSB)
-        
-        if self.fromLocalButton:
-            self.fromLocalButton.clicked.connect(self.fileListLocal)
-        
-        if self.printLocationScreenBackButton:
-            self.printLocationScreenBackButton.clicked.connect(self.main_window.switch_to_previous_screen)
-        
-        # Connect selected file buttons - USB
-        if self.fileSelectedUSBPrintButton:
-            self.fileSelectedUSBPrintButton.clicked.connect(self.printFile)
-        
-        if self.fileSelectedUSBTransferButton:
-            self.fileSelectedUSBTransferButton.clicked.connect(self.transferToLocal)
-        
-        if self.fileSelectedUSBBackButton:
-            self.fileSelectedUSBBackButton.clicked.connect(self.fileListUSB)
-        
-        # Connect selected file buttons - Local
-        if self.fileSelectedPrintButton:
-            self.fileSelectedPrintButton.clicked.connect(self.printFile)
-        
-        if self.fileSelectedBackButton:
-            self.fileSelectedBackButton.clicked.connect(self.fileListLocal)
+        if stackedWidget and printLocationPage:
+            stackedWidget.setCurrentWidget(printLocationPage)
+            print("Local Storage: going back to location selection")
+        else:
+            print("Using fallback for localStorageBackButton")
+            self.main_window.switch_to_previous_screen()
+
+    def _usb_scroll_down(self):
+        """Handle scroll down in USB file list"""
+        fileListWidgetUSB = self.list_widgets["fileListWidgetUSB"]["instance"]
+        if fileListWidgetUSB:
+            current_row = fileListWidgetUSB.currentRow()
+            fileListWidgetUSB.setCurrentRow(current_row + 1)
+            print("USB Storage: scrolling down")
+
+    def _usb_scroll_up(self):
+        """Handle scroll up in USB file list"""
+        fileListWidgetUSB = self.list_widgets["fileListWidgetUSB"]["instance"]
+        if fileListWidgetUSB:
+            current_row = fileListWidgetUSB.currentRow()
+            fileListWidgetUSB.setCurrentRow(current_row - 1)
+            print("USB Storage: scrolling up")
+
+    def _local_scroll_down(self):
+        """Handle scroll down in local file list"""
+        fileListWidgetLocal = self.list_widgets["fileListWidgetLocal"]["instance"]
+        if fileListWidgetLocal:
+            current_row = fileListWidgetLocal.currentRow()
+            fileListWidgetLocal.setCurrentRow(current_row + 1)
+            print("Local Storage: scrolling down")
+
+    def _local_scroll_up(self):
+        """Handle scroll up in local file list"""
+        fileListWidgetLocal = self.list_widgets["fileListWidgetLocal"]["instance"]
+        if fileListWidgetLocal:
+            current_row = fileListWidgetLocal.currentRow()
+            fileListWidgetLocal.setCurrentRow(current_row - 1)
+            print("Local Storage: scrolling up")
 
     def fileListLocal(self):
-        """
-        Shows the local file list screen and populates the list with local files
-        """
+        """Shows the local file list screen and populates the list with local files"""
         print("Showing local file list")
-        if self.stackedWidget and self.fileListLocalPage:
-            self.stackedWidget.setCurrentWidget(self.fileListLocalPage)
+        stackedWidget = self.container_widgets["stackedWidget"]["instance"]
+        fileListLocalPage = self.pages["fileListLocalPage"]["instance"]
+        
+        if stackedWidget and fileListLocalPage:
+            stackedWidget.setCurrentWidget(fileListLocalPage)
+            print("Switched to local file list")
         # TODO: Populate file list from octoprint server
 
     def fileListUSB(self):
-        """
-        Shows the USB file list screen and populates the list with USB files
-        """
+        """Shows the USB file list screen and populates the list with USB files"""
         print("Showing USB file list")
-        if self.stackedWidget and self.fileListUSBPage:
-            self.stackedWidget.setCurrentWidget(self.fileListUSBPage)
+        stackedWidget = self.container_widgets["stackedWidget"]["instance"]
+        fileListUSBPage = self.pages["fileListUSBPage"]["instance"]
+        
+        if stackedWidget and fileListUSBPage:
+            stackedWidget.setCurrentWidget(fileListUSBPage)
+            print("Switched to USB file list")
         # TODO: Populate file list from USB drive
 
     def printSelectedLocal(self):
-        """
-        Displays the selected local file details before printing
-        """
+        """Displays the selected local file details before printing"""
         print("Displaying selected local file")
-        if self.fileListWidget and self.fileListWidget.currentItem():
+        fileListWidgetLocal = self.list_widgets["fileListWidgetLocal"]["instance"]
+        stackedWidget = self.container_widgets["stackedWidget"]["instance"]
+        printSelectedLocalPage = self.pages["printSelectedLocalPage"]["instance"]
+        
+        if fileListWidgetLocal and fileListWidgetLocal.currentItem():
             # TODO: Get file details and preview
-            if self.stackedWidget and self.printSelectedLocalPage:
-                self.stackedWidget.setCurrentWidget(self.printSelectedLocalPage)
+            if stackedWidget and printSelectedLocalPage:
+                stackedWidget.setCurrentWidget(printSelectedLocalPage)
+                print("Showing selected local file details")
         else:
             print("No file selected")
 
     def printSelectedUSB(self):
-        """
-        Displays the selected USB file details before printing
-        """
+        """Displays the selected USB file details before printing"""
         print("Displaying selected USB file")
-        if self.fileListWidgetUSB and self.fileListWidgetUSB.currentItem():
+        fileListWidgetUSB = self.list_widgets["fileListWidgetUSB"]["instance"]
+        stackedWidget = self.container_widgets["stackedWidget"]["instance"]
+        printSelectedUSBPage = self.pages["printSelectedUSBPage"]["instance"]
+        
+        if fileListWidgetUSB and fileListWidgetUSB.currentItem():
             # TODO: Get file details and preview
-            if self.stackedWidget and self.printSelectedUSBPage:
-                self.stackedWidget.setCurrentWidget(self.printSelectedUSBPage)
+            if stackedWidget and printSelectedUSBPage:
+                stackedWidget.setCurrentWidget(printSelectedUSBPage)
+                print("Showing selected USB file details")
         else:
             print("No file selected")
 
     def printFile(self):
-        """
-        Sends the selected file to printer and starts printing
-        """
+        """Sends the selected file to printer and starts printing"""
         print("Printing file")
         # TODO: Send file to printer and switch to the home screen to show print progress
         self.main_window.switch_to_home_screen()
 
     def deleteItem(self):
-        """
-        Deletes the selected local file
-        """
+        """Deletes the selected local file"""
         print("Deleting file")
-        if self.fileListWidget and self.fileListWidget.currentItem():
+        fileListWidgetLocal = self.list_widgets["fileListWidgetLocal"]["instance"]
+        
+        if fileListWidgetLocal and fileListWidgetLocal.currentItem():
             # TODO: Delete the selected file
-            pass
+            print(f"Deleting file: {fileListWidgetLocal.currentItem().text()}")
         else:
-            print("No file selected")
+            print("No file selected to delete")
 
     def transferToLocal(self):
-        """
-        Transfers the selected USB file to local storage
-        """
+        """Transfers the selected USB file to local storage"""
         print("Transferring file from USB to local storage")
-        if self.fileListWidgetUSB and self.fileListWidgetUSB.currentItem():
+        fileListWidgetUSB = self.list_widgets["fileListWidgetUSB"]["instance"]
+        
+        if fileListWidgetUSB and fileListWidgetUSB.currentItem():
             # TODO: Copy the file from USB to local storage
-            pass
+            print(f"Transferring file: {fileListWidgetUSB.currentItem().text()}")
         else:
-            print("No file selected")
+            print("No file selected to transfer")
