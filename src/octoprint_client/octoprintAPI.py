@@ -3,11 +3,7 @@ import os
 import requests
 import json
 import base64
-
-
-#TODO: response codes for important functions
-#TODO:Check header content types in the GET/POST requests
-
+from utils import logger
 
 class octoprintAPI:
     def __init__(self, ip=None, apiKey=None):
@@ -17,14 +13,24 @@ class octoprintAPI:
         If a session is provided, it will be used (mostly for testing)
         """
         if not ip:
-            raise TypeError('Required argument \'ip\' not found or emtpy')
+            logger.error("Missing required argument 'ip'")
+            raise TypeError('Required argument \'ip\' not found or empty')
         if not apiKey:
-            raise TypeError('Required argument \'apiKey\' not found or emtpy')
+            logger.error("Missing required argument 'apiKey'")
+            raise TypeError('Required argument \'apiKey\' not found or empty')
+            
         self.ip = ip
         self.apiKey = apiKey
-        # Try a simple request to see if the API key works
-        # Keep the info, in case we need it later
-        self.version = self.version()
+        
+        try:
+            # Try a simple request to see if the API key works
+            # Keep the info, in case we need it later
+            self.version = self.version()
+            logger.info(f"Successfully connected to OctoPrint API at {ip}")
+            logger.debug(f"OctoPrint version: {self.version}")
+        except Exception as e:
+            logger.error(f"Failed to connect to OctoPrint API at {ip}: {str(e)}")
+            raise
 
     # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # ++++++++++++++++++++++++ File Handling  ++++++++++++++++++++++++++++++++++++++
@@ -48,16 +54,25 @@ class octoprintAPI:
 
         If location is a file, retrieves the selected file''s information
         """
+        logger.debug(f"Retrieving file information: location={location}, force={force}, recursive={recursive}")
         headers = {'X-Api-Key': self.apiKey}
         if location:
             location = self._prepend_local(location)
             url = 'http://' + self.ip + '/api/files/{}'.format(location)
         else:
             url = 'http://' + self.ip + '/api/files'
+            
         payload = {"recursive": recursive, "force": force}
-        response = requests.get(url, headers=headers, params=payload)
-        temp = response.json()
-        return temp
+        
+        try:
+            response = requests.get(url, headers=headers, params=payload)
+            response.raise_for_status()  # Raise an exception for 4XX/5XX responses
+            temp = response.json()
+            logger.debug(f"Successfully retrieved file information")
+            return temp
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to retrieve file information: {str(e)}")
+            raise
 
     @contextmanager
     def _file_tuple(self, file):
@@ -73,12 +88,18 @@ class octoprintAPI:
         except:
             exists = False
 
-        if exists:
-            filename = os.path.basename(file)
-            with open(file, 'rb') as f:
-                yield f
-        else:
-            yield open(file, 'rb')
+        try:
+            if exists:
+                filename = os.path.basename(file)
+                logger.debug(f"Opening file for upload: {filename}")
+                with open(file, 'rb') as f:
+                    yield f
+            else:
+                logger.debug("Using provided file-like object for upload")
+                yield open(file, 'rb')
+        except Exception as e:
+            logger.error(f"Error preparing file for upload: {str(e)}")
+            raise
 
     def uploadGcode(self, file, location='local', select=False, prnt=False):
         """
@@ -90,18 +111,25 @@ class octoprintAPI:
         :param prnt: bool, start print after uploading
         :return: json response, with success of the upload and location
         """
-        with self._file_tuple(file) as file_tuple:
-            files = {'file': file_tuple}
-            payload = {'select': str(select).lower(), 'print': str(prnt).lower()}
-            url = 'http://' + self.ip + '/api/files/{}'.format(location)
-            headers = {'X-Api-Key': self.apiKey}
-            response = requests.post(url, files=files, data=payload, headers=headers)
-            temp = response.json()
-            return temp
-
-
-
-            # Should add error/status cheking in the response
+        logger.info(f"Uploading GCODE file to {location}, select={select}, print={prnt}")
+        
+        try:
+            with self._file_tuple(file) as file_tuple:
+                files = {'file': file_tuple}
+                payload = {'select': str(select).lower(), 'print': str(prnt).lower()}
+                url = 'http://' + self.ip + '/api/files/{}'.format(location)
+                headers = {'X-Api-Key': self.apiKey}
+                
+                response = requests.post(url, files=files, data=payload, headers=headers)
+                response.raise_for_status()
+                
+                temp = response.json()
+                logger.info("File upload completed successfully")
+                logger.debug(f"Upload response: {temp}")
+                return temp
+        except Exception as e:
+            logger.error(f"Failed to upload GCODE file: {str(e)}")
+            raise
 
     @contextmanager
     def _file_tuple_png(self, file):
@@ -147,10 +175,18 @@ class octoprintAPI:
 
         Location is target/filename, defaults to local/filename
         """
+        logger.info(f"Deleting file: {location}")
         location = self._prepend_local(location)
         url = 'http://' + self.ip + '/api/files/{}'.format(location)
         headers = {'content-type': 'application/json', 'X-Api-Key': self.apiKey}
-        requests.delete(url, headers=headers)
+        
+        try:
+            response = requests.delete(url, headers=headers)
+            response.raise_for_status()
+            logger.info(f"Successfully deleted file: {location}")
+        except Exception as e:
+            logger.error(f"Failed to delete file {location}: {str(e)}")
+            raise
 
     def selectFile(self, location, prnt=False):
         """
@@ -186,23 +222,26 @@ class octoprintAPI:
     # Download Timelapse
     # Print from USB
     # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    # +++++++++++++++++++++++++ Job Handeling+++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++ Job Handling +++++++++++++++++++++++++++++++++++++++
     # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-    '''
-    Job Handeling functions, print pause, get cureent file info etc
-    '''
 
     def getJobInformation(self):
         """
         Retrieve information about the current job (if there is one)
         """
+        logger.debug("Retrieving current job information")
         url = 'http://' + self.ip + '/api/job'
         headers = {'X-Api-Key': self.apiKey}
-        response = requests.get(url, headers=headers)
-        temp = response.json()
-        return temp
+        
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            temp = response.json()
+            logger.debug("Successfully retrieved job information")
+            return temp
+        except Exception as e:
+            logger.error(f"Failed to retrieve job information: {str(e)}")
+            raise
 
     def startPrint(self):
         """
@@ -210,10 +249,18 @@ class octoprintAPI:
 
         Use select() to select a file
         """
+        logger.info("Starting print job")
         url = 'http://' + self.ip + '/api/job'
         payload = {'command': 'start'}
         headers = {'content-type': 'application/json', 'X-Api-Key': self.apiKey}
-        requests.post(url, data=json.dumps(payload), headers=headers)
+        
+        try:
+            response = requests.post(url, data=json.dumps(payload), headers=headers)
+            response.raise_for_status()
+            logger.info("Print started successfully")
+        except Exception as e:
+            logger.error(f"Failed to start print: {str(e)}")
+            raise
 
     def pausePrint(self):
         """
@@ -251,15 +298,24 @@ class octoprintAPI:
     # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     # ++++++++++++++++++++++++ Connection Handling +++++++++++++++++++++++++++++++++
     # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    
     def version(self):
         """
         Retrieve information regarding server and API version
         """
+        logger.debug(f"Checking OctoPrint version at {self.ip}")
         url = 'http://' + self.ip + '/api/version'
         headers = {'X-Api-Key': self.apiKey}
-        response = requests.get(url, headers=headers)
-        temp = response.json()
-        return temp
+        
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            temp = response.json()
+            logger.debug(f"OctoPrint version: {temp}")
+            return temp
+        except Exception as e:
+            logger.error(f"Failed to retrieve OctoPrint version: {str(e)}")
+            raise
 
     def getPrinterConnectionSettings(self):
         """
@@ -340,15 +396,24 @@ class octoprintAPI:
         Clients can specify a list of attributes to not return in the response
         (e.g. if they don't need it) via the exclude argument.
         """
+        logger.debug(f"Getting printer state: history={history}, limit={limit}")
         url = 'http://' + self.ip + '/api/printer'
         headers = {'X-Api-Key': self.apiKey}
         payload = {"exclude": exclude, "history": history, "limit": limit}
-        response = requests.get(url, params=payload, headers=headers)
-        # Handle error exception
-        if response.status_code == 409:
-            return response.text, response.status_code
-        else:
+        
+        try:
+            response = requests.get(url, params=payload, headers=headers)
+            # Handle 409 error specifically (printer not operational)
+            if response.status_code == 409:
+                logger.warning("Printer is not operational or is disconnected")
+                return response.text, response.status_code
+            
+            response.raise_for_status()
+            logger.debug("Successfully retrieved printer state")
             return response.json(), response.status_code
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error retrieving printer state: {str(e)}")
+            return {"error": str(e)}, getattr(e.response, 'status_code', 500)
 
     def getToolState(self, history=False, limit=None):
         """

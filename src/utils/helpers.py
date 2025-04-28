@@ -1,10 +1,12 @@
+from utils import logger
+
 def format_printer_status(status):
     """Format the printer status for display."""
     return f"Status: {status['state']['text']}, Progress: {status['progress']['completion']}%"
 
 def handle_api_error(error):
     """Handle errors from the OctoPrint API."""
-    print(f"API Error: {error}")
+    logger.error(f"API Error: {error}")
 
 def validate_ip_address(ip):
     """Validate the format of an IP address."""
@@ -40,8 +42,8 @@ def check_ui_elements(ui_class, elements_dict, screen_name):
             found_elements[name] = element
     
     if missing_elements:
-        print(f"WARNING: The following UI elements are missing from {screen_name}:")
+        logger.warning(f"The following UI elements are missing from {screen_name}:")
         for name in missing_elements:
-            print(f"  - {name}")
+            logger.warning(f"  - {name}")
     
     return found_elements
