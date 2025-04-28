@@ -5,7 +5,7 @@ from ui.menu_screen.menu_screen import MenuScreen
 from ui.settings_screen.settings_screen import SettingsScreen
 from ui.control_screen.control_screen import ControlScreen
 from ui.print_from_location.print_from_location import PrintFromLocation
-from ui.changeFilament.changeFilament import ChangeFilament
+from ui.control_screen.changeFilament.changeFilament import ChangeFilament
 from ui.calibrate_screen.calibrate_screen import CalibrateScreen
 from ui.calibrate_screen.nozzleOffsetPage.nozzleOffsetPage import NozzleOffsetPage
 from ui.calibrate_screen.toolOffset.toolOffset import ToolOffset

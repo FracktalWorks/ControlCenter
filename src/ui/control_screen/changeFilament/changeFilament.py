@@ -25,7 +25,7 @@ class ChangeFilament(QWidget):
     def _load_ui(self):
         """Load the UI file with error handling"""
         try:
-            uic.loadUi('src/ui/changeFilament/changeFilament.ui', self)
+            uic.loadUi('src/ui/control_screen/changeFilament/changeFilament.ui', self)
             print("ChangeFilament UI loaded successfully")
         except Exception as e:
             print(f"Failed to load ChangeFilament UI file: {e}")

@@ -104,7 +104,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="../resources/resource.qrc">
+      <iconset resource="../../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows-4.png</normaloff>:/Navigation/img/Navigation/arrows-4.png</iconset>
      </property>
      <property name="iconSize">
@@ -170,7 +170,7 @@ QPushButton:focus {
       <string>Unload</string>
      </property>
      <property name="icon">
-      <iconset resource="../resources/resource.qrc">
+      <iconset resource="../../resources/resource.qrc">
        <normaloff>:/Icons/img/icons/unload.png</normaloff>:/Icons/img/icons/unload.png</iconset>
      </property>
      <property name="iconSize">
@@ -193,6 +193,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -247,7 +248,7 @@ QPushButton:focus {
       <string>Load</string>
      </property>
      <property name="icon">
-      <iconset resource="../resources/resource.qrc">
+      <iconset resource="../../resources/resource.qrc">
        <normaloff>:/Icons/img/icons/load.png</normaloff>:/Icons/img/icons/load.png</iconset>
      </property>
      <property name="iconSize">
@@ -305,8 +306,9 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="../resources/resource.qrc">
-       <normaloff>:/Icons/img/icons/NozzleSelect_0.png</normaloff>:/Icons/img/icons/NozzleSelect_0.png</iconset>
+      <iconset resource="../../resources/resource.qrc">
+       <normaloff>:/Icons/img/icons/NozzleSelect_0.png</normaloff>
+       <normalon>:/Icons/img/icons/NozzleSelect_1.png</normalon>:/Icons/img/icons/NozzleSelect_0.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -464,6 +466,7 @@ height: 30px;
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -518,7 +521,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="../resources/resource.qrc">
+      <iconset resource="../../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows-4.png</normaloff>:/Navigation/img/Navigation/arrows-4.png</iconset>
      </property>
      <property name="iconSize">
@@ -541,6 +544,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <italic>false</italic>
        <bold>false</bold>
        <stylestrategy>PreferAntialias</stylestrategy>
@@ -594,6 +598,7 @@ QProgressBar {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -626,7 +631,7 @@ QProgressBar {
       <string/>
      </property>
      <property name="pixmap">
-      <pixmap resource="../resources/resource.qrc">:/Icons/img/icons/changeFilament2.png</pixmap>
+      <pixmap resource="../../resources/resource.qrc">:/Icons/img/icons/changeFilament2.png</pixmap>
      </property>
      <property name="scaledContents">
       <bool>true</bool>
@@ -678,7 +683,7 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="../resources/resource.qrc">
+      <iconset resource="../../resources/resource.qrc">
        <normaloff>:/Navigation/img/Navigation/arrows-4.png</normaloff>:/Navigation/img/Navigation/arrows-4.png</iconset>
      </property>
      <property name="iconSize">
@@ -751,6 +756,7 @@ QPushButton:focus {
       <font>
        <family>Gotham Light</family>
        <pointsize>14</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -778,6 +784,7 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham Light</family>
        <pointsize>14</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -802,6 +809,7 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham Light</family>
        <pointsize>14</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -826,6 +834,7 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham Light</family>
        <pointsize>14</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -852,6 +861,7 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -926,6 +936,7 @@ QPushButton:focus {
       <font>
        <family>Gotham</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -950,6 +961,7 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham Light</family>
        <pointsize>14</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -977,6 +989,7 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham Light</family>
        <pointsize>14</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1006,6 +1019,7 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham Light</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1080,6 +1094,7 @@ QPushButton:focus {
       <font>
        <family>Gotham Light</family>
        <pointsize>14</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1107,6 +1122,7 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham Light</family>
        <pointsize>14</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1134,6 +1150,7 @@ background-color: rgba(255, 255, 255, 0);</string>
       <font>
        <family>Gotham Light</family>
        <pointsize>16</pointsize>
+       <weight>50</weight>
        <bold>false</bold>
       </font>
      </property>
@@ -1149,7 +1166,8 @@ background-color: rgba(255, 255, 255, 0);</string>
   </widget>
  </widget>
  <resources>
-  <include location="../resources/resource.qrc"/>
+  <include location="../../resources/resource.qrc"/>
+  <include location="../../resources/resource.qrc"/>
   <include location="../resources/resource.qrc"/>
  </resources>
  <connections/>
