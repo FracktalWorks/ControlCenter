@@ -178,22 +178,26 @@ class CalibrateScreen(QWidget):
         self.show_calibrate_screen("tool_offset")
         # Access the tool offset screen and set it to show Z tab
         tool_offset_screen = self.screens.get("tool_offset")
-        if tool_offset_screen and hasattr(tool_offset_screen, "stackedWidget") and hasattr(tool_offset_screen, "pages"):
-            z_page = tool_offset_screen.pages.get("toolOffsetZPage")
+        if tool_offset_screen and hasattr(tool_offset_screen, "stackedWidget") and hasattr(tool_offset_screen, "page_widgets"):
+            z_page = tool_offset_screen.page_widgets.get("toolOffsetZPage", {}).get("instance")
             if tool_offset_screen.stackedWidget and z_page:
                 tool_offset_screen.stackedWidget.setCurrentWidget(z_page)
                 print("Showing Tool Offset Z tab")
+            else:
+                print("ERROR: Tool Offset Z page not found")
     
     def _show_tool_offset_xy(self):
         """Show the tool offset screen with XY tab selected"""
         self.show_calibrate_screen("tool_offset")
         # Access the tool offset screen and set it to show XY tab
         tool_offset_screen = self.screens.get("tool_offset")
-        if tool_offset_screen and hasattr(tool_offset_screen, "stackedWidget") and hasattr(tool_offset_screen, "pages"):
-            xy_page = tool_offset_screen.pages.get("toolOffsetXYPage")
+        if tool_offset_screen and hasattr(tool_offset_screen, "stackedWidget") and hasattr(tool_offset_screen, "page_widgets"):
+            xy_page = tool_offset_screen.page_widgets.get("toolOffsetXYPage", {}).get("instance")
             if tool_offset_screen.stackedWidget and xy_page:
                 tool_offset_screen.stackedWidget.setCurrentWidget(xy_page)
                 print("Showing Tool Offset XY tab")
+            else:
+                print("ERROR: Tool Offset XY page not found")
 
     def show_calibrate_screen(self, target_screen=None):
         """Show a specific calibration screen or the main calibration page
