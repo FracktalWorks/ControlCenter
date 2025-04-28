@@ -35,19 +35,29 @@ class CalibrateScreen(QWidget):
 
         print(f"Found main calibrate page: {self.main_calibrate_page}")
 
-        # Initialize buttons by finding them in the UI
-        self.buttons = {
+        # Initialize button mappings with clear separation by button type
+        # Tool buttons (QToolButton) used for navigation to different calibration screens
+        self.tool_buttons = {
             "calibrationWizardButton": "bed_leveling",
             "testPrintsButton": "test_prints",
             "inputShaperCalibrateButton": "input_shaper",
             "nozzleOffsetButton": "nozzle_offset",
-            "toolOffsetZButton": "tool_offset",  # Changed from tool_offset_z to tool_offset
-            "toolOffsetXYButton": "tool_offset", # Changed from tool_offset_xy to tool_offset
-            "idexCalibrationWizardButton": "idex_calibration",
+            "toolOffsetZButton": "tool_offset",
+            "toolOffsetXYButton": "tool_offset",
+            "idexCalibrationWizardButton": "idex_calibration"
+        }
+        
+        # Push buttons (QPushButton) used for navigation controls
+        self.push_buttons = {
             "calibrateBackButton": "back"
         }
+        
+        # Combine both dictionaries for action mapping
+        self.buttons = {**self.tool_buttons, **self.push_buttons}
 
-        self.ui_buttons = {name: self.findChild(QToolButton, name) for name in self.buttons.keys()}
+        # Initialize UI buttons
+        self.ui_buttons = {}
+        self._initialize_buttons()
 
         # Check if UI elements exist and report missing ones
         self._check_widgets_existence()
@@ -58,6 +68,26 @@ class CalibrateScreen(QWidget):
 
         # Connect buttons to their respective functions dynamically
         self._connect_buttons()
+        
+    def _initialize_buttons(self):
+        """Initialize all buttons from the UI with proper types"""
+        # Initialize push buttons
+        for name in self.push_buttons.keys():
+            button = self.findChild(QPushButton, name)
+            if button:
+                self.ui_buttons[name] = button
+                print(f"Found push button: {name}")
+            else:
+                print(f"WARNING: Could not find push button {name} in UI")
+        
+        # Initialize tool buttons
+        for name in self.tool_buttons.keys():
+            button = self.findChild(QToolButton, name)
+            if button:
+                self.ui_buttons[name] = button
+                print(f"Found tool button: {name}")
+            else:
+                print(f"WARNING: Could not find tool button {name} in UI")
 
     def _check_widgets_existence(self):
         """Check if UI elements exist and report missing ones"""
@@ -94,6 +124,7 @@ class CalibrateScreen(QWidget):
             button = self.ui_buttons.get(button_name)
             if button:
                 if target_screen == "back":
+                    print("Connecting back button")
                     button.clicked.connect(self._handle_back_button)
                 elif target_screen == "input_shaper":
                     # Just add a print statement for the inputShaperCalibrateButton
@@ -139,8 +170,9 @@ class CalibrateScreen(QWidget):
         """
         print(f"show_calibrate_screen called with target_screen={target_screen}")
 
-        # First, make sure we're showing this screen in the main window
-        self.main_window.switch_screen(self)
+        # Only switch to this screen in the main window if we're not already on it
+        if self.main_window.current_screen != self:
+            self.main_window.switch_screen(self)
 
         # If no specific target is requested, show the main calibration page
         if not target_screen or target_screen not in self.screens:
@@ -160,9 +192,9 @@ class CalibrateScreen(QWidget):
         print(f"Back button pressed. Current widget: {current_widget.objectName()}")
 
         if current_widget == self.main_calibrate_page:
-            # If we're on the main calibrate page, go back to menu
-            print("On main page, returning to menu screen")
-            self.main_window.switch_to_menu_screen()
+            # If we're on the main calibrate page, use navigation history to go back
+            print("On main page, returning to previous screen")
+            self.main_window.switch_to_previous_screen()
         else:
             # If we're on a sub-screen, return to the main calibrate page
             print(f"On sub-screen, returning to main calibration page")

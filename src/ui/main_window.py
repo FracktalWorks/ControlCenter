@@ -102,10 +102,17 @@ class MainWindow(QMainWindow):
     # Screen Navigation Methods
     def switch_screen(self, widget):
         """Switch to the given screen and update navigation history."""
+        print(f"Switching to screen: {widget.__class__.__name__}")
+        print(f"Current screen before switch: {self.current_screen.__class__.__name__ if self.current_screen else None}")
+        
         if self.current_screen is not None:
             self.screen_history.append(self.current_screen)
+            print(f"Added {self.current_screen.__class__.__name__} to history")
+        
         self.current_screen = widget
         self.stacked_widget.setCurrentWidget(widget)
+        
+        print(f"History now contains: {[screen.__class__.__name__ for screen in self.screen_history]}")
 
     def switch_to_previous_screen(self):
         """Go back to the previous screen in history."""
