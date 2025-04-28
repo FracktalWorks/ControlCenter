@@ -4,6 +4,7 @@ from PyQt5.QtCore import QTimer
 from utils.helpers import check_ui_elements
 from models.printer_status import PrinterStatus  # Import the printer status model
 from utils import logger  # Import the logger
+from utils.styles import printer_status_green, printer_status_red, printer_status_amber
 
 class HomeScreen(QWidget):
     def __init__(self, main_window):
@@ -282,34 +283,16 @@ class HomeScreen(QWidget):
         """Update printer status display and indicator"""
         if not self.printerStatus or not self.printerStatusColour:
             return
-            
+
         self.printerStatus.setText(status_text)
-        
+
         # Set color based on status
         if status_text.lower() in ["operational", "ready"]:
-            self.printerStatusColour.setStyleSheet("""\
-                border: 1px solid rgb(87, 87, 87);
-                border-radius: 10px;
-                background-color: qlineargradient(spread:pad, x1:0, y1:0.523, x2:0, y2:0.534, \
-                                               stop:0 rgba(130, 203, 117, 255), \
-                                               stop:1 rgba(66, 191, 85, 255));
-            """)
+            self.printerStatusColour.setStyleSheet(printer_status_green)
         elif status_text.lower() in ["printing", "paused"]:
-            self.printerStatusColour.setStyleSheet("""\
-                border: 1px solid rgb(87, 87, 87);
-                border-radius: 10px;
-                background-color: qlineargradient(spread:pad, x1:0, y1:0.523, x2:0, y2:0.534, \
-                                               stop:0 rgba(255, 191, 0, 255), \
-                                               stop:1 rgba(254, 153, 0, 255));
-            """)
+            self.printerStatusColour.setStyleSheet(printer_status_amber)
         else:
-            self.printerStatusColour.setStyleSheet("""\
-                border: 1px solid rgb(87, 87, 87);
-                border-radius: 10px;
-                background-color: qlineargradient(spread:pad, x1:0, y1:0.523, x2:0, y2:0.534, \
-                                               stop:0 rgba(255, 60, 60, 255), \
-                                               stop:1 rgba(255, 30, 30, 255));
-            """)
+            self.printerStatusColour.setStyleSheet(printer_status_red)
 
     def _update_connection_status(self, connected, ip_address=None):
         """Update printer connection status"""

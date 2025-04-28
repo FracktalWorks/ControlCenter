@@ -1,5 +1,6 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QDoubleSpinBox, QStackedWidget
+from PyQt5.QtGui import QPalette, QColor
 from utils.helpers import check_ui_elements
 from utils import logger
 
@@ -81,6 +82,9 @@ class ToolOffset(QWidget):
         
         # Store reference to essential stacked widget for convenience
         self.stackedWidget = self.container_widgets["stackedWidget"]["instance"]
+
+        # Apply readonly, disabled, and palette settings to all spinboxes
+        self._configure_spinboxes()
 
     def _find_components(self):
         """Find all UI components based on their object names"""
@@ -193,3 +197,19 @@ class ToolOffset(QWidget):
             # Example: self.main_window.octoprint_client.set_tool_offset('Z', z_offset)
         else:
             logger.error("Cannot set Z offset - spin box not found")
+
+    def _configure_spinboxes(self):
+        """Configure all spinboxes to be readonly, disabled, and styled."""
+        spinboxes = [
+            self.spin_boxes["toolOffsetXDoubleSpinBox"].get("instance"),
+            self.spin_boxes["toolOffsetYDoubleSpinBox"].get("instance"),
+            self.spin_boxes["toolOffsetZDoubleSpinBox"].get("instance")
+        ]
+
+        for spinbox in spinboxes:
+            if spinbox:
+                spinbox.lineEdit().setReadOnly(True)
+                spinbox.lineEdit().setDisabled(True)
+                palette = QPalette()
+                palette.setColor(QPalette.Highlight, QColor(40, 40, 40))
+                spinbox.lineEdit().setPalette(palette)

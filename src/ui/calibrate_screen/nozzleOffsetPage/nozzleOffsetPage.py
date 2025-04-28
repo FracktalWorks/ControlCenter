@@ -1,5 +1,6 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QDoubleSpinBox, QLabel
+from PyQt5.QtGui import QPalette, QColor
 from utils.helpers import check_ui_elements
 from utils.logger import setup_logger
 
@@ -67,6 +68,9 @@ class NozzleOffsetPage(QWidget):
         
         # Find all components using the dictionary
         self._find_components()
+
+        # Apply readonly, disabled, and palette settings to the spinbox
+        self._configure_spinbox()
 
     def _find_components(self):
         """Find all UI components based on their object names"""
@@ -151,3 +155,14 @@ class NozzleOffsetPage(QWidget):
             self.logger.debug(f"Updated nozzle offset label to: {self.current_nozzle_offset:.2f} mm")
         else:
             self.logger.error("Cannot update nozzle offset label - label not found")
+
+    def _configure_spinbox(self):
+        """Configure the nozzle offset spinbox to be readonly, disabled, and styled."""
+        spinbox = self.input_controls["nozzleOffsetDoubleSpinBox"].get("instance")
+
+        if spinbox:
+            spinbox.lineEdit().setReadOnly(True)
+            spinbox.lineEdit().setDisabled(True)
+            palette = QPalette()
+            palette.setColor(QPalette.Highlight, QColor(40, 40, 40))
+            spinbox.lineEdit().setPalette(palette)

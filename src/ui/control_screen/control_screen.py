@@ -1,4 +1,5 @@
 from PyQt5 import uic
+from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import QWidget, QPushButton, QSpinBox, QTabWidget, QToolButton
 from utils.helpers import check_ui_elements
 from utils.logger import setup_logger
@@ -44,7 +45,7 @@ class ControlScreen(QWidget):
             "controlBackButton": {"type": QPushButton, "instance": None}
         }
 
-        # ----- TAB 1: FEED RATE TAB -----
+        # ----- TAB 1: FEED RATE TAB ----- 
         # Feed rate control and bed height adjustment during print
         self.feed_rate_controls = {
             "feedRateSpinBox": {"type": QSpinBox, "instance": None},
@@ -123,6 +124,26 @@ class ControlScreen(QWidget):
         
         # Log initialization status
         self.logger.info("Control Screen widgets initialized")
+
+        # Apply readonly, disabled, and palette settings to all spinboxes
+        self._configure_spinboxes()
+
+    def _configure_spinboxes(self):
+        """Configure all spinboxes to be readonly, disabled, and styled."""
+        spinboxes = [
+            self.feed_rate_controls["feedRateSpinBox"].get("instance"),
+            self.temperature_controls["toolTempSpinBox"].get("instance"),
+            self.temperature_controls["bedTempSpinBox"].get("instance"),
+            self.filament_controls["flowRateSpinBox"].get("instance")
+        ]
+
+        for spinbox in spinboxes:
+            if spinbox:
+                spinbox.lineEdit().setReadOnly(True)
+                spinbox.lineEdit().setDisabled(True)
+                palette = QPalette()
+                palette.setColor(QPalette.Highlight, QColor(40, 40, 40))
+                spinbox.lineEdit().setPalette(palette)
 
     def _find_components(self):
         """Find all UI components based on their object names"""

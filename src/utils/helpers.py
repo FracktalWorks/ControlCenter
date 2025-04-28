@@ -1,4 +1,9 @@
 from utils import logger
+import subprocess
+import re
+from threading import Thread
+from functools import wraps
+
 
 def format_printer_status(status):
     """Format the printer status for display."""
@@ -47,3 +52,77 @@ def check_ui_elements(ui_class, elements_dict, screen_name):
             logger.warning(f"  - {name}")
     
     return found_elements
+
+def run_async(func):
+    """
+    Function decorator to make methods run in a thread
+    """
+    @wraps(func)
+    def async_func(*args, **kwargs):
+        func_hl = Thread(target=func, args=args, kwargs=kwargs)
+        func_hl.start()
+        return func_hl
+
+    return async_func
+
+
+def getIP(interface):
+    try:
+        scan_result = (
+            subprocess.Popen(
+                "ifconfig | grep " + interface + " -A 1", stdout=subprocess.PIPE, shell=True
+            ).communicate()[0]
+        ).decode("utf-8")
+        rInetAddr = r"inet\s*([\d.]+)"
+        rInet6Addr = r"inet6"
+        mt6Ip = re.search(rInet6Addr, scan_result)
+        mtIp = re.search(rInetAddr, scan_result)
+        if not mt6Ip and mtIp and len(mtIp.groups()) == 1:
+            return str(mtIp.group(1))
+    except Exception as e:
+        logger.error("Error in getIP: {}".format(e))
+        return None
+
+
+def getMac(interface):
+    logger.info("Getting MAC for interface: {}".format(interface))
+    try:
+        mac = subprocess.Popen(
+            " cat /sys/class/net/" + interface + "/address",
+            stdout=subprocess.PIPE,
+            shell=True,
+        ).communicate()[0].rstrip()
+        if not mac:
+            return "Not found"
+        return mac.upper()
+    except Exception as e:
+        logger.error("Error in getMac: {}".format(e))
+        return "Error"
+
+
+def getWifiAp():
+    logger.info("Getting Wifi AP")
+    try:
+        ap = subprocess.Popen(
+            "iwgetid -r", stdout=subprocess.PIPE, shell=True
+        ).communicate()[0].rstrip()
+        if not ap:
+            return "Not connected"
+        return ap.decode("utf-8")
+    except Exception as e:
+        logger.error("Error in getWifiAp: {}".format(e))
+        return "Error"
+
+
+def getHostname():
+    logger.info("Getting Hostname")
+    try:
+        hostname = subprocess.Popen(
+            "cat /etc/hostname", stdout=subprocess.PIPE, shell=True
+        ).communicate()[0].rstrip()
+        if not hostname:
+            return "Not connected"
+        return hostname.decode("utf-8") + ".local"
+    except Exception as e:
+        logger.error("Error in getHostname: {}".format(e))
+        return "Error"
