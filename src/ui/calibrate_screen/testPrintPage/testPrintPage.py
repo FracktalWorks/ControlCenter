@@ -9,7 +9,7 @@ class TestPrintPage(QWidget):
 
         # Load the .ui file
         try:
-            uic.loadUi('src/ui/calibratePage/testPrintPage/testPrintPage.ui', self)
+            uic.loadUi('src/ui/calibrate_screen/testPrintPage/testPrintPage.ui', self)  # Updated path
             print("TestPrintPage UI loaded successfully")
         except Exception as e:
             print(f"Failed to load TestPrintPage UI file: {e}")
@@ -92,10 +92,14 @@ class TestPrintPage(QWidget):
             self.bedLevelPrintButton.clicked.connect(self.bed_leveling_print)
 
     def _handle_back_button(self):
-        """Handle back button logic and reset stacked widget if necessary."""
+        """Handle back button logic and return to main calibration page."""
         if self.stackedWidget:
             self.stackedWidget.setCurrentIndex(0)
-        self.main_window.switch_to_previous_screen()
+        # Return to the main calibration page
+        if hasattr(self.main_window, 'calibrate_screen'):
+            self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
+                self.main_window.calibrate_screen.main_calibrate_page)
+            print("Returning to main calibration page from test prints")
 
     def single_nozzle_test_print(self):
         """Logic for single nozzle test print."""

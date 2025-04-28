@@ -9,7 +9,7 @@ class BedLeveling(QWidget):
 
         # Load the .ui file
         try:
-            uic.loadUi('src/ui/calibratePage/bedLevelingPage/bedLevelingPage.ui', self)
+            uic.loadUi('src/ui/calibrate_screen/bedLevelingPage/bedLevelingPage.ui', self)  # Updated path
             print("BedLeveling UI loaded successfully")
         except Exception as e:
             print(f"Failed to load BedLeveling UI file: {e}")
@@ -149,12 +149,18 @@ class BedLeveling(QWidget):
         if self.stackedWidget and self.quickStep4Page:
             self.stackedWidget.setCurrentWidget(self.quickStep4Page)
 
-    def finish_bed_leveling(self):
-        """Finish bed leveling process."""
-        print("Bed leveling process finished")
-        self.main_window.switch_to_previous_screen()
-
     def cancel_bed_leveling(self):
-        """Cancel bed leveling process."""
+        """Cancel bed leveling process and return to main calibration page."""
         print("Bed leveling process canceled")
-        self.main_window.switch_to_previous_screen()
+        if hasattr(self.main_window, 'calibrate_screen'):
+            self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
+                self.main_window.calibrate_screen.main_calibrate_page)
+            print("Returning to main calibration page from bed leveling")
+
+    def finish_bed_leveling(self):
+        """Finish bed leveling process and return to main calibration page."""
+        print("Bed leveling process finished")
+        if hasattr(self.main_window, 'calibrate_screen'):
+            self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
+                self.main_window.calibrate_screen.main_calibrate_page)
+            print("Returning to main calibration page from bed leveling")

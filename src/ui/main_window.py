@@ -6,12 +6,12 @@ from ui.settings_screen.settings_screen import SettingsScreen
 from ui.control_screen.control_screen import ControlScreen
 from ui.print_from_location.print_from_location import PrintFromLocation
 from ui.changeFilament.changeFilament import ChangeFilament
-from ui.calibratePage.calibratePage import CalibratePage
-from ui.calibratePage.nozzleOffsetPage.nozzleOffsetPage import NozzleOffsetPage
-from ui.calibratePage.toolOffset.toolOffset import ToolOffset
-from ui.calibratePage.bedLevelingPage.bedLevelingPage import BedLeveling
-from ui.calibratePage.idexLevelCalibration.idexLevelCalibration import IdexLevelCalibration
-from ui.calibratePage.testPrintPage.testPrintPage import TestPrintPage
+from ui.calibrate_screen.calibrate_screen import CalibrateScreen
+from ui.calibrate_screen.nozzleOffsetPage.nozzleOffsetPage import NozzleOffsetPage
+from ui.calibrate_screen.toolOffset.toolOffset import ToolOffset
+from ui.calibrate_screen.bedLevelingPage.bedLevelingPage import BedLeveling
+from ui.calibrate_screen.idexLevelCalibration.idexLevelCalibration import IdexLevelCalibration
+from ui.calibrate_screen.testPrintPage.testPrintPage import TestPrintPage
 import ui.resources.resource_rc  # Ensure resources are loaded
 
 class MainWindow(QMainWindow):
@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
 
     def load_calibration_screens(self):
         # Main calibration screen
-        self.calibrate_screen = CalibratePage(self)
+        self.calibrate_screen = CalibrateScreen(self)
         self.stacked_widget.addWidget(self.calibrate_screen)
 
         # Calibration sub-screens

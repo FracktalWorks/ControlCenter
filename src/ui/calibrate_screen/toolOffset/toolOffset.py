@@ -9,7 +9,7 @@ class ToolOffset(QWidget):
 
         # Load the .ui file
         try:
-            uic.loadUi('src/ui/calibratePage/toolOffset/toolOffset.ui', self)
+            uic.loadUi('src/ui/calibrate_screen/toolOffset/toolOffset.ui', self)  # Updated path
             print("ToolOffset UI loaded successfully")
         except Exception as e:
             print(f"Failed to load ToolOffset UI file: {e}")
@@ -70,7 +70,7 @@ class ToolOffset(QWidget):
     def _connect_buttons(self):
         """Connect buttons with safety checks"""
         if self.toolOffsetXYBackButton:
-            self.toolOffsetXYBackButton.clicked.connect(self.main_window.switch_to_calibrate_screen)
+            self.toolOffsetXYBackButton.clicked.connect(self._handle_back_button)
 
         if self.toolOffsetXSetButton:
             self.toolOffsetXSetButton.clicked.connect(self.set_tool_offset_x)
@@ -82,7 +82,15 @@ class ToolOffset(QWidget):
             self.toolOffsetZSetButton.clicked.connect(self.set_tool_offset_z)
 
         if self.toolOffsetZBackButton:
-            self.toolOffsetZBackButton.clicked.connect(self.main_window.switch_to_calibrate_screen)
+            self.toolOffsetZBackButton.clicked.connect(self._handle_back_button)
+            
+    def _handle_back_button(self):
+        """Return to the main calibration page when back button is pressed"""
+        # Get the parent calibration screen from MainWindow and set to main page
+        if hasattr(self.main_window, 'calibrate_screen'):
+            self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
+                self.main_window.calibrate_screen.main_calibrate_page)
+            print("Returning to main calibration page from tool offset page")
 
     def set_tool_offset_x(self):
         """Set the X offset for the tool."""

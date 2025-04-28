@@ -9,7 +9,7 @@ class NozzleOffsetPage(QWidget):
 
         # Load the .ui file
         try:
-            uic.loadUi('src/ui/calibratePage/nozzleOffsetPage/nozzleOffsetPage.ui', self)
+            uic.loadUi('src/ui/calibrate_screen/nozzleOffsetPage/nozzleOffsetPage.ui', self)  # Updated path
             print("NozzleOffsetPage UI loaded successfully")
         except Exception as e:
             print(f"Failed to load NozzleOffsetPage UI file: {e}")
@@ -50,10 +50,18 @@ class NozzleOffsetPage(QWidget):
     def _connect_buttons(self):
         """Connect buttons with safety checks"""
         if self.nozzleOffsetBackButton:
-            self.nozzleOffsetBackButton.clicked.connect(self.main_window.switch_to_previous_screen)
+            self.nozzleOffsetBackButton.clicked.connect(self._handle_back_button)
         
         if self.nozzleOffsetSetButton:
             self.nozzleOffsetSetButton.clicked.connect(self.set_nozzle_offset)
+            
+    def _handle_back_button(self):
+        """Return to the main calibration page when back button is pressed"""
+        # Get the parent calibration screen from MainWindow and set to main page
+        if hasattr(self.main_window, 'calibrate_screen'):
+            self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
+                self.main_window.calibrate_screen.main_calibrate_page)
+            print("Returning to main calibration page from nozzle offset page")
 
     def set_nozzle_offset(self):
         """Set the nozzle offset based on the value in the spin box."""

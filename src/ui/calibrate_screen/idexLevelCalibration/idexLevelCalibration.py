@@ -9,7 +9,7 @@ class IdexLevelCalibration(QWidget):
 
         # Load the .ui file
         try:
-            uic.loadUi('src/ui/calibratePage/idexLevelCalibration/idexLevelCalibration.ui', self)
+            uic.loadUi('src/ui/calibrate_screen/idexLevelCalibration/idexLevelCalibration.ui', self)  # Updated path
             print("IdexLevelCalibration UI loaded successfully")
         except Exception as e:
             print(f"Failed to load IdexLevelCalibration UI file: {e}")
@@ -144,13 +144,19 @@ class IdexLevelCalibration(QWidget):
             self.stackedWidget.setCurrentWidget(self.idexConfigStep5Page)
 
     def finish_calibration(self):
-        """Finish the IDEX calibration process."""
+        """Finish the IDEX calibration process and return to main calibration page."""
         print("IDEX Calibration process finished")
-        self.main_window.switch_to_previous_screen()
+        if hasattr(self.main_window, 'calibrate_screen'):
+            self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
+                self.main_window.calibrate_screen.main_calibrate_page)
+            print("Returning to main calibration page from IDEX calibration")
 
     def cancel_calibration(self):
-        """Cancel the IDEX calibration process."""
+        """Cancel the IDEX calibration process and return to main calibration page."""
         print("IDEX Calibration process canceled")
         if self.stackedWidget:
             self.stackedWidget.setCurrentIndex(0)
-        self.main_window.switch_to_previous_screen()
+        if hasattr(self.main_window, 'calibrate_screen'):
+            self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
+                self.main_window.calibrate_screen.main_calibrate_page)
+            print("Returning to main calibration page from IDEX calibration")
