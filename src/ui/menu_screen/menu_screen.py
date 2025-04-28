@@ -1,11 +1,15 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton
 from utils.helpers import check_ui_elements
+from utils.logger import setup_logger
 
 class MenuScreen(QWidget):
     def __init__(self, main_window):
         super(MenuScreen, self).__init__()
         self.main_window = main_window
+
+        # Setup logger
+        self.logger = setup_logger('menu_screen')
 
         # Load the UI
         self._load_ui()
@@ -23,9 +27,9 @@ class MenuScreen(QWidget):
         """Load the UI file with proper error handling"""
         try:
             uic.loadUi('src/ui/menu_screen/menu_screen.ui', self)
-            print("MenuScreen UI loaded successfully")
+            self.logger.info("MenuScreen UI loaded successfully")
         except Exception as e:
-            print(f"Failed to load MenuScreen UI file: {e}")
+            self.logger.error(f"Failed to load MenuScreen UI file: {e}")
 
     def _initialize_ui_components(self):
         """Initialize all UI components with proper typing using dictionaries for organization"""
@@ -63,9 +67,9 @@ class MenuScreen(QWidget):
             
             # Debug output
             if component:
-                print(f"Found {component_type.__name__} '{name}'")
+                self.logger.debug(f"Found {component_type.__name__} '{name}'")
             else:
-                print(f"WARNING: Could not find {component_type.__name__} '{name}' in UI")
+                self.logger.warning(f"Could not find {component_type.__name__} '{name}' in UI")
 
     def _check_widgets_existence(self):
         """Check if UI elements exist and report missing ones"""
@@ -100,36 +104,35 @@ class MenuScreen(QWidget):
             button = button_dict.get(button_name, {}).get("instance")
             if button:
                 button.clicked.connect(handler)
-                print(f"Connected {button_name} to handler")
+                self.logger.debug(f"Connected {button_name} to handler")
             else:
-                print(f"WARNING: Could not connect {button_name} - button not found")
+                self.logger.warning(f"Could not connect {button_name} - button not found")
 
     def open_print(self):
         """Navigate to the print location screen"""
         self.main_window.switch_to_print_location_screen()
-        print("Print button clicked")
+        self.logger.info("Print button clicked")
 
     def open_control(self):
         """Navigate to the control screen"""
         self.main_window.switch_to_control_screen()
-        print("Control button clicked")
+        self.logger.info("Control button clicked")
 
     def open_calibrate(self):
         """Navigate to the calibrate screen"""
         self.main_window.switch_to_calibrate_screen()
-        print("Calibrate button clicked")
+        self.logger.info("Calibrate button clicked")
 
     def open_cart(self):
         """Placeholder for open cart logic"""
-        print("Cart button clicked")
-        # This function may not have an implementation yet
+        self.logger.info("Cart button clicked")
 
     def open_settings(self):
         """Navigate to the settings screen"""
         self.main_window.switch_to_settings_screen()
-        print("Settings button clicked")
+        self.logger.info("Settings button clicked")
 
     def go_back(self):
         """Go back to the previous screen"""
         self.main_window.switch_to_home_screen()
-        print("Back button clicked")
+        self.logger.info("Back button clicked")

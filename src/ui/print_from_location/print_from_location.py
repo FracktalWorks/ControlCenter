@@ -1,11 +1,16 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QListWidget, QLabel, QToolButton
 from utils.helpers import check_ui_elements
+from utils.logger import setup_logger
 
 class PrintFromLocation(QWidget):
     def __init__(self, main_window):
         super(PrintFromLocation, self).__init__()
         self.main_window = main_window
+        
+        # Setup logger
+        self.logger = setup_logger('PrintFromLocation')
+        self.logger.info("Initializing PrintFromLocation screen")
 
         # Load the UI
         self._load_ui()
@@ -26,12 +31,13 @@ class PrintFromLocation(QWidget):
         """Load the UI file with proper error handling"""
         try:
             uic.loadUi('src/ui/print_from_location/print_from_location.ui', self)
-            print("PrintFromLocation UI loaded successfully")
+            self.logger.info("PrintFromLocation UI loaded successfully")
         except Exception as e:
-            print(f"Failed to load PrintFromLocation UI file: {e}")
+            self.logger.error(f"Failed to load PrintFromLocation UI file: {e}")
 
     def _initialize_ui_components(self):
         """Initialize all UI components with proper typing using dictionaries for organization"""
+        self.logger.debug("Initializing UI components")
         # Main container widget
         self.container_widgets = {
             "stackedWidget": {"type": QStackedWidget, "instance": None}
@@ -125,9 +131,9 @@ class PrintFromLocation(QWidget):
             
             # Debug output
             if component:
-                print(f"Found {component_type.__name__} '{name}'")
+                self.logger.debug(f"Found {component_type.__name__} '{name}'")
             else:
-                print(f"WARNING: Could not find {component_type.__name__} '{name}' in UI")
+                self.logger.warning(f"Could not find {component_type.__name__} '{name}' in UI")
 
     def _check_widgets_existence(self):
         """Check if UI elements exist and report missing ones"""
@@ -155,12 +161,13 @@ class PrintFromLocation(QWidget):
         
         if stackedWidget and printLocationPage:
             stackedWidget.setCurrentWidget(printLocationPage)
-            print("Set initial page to printLocationPage")
+            self.logger.info("Set initial page to printLocationPage")
         else:
-            print("WARNING: Could not set default page - required widgets missing")
+            self.logger.warning("Could not set default page - required widgets missing")
 
     def _connect_buttons(self):
         """Connect all button signals with safety checks to prevent NoneType errors"""
+        self.logger.debug("Connecting button signals")
         # Map buttons to their handler functions
         button_connections = [
             # USB storage navigation
@@ -201,9 +208,9 @@ class PrintFromLocation(QWidget):
             button = button_dict.get(button_name, {}).get("instance")
             if button:
                 button.clicked.connect(handler)
-                print(f"Connected {button_name} to handler")
+                self.logger.debug(f"Connected {button_name} to handler")
             else:
-                print(f"WARNING: Could not connect {button_name} - button not found")
+                self.logger.warning(f"Could not connect {button_name} - button not found")
 
     # Helper methods for button connections
     def _usb_storage_back(self):
@@ -213,7 +220,7 @@ class PrintFromLocation(QWidget):
         
         if stackedWidget and printLocationPage:
             stackedWidget.setCurrentWidget(printLocationPage)
-            print("USB Storage: going back to location selection")
+            self.logger.info("USB Storage: going back to location selection")
 
     def _local_storage_back(self):
         """Handle back button in local storage page"""
@@ -222,9 +229,9 @@ class PrintFromLocation(QWidget):
         
         if stackedWidget and printLocationPage:
             stackedWidget.setCurrentWidget(printLocationPage)
-            print("Local Storage: going back to location selection")
+            self.logger.info("Local Storage: going back to location selection")
         else:
-            print("Using fallback for localStorageBackButton")
+            self.logger.warning("Using fallback for localStorageBackButton")
             self.main_window.switch_to_previous_screen()
 
     def _usb_scroll_down(self):
@@ -233,7 +240,7 @@ class PrintFromLocation(QWidget):
         if fileListWidgetUSB:
             current_row = fileListWidgetUSB.currentRow()
             fileListWidgetUSB.setCurrentRow(current_row + 1)
-            print("USB Storage: scrolling down")
+            self.logger.info("USB Storage: scrolling down")
 
     def _usb_scroll_up(self):
         """Handle scroll up in USB file list"""
@@ -241,7 +248,7 @@ class PrintFromLocation(QWidget):
         if fileListWidgetUSB:
             current_row = fileListWidgetUSB.currentRow()
             fileListWidgetUSB.setCurrentRow(current_row - 1)
-            print("USB Storage: scrolling up")
+            self.logger.info("USB Storage: scrolling up")
 
     def _local_scroll_down(self):
         """Handle scroll down in local file list"""
@@ -249,7 +256,7 @@ class PrintFromLocation(QWidget):
         if fileListWidgetLocal:
             current_row = fileListWidgetLocal.currentRow()
             fileListWidgetLocal.setCurrentRow(current_row + 1)
-            print("Local Storage: scrolling down")
+            self.logger.info("Local Storage: scrolling down")
 
     def _local_scroll_up(self):
         """Handle scroll up in local file list"""
@@ -257,33 +264,33 @@ class PrintFromLocation(QWidget):
         if fileListWidgetLocal:
             current_row = fileListWidgetLocal.currentRow()
             fileListWidgetLocal.setCurrentRow(current_row - 1)
-            print("Local Storage: scrolling up")
+            self.logger.info("Local Storage: scrolling up")
 
     def fileListLocal(self):
         """Shows the local file list screen and populates the list with local files"""
-        print("Showing local file list")
+        self.logger.info("Showing local file list")
         stackedWidget = self.container_widgets["stackedWidget"]["instance"]
         fileListLocalPage = self.pages["fileListLocalPage"]["instance"]
         
         if stackedWidget and fileListLocalPage:
             stackedWidget.setCurrentWidget(fileListLocalPage)
-            print("Switched to local file list")
+            self.logger.info("Switched to local file list")
         # TODO: Populate file list from octoprint server
 
     def fileListUSB(self):
         """Shows the USB file list screen and populates the list with USB files"""
-        print("Showing USB file list")
+        self.logger.info("Showing USB file list")
         stackedWidget = self.container_widgets["stackedWidget"]["instance"]
         fileListUSBPage = self.pages["fileListUSBPage"]["instance"]
         
         if stackedWidget and fileListUSBPage:
             stackedWidget.setCurrentWidget(fileListUSBPage)
-            print("Switched to USB file list")
+            self.logger.info("Switched to USB file list")
         # TODO: Populate file list from USB drive
 
     def printSelectedLocal(self):
         """Displays the selected local file details before printing"""
-        print("Displaying selected local file")
+        self.logger.info("Displaying selected local file")
         fileListWidgetLocal = self.list_widgets["fileListWidgetLocal"]["instance"]
         stackedWidget = self.container_widgets["stackedWidget"]["instance"]
         printSelectedLocalPage = self.pages["printSelectedLocalPage"]["instance"]
@@ -292,13 +299,13 @@ class PrintFromLocation(QWidget):
             # TODO: Get file details and preview
             if stackedWidget and printSelectedLocalPage:
                 stackedWidget.setCurrentWidget(printSelectedLocalPage)
-                print("Showing selected local file details")
+                self.logger.info("Showing selected local file details")
         else:
-            print("No file selected")
+            self.logger.warning("No file selected")
 
     def printSelectedUSB(self):
         """Displays the selected USB file details before printing"""
-        print("Displaying selected USB file")
+        self.logger.info("Displaying selected USB file")
         fileListWidgetUSB = self.list_widgets["fileListWidgetUSB"]["instance"]
         stackedWidget = self.container_widgets["stackedWidget"]["instance"]
         printSelectedUSBPage = self.pages["printSelectedUSBPage"]["instance"]
@@ -307,34 +314,34 @@ class PrintFromLocation(QWidget):
             # TODO: Get file details and preview
             if stackedWidget and printSelectedUSBPage:
                 stackedWidget.setCurrentWidget(printSelectedUSBPage)
-                print("Showing selected USB file details")
+                self.logger.info("Showing selected USB file details")
         else:
-            print("No file selected")
+            self.logger.warning("No file selected")
 
     def printFile(self):
         """Sends the selected file to printer and starts printing"""
-        print("Printing file")
+        self.logger.info("Printing file")
         # TODO: Send file to printer and switch to the home screen to show print progress
         self.main_window.switch_to_home_screen()
 
     def deleteItem(self):
         """Deletes the selected local file"""
-        print("Deleting file")
+        self.logger.info("Deleting file")
         fileListWidgetLocal = self.list_widgets["fileListWidgetLocal"]["instance"]
         
         if fileListWidgetLocal and fileListWidgetLocal.currentItem():
             # TODO: Delete the selected file
-            print(f"Deleting file: {fileListWidgetLocal.currentItem().text()}")
+            self.logger.info(f"Deleting file: {fileListWidgetLocal.currentItem().text()}")
         else:
-            print("No file selected to delete")
+            self.logger.warning("No file selected to delete")
 
     def transferToLocal(self):
         """Transfers the selected USB file to local storage"""
-        print("Transferring file from USB to local storage")
+        self.logger.info("Transferring file from USB to local storage")
         fileListWidgetUSB = self.list_widgets["fileListWidgetUSB"]["instance"]
         
         if fileListWidgetUSB and fileListWidgetUSB.currentItem():
             # TODO: Copy the file from USB to local storage
-            print(f"Transferring file: {fileListWidgetUSB.currentItem().text()}")
+            self.logger.info(f"Transferring file: {fileListWidgetUSB.currentItem().text()}")
         else:
-            print("No file selected to transfer")
+            self.logger.warning("No file selected to transfer")

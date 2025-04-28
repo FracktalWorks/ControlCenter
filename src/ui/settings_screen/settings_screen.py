@@ -4,18 +4,16 @@ from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QVBoxLayout, QScrollArea
 from PyQt5.QtGui import QFont
 from utils.helpers import check_ui_elements
+from utils.logger import setup_logger
 
 class SettingsScreen(QWidget):
     def __init__(self, main_window):
-        """
-        Initialize the SettingsScreen widget.
-
-        Args:
-            main_window (QMainWindow): The main window of the application.
-        """
         super(SettingsScreen, self).__init__()
         self.main_window = main_window
-        
+
+        # Setup logger
+        self.logger = setup_logger('settings_screen')
+
         # Load the UI
         self._load_ui()
         
@@ -38,9 +36,9 @@ class SettingsScreen(QWidget):
         """Load the UI file with proper error handling"""
         try:
             uic.loadUi('src/ui/settings_screen/settings_screen.ui', self)
-            print("Settings screen UI loaded successfully")
+            self.logger.info("Settings screen UI loaded successfully")
         except Exception as e:
-            print(f"Failed to load settings screen UI file: {e}")
+            self.logger.error(f"Failed to load settings screen UI file: {e}")
 
     def _initialize_ui_components(self):
         """Initialize all UI components with proper typing using dictionaries for organization"""
@@ -95,9 +93,9 @@ class SettingsScreen(QWidget):
             
             # Debug output
             if component:
-                print(f"Found {component_type.__name__} '{name}'")
+                self.logger.debug(f"Found {component_type.__name__} '{name}'")
             else:
-                print(f"WARNING: Could not find {component_type.__name__} '{name}' in UI")
+                self.logger.warning(f"Could not find {component_type.__name__} '{name}' in UI")
 
     def _check_widgets_existence(self):
         """Check if UI elements exist and report missing ones"""
@@ -135,9 +133,9 @@ class SettingsScreen(QWidget):
             button = self.action_buttons.get(button_name, {}).get("instance")
             if button:
                 button.clicked.connect(handler)
-                print(f"Connected {button_name} to handler")
+                self.logger.debug(f"Connected {button_name} to handler")
             else:
-                print(f"WARNING: Could not connect {button_name} - button not found")
+                self.logger.warning(f"Could not connect {button_name} - button not found")
         
         # Special layout handling for certain buttons
         if self.verticalLayout:
@@ -145,31 +143,31 @@ class SettingsScreen(QWidget):
             back_button = self.action_buttons.get("settingsBackButton", {}).get("instance")
             if back_button:
                 self.verticalLayout.insertWidget(0, back_button)
-                print("Added back button to the top of the vertical layout")
+                self.logger.debug("Added back button to the top of the vertical layout")
                 
             # Add restart button at the bottom
             restart_button = self.action_buttons.get("restartButton", {}).get("instance")
             if restart_button:
                 self.verticalLayout.addWidget(restart_button)
-                print("Added restart button to the bottom of the vertical layout")
+                self.logger.debug("Added restart button to the bottom of the vertical layout")
 
     def _set_default_page(self):
         """Set the default page in stacked widget"""
         if self.stackedWidget and self.mainSettingsPage:
             self.stackedWidget.setCurrentWidget(self.mainSettingsPage)
-            print("Set default page to mainSettingsPage")
+            self.logger.debug("Set default page to mainSettingsPage")
         else:
-            print("WARNING: Could not set default page - required widgets missing")
+            self.logger.warning("Could not set default page - required widgets missing")
 
     def go_back(self):
         """Switch back to the main menu screen."""
-        print("Back button clicked, returning to menu screen")
+        self.logger.info("Back button clicked, returning to menu screen")
         self.main_window.switch_screen(self.main_window.menu_screen)
 
     def _load_settings_widgets(self):
         """Load settings widgets from subfolders in the "Settings Screen" folder."""
         if not (self.stackedWidget and self.verticalLayout):
-            print("Cannot load settings widgets: stackedWidget or verticalLayout is missing")
+            self.logger.error("Cannot load settings widgets: stackedWidget or verticalLayout is missing")
             return
             
         settings_folder = 'src/ui/settings_screen'
@@ -180,7 +178,7 @@ class SettingsScreen(QWidget):
                     ui_file = os.path.join(subfolder_path, f'{subfolder}.ui')
                     py_file = os.path.join(subfolder_path, f'{subfolder}.py')
                     if os.path.exists(ui_file) and os.path.exists(py_file):
-                        print(f"Loading widget: {subfolder}")
+                        self.logger.info(f"Loading widget: {subfolder}")
                         try:
                             # Create a button for the subfolder
                             button = self._create_settings_button(
@@ -197,11 +195,11 @@ class SettingsScreen(QWidget):
                             layout.setSpacing(0)
                             layout.addWidget(widget_instance)
                             self.stackedWidget.addWidget(page)
-                            print(f"Added widget: {widget_instance.objectName()}")
+                            self.logger.info(f"Added widget: {widget_instance.objectName()}")
                         except Exception as e:
-                            print(f"Error loading widget {subfolder}: {e}")
+                            self.logger.error(f"Error loading widget {subfolder}: {e}")
         except Exception as e:
-            print(f"Error loading settings widgets: {e}")
+            self.logger.error(f"Error loading settings widgets: {e}")
 
         # Ensure the mainSettingsPage is set as the default page after loading all widgets
         self._set_default_page()
@@ -236,16 +234,16 @@ class SettingsScreen(QWidget):
         Args:
             widget_name (str): The name of the widget to switch to.
         """
-        print(f"Switching to widget: {widget_name}")
+        self.logger.info(f"Switching to widget: {widget_name}")
         if not self.stackedWidget:
-            print("ERROR: Cannot switch widgets - stacked widget is missing")
+            self.logger.error("Cannot switch widgets - stacked widget is missing")
             return
             
         for i in range(self.stackedWidget.count()):
             widget = self.stackedWidget.widget(i)
             if widget.findChild(QWidget, widget_name):
                 self.stackedWidget.setCurrentWidget(widget)
-                print(f"Switched to widget: {widget_name}")
+                self.logger.info(f"Switched to widget: {widget_name}")
                 break
 
     def _create_widget_instance(self, ui_file, py_file):
@@ -277,22 +275,22 @@ class SettingsScreen(QWidget):
                     backend_instance = backend_class(self, parent)
                     self.backend = backend_instance
                 except AttributeError as e:
-                    print(f"Error creating widget instance: {e}")
-                    print(f"Expected class name: {class_name}")
+                    self.logger.error(f"Error creating widget instance: {e}")
+                    self.logger.error(f"Expected class name: {class_name}")
 
         return DynamicWidget(self)
 
     def restore_print_settings(self):
         """Restore the print settings to their default values."""
-        print("Restoring print settings to default values.")
+        self.logger.info("Restoring print settings to default values.")
         # Add logic to restore print settings
 
     def restore_factory_defaults(self):
         """Restore the system to factory default settings."""
-        print("Restoring system to factory default settings.")
+        self.logger.info("Restoring system to factory default settings.")
         # Add logic to restore factory default settings
 
     def restart_system(self):
         """Restart the system."""
-        print("Restarting the system.")
+        self.logger.info("Restarting the system.")
         # Add logic to restart the system

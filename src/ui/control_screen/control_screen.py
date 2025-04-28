@@ -1,11 +1,15 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QSpinBox, QTabWidget, QToolButton
 from utils.helpers import check_ui_elements
+from utils.logger import setup_logger
 
 class ControlScreen(QWidget):
     def __init__(self, main_window):
         super(ControlScreen, self).__init__()
         self.main_window = main_window
+        
+        # Setup logger for this screen
+        self.logger = setup_logger('control_screen')
         
         # Current movement step size
         self.step_size = 10  # Default to 10mm
@@ -24,9 +28,9 @@ class ControlScreen(QWidget):
         """Load the UI file with error handling"""
         try:
             uic.loadUi('src/ui/control_screen/control_screen.ui', self)
-            print("ControlScreen UI loaded successfully")
+            self.logger.info("ControlScreen UI loaded successfully")
         except Exception as e:
-            print(f"Failed to load ControlScreen UI file: {e}")
+            self.logger.error(f"Failed to load ControlScreen UI file: {e}")
 
     def _initialize_widgets(self):
         """Find and initialize all UI elements using a dictionary-based approach"""
@@ -118,7 +122,7 @@ class ControlScreen(QWidget):
         self.controlTabWidget = self.tab_components.get("controlTabWidget").get("instance")
         
         # Log initialization status
-        print("Control Screen widgets initialized")
+        self.logger.info("Control Screen widgets initialized")
 
     def _find_components(self):
         """Find all UI components based on their object names"""
@@ -132,9 +136,9 @@ class ControlScreen(QWidget):
             
             # Debug output
             if component:
-                print(f"Found {component_type.__name__} '{name}'")
+                self.logger.debug(f"Found {component_type.__name__} '{name}'")
             else:
-                print(f"WARNING: Could not find {component_type.__name__} '{name}' in UI")
+                self.logger.warning(f"Could not find {component_type.__name__} '{name}' in UI")
 
     def _check_widgets_existence(self):
         """Check if UI elements exist and report missing ones"""
@@ -212,15 +216,15 @@ class ControlScreen(QWidget):
             button = button_dict[button_name]["instance"]
             if button:
                 button.clicked.connect(handler_function)
-                print(f"Connected {button_name} to handler")
+                self.logger.debug(f"Connected {button_name} to handler")
             else:
-                print(f"WARNING: Could not connect {button_name} - button not found")
+                self.logger.warning(f"Could not connect {button_name} - button not found")
     
     # ===== NAVIGATION FUNCTIONS =====
     def _go_back(self):
         """Handle back button - return to previous screen"""
         self.main_window.switch_to_previous_screen()
-        print("Control Screen: returning to previous screen")
+        self.logger.info("Control Screen: returning to previous screen")
     
     # ===== TAB 1: FEED RATE FUNCTIONS =====
     def set_feed_rate(self):
@@ -228,33 +232,33 @@ class ControlScreen(QWidget):
         spinbox = self.feed_rate_controls["feedRateSpinBox"]["instance"]
         if spinbox:
             value = spinbox.value()
-            print(f"Setting feed rate to {value}%")
+            self.logger.info(f"Setting feed rate to {value}%")
             # Add implementation to control the printer
             
     def move_z_positive_baby_step(self):
         """Fine Z adjustment - move up slightly during print"""
-        print("Moving Z up slightly (baby step)")
+        self.logger.info("Moving Z up slightly (baby step)")
         # Add implementation to control the printer
         
     def move_z_negative_baby_step(self):
         """Fine Z adjustment - move down slightly during print"""
-        print("Moving Z down slightly (baby step)")
+        self.logger.info("Moving Z down slightly (baby step)")
         # Add implementation to control the printer
     
     # ===== TAB 2: TEMPERATURE FUNCTIONS =====
     def turn_fan_on(self):
         """Turn the cooling fan on"""
-        print("Turning fan ON")
+        self.logger.info("Turning fan ON")
         # Add implementation to control the printer
         
     def turn_fan_off(self):
         """Turn the cooling fan off"""
-        print("Turning fan OFF")
+        self.logger.info("Turning fan OFF")
         # Add implementation to control the printer
         
     def cooldown(self):
         """Cool down all heaters"""
-        print("Cooling down all heaters")
+        self.logger.info("Cooling down all heaters")
         # Add implementation to control the printer
     
     def set_tool_temp(self):
@@ -264,7 +268,7 @@ class ControlScreen(QWidget):
             value = spinbox.value()
             is_tool1 = self.get_active_tool_temp()
             tool_name = "Tool 1" if is_tool1 else "Tool 0"
-            print(f"Setting {tool_name} temperature to {value}°C")
+            self.logger.info(f"Setting {tool_name} temperature to {value}°C")
             # Add implementation to control the printer
     
     def set_bed_temp(self):
@@ -272,13 +276,13 @@ class ControlScreen(QWidget):
         spinbox = self.temperature_controls["bedTempSpinBox"]["instance"]
         if spinbox:
             value = spinbox.value()
-            print(f"Setting bed temperature to {value}°C")
+            self.logger.info(f"Setting bed temperature to {value}°C")
             # Add implementation to control the printer
     
     def toggle_tool_temperature(self):
         """Toggle between tool 0 and tool 1 for temperature control"""
         is_tool1 = self.get_active_tool_temp()
-        print(f"Toggled to Tool {1 if is_tool1 else 0} for temperature control")
+        self.logger.info(f"Toggled to Tool {1 if is_tool1 else 0} for temperature control")
         # Add implementation to update UI if needed
     
     def get_active_tool_temp(self):
@@ -290,31 +294,31 @@ class ControlScreen(QWidget):
         """Preheat tool to 180°C (PLA preset)"""
         is_tool1 = self.get_active_tool_temp()
         tool_name = "Tool 1" if is_tool1 else "Tool 0"
-        print(f"Preheating {tool_name} to 180°C")
+        self.logger.info(f"Preheating {tool_name} to 180°C")
         # Add implementation to control the printer
     
     def preheat_tool_250(self):
         """Preheat tool to 250°C (ABS/PETG preset)"""
         is_tool1 = self.get_active_tool_temp()
         tool_name = "Tool 1" if is_tool1 else "Tool 0"
-        print(f"Preheating {tool_name} to 250°C")
+        self.logger.info(f"Preheating {tool_name} to 250°C")
         # Add implementation to control the printer
     
     def preheat_bed_60(self):
         """Preheat bed to 60°C (PLA preset)"""
-        print("Preheating bed to 60°C")
+        self.logger.info("Preheating bed to 60°C")
         # Add implementation to control the printer
     
     def preheat_bed_100(self):
         """Preheat bed to 100°C (ABS preset)"""
-        print("Preheating bed to 100°C")
+        self.logger.info("Preheating bed to 100°C")
         # Add implementation to control the printer
     
     # ===== TAB 3: MOTION FUNCTIONS =====
     def set_move_step(self, step):
         """Set the movement step size"""
         self.step_size = step
-        print(f"Set movement step size to {step}mm")
+        self.logger.info(f"Set movement step size to {step}mm")
         # Highlight the selected button and unhighlight others
         for button_name, step_value in [("step1mmButton", 1), ("step10mmButton", 10), ("step100mmButton", 100)]:
             button = self.motion_controls.get(button_name, {}).get("instance")
@@ -323,64 +327,64 @@ class ControlScreen(QWidget):
     
     def motors_off(self):
         """Turn off all stepper motors"""
-        print("Turning off all motors")
+        self.logger.info("Turning off all motors")
         # Add implementation to control the printer
     
     def toggle_tool_motion(self):
         """Toggle between tool 0 and tool 1 for motion control"""
         button = self.motion_controls.get("toolToggleMotionButton", {}).get("instance")
         is_tool1 = button and button.isChecked()
-        print(f"Toggled to Tool {1 if is_tool1 else 0} for motion control")
+        self.logger.info(f"Toggled to Tool {1 if is_tool1 else 0} for motion control")
         # Add implementation to update UI if needed
     
     def move_x_positive(self):
         """Move X axis in positive direction"""
-        print(f"Moving X+ by {self.step_size}mm")
+        self.logger.info(f"Moving X+ by {self.step_size}mm")
         # Add implementation to control the printer
     
     def move_x_negative(self):
         """Move X axis in negative direction"""
-        print(f"Moving X- by {self.step_size}mm")
+        self.logger.info(f"Moving X- by {self.step_size}mm")
         # Add implementation to control the printer
     
     def move_y_positive(self):
         """Move Y axis in positive direction"""
-        print(f"Moving Y+ by {self.step_size}mm")
+        self.logger.info(f"Moving Y+ by {self.step_size}mm")
         # Add implementation to control the printer
     
     def move_y_negative(self):
         """Move Y axis in negative direction"""
-        print(f"Moving Y- by {self.step_size}mm")
+        self.logger.info(f"Moving Y- by {self.step_size}mm")
         # Add implementation to control the printer
     
     def home_xy(self):
         """Home X and Y axes"""
-        print("Homing X and Y axes")
+        self.logger.info("Homing X and Y axes")
         # Add implementation to control the printer
     
     def move_z_positive(self):
         """Move Z axis in positive direction"""
-        print(f"Moving Z+ by {self.step_size}mm")
+        self.logger.info(f"Moving Z+ by {self.step_size}mm")
         # Add implementation to control the printer
     
     def move_z_negative(self):
         """Move Z axis in negative direction"""
-        print(f"Moving Z- by {self.step_size}mm")
+        self.logger.info(f"Moving Z- by {self.step_size}mm")
         # Add implementation to control the printer
     
     def home_z(self):
         """Home Z axis"""
-        print("Homing Z axis")
+        self.logger.info("Homing Z axis")
         # Add implementation to control the printer
     
     def extrude(self):
         """Extrude filament"""
-        print(f"Extruding filament by {self.step_size}mm")
+        self.logger.info(f"Extruding filament by {self.step_size}mm")
         # Add implementation to control the printer
     
     def retract(self):
         """Retract filament"""
-        print(f"Retracting filament by {self.step_size}mm")
+        self.logger.info(f"Retracting filament by {self.step_size}mm")
         # Add implementation to control the printer
     
     # ===== TAB 4: FILAMENT FUNCTIONS =====
@@ -389,12 +393,12 @@ class ControlScreen(QWidget):
         spinbox = self.filament_controls["flowRateSpinBox"]["instance"]
         if spinbox:
             value = spinbox.value()
-            print(f"Setting flow rate to {value}%")
+            self.logger.info(f"Setting flow rate to {value}%")
             # Add implementation to control the printer
     
     def navigate_to_change_filament(self):
         """Open the change filament screen"""
-        print("Navigating to change filament screen")
+        self.logger.info("Navigating to change filament screen")
         self.main_window.switch_to_change_filament_screen()
     
     def toggle_filament_sensor(self):
@@ -402,7 +406,7 @@ class ControlScreen(QWidget):
         button = self.filament_controls.get("toggleFilamentSensorButton", {}).get("instance")
         is_on = button and button.isChecked()
         status = "ON" if is_on else "OFF"
-        print(f"Toggling filament sensor {status}")
+        self.logger.info(f"Toggling filament sensor {status}")
         # Add implementation to control the printer
         
         # Update the button icon based on status

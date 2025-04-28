@@ -1,6 +1,7 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget
 from utils.helpers import check_ui_elements
+from utils.logger import setup_logger
 
 class BedLeveling(QWidget):
     """
@@ -10,6 +11,10 @@ class BedLeveling(QWidget):
     def __init__(self, main_window):
         super(BedLeveling, self).__init__()
         self.main_window = main_window
+        
+        # Setup logger for bed leveling
+        self.logger = setup_logger('bed_leveling')
+        self.logger.info("Initializing Bed Leveling screen")
 
         # Load the UI
         self._load_ui()
@@ -25,14 +30,16 @@ class BedLeveling(QWidget):
 
         # Set the default screen to nozzleHeightStep1Page
         self._navigate_to_page("nozzleHeightStep1Page")
+        
+        self.logger.info("Bed Leveling initialization complete")
 
     def _load_ui(self):
         """Load the UI file with proper error handling"""
         try:
             uic.loadUi('src/ui/calibrate_screen/bedLevelingPage/bedLevelingPage.ui', self)
-            print("BedLeveling UI loaded successfully")
+            self.logger.info("BedLeveling UI loaded successfully")
         except Exception as e:
-            print(f"Failed to load BedLeveling UI file: {e}")
+            self.logger.error(f"Failed to load BedLeveling UI file: {e}")
 
     def _initialize_ui_components(self):
         """Initialize all UI components with proper typing using dictionaries for organization"""
@@ -84,6 +91,8 @@ class BedLeveling(QWidget):
         
         # Find all components using the dictionary
         self._find_components()
+        
+        self.logger.info("Bed Leveling UI components initialized")
 
     def _find_components(self):
         """Find all UI components based on their object names"""
@@ -92,9 +101,9 @@ class BedLeveling(QWidget):
             
             # Debug output
             if component_info["instance"]:
-                print(f"Found {component_info['type'].__name__} '{name}'")
+                self.logger.debug(f"Found {component_info['type'].__name__} '{name}'")
             else:
-                print(f"WARNING: Could not find {component_info['type'].__name__} '{name}' in UI")
+                self.logger.warning(f"Could not find {component_info['type'].__name__} '{name}' in UI")
 
     def _check_widgets_existence(self):
         """Check if UI elements exist and report missing ones"""
@@ -117,23 +126,23 @@ class BedLeveling(QWidget):
         zpt1_button = self.height_adjustment_buttons.get("moveZPT1CaliberateButton", {}).get("instance")
         if zpt1_button:
             zpt1_button.clicked.connect(self.move_z_pt1)
-            print("Connected Z+0.1 button")
+            self.logger.debug("Connected Z+0.1 button")
 
         zmt1_button = self.height_adjustment_buttons.get("moveZMT1CaliberateButton", {}).get("instance")
         if zmt1_button:
             zmt1_button.clicked.connect(self.move_z_mt1)
-            print("Connected Z-0.1 button")
+            self.logger.debug("Connected Z-0.1 button")
 
         # Navigation buttons - Step 1
         step1_next = self.step1_nav_buttons.get("nozzleHeightStep1NextButton", {}).get("instance")
         if step1_next:
             step1_next.clicked.connect(lambda: self._navigate_to_page("quickStep1Page"))
-            print("Connected Step 1 Next button")
+            self.logger.debug("Connected Step 1 Next button")
 
         step1_cancel = self.step1_nav_buttons.get("nozzleHeightStep1CancelButton", {}).get("instance")
         if step1_cancel:
             step1_cancel.clicked.connect(self._return_to_main_calibration)
-            print("Connected Step 1 Cancel button")
+            self.logger.debug("Connected Step 1 Cancel button")
 
         # Navigation buttons - Quick Steps
         steps = [
@@ -149,12 +158,12 @@ class BedLeveling(QWidget):
                 if next_page:
                     button.clicked.connect(
                         lambda checked=False, page=next_page: self._navigate_to_page(page))
-                    print(f"Connected {button_name} to navigate to {next_page}")
+                    self.logger.debug(f"Connected {button_name} to navigate to {next_page}")
                 else:
                     button.clicked.connect(self._finish_bed_leveling)
-                    print(f"Connected {button_name} to finish bed leveling")
+                    self.logger.debug(f"Connected {button_name} to finish bed leveling")
             else:
-                print(f"WARNING: Could not connect {button_name} - button not found")
+                self.logger.warning(f"Could not connect {button_name} - button not found")
         
         # Cancel buttons - all quick steps
         cancel_buttons = [
@@ -168,9 +177,11 @@ class BedLeveling(QWidget):
             button = self.quick_step_nav_buttons.get(button_name, {}).get("instance")
             if button:
                 button.clicked.connect(self._return_to_main_calibration)
-                print(f"Connected {button_name} to return to main calibration")
+                self.logger.debug(f"Connected {button_name} to return to main calibration")
             else:
-                print(f"WARNING: Could not connect {button_name} - button not found")
+                self.logger.warning(f"Could not connect {button_name} - button not found")
+        
+        self.logger.info("Bed Leveling buttons connected")
 
     def _navigate_to_page(self, page_name):
         """Navigate to a specific page in the stackedWidget"""
@@ -178,36 +189,36 @@ class BedLeveling(QWidget):
         target_page = self.pages.get(page_name, {}).get("instance")
         
         if stacked_widget and target_page:
-            print(f"Navigating to {page_name}")
+            self.logger.info(f"Navigating to {page_name}")
             stacked_widget.setCurrentWidget(target_page)
         else:
-            print(f"Error: Cannot navigate to {page_name}")
+            self.logger.error(f"Cannot navigate to {page_name} - widget or page not found")
 
     def _return_to_main_calibration(self):
         """Cancel bed leveling process and return to main calibration page"""
-        print("Bed leveling process canceled")
+        self.logger.info("Bed leveling process canceled by user")
         if hasattr(self.main_window, 'calibrate_screen'):
             # Use standard navigation logic in CalibrateScreen
             self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
                 self.main_window.calibrate_screen.main_calibrate_page)
-            print("Returning to main calibration page from bed leveling")
+            self.logger.info("Returning to main calibration page from bed leveling")
         else:
-            print("ERROR: Cannot return to main calibration - main_window.calibrate_screen not found")
+            self.logger.error("Cannot return to main calibration - main_window.calibrate_screen not found")
 
     def _finish_bed_leveling(self):
         """Finish bed leveling process and return to main calibration page"""
-        print("Bed leveling process finished")
+        self.logger.info("Bed leveling process completed successfully")
         self._return_to_main_calibration()
 
     # Motion control methods
     def move_z_pt1(self):
         """Move Z-axis to positive direction for calibration"""
-        print("Move Z-axis to PT1 button clicked")
+        self.logger.info("Moving Z-axis +0.1mm for calibration")
         # Actual implementation would send commands to the printer
         # Example: self.main_window.octoprint_client.move_z(amount=0.1)
 
     def move_z_mt1(self):
         """Move Z-axis to negative direction for calibration"""
-        print("Move Z-axis to MT1 button clicked")
+        self.logger.info("Moving Z-axis -0.1mm for calibration")
         # Actual implementation would send commands to the printer
         # Example: self.main_window.octoprint_client.move_z(amount=-0.1)

@@ -1,11 +1,16 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QComboBox, QProgressBar, QLabel
 from utils.helpers import check_ui_elements
+from utils.logger import setup_logger
 
 class ChangeFilament(QWidget):
     def __init__(self, main_window):
         super(ChangeFilament, self).__init__()
         self.main_window = main_window
+        
+        # Setup logger
+        self.logger = setup_logger(f"{self.__class__.__name__}")
+        self.logger.info("Initializing ChangeFilament widget")
         
         # Load UI
         self._load_ui()
@@ -26,9 +31,9 @@ class ChangeFilament(QWidget):
         """Load the UI file with error handling"""
         try:
             uic.loadUi('src/ui/control_screen/changeFilament/changeFilament.ui', self)
-            print("ChangeFilament UI loaded successfully")
+            self.logger.info("ChangeFilament UI loaded successfully")
         except Exception as e:
-            print(f"Failed to load ChangeFilament UI file: {e}")
+            self.logger.error(f"Failed to load ChangeFilament UI file: {e}", exc_info=True)
 
     def _initialize_ui_components(self):
         """Initialize all UI components with proper typing using dictionaries for organization"""
@@ -91,11 +96,11 @@ class ChangeFilament(QWidget):
             component = self.findChild(component_type, name)
             component_info["instance"] = component
             
-            # Debug output
+            # Log component discovery
             if component:
-                print(f"Found {component_type.__name__} '{name}'")
+                self.logger.debug(f"Found {component_type.__name__} '{name}'")
             else:
-                print(f"WARNING: Could not find {component_type.__name__} '{name}' in UI")
+                self.logger.warning(f"Could not find {component_type.__name__} '{name}' in UI")
 
     def _check_widgets_existence(self):
         """Check if UI elements exist and report missing ones"""
@@ -119,7 +124,7 @@ class ChangeFilament(QWidget):
             button = button_info["instance"]
             if button:
                 button.clicked.connect(self._handle_back_button)
-                print(f"Connected {button_name} to back handler")
+                self.logger.debug(f"Connected {button_name} to back handler")
         
         # Map action buttons to their respective handlers
         action_handlers = {
@@ -135,21 +140,21 @@ class ChangeFilament(QWidget):
             button = self.action_buttons.get(button_name, {}).get("instance")
             if button:
                 button.clicked.connect(handler)
-                print(f"Connected {button_name} to its handler")
+                self.logger.debug(f"Connected {button_name} to its handler")
 
     def _show_page(self, page_name):
         """Show a specific page in the stacked widget"""
         if not self.stackedWidget:
-            print("ERROR: Cannot show page - stacked widget is missing")
+            self.logger.error("Cannot show page - stacked widget is missing")
             return False
             
         page = self.page_widgets.get(page_name, {}).get("instance")
         if page:
             self.stackedWidget.setCurrentWidget(page)
-            print(f"Showing page: {page_name}")
+            self.logger.info(f"Showing page: {page_name}")
             return True
         else:
-            print(f"ERROR: Cannot show page {page_name} - page not found")
+            self.logger.error(f"Cannot show page {page_name} - page not found")
             return False
 
     def _update_status(self, message):
@@ -157,9 +162,9 @@ class ChangeFilament(QWidget):
         status_label = self.status_controls.get("changeFilamentStatus", {}).get("instance")
         if status_label:
             status_label.setText(message)
-            print(f"Status updated: {message}")
+            self.logger.info(f"Status updated: {message}")
         else:
-            print("WARNING: Could not update status - label not found")
+            self.logger.warning("Could not update status - label not found")
 
     def _handle_back_button(self):
         """Handle back button logic with proper safety checks"""
@@ -168,15 +173,15 @@ class ChangeFilament(QWidget):
             first_page = self.page_widgets.get("changeFilamentPage", {}).get("instance")
             if first_page:
                 self.stackedWidget.setCurrentWidget(first_page)
-            print("Back button: reset to first page")
+            self.logger.debug("Back button: reset to first page")
             
         # Return to previous screen in main window
         self.main_window.switch_to_previous_screen()
-        print("Back button: returning to previous screen")
+        self.logger.info("Back button: returning to previous screen")
 
     def start_loading_filament(self):
         """Start the filament loading process"""
-        print("Starting filament loading process")
+        self.logger.info("Starting filament loading process")
         self._show_page('changeFilamentLoadPage')
         self._update_status("Insert filament and wait for automatic pull")
         
@@ -185,7 +190,7 @@ class ChangeFilament(QWidget):
 
     def start_unloading_filament(self):
         """Start the filament unloading process"""
-        print("Starting filament unloading process")
+        self.logger.info("Starting filament unloading process")
         self._show_page('changeFilamentRetractPage')
         self._update_status("Retracting filament...")
         
@@ -196,15 +201,15 @@ class ChangeFilament(QWidget):
         """Toggle between extruder tools (dual extruder support)"""
         tool_button = self.action_buttons.get("toolToggleChangeFilamentButton", {}).get("instance")
         if tool_button and tool_button.isChecked():
-            print("Toggling to Tool 1")
+            self.logger.info("Toggling to Tool 1")
             # Add logic for Tool 1
         else:
-            print("Toggling to Tool 0")
+            self.logger.info("Toggling to Tool 0")
             # Add logic for Tool 0
 
     def filament_loaded_till_extruder(self):
         """Handle the event when filament is loaded till the extruder"""
-        print("Filament loaded till extruder")
+        self.logger.info("Filament loaded till extruder")
         self._show_page('changeFilamentExtrudePage')
         self._update_status("Extruding filament...")
         
@@ -213,7 +218,7 @@ class ChangeFilament(QWidget):
 
     def finish_loading_filament(self):
         """Finish the filament loading process"""
-        print("Filament loading process finished")
+        self.logger.info("Filament loading process finished")
         self._update_status("Filament loaded successfully")
         
         # Return to previous screen
@@ -221,7 +226,7 @@ class ChangeFilament(QWidget):
 
     def finish_unloading_filament(self):
         """Finish the filament unloading process"""
-        print("Filament unloading process finished")
+        self.logger.info("Filament unloading process finished")
         self._update_status("Filament unloaded successfully")
         
         # Return to initial page before going back

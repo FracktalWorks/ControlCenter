@@ -1,6 +1,7 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget
 from utils.helpers import check_ui_elements
+from utils.logger import setup_logger
 
 class TestPrintPage(QWidget):
     """
@@ -10,7 +11,9 @@ class TestPrintPage(QWidget):
     def __init__(self, main_window):
         super(TestPrintPage, self).__init__()
         self.main_window = main_window
-
+        # Set up logger for this class
+        self.logger = setup_logger('TestPrintPage')
+        
         # Load the UI
         self._load_ui()
         
@@ -30,9 +33,9 @@ class TestPrintPage(QWidget):
         """Load the UI file with proper error handling"""
         try:
             uic.loadUi('src/ui/calibrate_screen/testPrintPage/testPrintPage.ui', self)
-            print("TestPrintPage UI loaded successfully")
+            self.logger.info("TestPrintPage UI loaded successfully")
         except Exception as e:
-            print(f"Failed to load TestPrintPage UI file: {e}")
+            self.logger.error(f"Failed to load TestPrintPage UI file: {e}", exc_info=True)
 
     def _initialize_ui_components(self):
         """Initialize all UI components with proper typing using dictionaries for organization"""
@@ -85,9 +88,9 @@ class TestPrintPage(QWidget):
             
             # Debug output
             if component:
-                print(f"Found {component_type.__name__} '{name}'")
+                self.logger.debug(f"Found {component_type.__name__} '{name}'")
             else:
-                print(f"WARNING: Could not find {component_type.__name__} '{name}' in UI")
+                self.logger.warning(f"Could not find {component_type.__name__} '{name}' in UI")
 
     def _check_widgets_existence(self):
         """Check if UI elements exist and report missing ones"""
@@ -109,7 +112,7 @@ class TestPrintPage(QWidget):
         next_button = self.nav_buttons.get("testPrintsNextButton", {}).get("instance")
         if next_button:
             next_button.clicked.connect(self.main_window.switch_to_next_screen)
-            print("Connected next button to switch_to_next_screen")
+            self.logger.debug("Connected next button to switch_to_next_screen")
         
         # Navigation buttons for going back/cancel
         back_button_names = ["testPrintsBackButton", "testPrintsCancelButton"]
@@ -117,9 +120,9 @@ class TestPrintPage(QWidget):
             button = self.nav_buttons.get(button_name, {}).get("instance")
             if button:
                 button.clicked.connect(self._return_to_main_calibration)
-                print(f"Connected {button_name} to return_to_main_calibration")
+                self.logger.debug(f"Connected {button_name} to return_to_main_calibration")
             else:
-                print(f"WARNING: Could not connect {button_name} - button not found")
+                self.logger.warning(f"Could not connect {button_name} - button not found")
         
         # Print action buttons - map button names to their handler methods
         button_handlers = {
@@ -135,23 +138,23 @@ class TestPrintPage(QWidget):
             button = self.print_buttons.get(button_name, {}).get("instance")
             if button:
                 button.clicked.connect(handler)
-                print(f"Connected {button_name} to its handler")
+                self.logger.debug(f"Connected {button_name} to its handler")
             else:
-                print(f"WARNING: Could not connect {button_name} - button not found")
+                self.logger.warning(f"Could not connect {button_name} - button not found")
 
     def _navigate_to_page(self, page_name):
         """Navigate to a specific page in the stackedWidget"""
         if not self.stackedWidget:
-            print("ERROR: Cannot navigate - stacked widget is missing")
+            self.logger.error("Cannot navigate - stacked widget is missing")
             return False
             
         target_page = self.page_widgets.get(page_name, {}).get("instance")
         if target_page:
             self.stackedWidget.setCurrentWidget(target_page)
-            print(f"Navigating to {page_name}")
+            self.logger.debug(f"Navigating to {page_name}")
             return True
         else:
-            print(f"ERROR: Cannot navigate to {page_name} - page not found")
+            self.logger.error(f"Cannot navigate to {page_name} - page not found")
             return False
 
     def _return_to_main_calibration(self):
@@ -160,33 +163,33 @@ class TestPrintPage(QWidget):
             # Use the standard navigation logic in CalibrateScreen
             self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
                 self.main_window.calibrate_screen.main_calibrate_page)
-            print("Returning to main calibration page from test prints")
+            self.logger.info("Returning to main calibration page from test prints")
         else:
-            print("ERROR: Cannot return to main calibration - main_window.calibrate_screen not found")
+            self.logger.error("Cannot return to main calibration - main_window.calibrate_screen not found")
 
     # Print action methods
     def _single_nozzle_test_print(self):
         """Logic for single nozzle test print."""
-        print("Single Nozzle Test Print button clicked")
+        self.logger.info("Single Nozzle Test Print button clicked")
         # Actual implementation would send commands to the printer
         # Example: self.main_window.octoprint_client.print_file('single_nozzle_test.gcode')
 
     def _movement_stress_test(self):
         """Logic for movement stress test."""
-        print("Movement Stress Test button clicked")
+        self.logger.info("Movement Stress Test button clicked")
         # Actual implementation would send commands to the printer
 
     def _dual_calibration_print(self):
         """Logic for dual calibration print."""
-        print("Dual Calibration Print button clicked")
+        self.logger.info("Dual Calibration Print button clicked")
         # Actual implementation would send commands to the printer
 
     def _dual_nozzle_test_print(self):
         """Logic for dual nozzle test print."""
-        print("Dual Nozzle Test Print button clicked")
+        self.logger.info("Dual Nozzle Test Print button clicked")
         # Actual implementation would send commands to the printer
 
     def _bed_leveling_print(self):
         """Logic for bed leveling print."""
-        print("Bed Leveling Print button clicked")
+        self.logger.info("Bed Leveling Print button clicked")
         # Actual implementation would send commands to the printer

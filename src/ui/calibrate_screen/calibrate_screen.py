@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QStackedWidget
 from PyQt5 import uic
 from utils.helpers import check_ui_elements
+from utils import logger  # Import the logger
 
 # Import all calibration sub-screens
 from ui.calibrate_screen.nozzleOffsetPage.nozzleOffsetPage import NozzleOffsetPage
@@ -36,9 +37,9 @@ class CalibrateScreen(QWidget):
         """Load the UI file with proper error handling"""
         try:
             uic.loadUi('src/ui/calibrate_screen/calibrate_screen.ui', self)
-            print("CalibrateScreen UI loaded successfully")
+            logger.info("CalibrateScreen UI loaded successfully")
         except Exception as e:
-            print(f"Failed to load CalibrateScreen UI file: {e}")
+            logger.exception(f"Failed to load CalibrateScreen UI file: {e}")
 
     def _initialize_ui_components(self):
         """Initialize all UI components with proper typing using dictionaries for organization"""
@@ -78,11 +79,11 @@ class CalibrateScreen(QWidget):
         self.main_calibrate_page = self.container_widgets["mainCalibratePage"]["instance"]
         
         if not self.calibration_stacked_widget:
-            print("ERROR: Could not find mainCalibrateStackedWidget in UI file")
+            logger.error("Could not find mainCalibrateStackedWidget in UI file")
         if not self.main_calibrate_page:
-            print("ERROR: Could not find mainCalibratePage in UI file")
+            logger.error("Could not find mainCalibratePage in UI file")
             
-        print(f"Found main calibrate page: {self.main_calibrate_page}")
+        logger.debug(f"Found main calibrate page: {self.main_calibrate_page}")
 
     def _find_components(self):
         """Find all UI components based on their object names"""
@@ -93,9 +94,9 @@ class CalibrateScreen(QWidget):
             
             # Debug output
             if component:
-                print(f"Found {component_type.__name__} '{name}'")
+                logger.debug(f"Found {component_type.__name__} '{name}'")
             else:
-                print(f"WARNING: Could not find {component_type.__name__} '{name}' in UI")
+                logger.warning(f"Could not find {component_type.__name__} '{name}' in UI")
 
     def _check_widgets_existence(self):
         """Check if UI elements exist and report missing ones"""
@@ -113,7 +114,7 @@ class CalibrateScreen(QWidget):
     def _initialize_calibration_subscreens(self):
         """Initialize all calibration sub-screens to be managed within this class"""
         if not self.calibration_stacked_widget:
-            print("ERROR: Cannot initialize sub-screens - stacked widget is missing")
+            logger.error("Cannot initialize sub-screens - stacked widget is missing")
             return
             
         self.screens = {
@@ -128,10 +129,10 @@ class CalibrateScreen(QWidget):
             screen.setObjectName(name)
             self.calibration_stacked_widget.addWidget(screen)
 
-        print(f"Stacked widget has {self.calibration_stacked_widget.count()} pages")
+        logger.debug(f"Stacked widget has {self.calibration_stacked_widget.count()} pages")
         for i in range(self.calibration_stacked_widget.count()):
             widget = self.calibration_stacked_widget.widget(i)
-            print(f"Page {i}: {widget.objectName()}")
+            logger.debug(f"Page {i}: {widget.objectName()}")
 
         # Add this screen to the main window's stacked widget
         self.main_window.stacked_widget.addWidget(self)
@@ -152,7 +153,7 @@ class CalibrateScreen(QWidget):
                     button.clicked.connect(self._show_tool_offset_xy)
                 else:
                     button.clicked.connect(lambda checked=False, t=target: self.show_calibrate_screen(t))
-                print(f"Connected {name} to handler for {target}")
+                logger.debug(f"Connected {name} to handler for {target}")
         
         # Connect push buttons
         for name, info in self.push_buttons.items():
@@ -161,17 +162,17 @@ class CalibrateScreen(QWidget):
             
             if button and target == "back":
                 button.clicked.connect(self._handle_back_button)
-                print(f"Connected {name} to back handler")
+                logger.debug(f"Connected {name} to back handler")
 
     def _show_main_page(self):
         """Show the main calibration page"""
         if self.calibration_stacked_widget and self.main_calibrate_page:
             self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
-            print("Set current widget to main_calibrate_page")
+            logger.debug("Set current widget to main_calibrate_page")
 
     def _input_shaper_not_implemented(self):
         """Print a message when inputShaperCalibrateButton is clicked"""
-        print("Input Shaper Calibration not yet implemented")
+        logger.info("Input Shaper Calibration not yet implemented")
         
     def _show_tool_offset_z(self):
         """Show the tool offset screen with Z tab selected"""
@@ -182,9 +183,9 @@ class CalibrateScreen(QWidget):
             z_page = tool_offset_screen.page_widgets.get("toolOffsetZPage", {}).get("instance")
             if tool_offset_screen.stackedWidget and z_page:
                 tool_offset_screen.stackedWidget.setCurrentWidget(z_page)
-                print("Showing Tool Offset Z tab")
+                logger.debug("Showing Tool Offset Z tab")
             else:
-                print("ERROR: Tool Offset Z page not found")
+                logger.error("Tool Offset Z page not found")
     
     def _show_tool_offset_xy(self):
         """Show the tool offset screen with XY tab selected"""
@@ -195,9 +196,9 @@ class CalibrateScreen(QWidget):
             xy_page = tool_offset_screen.page_widgets.get("toolOffsetXYPage", {}).get("instance")
             if tool_offset_screen.stackedWidget and xy_page:
                 tool_offset_screen.stackedWidget.setCurrentWidget(xy_page)
-                print("Showing Tool Offset XY tab")
+                logger.debug("Showing Tool Offset XY tab")
             else:
-                print("ERROR: Tool Offset XY page not found")
+                logger.error("Tool Offset XY page not found")
 
     def show_calibrate_screen(self, target_screen=None):
         """Show a specific calibration screen or the main calibration page
@@ -206,7 +207,7 @@ class CalibrateScreen(QWidget):
             target_screen: Optional string identifying which sub-screen to navigate to.
                            None means show the main calibration page.
         """
-        print(f"show_calibrate_screen called with target_screen={target_screen}")
+        logger.debug(f"show_calibrate_screen called with target_screen={target_screen}")
 
         # Only switch to this screen in the main window if we're not already on it
         if self.main_window.current_screen != self:
@@ -215,29 +216,29 @@ class CalibrateScreen(QWidget):
         # If no specific target is requested, show the main calibration page
         if not target_screen or target_screen not in self.screens:
             self._show_main_page()
-            print(f"Current widget is now: {self.calibration_stacked_widget.currentWidget().objectName()}")
+            logger.debug(f"Current widget is now: {self.calibration_stacked_widget.currentWidget().objectName()}")
             return
 
         # Navigate to the requested sub-screen
         screen = self.screens[target_screen]
         self.calibration_stacked_widget.setCurrentWidget(screen)
-        print(f"Navigated to {target_screen}")
+        logger.info(f"Navigated to {target_screen}")
 
     def _handle_back_button(self):
         """Handle back button logic for CalibrateScreen"""
         if not self.calibration_stacked_widget or not self.main_calibrate_page:
-            print("ERROR: Cannot handle back button - required widgets missing")
+            logger.error("Cannot handle back button - required widgets missing")
             return
             
         current_widget = self.calibration_stacked_widget.currentWidget()
-        print(f"Back button pressed. Current widget: {current_widget.objectName()}")
+        logger.debug(f"Back button pressed. Current widget: {current_widget.objectName()}")
 
         if current_widget == self.main_calibrate_page:
             # If we're on the main calibrate page, use navigation history to go back
-            print("On main page, returning to previous screen")
+            logger.debug("On main page, returning to previous screen")
             self.main_window.switch_to_previous_screen()
         else:
             # If we're on a sub-screen, return to the main calibrate page
-            print(f"On sub-screen, returning to main calibration page")
+            logger.debug(f"On sub-screen, returning to main calibration page")
             self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
-            print(f"After navigation: Current widget is now {self.calibration_stacked_widget.currentWidget().objectName()}")
+            logger.debug(f"After navigation: Current widget is now {self.calibration_stacked_widget.currentWidget().objectName()}")

@@ -1,6 +1,7 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QDoubleSpinBox, QStackedWidget
 from utils.helpers import check_ui_elements
+from utils import logger
 
 class ToolOffset(QWidget):
     """
@@ -30,9 +31,9 @@ class ToolOffset(QWidget):
         """Load the UI file with proper error handling"""
         try:
             uic.loadUi('src/ui/calibrate_screen/toolOffset/toolOffset.ui', self)
-            print("ToolOffset UI loaded successfully")
+            logger.info("ToolOffset UI loaded successfully")
         except Exception as e:
-            print(f"Failed to load ToolOffset UI file: {e}")
+            logger.error(f"Failed to load ToolOffset UI file: {e}")
 
     def _initialize_ui_components(self):
         """Initialize all UI components with proper typing using dictionaries for organization"""
@@ -90,9 +91,9 @@ class ToolOffset(QWidget):
             
             # Debug output
             if component:
-                print(f"Found {component_type.__name__} '{name}'")
+                logger.debug(f"Found {component_type.__name__} '{name}'")
             else:
-                print(f"WARNING: Could not find {component_type.__name__} '{name}' in UI")
+                logger.warning(f"Could not find {component_type.__name__} '{name}' in UI")
 
     def _check_widgets_existence(self):
         """Check if UI elements exist and report missing ones"""
@@ -116,7 +117,7 @@ class ToolOffset(QWidget):
             button = button_info["instance"]
             if button:
                 button.clicked.connect(self._return_to_main_calibration)
-                print(f"Connected {button_name} to back handler")
+                logger.debug(f"Connected {button_name} to back handler")
         
         # Action buttons - map button names to their handler methods
         action_handlers = {
@@ -130,23 +131,23 @@ class ToolOffset(QWidget):
             button = self.action_buttons.get(button_name, {}).get("instance")
             if button:
                 button.clicked.connect(handler)
-                print(f"Connected {button_name} to its handler")
+                logger.debug(f"Connected {button_name} to its handler")
             else:
-                print(f"WARNING: Could not connect {button_name} - button not found")
+                logger.warning(f"Could not connect {button_name} - button not found")
 
     def _navigate_to_page(self, page_name):
         """Navigate to a specific page in the stackedWidget"""
         if not self.stackedWidget:
-            print("ERROR: Cannot navigate - stacked widget is missing")
+            logger.error("Cannot navigate - stacked widget is missing")
             return False
             
         target_page = self.page_widgets.get(page_name, {}).get("instance")
         if target_page:
             self.stackedWidget.setCurrentWidget(target_page)
-            print(f"Navigating to {page_name}")
+            logger.debug(f"Navigating to {page_name}")
             return True
         else:
-            print(f"ERROR: Cannot navigate to {page_name} - page not found")
+            logger.error(f"Cannot navigate to {page_name} - page not found")
             return False
 
     def _return_to_main_calibration(self):
@@ -155,9 +156,9 @@ class ToolOffset(QWidget):
             # Use the standard navigation logic in CalibrateScreen
             self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
                 self.main_window.calibrate_screen.main_calibrate_page)
-            print("Returning to main calibration page from tool offset page")
+            logger.debug("Returning to main calibration page from tool offset page")
         else:
-            print("ERROR: Cannot return to main calibration - main_window.calibrate_screen not found")
+            logger.error("Cannot return to main calibration - main_window.calibrate_screen not found")
 
     # Tool offset setting methods
     def _set_tool_offset_x(self):
@@ -165,30 +166,30 @@ class ToolOffset(QWidget):
         spin_box = self.spin_boxes.get("toolOffsetXDoubleSpinBox", {}).get("instance")
         if spin_box:
             x_offset = spin_box.value()
-            print(f"Tool X Offset set to: {x_offset} mm")
+            logger.info(f"Tool X Offset set to: {x_offset} mm")
             # Actual implementation would send commands to the printer
             # Example: self.main_window.octoprint_client.set_tool_offset('X', x_offset)
         else:
-            print("ERROR: Cannot set X offset - spin box not found")
+            logger.error("Cannot set X offset - spin box not found")
 
     def _set_tool_offset_y(self):
         """Set the Y offset for the tool."""
         spin_box = self.spin_boxes.get("toolOffsetYDoubleSpinBox", {}).get("instance")
         if spin_box:
             y_offset = spin_box.value()
-            print(f"Tool Y Offset set to: {y_offset} mm")
+            logger.info(f"Tool Y Offset set to: {y_offset} mm")
             # Actual implementation would send commands to the printer
             # Example: self.main_window.octoprint_client.set_tool_offset('Y', y_offset)
         else:
-            print("ERROR: Cannot set Y offset - spin box not found")
+            logger.error("Cannot set Y offset - spin box not found")
 
     def _set_tool_offset_z(self):
         """Set the Z offset for the tool."""
         spin_box = self.spin_boxes.get("toolOffsetZDoubleSpinBox", {}).get("instance")
         if spin_box:
             z_offset = spin_box.value()
-            print(f"Tool Z Offset set to: {z_offset} mm")
+            logger.info(f"Tool Z Offset set to: {z_offset} mm")
             # Actual implementation would send commands to the printer
             # Example: self.main_window.octoprint_client.set_tool_offset('Z', z_offset)
         else:
-            print("ERROR: Cannot set Z offset - spin box not found")
+            logger.error("Cannot set Z offset - spin box not found")

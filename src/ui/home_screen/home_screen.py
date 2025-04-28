@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QLabel, QProgress
 from PyQt5.QtCore import QTimer
 from utils.helpers import check_ui_elements
 from models.printer_status import PrinterStatus  # Import the printer status model
+from utils import logger  # Import the logger
 
 class HomeScreen(QWidget):
     def __init__(self, main_window):
@@ -39,9 +40,9 @@ class HomeScreen(QWidget):
         """Load the UI file with proper error handling"""
         try:
             uic.loadUi('src/ui/home_screen/home_screen.ui', self)
-            print("HomeScreen UI loaded successfully")
+            logger.info("HomeScreen UI loaded successfully")
         except Exception as e:
-            print(f"Failed to load HomeScreen UI file: {e}")
+            logger.exception(f"Failed to load HomeScreen UI file: {e}")
 
     def _initialize_ui_components(self):
         """Initialize all UI components with proper typing using dictionaries for organization"""
@@ -115,9 +116,9 @@ class HomeScreen(QWidget):
             
             # Debug output
             if component:
-                print(f"Found {component_type.__name__} '{name}'")
+                logger.debug(f"Found {component_type.__name__} '{name}'")
             else:
-                print(f"WARNING: Could not find {component_type.__name__} '{name}' in UI")
+                logger.warning(f"Could not find {component_type.__name__} '{name}' in UI")
 
     def _check_widgets_existence(self):
         """Check if UI elements exist and report missing ones"""
@@ -286,30 +287,30 @@ class HomeScreen(QWidget):
         
         # Set color based on status
         if status_text.lower() in ["operational", "ready"]:
-            self.printerStatusColour.setStyleSheet("""
+            self.printerStatusColour.setStyleSheet("""\
                 border: 1px solid rgb(87, 87, 87);
                 border-radius: 10px;
-                background-color: qlineargradient(spread:pad, x1:0, y1:0.523, x2:0, y2:0.534, 
-                                               stop:0 rgba(130, 203, 117, 255), 
+                background-color: qlineargradient(spread:pad, x1:0, y1:0.523, x2:0, y2:0.534, \
+                                               stop:0 rgba(130, 203, 117, 255), \
                                                stop:1 rgba(66, 191, 85, 255));
             """)
         elif status_text.lower() in ["printing", "paused"]:
-            self.printerStatusColour.setStyleSheet("""
+            self.printerStatusColour.setStyleSheet("""\
                 border: 1px solid rgb(87, 87, 87);
                 border-radius: 10px;
-                background-color: qlineargradient(spread:pad, x1:0, y1:0.523, x2:0, y2:0.534, 
-                                               stop:0 rgba(255, 191, 0, 255), 
+                background-color: qlineargradient(spread:pad, x1:0, y1:0.523, x2:0, y2:0.534, \
+                                               stop:0 rgba(255, 191, 0, 255), \
                                                stop:1 rgba(254, 153, 0, 255));
             """)
         else:
-            self.printerStatusColour.setStyleSheet("""
+            self.printerStatusColour.setStyleSheet("""\
                 border: 1px solid rgb(87, 87, 87);
                 border-radius: 10px;
-                background-color: qlineargradient(spread:pad, x1:0, y1:0.523, x2:0, y2:0.534, 
-                                               stop:0 rgba(255, 60, 60, 255), 
+                background-color: qlineargradient(spread:pad, x1:0, y1:0.523, x2:0, y2:0.534, \
+                                               stop:0 rgba(255, 60, 60, 255), \
                                                stop:1 rgba(255, 30, 30, 255));
             """)
-    
+
     def _update_connection_status(self, connected, ip_address=None):
         """Update printer connection status"""
         self.printer_connected = connected
@@ -333,10 +334,10 @@ class HomeScreen(QWidget):
         if not self.printer_connected:
             return
             
-        print("Toggle Door Lock button clicked")
+        logger.debug("Toggle Door Lock button clicked")
         is_locked = self.doorLockButton.isChecked()
         door_status = "locked" if is_locked else "unlocked"
-        print(f"Door {door_status}")
+        logger.info(f"Door {door_status}")
         
         # Send command to OctoPrint if connected
         if hasattr(self.main_window, 'octoprint_client'):
@@ -349,14 +350,14 @@ class HomeScreen(QWidget):
     def open_menu(self):
         """Navigate to menu screen"""
         self.main_window.switch_to_menu_screen()
-        print("Menu button clicked")
+        logger.debug("Menu button clicked")
 
     def stop_print(self):
         """Stop current print job"""
         if not self.printer_connected:
             return
             
-        print("Stop Print button clicked")
+        logger.debug("Stop Print button clicked")
         
         # Send command to OctoPrint if connected
         if hasattr(self.main_window, 'octoprint_client'):
@@ -370,7 +371,7 @@ class HomeScreen(QWidget):
             return
             
         is_paused = self.playPauseButton.isChecked()
-        print(f"Play/Pause button clicked: {'Pausing' if not is_paused else 'Resuming'}")
+        logger.debug(f"Play/Pause button clicked: {'Pausing' if not is_paused else 'Resuming'}")
         
         # Send command to OctoPrint if connected
         if hasattr(self.main_window, 'octoprint_client'):
@@ -384,4 +385,4 @@ class HomeScreen(QWidget):
     def open_control_panel(self):
         """Navigate to control panel screen"""
         self.main_window.switch_to_control_screen()
-        print("Control Panel button clicked")
+        logger.debug("Control Panel button clicked")
