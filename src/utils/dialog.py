@@ -1,4 +1,4 @@
-import styles
+from utils import styles
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -138,28 +138,28 @@ def YesNo(parent, text, **kwargs):
 
 
 def WarningOk(parent, text, **kwargs):
-    return Ok(parent, text, icon="exclamation-mark.png", **kwargs)
+    return Ok(parent, text, icon="resources/images/exclamation-mark.png", **kwargs)
 
 
 def WarningCancel(parent, text, **kwargs):
-    return Cancel(parent, text, icon="exclamation-mark.png", **kwargs)
+    return Cancel(parent, text, icon="resources/images/exclamation-mark.png", **kwargs)
 
 
 def WarningOkCancel(parent, text, **kwargs):
-    return OkCancel(parent, text, icon="exclamation-mark.png", **kwargs)
+    return OkCancel(parent, text, icon="resources/images/exclamation-mark.png", **kwargs)
 
 
 def WarningYes(parent, text, **kwargs):
-    return Yes(parent, text, icon="exclamation-mark.png", **kwargs)
+    return Yes(parent, text, icon="resources/images/exclamation-mark.png", **kwargs)
 
 
 def WarningYesNo(parent, text, **kwargs):
-    return YesNo(parent, text, icon="exclamation-mark.png", **kwargs)
+    return YesNo(parent, text, icon="resources/images/exclamation-mark.png", **kwargs)
 
 
 def SuccessOk(parent, text, **kwargs):
-    return Ok(parent, text, icon="success.png", **kwargs)
+    return Ok(parent, text, icon="resources/images/success.png", **kwargs)
 
 
 def SuccessYesNo(parent, text, **kwargs):
-    return YesNo(parent, text, icon="success.png", **kwargs)
+    return YesNo(parent, text, icon="resources/images/success.png", **kwargs)

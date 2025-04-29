@@ -1,4 +1,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from functools import partial
+
+
 
 
 class Keyboard(QtWidgets.QDialog):

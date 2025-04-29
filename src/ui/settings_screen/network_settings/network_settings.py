@@ -1,10 +1,14 @@
 from PyQt5 import QtGui, QtCore
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget
+from functools import partial  # Add missing import for partial function
 from utils.custom_widgets import ClickableLineEdit
 from utils.helpers import check_ui_elements
 from utils.logger import setup_logger
 from utils import styles  # Import styles module
+from utils import keyboard  # Import keyboard module
+# Import dialog if needed for displaying errors
+# from utils import dialog
 
 # Initialize logger for NetworkSettings
 logger = setup_logger('network_settings')
@@ -139,6 +143,13 @@ class NetworkSettings(QWidget):
             logger.info("Set default page to networkSettingsPage")
         else:
             logger.warning("Could not set default page - required widgets missing")
+            
+        # Connect text input fields to keyboard
+        # Text Input events
+        self.wifiPasswordLineEdit.clicked_signal.connect(lambda: self.startKeyboard(self.wifiPasswordLineEdit.setText))
+        self.staticIPLineEdit.clicked_signal.connect(lambda: self.staticIPShowKeyboard(self.staticIPLineEdit))
+        self.staticIPGatewayLineEdit.clicked_signal.connect(lambda: self.staticIPShowKeyboard(self.staticIPGatewayLineEdit))
+        self.staticIPNameServerLineEdit.clicked_signal.connect(lambda: self.staticIPShowKeyboard(self.staticIPNameServerLineEdit))
 
     def save_network_settings(self):
         """Save network settings and return to main network page."""
@@ -202,3 +213,30 @@ class NetworkSettings(QWidget):
             logger.info("Navigated to WiFi settings page")
         else:
             logger.error("Cannot navigate - required widgets missing")
+    
+    def staticIPShowKeyboard(self, textbox):
+        """
+        Opens the keyboard with IP-specific settings (numeric only, no spaces)
+        """
+        logger.info("NetworkSettings.staticIPShowKeyboard started")
+        try:
+            self.startKeyboard(textbox.setText, onlyNumeric=True, noSpace=True, text=str(textbox.text()))
+        except Exception as e:
+            logger.error(f"Error in NetworkSettings.staticIPShowKeyboard: {e}")
+            # If you have a dialog module:
+            # dialog.WarningOk(self, f"Error in NetworkSettings.staticIPShowKeyboard: {e}", overlay=True)
+
+    def startKeyboard(self, returnFn, onlyNumeric=False, noSpace=False, text=""):
+        """
+        Starts the keyboard screen for entering text
+        """
+        logger.info("NetworkSettings.startKeyboard started")
+        try:
+            keyBoardobj = keyboard.Keyboard(onlyNumeric=onlyNumeric, noSpace=noSpace, text=text)
+            keyBoardobj.keyboard_signal.connect(returnFn)
+            keyBoardobj.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+            keyBoardobj.show()
+        except Exception as e:
+            logger.error(f"Error in NetworkSettings.startKeyboard: {e}")
+            # If you have a dialog module:
+            # dialog.WarningOk(self, f"Error in NetworkSettings.startKeyboard: {e}", overlay=True)

@@ -14,7 +14,8 @@ from octoprint_client import octoprint_singleton
 from octoprint_client.octoprint_startup_sanity_check import ThreadSanityCheck
 import config
 from utils.styles import printer_status_red, printer_status_green, printer_status_amber, printer_status_blue
-from utils.dialog import dialog  # Ensure dialog is imported
+# Import the specific dialog functions needed, not just the dialog module
+from utils.dialog import WarningOk, WarningYesNo
 
 
 class MainWindow(QMainWindow):
@@ -24,6 +25,24 @@ class MainWindow(QMainWindow):
         
         # Flag to indicate if we're in minimal UI mode due to startup error
         self.minimal_ui_mode = False
+
+
+        
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+
+        self.layout = QVBoxLayout()
+        self.central_widget.setLayout(self.layout)
+
+        self.stacked_widget = QStackedWidget()
+        self.layout.addWidget(self.stacked_widget)
+
+        # Screen navigation history for back button functionality
+        self.screen_history = []
+        self.current_screen = None
+        
+        # Next screen for wizard-style multi-step flows
+        self.next_screen = None
 
         try:
             # Load all screens
@@ -41,11 +60,12 @@ class MainWindow(QMainWindow):
             # Adjust the size of the main window to fit its contents
             self.adjustSize()
             logger.info("MainWindow initialized successfully")
+            
         except Exception as e:
             logger.exception("Error during MainWindow initialization")
-            self.show_error_dialog("Application Error", 
-                                  f"An error occurred while initializing the application: {str(e)}\n\n"
-                                  f"Please check the logs for more details.")
+            WarningOk(self, 
+                      f"Application Error\n\nAn error occurred while initializing the application: {str(e)}\n\nPlease check the logs for more details.",
+                      overlay=True)
         
         # Initialize the OctoPrint singleton
         try:
@@ -61,23 +81,8 @@ class MainWindow(QMainWindow):
         except Exception as e:
             logger.error(f"Failed to initialize OctoPrint singleton: {e}")
             # Continue initialization, we'll handle the error in the loading screen
-        
-        self.central_widget = QWidget()
-        self.setCentralWidget(self.central_widget)
-
-        self.layout = QVBoxLayout()
-        self.central_widget.setLayout(self.layout)
-
-        self.stacked_widget = QStackedWidget()
-        self.layout.addWidget(self.stacked_widget)
-
-        # Screen navigation history for back button functionality
-        self.screen_history = []
-        self.current_screen = None
-        
-        # Next screen for wizard-style multi-step flows
-        self.next_screen = None
             
+
 
         
     def handleStartupError(self):
@@ -86,7 +91,7 @@ class MainWindow(QMainWindow):
         """
         logger.info("MainUiClass.handleStartupError started")
         try:
-            if dialog.WarningYesNo(self, "Server Error, Restore failsafe settings?", overlay=True):
+            if WarningYesNo(self, "Server Error, Restore failsafe settings?", overlay=True):
                 logger.info("Restoring Failsafe Settings")
                 os.system('sudo rm -rf /home/pi/.octoprint/users.yaml')
                 os.system('sudo rm -rf /home/pi/.octoprint/config.yaml')
@@ -99,7 +104,7 @@ class MainWindow(QMainWindow):
                 self.showMinimalUI()
         except Exception as e:
             logger.error("Error in MainUiClass.handleStartupError: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.handleStartupError: {}".format(e), overlay=True)
+            WarningOk(self, "Error in MainUiClass.handleStartupError: {}".format(e), overlay=True)
 
     def showMinimalUI(self):
         """
@@ -115,10 +120,9 @@ class MainWindow(QMainWindow):
         # These should already be loaded in __init__
         
         # Show a message to the user about the limited functionality
-        dialog.WarningOk(
+        WarningOk(
             self, 
-            "Server Connection Error",
-            "The printer server is not reachable. Only basic features are available.\n\n"
+            "Server Connection Error\n\nThe printer server is not reachable. Only basic features are available.\n\n"
             "Please check your network connection and printer status.",
             overlay=True
         )
@@ -157,8 +161,7 @@ class MainWindow(QMainWindow):
             self.home_screen.printerStatus.setText("Disconnected - Limited Mode")
         if hasattr(self.home_screen, 'printerStatusColour') and self.home_screen.printerStatusColour:
             self.home_screen.printerStatusColour.setStyleSheet(printer_status_red)
-        if hasattr(self.home_screen, 'ipStatus') and self.home_screen.ipStatus:
-            self.home_screen.ipStatus.setText("Not Connected")
+
 
     def loadFullUI(self):
         """
@@ -206,9 +209,7 @@ class MainWindow(QMainWindow):
         if hasattr(self.home_screen, 'printerStatus') and self.home_screen.printerStatus:
             self.home_screen.printerStatus.setText("Connected")
         if hasattr(self.home_screen, 'printerStatusColour') and self.home_screen.printerStatusColour:
-            self.home_screen.printerStatusColour.setStyleSheet("background-color: green; border-radius: 10px;")
-        if hasattr(self.home_screen, 'ipStatus') and self.home_screen.ipStatus:
-            self.home_screen.ipStatus.setText(f"Connected to {config.ip}")
+            self.home_screen.printerStatusColour.setStyleSheet(printer_status_green)
         
         # Switch to the home screen
         self.switch_to_home_screen()
