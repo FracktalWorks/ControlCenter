@@ -3,7 +3,7 @@ from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import QWidget, QPushButton, QSpinBox, QTabWidget, QToolButton
 from utils.helpers import check_ui_elements
 from utils.logger import setup_logger
-from ui.control_screen.changeFilament.changeFilament import ChangeFilament
+from ui.changeFilament.changeFilament import ChangeFilament
 
 class ControlScreen(QWidget):
     def __init__(self, main_window):
