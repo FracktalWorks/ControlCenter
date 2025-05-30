@@ -5,6 +5,7 @@ from utils.helpers import check_ui_elements
 from models.printer_model import PrinterModel  # Import the printer status model
 from utils import logger  # Import the logger
 from utils.styles import printer_status_green, printer_status_red, printer_status_amber
+from utils import dialog
 
 class HomeScreen(QWidget):
     def __init__(self, main_window):
@@ -29,7 +30,8 @@ class HomeScreen(QWidget):
         except Exception as e:
             logger.exception(f"Failed to load HomeScreen UI file: {e}")
         
-        # Initialize UI components by group
+        """ ---------- Initialize UI components by group ---------- """
+
         # Control buttons
         self.doorLockButton = self.findChild(QToolButton, "doorLockButton")
         self.menuButton = self.findChild(QPushButton, "menuButton")
@@ -308,8 +310,13 @@ class HomeScreen(QWidget):
             client = self.main_window.octoprint_client
             if client and client.is_connected():
                 # Replace with actual command for your printer
-                command = "M280 P0 S10" if is_locked else "M280 P0 S90" 
-                client.send_gcode_command(command)
+                try:
+                    command = "M280 P0 S10" if is_locked else "M280 P0 S90"
+                    client.gcode(command=command)
+                    client.overrideDoorLock()
+                except Exception as e:
+                    logger.error("Error in MainUiClass.doorLock: {}".format(e))
+                    dialog.WarningOk(self, "Error in MainUiClass.doorLock: {}".format(e), overlay=True)
 
     def open_menu(self):
         """Navigate to menu screen"""
