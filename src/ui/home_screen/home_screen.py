@@ -33,9 +33,9 @@ class HomeScreen(QWidget):
         """ ---------- Initialize UI components by group ---------- """
 
         # Control buttons
-        self.doorLockButton = self.findChild(QToolButton, "doorLockButton")
-        self.menuButton = self.findChild(QPushButton, "menuButton")
-        self.stopButton = self.findChild(QPushButton, "stopButton")
+        self.doorLockButton = self.findChild(QToolButton, "doorLockButton")  # Done
+        self.menuButton = self.findChild(QPushButton, "menuButton")  # Done
+        self.stopButton = self.findChild(QPushButton, "stopButton")  # Done
         self.playPauseButton = self.findChild(QPushButton, "playPauseButton")
         self.controlButton = self.findChild(QPushButton, "controlButton")
         
@@ -327,14 +327,20 @@ class HomeScreen(QWidget):
         """Stop current print job"""
         if not self.printer_connected:
             return
-            
+
+        logger.info("MainUiClass.stopActionMessageBox started")
         logger.debug("Stop Print button clicked")
         
         # Send command to OctoPrint if connected
         if hasattr(self.main_window, 'octoprint_client'):
             client = self.main_window.octoprint_client
             if client and client.is_connected():
-                client.cancel_print()
+                try:
+                    if dialog.WarningYesNo(self, "Are you sure you want to stop the print?"):
+                        client.cancelPrint()
+                except Exception as e:
+                    logger.error("Error in MainUiClass.stopActionMessageBox: {}".format(e))
+                    dialog.WarningOk(self, "Error in MainUiClass.stopActionMessageBox: {}".format(e), overlay=True)
 
     def play_pause_print(self):
         """Play or pause print job based on current state"""
