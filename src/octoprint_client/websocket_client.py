@@ -15,7 +15,7 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from utils.logger import setup_logger
 from utils.helpers import run_async
 
-logger = setup_logger()
+logger = setup_logger("printer")
 
 class OctoPrintWebSocket(QThread):
     """
@@ -107,7 +107,7 @@ class OctoPrintWebSocket(QThread):
         """
         logger.info("Sending data via WebSocket")
         try:
-            payload = f'["{json.dumps(data).replace('"', '\\"')}"]'
+            payload = '["' + json.dumps(data).replace('"', '\\"') + '"]'
             self.ws.send(payload)
         except Exception as e:
             logger.error(f"Error sending data via WebSocket: {e}")

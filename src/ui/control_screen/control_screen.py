@@ -1,9 +1,18 @@
 from PyQt5 import uic
+from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import QWidget, QPushButton, QSpinBox, QTabWidget, QToolButton
 from utils.helpers import check_ui_elements
 from utils.logger import setup_logger
 from ui.changeFilament.changeFilament import ChangeFilament
+from utils import logger
+from utils import dialog
+
+try:
+    _fromUtf8 = QtCore.QString.fromUtf8
+except AttributeError:
+    def _fromUtf8(s):
+        return s
 
 class ControlScreen(QWidget):
     def __init__(self, main_window):
@@ -110,7 +119,7 @@ class ControlScreen(QWidget):
         if self.changeFilamentButton:
             self.changeFilamentButton.clicked.connect(self.open_change_filament_screen)
         if self.toggleFilamentSensorButton:
-            self.toggleFilamentSensorButton.clicked.connect(self.toggle_filament_sensor)
+            self.toggleFilamentSensorButton.clicked.connect(self.toggleFilamentSensor)
 
         # Configure spinboxes
         for spinbox in [self.feedRateSpinBox, self.toolTempSpinBox, self.bedTempSpinBox, self.flowRateSpinBox]:
@@ -261,8 +270,65 @@ class ControlScreen(QWidget):
         # Use our consistent navigation method
         self.show_control_subscreen("change_filament")
 
-    def toggle_filament_sensor(self):
-        """Toggle the filament sensor on/off"""
-        self.filament_sensor_enabled = not self.filament_sensor_enabled
-        status = "enabled" if self.filament_sensor_enabled else "disabled"
-        self.logger.info(f"Filament sensor {status}")
+    def toggleFilamentSensor(self):
+        """
+        Toggles the filament sensor
+        """
+        logger.info("MainUiClass.toggleFilamentSensor started")
+        icon = 'filamentSensorOn' if self.toggleFilamentSensorButton.isChecked() else 'filamentSensorOff'
+        self.toggleFilamentSensorButton.setIcon(QtGui.QIcon(_fromUtf8("resources/img/icons/" + icon)))
+        self.main_window.octoprint_client.gcode(command="PRIMARY_SFS_ENABLE{}".format(int(self.toggleFilamentSensorButton.isChecked())))
+
+    def filamentSensorHandler(self, data):
+        """
+        Handles the filament sensor
+        """
+        logger.info("MainUiClass.filamentSensorHandler started")
+        change_filament_screen = self.screens.get("change_filament")
+        try:
+            print(data)
+
+            icon = 'filamentSensorOn' if self.toggleFilamentSensorButton.isChecked() else 'filamentSensorOff'
+            self.toggleFilamentSensorButton.setIcon(QtGui.QIcon(_fromUtf8("templates/img/" + icon)))
+
+            if not self.toggleFilamentSensorButton.isChecked():
+                return
+
+            triggered_extruder0 = False
+            triggered_extruder1 = False
+
+            if '0' in data:
+                triggered_extruder0 = True
+
+            if '1' in data:
+                triggered_extruder1 = True
+
+            if 'disabled' in data:
+                self.toggleFilamentSensorButton.setIcon(QtGui.QIcon(_fromUtf8("templates/img/filamentSensorOff")))
+
+            if 'enabled' in data:
+                self.toggleFilamentSensorButton.setIcon(QtGui.QIcon(_fromUtf8("templates/img/filamentSensorOn")))
+
+            if triggered_extruder0 and self.stackedWidget.currentWidget() not in [change_filament_screen.changeFilamentPage,
+                                                                                  change_filament_screen.changeFilamentProgressPage,
+                                                                                  change_filament_screen.changeFilamentExtrudePage,
+                                                                                  change_filament_screen.changeFilamentRetractPage,
+                                                                                  change_filament_screen.changeFilamentLoadPage]:
+                self.main_window.octoprint_client.gcode(command='PAUSE')
+                if dialog.WarningOk(self,
+                                    "Filament outage or clog detected in Extruder 0. Please check the external motors. Print paused"):
+                    pass
+
+            if triggered_extruder1 and self.stackedWidget.currentWidget() not in [change_filament_screen.changeFilamentPage,
+                                                                                  change_filament_screen.changeFilamentProgressPage,
+                                                                                  change_filament_screen.changeFilamentExtrudePage,
+                                                                                  change_filament_screen.changeFilamentRetractPage,
+                                                                                  change_filament_screen.changeFilamentLoadPage]:
+                self.main_window.octoprint_client.gcode(command='PAUSE')
+                if dialog.WarningOk(self,
+                                    "Filament outage or clog detected in Extruder 1. Please check the external motors. Print paused"):
+                    pass
+
+        except Exception as e:
+            logger.error("Error in MainUiClass.filamentSensorHandler: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.filamentSensorHandler: {}".format(e), overlay=True)

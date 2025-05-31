@@ -1,3 +1,4 @@
+import requests
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget, QMessageBox
 from ui.home_screen.home_screen import HomeScreen
 from ui.loading_screen.loading_screen import LoadingScreen
@@ -20,35 +21,19 @@ from utils.dialog import WarningOk, WarningYesNo
 import glob
 from utils import dialog
 from octoprint_client.websocket_client import OctoPrintWebSocket
+from config import ip, apiKey
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
-        self.QtSocket = None
+        self.octoprint_websocket = None
         logger.info("Initializing MainWindow")
         
         # Flag to indicate if we're in minimal UI mode due to startup error
         self.minimal_ui_mode = False
         self.printer_model = PrinterModel()
-        self.octoprint_websocket = OctoPrintWebSocket()
 
-        # Connect signals from the websocket to the printer model
-        self.octoprint_websocket.temperatures_signal.connect(self.printer_model.update_temperatures)
-        self.octoprint_websocket.status_signal.connect(self.printer_model.status_updated)
-        self.octoprint_websocket.set_z_tool_offset_signalconnect(self.printer_model.z_tool_offset_updated)
-        self.octoprint_websocket.print_status_signal.connect(self.printer_model.print_status_updated)
-        self.octoprint_websocket.update_started_signal.connect(self.printer_model.update_started_signal)
-        self.octoprint_websocket.update_log_signal.connect(self.printer_model.update_log_signal)
-        self.octoprint_websocket.update_log_result_signal.connect(self.printer_model.update_log_result_signal)
-        self.octoprint_websocket.update_failed_signal.connect(self.printer_model.update_failed_signal)
-        self.octoprint_websocket.connected_signal.connect(self.printer_model.connected_signal)
-        self.octoprint_websocket.filament_sensor_triggered_signal.connect(self.printer_model.filament_sensor_triggered)
-        self.octoprint_websocket.tool_offset_signal.connect(self.printer_model.tool_offset_updated)
-        self.octoprint_websocket.active_extruder_signal.connect(self.printer_model.active_extruder_changed)
-        self.octoprint_websocket.z_probe_offset_signal.connect(self.printer_model.z_probe_offset_updated)
-        self.octoprint_websocket.z_probing_failed_signal.connect(self.printer_model.z_probing_failed)
-        self.octoprint_websocket.printer_error_signal.connect(self.printer_model.printer_error_signal)
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -202,9 +187,29 @@ class MainWindow(QMainWindow):
         self.minimal_ui_mode = False
 
         # Initialize the websocket
-        self.QtSocket = OctoPrintWebSocket()
-        self.QtSocket.start()
-        self.checkKlipperPrinterCFG()
+        self.octoprint_websocket = OctoPrintWebSocket()
+        self.octoprint_websocket.start()
+
+        # Connect signals from the websocket to the printer model
+        self.octoprint_websocket.temperatures_signal.connect(self.printer_model.updateTemperature)
+        self.octoprint_websocket.status_signal.connect(self.printer_model.updateStatus)
+        self.octoprint_websocket.set_z_tool_offset_signalconnect(self.printer_model.setZToolOffset)
+        self.octoprint_websocket.print_status_signal.connect(self.printer_model.updatePrintStatus)
+        self.octoprint_websocket.update_started_signal.connect(self.printer_model.softwareUpdateProgress)
+        self.octoprint_websocket.update_log_signal.connect(self.printer_model.softwareUpdateProgressLog)
+        self.octoprint_websocket.update_log_result_signal.connect(self.printer_model.softwareUpdateResult)
+        self.octoprint_websocket.update_failed_signal.connect(self.printer_model.updateFailed)
+        self.octoprint_websocket.connected_signal.connect(self.onServerConnected)  # function is defined in main only
+        self.octoprint_websocket.filament_sensor_triggered_signal.connect(self.printer_model.filamentSensorHandler)
+        self.octoprint_websocket.tool_offset_signal.connect(self.printer_model.getToolOffset)
+        self.octoprint_websocket.active_extruder_signal.connect(self.printer_model.setActiveExtruder)
+        self.octoprint_websocket.z_probe_offset_signal.connect(self.printer_model.updateEEPROMProbeOffset)
+        self.octoprint_websocket.z_probing_failed_signal.connect(self.showProbingFailed)
+        self.octoprint_websocket.printer_error_signal.connect(self.showPrinterError)
+
+        #TODO:
+        # Connect Signals emitted by printer_model functions from above -
+        # - to slots defined in each screen
         
         # Re-enable buttons that were disabled in showMinimalUI
         
@@ -250,6 +255,8 @@ class MainWindow(QMainWindow):
         # Start updating printer status if implemented
         if hasattr(self.home_screen, 'update_ui_from_printer_status'):
             self.home_screen.update_ui_from_printer_status()
+
+        self.checkKlipperPrinterCFG()
 
     # Screen Loading Methods
     def load_home_screen(self):
@@ -466,4 +473,125 @@ class MainWindow(QMainWindow):
                     logger.error("Error in MainUiClass.checkKlipperPrinterCFG: {}".format(e))
                     dialog.WarningOk(self, "Error in MainUiClass.checkKlipperPrinterCFG: {}".format(e), overlay=True)
 
+    def printRestoreMessageBox(self, file):
+        """
+        Displays a message box alerting the user of a filament error
+        """
+        logger.info("MainUiClass.printRestoreMessageBox started")
 
+        if hasattr(self, 'octoprint_client'):
+            client = self.octoprint_client
+            if client and client.is_connected():
+                try:
+                    if dialog.WarningYesNo(self, file + " Did not finish, would you like to restore?"):
+                        response = client.restore(restore=True)
+                        if response["status"] == "Successfully Restored":
+                            dialog.WarningOk(self, response["status"])
+                        else:
+                            dialog.WarningOk(self, response["status"])
+                except Exception as e:
+                    logger.error("Error in MainUiClass.printRestoreMessageBox: {}".format(e))
+                    dialog.WarningOk(self, "Error in MainUiClass.printRestoreMessageBox: {}".format(e), overlay=True)
+
+    def onServerConnected(self):
+        """
+        When the server is connected, check for filament sensor and previous print failure to complere
+        """
+        logger.info("MainUiClass.onServerConnected started")
+
+        if hasattr(self, 'octoprint_client'):
+            client = self.octoprint_client
+            if client and client.is_connected():
+                try:
+                    client.gcode(command='status') #get klipper status. hanle in
+                    self.isFilamentSensorInstalled()
+                    try:
+                        response = client.isFailureDetected()
+                        if response["canRestore"] is True:
+                            self.printRestoreMessageBox(response["file"])
+                        else:
+                            # self.firmwareUpdateCheck()
+                            pass #Firmware update Functionality not needed for Twin Dragon, need to modify this for updating cfg files
+                    except:
+                        pass
+                except Exception as e:
+                    logger.error("Error in MainUiClass.onServerConnected: {}".format(e))
+                    dialog.WarningOk(self, "Error in MainUiClass.onServerConnected: {}".format(e), overlay=True)
+
+    def isFilamentSensorInstalled(self):
+        """
+        Checks if the filament sensor is installed
+        """
+        logger.info("MainUiClass.isFilamentSensorInstalled started")
+
+        if hasattr(self, 'octoprint_client'):
+            client = self.octoprint_client
+            if client and client.is_connected():
+                try:
+                    success = False
+                    try:
+                        headers = {'X-Api-Key': apiKey}
+                        req = requests.get('http://{}/plugin/Julia2018FilamentSensor/status'.format(ip), headers=headers)
+                        success = req.status_code == requests.codes.ok
+                    except:
+                        pass
+                    # self.toggleFilamentSensorButton.setEnabled(success)
+                    return success
+                except Exception as e:
+                    logger.error("Error in MainUiClass.isFilamentSensorInstalled: {}".format(e))
+                    dialog.WarningOk(self, "Error in MainUiClass.isFilamentSensorInstalled: {}".format(e), overlay=True)
+
+    def showProbingFailed(self,msg='Probing Failed, Calibrate bed again or check for hardware issue',overlay=True):
+        logger.info("MainUiClass.showProbingFailed started")
+        if hasattr(self, 'octoprint_client'):
+            client = self.octoprint_client
+            if client and client.is_connected():
+                try:
+                    if dialog.WarningOk(self, msg, overlay=overlay):
+                        client.cancelPrint()
+                        return True
+                    return False
+                except Exception as e:
+                    logger.error("Error in MainUiClass.showProbingFailed: {}".format(e))
+                    dialog.WarningOk(self, "Error in MainUiClass.showProbingFailed: {}".format(e), overlay=True)
+
+    def showPrinterError(self, msg='Printer error, Check Terminal', overlay=False):
+        logger.info("MainUiClass.showPrinterError started")
+        if hasattr(self, 'octoprint_client'):
+            client = self.octoprint_client
+            if client and client.is_connected():
+                try:
+                    if any(error in msg for error in
+                           ["Can not update MCU","Error loading template", "Must home axis first", "probe", "Error during homing move", "still triggered after retract", "'mcu' must be specified"]):
+                        logger.error("CRITICAL ERROR SHUTDOWN NEEDED")
+                        if self.printerStatusText in ["Starting","Printing","Paused"]:
+                            client.cancelPrint()
+                            client.gcode(command='M112')
+                            try:
+                                client.connectPrinter(port="/tmp/printer", baudrate=115200)
+                            except Exception as e:
+                                client.connectPrinter(port="VIRTUAL", baudrate=115200)
+                            client.gcode(command='FIRMWARE_RESTART')
+                            client.gcode(command='RESTART')
+                            if not self.dialogShown:
+                                self.dialogShown = True
+                                if dialog.WarningOk(self, msg + ", Cancelling Print.", overlay=overlay):
+                                    self.dialogShown = False
+                            logger.error("CRITICAL ERROR SHUTDOWN DONE")
+                        else:
+                            if not self.dialogShown:
+                                self.dialogShown = True
+                                client.gcode(command='FIRMWARE_RESTART')
+                                client.gcode(command='RESTART')
+                                if dialog.WarningOk(self, msg, overlay=overlay):
+                                    self.dialogShown = False
+
+                    else:
+                        if not self.dialogShown:
+                            self.dialogShown = True
+                            if dialog.WarningOk(self, msg, overlay=overlay):
+                                self.dialogShown = False
+
+                except Exception as e:
+                    logger.error("Error in MainUiClass.showPrinterError: {}".format(e))
+                    dialog.WarningOk(self, "Error in MainUiClass.showPrinterError: {}".format(e), overlay=True)

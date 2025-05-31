@@ -5,6 +5,7 @@ Handles printer state, temperature monitoring, and operations
 import time
 from PyQt5.QtCore import QObject, pyqtSignal
 from utils.logger import setup_logger
+from utils import dialog
 
 logger = setup_logger("printer_model")
 
@@ -23,7 +24,7 @@ class PrinterModel(QObject):
     z_probe_offset_updated = pyqtSignal(float)
     tool_offset_updated = pyqtSignal(dict)
     printer_error_signal = pyqtSignal(str)
-    filament_sensor_triggered = pyqtSignal(str)
+    filament_sensor_triggered = pyqtSignal(str) # should be connected to the method in control_screen.py
     z_probing_failed = pyqtSignal()
     z_tool_offset_updated = pyqtSignal(float)
     update_started_signal = pyqtSignal(dict)
@@ -48,6 +49,7 @@ class PrinterModel(QObject):
         self.print_progress = 0
         self.print_time = 0
         self.print_time_left = 0
+        self.updateData = {}
         
         # Configuration constants (to be moved to config file later)
         self.filaments = {
@@ -93,49 +95,94 @@ class PrinterModel(QObject):
 
     def updateTemperature(self, temp_data):
         """ Updates the temperature data. Is a slot for the temperatures_updated signal. """
-        pass
+        self.temperatures = temp_data
+        self.temperatures_updated.emit(temp_data)
 
     def updateStatus(self, status):
-        pass
+        self.printer_status = status
+        self.status_updated.emit(status)
 
     def updatePrintStatus(self, file_info):
-        pass
+        """Updates print job status"""
+        if file_info is None:
+            self.current_file = None
+            self.current_image = None
+            self.print_progress = 0
+            self.print_time = 0
+            self.print_time_left = 0
+        else:
+            self.current_file = file_info.get('job', {}).get('file', {}).get('name')
+            if file_info.get('progress', {}).get('completion') is not None:
+                self.print_progress = file_info['progress']['completion']
 
-    def setActiveExtruder(self, extruder):
-        pass
+            if file_info.get('progress', {}).get('printTime') is not None:
+                self.print_time = file_info['progress']['printTime']
+
+            if file_info.get('progress', {}).get('printTimeLeft') is not None:
+                self.print_time_left = file_info['progress']['printTimeLeft']
+
+        self.print_status_updated.emit(file_info)
+
+    def set_active_extruder(self, extruder):
+        """Sets the active extruder"""
+        try:
+            self.active_extruder = int(extruder)
+            self.active_extruder_changed.emit(self.active_extruder)
+        except ValueError:
+            logger.error(f"Invalid extruder value: {extruder}")
 
     def updateEEPROMProbeOffset(self, offset):
-        pass
+        """ Updates the Z probe offset in EEPROM """
+        try:
+            self.z_probe_offset = float(offset)
+            self.z_probe_offset_updated.emit(self.z_probe_offset)
+        except ValueError:
+            logger.error(f"Invalid Z probe offset value: {offset}")
+            dialog.WarningOk(self, "Invalid Z probe offset value: {}".format(offset), overlay=True)
 
-    def getToolOffset(self, offset_data):
-        pass
+    def getToolOffset(self, M218Data):
+        """ Set the tool offsets from M218 response """
+        try:
+            if 'X' in M218Data:
+                self.tool_offsets['X'] = M218Data[M218Data.index('X') + 1:].split(' ', 1)[0]
+            if 'Y' in M218Data:
+                self.tool_offsets['Y'] = M218Data[M218Data.index('Y') + 1:].split(' ', 1)[0]
+            if 'Z' in M218Data:
+                self.tool_offsets['Z'] = M218Data[M218Data.index('Z') + 1:].split(' ', 1)[0]
 
-    def showPrinterError(self, error_message):
-        pass
+            self.tool_offset_updated.emit(self.tool_offsets)
+        except Exception as e:
+            logger.error("Error in MainUiClass.getToolOffset: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.getToolOffset: {}".format(e), overlay=True)
 
-    def filamentSensorHandler(self, sensor_data):
-        pass
-
-    def showProbingFailed(self):
-        pass
+    def filamentSensorHandler(self, data):
+        """
+        Handles filament sensor trigger events.
+        :param data: Data from the filament sensor.
+        """
+        self.filament_sensor_triggered.emit(data)
 
     def setZToolOffset(self, offset):
+        self.tool_offsets['Z'] = offset
+        self.z_tool_offset_updated.emit(offset)
         pass
 
+    # Use the softwareUpdateProgress function to send data about software updates
     def softwareUpdateProgress(self, update_info):
-        pass
+        self.updateData = update_info
+        self.update_started_signal.emit(update_info)
 
-    def softwareUpdateProgressLog(self, log_info):
-        pass
+    def softwareUpdateProgressLog(self, update_info):
+        self.updateData = update_info
+        self.update_log_signal.emit(update_info)
 
-    def softwareUpdateResult(self, result_info):
-        pass
+    def softwareUpdateResult(self, update_info):
+        self.updateData = update_info
+        self.update_log_signal.emit(update_info)
 
-    def updateFailed(self, error_info):
-        pass
-
-    def onServerConnected(self):
-        pass
+    def updateFailed(self, update_info):
+        self.updateData = update_info
+        self.update_log_signal.emit(update_info)
 
 
     """ Boilerplate code - might not be needed. getting the functions from the original code """
