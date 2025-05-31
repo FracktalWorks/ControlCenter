@@ -7,6 +7,7 @@ from ui.control_screen.control_screen import ControlScreen
 from ui.print_from_location.print_from_location import PrintFromLocation
 from ui.calibrate_screen.calibrate_screen import CalibrateScreen
 from utils import logger
+from models.printer_model import PrinterModel
 import os
 import subprocess
 import ui.resources.resource_rc  # Ensure resources are loaded
@@ -16,18 +17,39 @@ import config
 from utils.styles import printer_status_red, printer_status_green, printer_status_amber, printer_status_blue
 # Import the specific dialog functions needed, not just the dialog module
 from utils.dialog import WarningOk, WarningYesNo
+import glob
+from utils import dialog
+from octoprint_client.websocket_client import OctoPrintWebSocket
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
+        self.QtSocket = None
         logger.info("Initializing MainWindow")
         
         # Flag to indicate if we're in minimal UI mode due to startup error
         self.minimal_ui_mode = False
+        self.printer_model = PrinterModel()
+        self.octoprint_websocket = OctoPrintWebSocket()
 
+        # Connect signals from the websocket to the printer model
+        self.octoprint_websocket.temperatures_signal.connect(self.printer_model.update_temperatures)
+        self.octoprint_websocket.status_signal.connect(self.printer_model.status_updated)
+        self.octoprint_websocket.set_z_tool_offset_signalconnect(self.printer_model.z_tool_offset_updated)
+        self.octoprint_websocket.print_status_signal.connect(self.printer_model.print_status_updated)
+        self.octoprint_websocket.update_started_signal.connect(self.printer_model.update_started_signal)
+        self.octoprint_websocket.update_log_signal.connect(self.printer_model.update_log_signal)
+        self.octoprint_websocket.update_log_result_signal.connect(self.printer_model.update_log_result_signal)
+        self.octoprint_websocket.update_failed_signal.connect(self.printer_model.update_failed_signal)
+        self.octoprint_websocket.connected_signal.connect(self.printer_model.connected_signal)
+        self.octoprint_websocket.filament_sensor_triggered_signal.connect(self.printer_model.filament_sensor_triggered)
+        self.octoprint_websocket.tool_offset_signal.connect(self.printer_model.tool_offset_updated)
+        self.octoprint_websocket.active_extruder_signal.connect(self.printer_model.active_extruder_changed)
+        self.octoprint_websocket.z_probe_offset_signal.connect(self.printer_model.z_probe_offset_updated)
+        self.octoprint_websocket.z_probing_failed_signal.connect(self.printer_model.z_probing_failed)
+        self.octoprint_websocket.printer_error_signal.connect(self.printer_model.printer_error_signal)
 
-        
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
 
@@ -71,6 +93,9 @@ class MainWindow(QMainWindow):
         try:
             logger.info("Initializing OctoPrint singleton")
             octoprint_singleton.initialize(config.ip, config.apiKey)
+
+            # Get the OctoPrint client instance - this can access all functions of octoprintAPI
+            self.octoprint_client = octoprint_singleton.get_client()
             logger.info("OctoPrint singleton initialized successfully")
             
             # Initialize the sanity check to verify OctoPrint connectivity
@@ -78,6 +103,9 @@ class MainWindow(QMainWindow):
             self.sanityCheck.start()
             self.sanityCheck.loaded_signal.connect(self.loadFullUI)
             self.sanityCheck.startup_error_signal.connect(self.handleStartupError)
+
+
+
         except Exception as e:
             logger.error(f"Failed to initialize OctoPrint singleton: {e}")
             # Continue initialization, we'll handle the error in the loading screen
@@ -172,6 +200,11 @@ class MainWindow(QMainWindow):
         
         # Reset the minimal UI mode flag
         self.minimal_ui_mode = False
+
+        # Initialize the websocket
+        self.QtSocket = OctoPrintWebSocket()
+        self.QtSocket.start()
+        self.checkKlipperPrinterCFG()
         
         # Re-enable buttons that were disabled in showMinimalUI
         
@@ -375,6 +408,62 @@ class MainWindow(QMainWindow):
         logger.debug("Switching to calibration screen")
         self.switch_screen(self.calibrate_screen)
 
+    def checkKlipperPrinterCFG(self):
+        """
+        Checks for valid printer.cfg and restores if needed
+        """
 
+        # Open the printer.cfg file:
+        logger.info("MainUiClass.checkKlipperPrinterCFG started")
+        if hasattr(self, 'octoprint_client'):
+            client = self.octoprint_client
+            if client and client.is_connected():
+                try:
+                    try:
+                        with open('/home/pi/printer.cfg', 'r') as currentConfigFile:
+                            currentConfig = currentConfigFile.read()
+                            if "# MCU Config" in currentConfig:
+                                configCorruptedFlag = False
+                                logger.info("Printer Config File OK")
+                            else:
+                                configCorruptedFlag = True
+                                logger.error("Printer Config File Corrupted, Attempting to restore Backup")
+
+                    except:
+                        configCorruptedFlag = True
+                        logger.error("Printer Config File Not Found, Attempting to restore Backup")
+
+                    if configCorruptedFlag:
+                        backupFiles = sorted(glob.glob('/home/pi/printer-*.cfg'), key=os.path.getmtime, reverse=True)
+                        print("\n".join(backupFiles))
+                        for backupFile in backupFiles:
+                            with open(str(backupFile), 'r') as backupConfigFile:
+                                backupConfig = backupConfigFile.read()
+                                if "# MCU Config" in backupConfig:
+                                    try:
+                                        os.remove('/home/pi/printer.cfg')
+                                    except:
+                                        logger.error("printer.cfg does not exist for deletion")
+                                    try:
+                                        os.rename(backupFile, '/home/pi/printer.cfg')
+                                        logger.info("Printer Config File Restored")
+                                        return ()
+                                    except:
+                                        pass
+                        # If no valid backups found, show error dialog:
+                        dialog.WarningOk(self, "Printer Config File corrupted. Contact Fracktal support or raise a ticket at care.fracktal.in")
+                        if self.printerStatus == "Printing":
+                            client.cancelPrint()
+                            self.coolDownAction()
+                    elif not configCorruptedFlag:
+                        backupFiles = sorted(glob.glob('/home/pi/printer-*.cfg'), key=os.path.getmtime, reverse=True)
+                        try:
+                            for backupFile in backupFiles[5:]:
+                                os.remove(backupFile)
+                        except:
+                            pass
+                except Exception as e:
+                    logger.error("Error in MainUiClass.checkKlipperPrinterCFG: {}".format(e))
+                    dialog.WarningOk(self, "Error in MainUiClass.checkKlipperPrinterCFG: {}".format(e), overlay=True)
 
 

@@ -354,10 +354,18 @@ class HomeScreen(QWidget):
         if hasattr(self.main_window, 'octoprint_client'):
             client = self.main_window.octoprint_client
             if client and client.is_connected():
-                if is_paused:
-                    client.resume_print()
-                else:
-                    client.pause_print()
+                try:
+                    if self.printerStatusText == "Operational":
+                        if self.playPauseButton.isChecked:
+                            self.main_window.checkKlipperPrinterCFG()
+                            client.startPrint()
+                    elif self.printerStatusText == "Printing":
+                        client.pausePrint()
+                    elif self.printerStatusText == "Paused":
+                        client.pausePrint()
+                except Exception as e:
+                    logger.error("Error in MainUiClass.playPauseAction: {}".format(e))
+                    dialog.WarningOk(self, "Error in MainUiClass.playPauseAction: {}".format(e), overlay=True)
 
     def open_control_panel(self):
         """Navigate to control panel screen"""

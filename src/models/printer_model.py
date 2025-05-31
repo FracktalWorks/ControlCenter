@@ -15,6 +15,7 @@ class PrinterModel(QObject):
     file information, and print status
     """
     # Signal definitions
+    # this one should have signal slot connections probably
     temperatures_updated = pyqtSignal(dict)
     status_updated = pyqtSignal(str)
     print_status_updated = pyqtSignal(dict)
@@ -24,6 +25,12 @@ class PrinterModel(QObject):
     printer_error_signal = pyqtSignal(str)
     filament_sensor_triggered = pyqtSignal(str)
     z_probing_failed = pyqtSignal()
+    z_tool_offset_updated = pyqtSignal(float)
+    update_started_signal = pyqtSignal(dict)
+    update_log_signal = pyqtSignal(dict)
+    update_log_result_signal = pyqtSignal(dict)
+    update_failed_signal = pyqtSignal(dict)
+    connected_signal = pyqtSignal()
 
     def __init__(self):
         super(PrinterModel, self).__init__()
@@ -67,72 +74,137 @@ class PrinterModel(QObject):
         self.tool0_purge_position = {'X': -27, 'Y': -112}
         self.tool1_purge_position = {'X': 648, 'Y': -112}
 
-    def update_temperatures(self, temp_data):
-        """Updates temperature data"""
-        self.temperatures = temp_data
-        self.temperatures_updated.emit(temp_data)
+        # Connect printer_model signals to respective slots
+        self.temperatures_updated.connect(self.updateTemperature)
+        self.status_updated.connect(self.updateStatus)
+        self.print_status_updated.connect(self.updatePrintStatus)
+        self.active_extruder_changed.connect(self.setActiveExtruder)
+        self.z_probe_offset_updated.connect(self.updateEEPROMProbeOffset)
+        self.tool_offset_updated.connect(self.getToolOffset)
+        self.printer_error_signal.connect(self.showPrinterError)
+        self.filament_sensor_triggered.connect(self.filamentSensorHandler)
+        self.z_probing_failed.connect(self.showProbingFailed)
+        self.z_tool_offset_updated.connect(self.setZToolOffset)
+        self.update_started_signal.connect(self.softwareUpdateProgress)
+        self.update_log_signal.connect(self.softwareUpdateProgressLog)
+        self.update_log_result_signal.connect(self.softwareUpdateResult)
+        self.update_failed_signal.connect(self.updateFailed)
+        self.connected_signal.connect(self.onServerConnected)
 
-    def update_status(self, status):
-        """Updates printer status"""
-        self.printer_status = status
-        self.status_updated.emit(status)
+    def updateTemperature(self, temp_data):
+        """ Updates the temperature data. Is a slot for the temperatures_updated signal. """
+        pass
 
-    def update_print_status(self, file_info):
-        """Updates print job status"""
-        if file_info is None:
-            self.current_file = None
-            self.current_image = None
-            self.print_progress = 0
-            self.print_time = 0
-            self.print_time_left = 0
-        else:
-            self.current_file = file_info.get('job', {}).get('file', {}).get('name')
-            if file_info.get('progress', {}).get('completion') is not None:
-                self.print_progress = file_info['progress']['completion']
-            
-            if file_info.get('progress', {}).get('printTime') is not None:
-                self.print_time = file_info['progress']['printTime']
-                
-            if file_info.get('progress', {}).get('printTimeLeft') is not None:
-                self.print_time_left = file_info['progress']['printTimeLeft']
-        
-        self.print_status_updated.emit(file_info)
+    def updateStatus(self, status):
+        pass
 
-    def set_active_extruder(self, extruder):
-        """Sets the active extruder"""
-        try:
-            self.active_extruder = int(extruder)
-            self.active_extruder_changed.emit(self.active_extruder)
-        except ValueError:
-            logger.error(f"Invalid extruder value: {extruder}")
+    def updatePrintStatus(self, file_info):
+        pass
 
-    def set_z_probe_offset(self, offset):
-        """Sets the Z probe offset"""
-        try:
-            self.z_probe_offset = float(offset)
-            self.z_probe_offset_updated.emit(self.z_probe_offset)
-        except ValueError:
-            logger.error(f"Invalid Z probe offset value: {offset}")
+    def setActiveExtruder(self, extruder):
+        pass
 
-    def set_tool_offset(self, offset_data):
-        """Sets tool offset from M218 response"""
-        try:
-            if 'X' in offset_data:
-                self.tool_offsets['X'] = float(offset_data[offset_data.index('X') + 1:].split(' ', 1)[0])
-            if 'Y' in offset_data:
-                self.tool_offsets['Y'] = float(offset_data[offset_data.index('Y') + 1:].split(' ', 1)[0])
-            if 'Z' in offset_data:
-                self.tool_offsets['Z'] = float(offset_data[offset_data.index('Z') + 1:].split(' ', 1)[0])
-                
-            self.tool_offset_updated.emit(self.tool_offsets)
-        except Exception as e:
-            logger.error(f"Error parsing tool offset data: {e}")
+    def updateEEPROMProbeOffset(self, offset):
+        pass
 
-    def format_print_time(self, seconds):
-        """Format print time in days, hours, minutes, seconds"""
-        if seconds is None:
-            return "-"
-        m, s = divmod(seconds, 60)
-        h, m = divmod(m, 60)
-        d, h = divmod(h, 24)
-        return "%d:%d:%02d:%02d" % (d, h, m, s)
+    def getToolOffset(self, offset_data):
+        pass
+
+    def showPrinterError(self, error_message):
+        pass
+
+    def filamentSensorHandler(self, sensor_data):
+        pass
+
+    def showProbingFailed(self):
+        pass
+
+    def setZToolOffset(self, offset):
+        pass
+
+    def softwareUpdateProgress(self, update_info):
+        pass
+
+    def softwareUpdateProgressLog(self, log_info):
+        pass
+
+    def softwareUpdateResult(self, result_info):
+        pass
+
+    def updateFailed(self, error_info):
+        pass
+
+    def onServerConnected(self):
+        pass
+
+
+    """ Boilerplate code - might not be needed. getting the functions from the original code """
+    # def update_temperatures(self, temp_data):
+    #     """Updates temperature data"""
+    #     self.temperatures = temp_data
+    #     self.temperatures_updated.emit(temp_data)
+    #
+    # def update_status(self, status):
+    #     """Updates printer status"""
+    #     self.printer_status = status
+    #     self.status_updated.emit(status)
+    #
+    # def update_print_status(self, file_info):
+    #     """Updates print job status"""
+    #     if file_info is None:
+    #         self.current_file = None
+    #         self.current_image = None
+    #         self.print_progress = 0
+    #         self.print_time = 0
+    #         self.print_time_left = 0
+    #     else:
+    #         self.current_file = file_info.get('job', {}).get('file', {}).get('name')
+    #         if file_info.get('progress', {}).get('completion') is not None:
+    #             self.print_progress = file_info['progress']['completion']
+    #
+    #         if file_info.get('progress', {}).get('printTime') is not None:
+    #             self.print_time = file_info['progress']['printTime']
+    #
+    #         if file_info.get('progress', {}).get('printTimeLeft') is not None:
+    #             self.print_time_left = file_info['progress']['printTimeLeft']
+    #
+    #     self.print_status_updated.emit(file_info)
+    #
+    # def set_active_extruder(self, extruder):
+    #     """Sets the active extruder"""
+    #     try:
+    #         self.active_extruder = int(extruder)
+    #         self.active_extruder_changed.emit(self.active_extruder)
+    #     except ValueError:
+    #         logger.error(f"Invalid extruder value: {extruder}")
+    #
+    # def set_z_probe_offset(self, offset):
+    #     """Sets the Z probe offset"""
+    #     try:
+    #         self.z_probe_offset = float(offset)
+    #         self.z_probe_offset_updated.emit(self.z_probe_offset)
+    #     except ValueError:
+    #         logger.error(f"Invalid Z probe offset value: {offset}")
+    #
+    # def set_tool_offset(self, offset_data):
+    #     """Sets tool offset from M218 response"""
+    #     try:
+    #         if 'X' in offset_data:
+    #             self.tool_offsets['X'] = float(offset_data[offset_data.index('X') + 1:].split(' ', 1)[0])
+    #         if 'Y' in offset_data:
+    #             self.tool_offsets['Y'] = float(offset_data[offset_data.index('Y') + 1:].split(' ', 1)[0])
+    #         if 'Z' in offset_data:
+    #             self.tool_offsets['Z'] = float(offset_data[offset_data.index('Z') + 1:].split(' ', 1)[0])
+    #
+    #         self.tool_offset_updated.emit(self.tool_offsets)
+    #     except Exception as e:
+    #         logger.error(f"Error parsing tool offset data: {e}")
+    #
+    # def format_print_time(self, seconds):
+    #     """Format print time in days, hours, minutes, seconds"""
+    #     if seconds is None:
+    #         return "-"
+    #     m, s = divmod(seconds, 60)
+    #     h, m = divmod(m, 60)
+    #     d, h = divmod(h, 24)
+    #     return "%d:%d:%02d:%02d" % (d, h, m, s)

@@ -286,7 +286,7 @@ class octoprintAPI:
 
     def cancelPrint(self):
         """
-        Starts the print of the currently selected file
+        Stops the print of the currently selected file
 
         Use select() to select a file
         """

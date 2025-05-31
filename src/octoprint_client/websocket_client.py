@@ -23,23 +23,23 @@ class OctoPrintWebSocket(QThread):
     and emits signals when events occur
     """
     # Define signals for UI updates
-    z_home_offset_signal = pyqtSignal(str)
-    temperatures_signal = pyqtSignal(dict)
-    status_signal = pyqtSignal(str)
-    print_status_signal = pyqtSignal(dict)
-    update_started_signal = pyqtSignal(dict)
-    update_log_signal = pyqtSignal(dict)
-    update_log_result_signal = pyqtSignal(dict)
-    update_failed_signal = pyqtSignal(dict)
-    connected_signal = pyqtSignal()
-    filament_sensor_triggered_signal = pyqtSignal(str)
-    firmware_updater_signal = pyqtSignal(dict)
-    set_z_tool_offset_signal = pyqtSignal(str, bool)
-    tool_offset_signal = pyqtSignal(str)
-    active_extruder_signal = pyqtSignal(str)
-    z_probe_offset_signal = pyqtSignal(str)
-    z_probing_failed_signal = pyqtSignal()
-    printer_error_signal = pyqtSignal(str)
+    # z_home_offset_signal = pyqtSignal(str) ... deprecated, uses probe_offset
+    temperatures_signal = pyqtSignal(dict) #! done
+    status_signal = pyqtSignal(str) #! done
+    print_status_signal = pyqtSignal(dict) #! done
+    update_started_signal = pyqtSignal(dict) #! done
+    update_log_signal = pyqtSignal(dict) #! done
+    update_log_result_signal = pyqtSignal(dict) #! done
+    update_failed_signal = pyqtSignal(dict) #! done
+    connected_signal = pyqtSignal() #! done
+    filament_sensor_triggered_signal = pyqtSignal(str) #! done
+    # firmware_updater_signal = pyqtSignal(dict) ... likely not to be used, but can be added later
+    set_z_tool_offset_signal = pyqtSignal(str, bool) #! done
+    tool_offset_signal = pyqtSignal(str) # done
+    active_extruder_signal = pyqtSignal(str) # done
+    z_probe_offset_signal = pyqtSignal(str) # done
+    z_probing_failed_signal = pyqtSignal() # done
+    printer_error_signal = pyqtSignal(str) # done
 
     def __init__(self, ip="0.0.0.0:5000", api_key=None):
         """
