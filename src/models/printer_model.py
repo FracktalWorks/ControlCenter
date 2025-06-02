@@ -77,21 +77,21 @@ class PrinterModel(QObject):
         self.tool1_purge_position = {'X': 648, 'Y': -112}
 
         # Connect printer_model signals to respective slots
-        self.temperatures_updated.connect(self.updateTemperature)
-        self.status_updated.connect(self.updateStatus)
-        self.print_status_updated.connect(self.updatePrintStatus)
-        self.active_extruder_changed.connect(self.setActiveExtruder)
-        self.z_probe_offset_updated.connect(self.updateEEPROMProbeOffset)
-        self.tool_offset_updated.connect(self.getToolOffset)
-        self.printer_error_signal.connect(self.showPrinterError)
-        self.filament_sensor_triggered.connect(self.filamentSensorHandler)
-        self.z_probing_failed.connect(self.showProbingFailed)
-        self.z_tool_offset_updated.connect(self.setZToolOffset)
-        self.update_started_signal.connect(self.softwareUpdateProgress)
-        self.update_log_signal.connect(self.softwareUpdateProgressLog)
-        self.update_log_result_signal.connect(self.softwareUpdateResult)
-        self.update_failed_signal.connect(self.updateFailed)
-        self.connected_signal.connect(self.onServerConnected)
+        # self.temperatures_updated.connect(self.updateTemperature)
+        # self.status_updated.connect(self.updateStatus)
+        # self.print_status_updated.connect(self.updatePrintStatus)
+        # self.active_extruder_changed.connect(self.setActiveExtruder)
+        # self.z_probe_offset_updated.connect(self.updateEEPROMProbeOffset)
+        # self.tool_offset_updated.connect(self.getToolOffset)
+        # self.printer_error_signal.connect(self.showPrinterError)
+        # self.filament_sensor_triggered.connect(self.filamentSensorHandler)
+        # self.z_probing_failed.connect(self.showProbingFailed)
+        # self.z_tool_offset_updated.connect(self.setZToolOffset)
+        # self.update_started_signal.connect(self.softwareUpdateProgress)
+        # self.update_log_signal.connect(self.softwareUpdateProgressLog)
+        # self.update_log_result_signal.connect(self.softwareUpdateResult)
+        # self.update_failed_signal.connect(self.updateFailed)
+        # self.connected_signal.connect(self.onServerConnected)
 
     def updateTemperature(self, temp_data):
         """ Updates the temperature data. Is a slot for the temperatures_updated signal. """
