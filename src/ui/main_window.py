@@ -1,3 +1,5 @@
+import time
+
 import requests
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget, QMessageBox
 from ui.home_screen.home_screen import HomeScreen
@@ -84,19 +86,17 @@ class MainWindow(QMainWindow):
             logger.info("OctoPrint singleton initialized successfully")
             
             # Initialize the sanity check to verify OctoPrint connectivity
-            self.sanityCheck = ThreadSanityCheck(ip=config.ip, api_key=config.apiKey, virtual=False)
-            self.sanityCheck.start()
-            self.sanityCheck.loaded_signal.connect(self.loadFullUI)
-            self.sanityCheck.startup_error_signal.connect(self.handleStartupError)
+            # ! Transferred to loading_screen.py
+            # self.sanityCheck = ThreadSanityCheck(ip=config.ip, api_key=config.apiKey, virtual=False)
+            # self.sanityCheck.start()
+            # self.sanityCheck.loaded_signal.connect(self.loadFullUI)
+            # self.sanityCheck.startup_error_signal.connect(self.handleStartupError)
 
 
 
         except Exception as e:
             logger.error(f"Failed to initialize OctoPrint singleton: {e}")
             # Continue initialization, we'll handle the error in the loading screen
-            
-
-
         
     def handleStartupError(self):
         """
@@ -128,6 +128,7 @@ class MainWindow(QMainWindow):
         
         # Set the minimal UI mode flag
         self.minimal_ui_mode = True
+        print(".......LOADED IN MINIMAL MODE .......")
         
         # Add the minimal set of screens to the stacked widget
         # These should already be loaded in __init__
@@ -185,6 +186,7 @@ class MainWindow(QMainWindow):
         
         # Reset the minimal UI mode flag
         self.minimal_ui_mode = False
+        print(".......LOADED IN FULL MODE .......")
 
         # Initialize the websocket
         self.octoprint_websocket = OctoPrintWebSocket()
@@ -248,7 +250,8 @@ class MainWindow(QMainWindow):
             self.home_screen.printerStatus.setText("Connected")
         if hasattr(self.home_screen, 'printerStatusColour') and self.home_screen.printerStatusColour:
             self.home_screen.printerStatusColour.setStyleSheet(printer_status_green)
-        
+
+        # time.sleep(50000)
         # Switch to the home screen
         self.switch_to_home_screen()
         

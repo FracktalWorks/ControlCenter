@@ -4,6 +4,9 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QMovie
 from utils.helpers import check_ui_elements
 from utils.logger import setup_logger
+from octoprint_client.octoprint_startup_sanity_check import ThreadSanityCheck
+import config
+
 
 class LoadingScreen(QWidget):
     def __init__(self, main_window):
@@ -35,11 +38,15 @@ class LoadingScreen(QWidget):
             except Exception as e:
                 self.logger.error(f"Failed to load or start loading animation: {e}")
 
-        # Set up the timer to switch to the home screen
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.stop_movie_and_switch)
-        self.timer.start(1000)  # 1000 milliseconds = 1 second
-        self.logger.debug("Timer started for screen transition")
+        try:
+            self.sanityCheck = ThreadSanityCheck(ip=config.ip, api_key=config.apiKey, virtual=False)
+            self.sanityCheck.start()
+            self.sanityCheck.loaded_signal.connect(self.main_window.loadFullUI)
+            self.sanityCheck.startup_error_signal.connect(self.main_window.handleStartupError)
+
+        except Exception as e:
+            self.logger.error(f"Failed to initialize sanity check: {e}")
+            self.main_window.handleStartupError(str(e))
 
     def _check_widgets_existence(self):
         """Check if UI elements exist and report missing ones"""
