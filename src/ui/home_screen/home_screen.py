@@ -6,6 +6,7 @@ from models.printer_model import PrinterModel  # Import the printer status model
 from utils import logger  # Import the logger
 from utils.styles import printer_status_green, printer_status_red, printer_status_amber
 from utils import dialog
+from utils import styles
 
 class HomeScreen(QWidget):
     def __init__(self, main_window):
@@ -76,6 +77,10 @@ class HomeScreen(QWidget):
             self.fileName, self.printTime, self.timeLeft, self.printProgressBar, self.printPreviewMain
         ]
         check_ui_elements(self, all_components, "HomeScreen")
+
+        # ! Local Signal-Slot Connections
+        # Connect signals from model to slots from home_screen
+        self.main_window.printer_model.status_updated.connect(self.updateStatus)
         
         # Connect button signals to their handlers
         if self.doorLockButton:
@@ -136,6 +141,62 @@ class HomeScreen(QWidget):
         self.update_timer.timeout.connect(self.update_ui_from_printer_status)
         self.update_timer.start(1000)  # Update every second
 
+    def updateStatus(self, status):
+        """
+        Updates the status bar, is a slot for the signal emited from the thread that constantly polls for printer status
+        this function updates the status bar, as well as enables/disables relavent buttons
+        :param status: String of the status text
+        """
+        try:
+            self.printerStatusText = status
+            self.printerStatus.setText(status)
+
+            if status == "Printing":  # Green
+                self.printerStatusColour.setStyleSheet(styles.printer_status_green)
+            elif status == "Offline":  # Red
+                self.printerStatusColour.setStyleSheet(styles.printer_status_red)
+            elif status == "Paused":  # Amber
+                self.printerStatusColour.setStyleSheet(styles.printer_status_amber)
+            elif status == "Operational":  # Amber
+                self.printerStatusColour.setStyleSheet(styles.printer_status_blue)
+
+            '''
+            Depending on Status, enable and Disable Buttons
+            '''
+            if status == "Printing":
+                self.playPauseButton.setChecked(True)
+                self.stopButton.setDisabled(False)
+                self.motionTab.setDisabled(True)
+                self.changeFilamentButton.setDisabled(True)
+                self.menuCalibrateButton.setDisabled(True)
+                self.menuPrintButton.setDisabled(True)
+                self.doorLockButton.setDisabled(False)
+                # if not self.__timelapse_enabled:
+                #     octopiclient.cancelPrint()
+                #     self.coolDownAction()
+
+            elif status == "Paused":
+                self.playPauseButton.setChecked(False)
+                self.stopButton.setDisabled(False)
+                self.motionTab.setDisabled(False)
+                self.changeFilamentButton.setDisabled(False)
+                self.menuCalibrateButton.setDisabled(True)
+                self.menuPrintButton.setDisabled(True)
+                self.doorLockButton.setDisabled(False)
+
+            else:
+                self.stopButton.setDisabled(True)
+                self.playPauseButton.setChecked(False)
+                self.motionTab.setDisabled(False)
+                self.changeFilamentButton.setDisabled(False)
+                self.menuCalibrateButton.setDisabled(False)
+                self.menuPrintButton.setDisabled(False)
+                self.doorLockButton.setDisabled(True)
+
+        except Exception as e:
+            logger.error("Error in MainUiClass.updateStatus: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.updateStatus: {}".format(e), overlay=True)
+
     def update_ui_from_printer_status(self):
         """Update UI based on current printer status"""
         if hasattr(self.main_window, 'octoprint_client'):
@@ -148,7 +209,7 @@ class HomeScreen(QWidget):
                 # Update our internal data
                 self._update_temperature_data(printer_data)
                 self._update_job_data(job_data)
-                
+
                 # Update UI
                 self._update_temperature_displays()
                 self._update_print_info()
