@@ -80,7 +80,7 @@ class HomeScreen(QWidget):
 
         # ! Local Signal-Slot Connections
         # Connect signals from model to slots from home_screen
-        self.main_window.printer_model.status_updated.connect(self.updateStatus)
+        self.main_window.printer_model.status_updated.connect(self.updatePrinterStatus)
         
         # Connect button signals to their handlers
         if self.doorLockButton:
@@ -141,7 +141,7 @@ class HomeScreen(QWidget):
         self.update_timer.timeout.connect(self.update_ui_from_printer_status)
         self.update_timer.start(1000)  # Update every second
 
-    def updateStatus(self, status):
+    def updatePrinterStatus(self, status):
         """
         Updates the status bar, is a slot for the signal emited from the thread that constantly polls for printer status
         this function updates the status bar, as well as enables/disables relavent buttons
@@ -166,8 +166,8 @@ class HomeScreen(QWidget):
             if status == "Printing":
                 self.playPauseButton.setChecked(True)
                 self.stopButton.setDisabled(False)
-                self.motionTab.setDisabled(True)
-                self.changeFilamentButton.setDisabled(True)
+                # self.motionTab.setDisabled(True)
+                # self.changeFilamentButton.setDisabled(True) in some different file
                 self.menuCalibrateButton.setDisabled(True)
                 self.menuPrintButton.setDisabled(True)
                 self.doorLockButton.setDisabled(False)
@@ -178,7 +178,7 @@ class HomeScreen(QWidget):
             elif status == "Paused":
                 self.playPauseButton.setChecked(False)
                 self.stopButton.setDisabled(False)
-                self.motionTab.setDisabled(False)
+                # self.motionTab.setDisabled(False)
                 self.changeFilamentButton.setDisabled(False)
                 self.menuCalibrateButton.setDisabled(True)
                 self.menuPrintButton.setDisabled(True)
@@ -187,15 +187,15 @@ class HomeScreen(QWidget):
             else:
                 self.stopButton.setDisabled(True)
                 self.playPauseButton.setChecked(False)
-                self.motionTab.setDisabled(False)
+                # self.motionTab.setDisabled(False)
                 self.changeFilamentButton.setDisabled(False)
                 self.menuCalibrateButton.setDisabled(False)
                 self.menuPrintButton.setDisabled(False)
                 self.doorLockButton.setDisabled(True)
 
         except Exception as e:
-            logger.error("Error in MainUiClass.updateStatus: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.updateStatus: {}".format(e), overlay=True)
+            logger.error("Error in HomeScreen.updatePrinterStatus: {}".format(e))
+            dialog.WarningOk(self, "Error in HomeScreen.updatePrinterStatus: {}".format(e), overlay=True)
 
     def update_ui_from_printer_status(self):
         """Update UI based on current printer status"""
