@@ -125,6 +125,8 @@ class MainWindow(QMainWindow):
         Only home screen, menu screen and settings screen are accessible in this mode.
         """
         logger.info("Showing minimal UI due to startup error")
+        # Stop the loading GIF animation
+        self.loading_screen.movie.stop()
         
         # Set the minimal UI mode flag
         self.minimal_ui_mode = True
@@ -183,6 +185,9 @@ class MainWindow(QMainWindow):
         All screens will be accessible in this mode.
         """
         logger.info("Loading full UI - OctoPrint connection successful")
+
+        # Stop the loading screen GIF
+        self.loading_screen.movie.stop()
         
         # Reset the minimal UI mode flag
         self.minimal_ui_mode = False
