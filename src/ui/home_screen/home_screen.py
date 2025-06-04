@@ -144,10 +144,10 @@ class HomeScreen(QWidget):
         if self.ipStatus:
             self.ipStatus.setText("Not Connected")
 
-        # Set up update timer
-        self.update_timer = QTimer(self)
-        self.update_timer.timeout.connect(self.update_ui_from_printer_status)
-        self.update_timer.start(1000)  # Update every second
+        # # Set up update timer
+        # self.update_timer = QTimer(self)
+        # self.update_timer.timeout.connect(self.update_ui_from_printer_status)
+        # self.update_timer.start(1000)  # Update every second
 
     def updatePrinterStatus(self, status):
         """
