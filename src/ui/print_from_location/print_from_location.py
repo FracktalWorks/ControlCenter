@@ -1,11 +1,22 @@
-from PyQt5 import uic
+from PyQt5 import uic, QtGui, QtCore
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QListWidget, QLabel, QToolButton
 from utils.helpers import check_ui_elements
 from utils import logger
 from utils.logger import setup_logger
 from utils import dialog
+from octoprint_client.octoprint_threaded_file_upload import ThreadFileUpload
 
 import subprocess
+
+from utils.helpers import run_async
+
+
+try:
+    _fromUtf8 = QtCore.QString.fromUtf8
+except AttributeError:
+    def _fromUtf8(s):
+        return s
+
 
 class PrintFromLocation(QWidget):
     def __init__(self, main_window):
@@ -115,11 +126,13 @@ class PrintFromLocation(QWidget):
         
         # USB storage navigation
         if self.USBStorageBackButton:
-            self.USBStorageBackButton.clicked.connect(self._usb_storage_back)
+            self.USBStorageBackButton.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.printLocationPage))
         if self.USBStorageScrollDown:
-            self.USBStorageScrollDown.clicked.connect(self._usb_scroll_down)
+            self.USBStorageScrollDown.clicked.connect(
+                lambda: self.fileListWidgetUSB.setCurrentRow(self.fileListWidgetUSB.currentRow() + 1))
         if self.USBStorageScrollUp:
-            self.USBStorageScrollUp.clicked.connect(self._usb_scroll_up)
+            self.USBStorageScrollUp.clicked.connect(
+                lambda: self.fileListWidgetUSB.setCurrentRow(self.fileListWidgetUSB.currentRow() - 1))
         if self.USBStorageSelectButton:
             self.USBStorageSelectButton.clicked.connect(self.printSelectedUSB)
         if self.USBStorageSaveButton:
@@ -167,48 +180,6 @@ class PrintFromLocation(QWidget):
             self.logger.warning("Could not set default page - required widgets missing")
 
     # Helper methods for button connections
-    def _usb_storage_back(self):
-        """Handle back button in USB storage page"""
-        if self.stackedWidget and self.printLocationPage:
-            self.stackedWidget.setCurrentWidget(self.printLocationPage)
-            self.logger.info("USB Storage: going back to location selection")
-
-    def _local_storage_back(self):
-        """Handle back button in local storage page"""
-        if self.stackedWidget and self.printLocationPage:
-            self.stackedWidget.setCurrentWidget(self.printLocationPage)
-            self.logger.info("Local Storage: going back to location selection")
-        else:
-            self.logger.warning("Using fallback for localStorageBackButton")
-            self.main_window.switch_to_previous_screen()
-
-    def _usb_scroll_down(self):
-        """Handle scroll down in USB file list"""
-        if self.fileListWidgetUSB:
-            current_row = self.fileListWidgetUSB.currentRow()
-            self.fileListWidgetUSB.setCurrentRow(current_row + 1)
-            self.logger.info("USB Storage: scrolling down")
-
-    def _usb_scroll_up(self):
-        """Handle scroll up in USB file list"""
-        if self.fileListWidgetUSB:
-            current_row = self.fileListWidgetUSB.currentRow()
-            self.fileListWidgetUSB.setCurrentRow(current_row - 1)
-            self.logger.info("USB Storage: scrolling up")
-
-    def _local_scroll_down(self):
-        """Handle scroll down in local file list"""
-        if self.fileListWidgetLocal:
-            current_row = self.fileListWidgetLocal.currentRow()
-            self.fileListWidgetLocal.setCurrentRow(current_row + 1)
-            self.logger.info("Local Storage: scrolling down")
-
-    def _local_scroll_up(self):
-        """Handle scroll up in local file list"""
-        if self.fileListWidgetLocal:
-            current_row = self.fileListWidgetLocal.currentRow()
-            self.fileListWidgetLocal.setCurrentRow(current_row - 1)
-            self.logger.info("Local Storage: scrolling up")
 
     def fileListLocal(self):
         """
@@ -267,16 +238,19 @@ class PrintFromLocation(QWidget):
             self.logger.warning("No file selected")
 
     def printSelectedUSB(self):
-        """Displays the selected USB file details before printing"""
-        self.logger.info("Displaying selected USB file")
-        
-        if self.fileListWidgetUSB and self.fileListWidgetUSB.currentItem():
-            # TODO: Get file details and preview
-            if self.stackedWidget and self.printSelectedUSBPage:
-                self.stackedWidget.setCurrentWidget(self.printSelectedUSBPage)
-                self.logger.info("Showing selected USB file details")
-        else:
-            self.logger.warning("No file selected")
+        """
+        Sets the screen to the print selected screen for USB, on which you can transfer to local drive and view preview image.
+        :return:
+        """
+        logger.info("MainUiClass.printSelectedUSB started")
+        try:
+            self.fileSelectedUSBName.setText(self.fileListWidgetUSB.currentItem().text())
+            self.stackedWidget.setCurrentWidget(self.printSelectedUSBPage)
+            self.displayThumbnail(self.printPreviewSelectedUSB,
+                                  '/media/usb0/' + str(self.fileListWidgetUSB.currentItem().text()), usb=True)
+        except Exception as e:
+            logger.error("Error in MainUiClass.printSelectedUSB: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.printSelectedUSB: {}".format(e), overlay=True)
 
     def printFile(self):
         """Sends the selected file to printer and starts printing"""
@@ -294,12 +268,43 @@ class PrintFromLocation(QWidget):
         else:
             self.logger.warning("No file selected to delete")
 
-    def transferToLocal(self):
-        """Transfers the selected USB file to local storage"""
-        self.logger.info("Transferring file from USB to local storage")
-        
-        if self.fileListWidgetUSB and self.fileListWidgetUSB.currentItem():
-            # TODO: Copy the file from USB to local storage
-            self.logger.info(f"Transferring file: {self.fileListWidgetUSB.currentItem().text()}")
-        else:
-            self.logger.warning("No file selected to transfer")
+    def transferToLocal(self, prnt=False):
+        """
+        Transfers a file from USB mounted at /media/usb0 to octoprint's watched folder so that it gets automatically detected bu Octoprint.
+        Warning: If the file is read-only, octoprint API for reading the file crashes.
+        """
+        logger.info("MainUiClass.transferToLocal started")
+        try:
+            file = '/media/usb0/' + str(self.fileListWidgetUSB.currentItem().text())
+
+            self.uploadThread = ThreadFileUpload(file, prnt=prnt)
+            self.uploadThread.start()
+            if prnt:
+                self.stackedWidget.setCurrentWidget(self.main_window.home_screen)
+        except Exception as e:
+            logger.error("Error in MainUiClass.transferToLocal: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.transferToLocal: {}".format(e), overlay=True)
+
+    @run_async
+    def displayThumbnail(self, labelObject, fileLocation, usb=False):
+        """
+        Displays the image on the label object
+        :param labelObject: QLabel object to display the image
+        :param fileLocation: location of the file
+        :param usb: if the file is from
+        """
+        logger.info("MainUiClass.displayThumbnail started")
+        try:
+            pixmap = QtGui.QPixmap()
+            if usb:
+                img = self.getImageFromGcode(fileLocation)
+            else:
+                img = self.main_window.octoprint_client.getImage(fileLocation)
+            if img:
+                pixmap.loadFromData(img)
+                labelObject.setPixmap(pixmap)
+            else:
+                labelObject.setPixmap(QtGui.QPixmap(_fromUtf8("templates/img/thumbnail.png")))
+        except Exception as e:
+            labelObject.setPixmap(QtGui.QPixmap(_fromUtf8("templates/img/thumbnail.png")))
+            logger.error("Error in MainUiClass.displayThumbnail: {}".format(e))
