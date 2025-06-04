@@ -200,7 +200,7 @@ class MainWindow(QMainWindow):
         # Connect signals from the websocket to the printer model
         self.octoprint_websocket.temperatures_signal.connect(self.printer_model.updateTemperature)
         self.octoprint_websocket.status_signal.connect(self.printer_model.updateStatus)
-        self.octoprint_websocket.set_z_tool_offset_signalconnect(self.printer_model.setZToolOffset)
+        self.octoprint_websocket.set_z_tool_offset_signal.connect(self.printer_model.setZToolOffset)
         self.octoprint_websocket.print_status_signal.connect(self.printer_model.updatePrintStatus)
         self.octoprint_websocket.update_started_signal.connect(self.printer_model.softwareUpdateProgress)
         self.octoprint_websocket.update_log_signal.connect(self.printer_model.softwareUpdateProgressLog)

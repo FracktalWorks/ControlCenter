@@ -43,6 +43,7 @@ class LoadingScreen(QWidget):
             self.sanityCheck.start()
             self.sanityCheck.loaded_signal.connect(self.main_window.loadFullUI)
             self.sanityCheck.startup_error_signal.connect(self.main_window.handleStartupError)
+            # self.sanityCheck.startup_error_signal.connect(self.main_window.loadFullUI)
 
         except Exception as e:
             self.logger.error(f"Failed to initialize sanity check: {e}")

@@ -106,7 +106,7 @@ class PrinterModel(QObject):
 
         self.print_status_updated.emit(file_info)
 
-    def set_active_extruder(self, extruder):
+    def setActiveExtruder(self, extruder):
         """Sets the active extruder"""
         try:
             self.active_extruder = int(extruder)
