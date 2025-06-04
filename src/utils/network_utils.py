@@ -2,6 +2,7 @@ from PyQt5 import QtCore
 import logging
 import subprocess
 import time
+import re
 
 logger = logging.getLogger(__name__)
 
