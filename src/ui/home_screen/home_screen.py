@@ -88,6 +88,7 @@ class HomeScreen(QWidget):
         # Connect signals from model to slots from home_screen
         self.main_window.printer_model.status_updated.connect(self.updatePrinterStatus)
         self.main_window.printer_model.print_status_updated.connect(self.updatePrintStatus)
+        self.main_window.printer_model.temperatures_updated.connect(self.updateTemperature)
 
         # Connect button signals to their handlers
         if self.doorLockButton:
@@ -256,6 +257,55 @@ class HomeScreen(QWidget):
             logger.error("Error in MainUiClass.updatePrintStatus: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.updatePrintStatus: {}".format(e), overlay=True)
 
+    def updateTemperature(self, temperature):
+        """
+        Slot that gets a signal originating from the thread that keeps polling for printer status
+        runs at 1HZ, so do things that need to be constantly updated only. This also controls the cooling fan depending on the temperatures
+        :param temperature: dict containing key:value pairs with keys being the tools, bed and their values being their corresponding temperratures
+        """
+        try:
+            # Update extruder 0 temperature
+            if temperature['tool0Target'] == 0:
+                self.tool0TempBar.setMaximum(300)
+                self.tool0TempBar.setStyleSheet(styles.bar_heater_cold)
+            elif temperature['tool0Actual'] <= temperature['tool0Target']:
+                self.tool0TempBar.setMaximum(temperature['tool0Target'])
+                self.tool0TempBar.setStyleSheet(styles.bar_heater_heating)
+            else:
+                self.tool0TempBar.setMaximum(temperature['tool0Actual'])
+            self.tool0TempBar.setValue(temperature['tool0Actual'])
+            self.tool0ActualTemperature.setText(str(int(temperature['tool0Actual'])))  # + unichr(176)
+            self.tool0TargetTemperature.setText(str(int(temperature['tool0Target'])))
+
+            # Update extruder 1 temperature
+            if temperature['tool1Target'] == 0:
+                self.tool1TempBar.setMaximum(300)
+                self.tool1TempBar.setStyleSheet(styles.bar_heater_cold)
+            elif temperature['tool1Actual'] <= temperature['tool1Target']:
+                self.tool1TempBar.setMaximum(temperature['tool1Target'])
+                self.tool1TempBar.setStyleSheet(styles.bar_heater_heating)
+            else:
+                self.tool1TempBar.setMaximum(temperature['tool1Actual'])
+            self.tool1TempBar.setValue(temperature['tool1Actual'])
+            self.tool1ActualTemperature.setText(str(int(temperature['tool1Actual'])))  # + unichr(176)
+            self.tool1TargetTemperature.setText(str(int(temperature['tool1Target'])))
+
+            # Update bed temperature
+            if temperature['bedTarget'] == 0:
+                self.bedTempBar.setMaximum(150)
+                self.bedTempBar.setStyleSheet(styles.bar_heater_cold)
+            elif temperature['bedActual'] <= temperature['bedTarget']:
+                self.bedTempBar.setMaximum(temperature['bedTarget'])
+                self.bedTempBar.setStyleSheet(styles.bar_heater_heating)
+            else:
+                self.bedTempBar.setMaximum(temperature['bedActual'])
+            self.bedTempBar.setValue(temperature['bedActual'])
+            self.bedActualTemperatute.setText(str(int(temperature['bedActual'])))  # + unichr(176))
+            self.bedTargetTemperature.setText(str(int(temperature['bedTarget'])))  # + unichr(176))
+
+        except:
+            pass
+
     @run_async
     def setIPStatus(self):
         """
@@ -279,162 +329,162 @@ class HomeScreen(QWidget):
 
     # ! Below are the boilerplate functions
 
-    def update_ui_from_printer_status(self):
-        """Update UI based on current printer status"""
-        if hasattr(self.main_window, 'octoprint_client'):
-            client = self.main_window.octoprint_client
-            if client and client.is_connected():
-                # Get latest status information
-                printer_data = client.get_printer_status()
-                job_data = client.get_job_status()
+    # def update_ui_from_printer_status(self):
+    #     """Update UI based on current printer status"""
+    #     if hasattr(self.main_window, 'octoprint_client'):
+    #         client = self.main_window.octoprint_client
+    #         if client and client.is_connected():
+    #             # Get latest status information
+    #             printer_data = client.get_printer_status()
+    #             job_data = client.get_job_status()
+    #
+    #             # Update our internal data
+    #             self._update_temperature_data(printer_data)
+    #             self._update_job_data(job_data)
+    #
+    #             # Update UI
+    #             self._update_temperature_displays()
+    #             self._update_print_info()
+    #             self._update_printer_status(printer_data.get("state", {}).get("text", "Unknown"))
+    #
+    #             # Update connection status
+    #             self._update_connection_status(True, client.get_ip_address())
+    #         else:
+    #             self._update_connection_status(False)
 
-                # Update our internal data
-                self._update_temperature_data(printer_data)
-                self._update_job_data(job_data)
+    # def _update_temperature_data(self, printer_data):
+    #     """Update internal temperature data from printer status"""
+    #     if not printer_data or "temperature" not in printer_data:
+    #         return
+    #
+    #     temp_data = printer_data["temperature"]
+    #
+    #     # Update tool0 temperature
+    #     if "tool0" in temp_data:
+    #         self.temperature_data["tool0"]["actual"] = temp_data["tool0"]["actual"]
+    #         self.temperature_data["tool0"]["target"] = temp_data["tool0"]["target"]
+    #
+    #     # Update tool1 temperature
+    #     if "tool1" in temp_data:
+    #         self.temperature_data["tool1"]["actual"] = temp_data["tool1"]["actual"]
+    #         self.temperature_data["tool1"]["target"] = temp_data["tool1"]["target"]
+    #
+    #     # Update bed temperature
+    #     if "bed" in temp_data:
+    #         self.temperature_data["bed"]["actual"] = temp_data["bed"]["actual"]
+    #         self.temperature_data["bed"]["target"] = temp_data["bed"]["target"]
 
-                # Update UI
-                self._update_temperature_displays()
-                self._update_print_info()
-                self._update_printer_status(printer_data.get("state", {}).get("text", "Unknown"))
+    # def _update_job_data(self, job_data):
+    #     """Update internal job data from printer status"""
+    #     if not job_data:
+    #         return
+    #
+    #     # Update file name
+    #     if "file" in job_data and "name" in job_data["file"]:
+    #         self.current_file = job_data["file"]["name"]
+    #     else:
+    #         self.current_file = "No file selected"
+    #
+    #     # Update progress
+    #     if "progress" in job_data and "completion" in job_data["progress"]:
+    #         progress = job_data["progress"]["completion"]
+    #         self.print_progress = int(progress) if progress is not None else 0
+    #
+    #     # Update time information
+    #     if "progress" in job_data:
+    #         # Print time
+    #         if "printTime" in job_data["progress"]:
+    #             seconds = job_data["progress"]["printTime"] or 0
+    #             self.print_time = self._format_time(seconds)
+    #
+    #         # Time left
+    #         if "printTimeLeft" in job_data["progress"]:
+    #             seconds = job_data["progress"]["printTimeLeft"] or 0
+    #             self.time_left = self._format_time(seconds)
 
-                # Update connection status
-                self._update_connection_status(True, client.get_ip_address())
-            else:
-                self._update_connection_status(False)
+    # def _format_time(self, seconds):
+    #     """Format seconds to HH:MM:SS"""
+    #     if seconds is None:
+    #         return "00:00:00"
+    #
+    #     hours = int(seconds // 3600)
+    #     minutes = int((seconds % 3600) // 60)
+    #     seconds = int(seconds % 60)
+    #     return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
-    def _update_temperature_data(self, printer_data):
-        """Update internal temperature data from printer status"""
-        if not printer_data or "temperature" not in printer_data:
-            return
+    # def _update_temperature_displays(self):
+    #     """Update all temperature displays"""
+    #     # Tool 0
+    #     if self.tool0ActualTemperature and self.tool0TargetTemperature and self.tool0TempBar:
+    #         actual = self.temperature_data["tool0"]["actual"]
+    #         target = self.temperature_data["tool0"]["target"]
+    #
+    #         self.tool0ActualTemperature.setText(f"{actual:.1f}")
+    #         self.tool0TargetTemperature.setText(f"{target:.1f}")
+    #         self.tool0TempBar.setValue(min(int(actual), self.tool0TempBar.maximum()))
+    #
+    #     # Tool 1
+    #     if self.tool1ActualTemperature and self.tool1TargetTemperature and self.tool1TempBar:
+    #         actual = self.temperature_data["tool1"]["actual"]
+    #         target = self.temperature_data["tool1"]["target"]
+    #
+    #         self.tool1ActualTemperature.setText(f"{actual:.1f}")
+    #         self.tool1TargetTemperature.setText(f"{target:.1f}")
+    #         self.tool1TempBar.setValue(min(int(actual), self.tool1TempBar.maximum()))
+    #
+    #     # Bed
+    #     if self.bedActualTemperatute and self.bedTargetTemperature and self.bedTempBar:
+    #         actual = self.temperature_data["bed"]["actual"]
+    #         target = self.temperature_data["bed"]["target"]
+    #
+    #         self.bedActualTemperatute.setText(f"{actual:.1f}")
+    #         self.bedTargetTemperature.setText(f"{target:.1f}")
+    #         self.bedTempBar.setValue(min(int(actual), self.bedTempBar.maximum()))
 
-        temp_data = printer_data["temperature"]
+    # def _update_print_info(self):
+    #     """Update print job information"""
+    #     if self.fileName:
+    #         self.fileName.setText(self.current_file)
+    #
+    #     if self.printTime:
+    #         self.printTime.setText(self.print_time)
+    #
+    #     if self.timeLeft:
+    #         self.timeLeft.setText(self.time_left)
+    #
+    #     if self.printProgressBar:
+    #         self.printProgressBar.setValue(self.print_progress)
 
-        # Update tool0 temperature
-        if "tool0" in temp_data:
-            self.temperature_data["tool0"]["actual"] = temp_data["tool0"]["actual"]
-            self.temperature_data["tool0"]["target"] = temp_data["tool0"]["target"]
+    # def _update_printer_status(self, status_text):
+    #     """Update printer status display and indicator"""
+    #     if not self.printerStatus or not self.printerStatusColour:
+    #         return
+    #
+    #     self.printerStatus.setText(status_text)
+    #
+    #     # Set color based on status
+    #     if status_text.lower() in ["operational", "ready"]:
+    #         self.printerStatusColour.setStyleSheet(printer_status_green)
+    #     elif status_text.lower() in ["printing", "paused"]:
+    #         self.printerStatusColour.setStyleSheet(printer_status_amber)
+    #     else:
+    #         self.printerStatusColour.setStyleSheet(printer_status_red)
 
-        # Update tool1 temperature
-        if "tool1" in temp_data:
-            self.temperature_data["tool1"]["actual"] = temp_data["tool1"]["actual"]
-            self.temperature_data["tool1"]["target"] = temp_data["tool1"]["target"]
-
-        # Update bed temperature
-        if "bed" in temp_data:
-            self.temperature_data["bed"]["actual"] = temp_data["bed"]["actual"]
-            self.temperature_data["bed"]["target"] = temp_data["bed"]["target"]
-
-    def _update_job_data(self, job_data):
-        """Update internal job data from printer status"""
-        if not job_data:
-            return
-
-        # Update file name
-        if "file" in job_data and "name" in job_data["file"]:
-            self.current_file = job_data["file"]["name"]
-        else:
-            self.current_file = "No file selected"
-
-        # Update progress
-        if "progress" in job_data and "completion" in job_data["progress"]:
-            progress = job_data["progress"]["completion"]
-            self.print_progress = int(progress) if progress is not None else 0
-
-        # Update time information
-        if "progress" in job_data:
-            # Print time
-            if "printTime" in job_data["progress"]:
-                seconds = job_data["progress"]["printTime"] or 0
-                self.print_time = self._format_time(seconds)
-
-            # Time left
-            if "printTimeLeft" in job_data["progress"]:
-                seconds = job_data["progress"]["printTimeLeft"] or 0
-                self.time_left = self._format_time(seconds)
-
-    def _format_time(self, seconds):
-        """Format seconds to HH:MM:SS"""
-        if seconds is None:
-            return "00:00:00"
-
-        hours = int(seconds // 3600)
-        minutes = int((seconds % 3600) // 60)
-        seconds = int(seconds % 60)
-        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-
-    def _update_temperature_displays(self):
-        """Update all temperature displays"""
-        # Tool 0
-        if self.tool0ActualTemperature and self.tool0TargetTemperature and self.tool0TempBar:
-            actual = self.temperature_data["tool0"]["actual"]
-            target = self.temperature_data["tool0"]["target"]
-
-            self.tool0ActualTemperature.setText(f"{actual:.1f}")
-            self.tool0TargetTemperature.setText(f"{target:.1f}")
-            self.tool0TempBar.setValue(min(int(actual), self.tool0TempBar.maximum()))
-
-        # Tool 1
-        if self.tool1ActualTemperature and self.tool1TargetTemperature and self.tool1TempBar:
-            actual = self.temperature_data["tool1"]["actual"]
-            target = self.temperature_data["tool1"]["target"]
-
-            self.tool1ActualTemperature.setText(f"{actual:.1f}")
-            self.tool1TargetTemperature.setText(f"{target:.1f}")
-            self.tool1TempBar.setValue(min(int(actual), self.tool1TempBar.maximum()))
-
-        # Bed
-        if self.bedActualTemperatute and self.bedTargetTemperature and self.bedTempBar:
-            actual = self.temperature_data["bed"]["actual"]
-            target = self.temperature_data["bed"]["target"]
-
-            self.bedActualTemperatute.setText(f"{actual:.1f}")
-            self.bedTargetTemperature.setText(f"{target:.1f}")
-            self.bedTempBar.setValue(min(int(actual), self.bedTempBar.maximum()))
-
-    def _update_print_info(self):
-        """Update print job information"""
-        if self.fileName:
-            self.fileName.setText(self.current_file)
-
-        if self.printTime:
-            self.printTime.setText(self.print_time)
-
-        if self.timeLeft:
-            self.timeLeft.setText(self.time_left)
-
-        if self.printProgressBar:
-            self.printProgressBar.setValue(self.print_progress)
-
-    def _update_printer_status(self, status_text):
-        """Update printer status display and indicator"""
-        if not self.printerStatus or not self.printerStatusColour:
-            return
-
-        self.printerStatus.setText(status_text)
-
-        # Set color based on status
-        if status_text.lower() in ["operational", "ready"]:
-            self.printerStatusColour.setStyleSheet(printer_status_green)
-        elif status_text.lower() in ["printing", "paused"]:
-            self.printerStatusColour.setStyleSheet(printer_status_amber)
-        else:
-            self.printerStatusColour.setStyleSheet(printer_status_red)
-
-    def _update_connection_status(self, connected, ip_address=None):
-        """Update printer connection status"""
-        self.printer_connected = connected
-
-        if self.ipStatus:
-            if connected and ip_address:
-                self.ipStatus.setText(f"Connected: {ip_address}")
-            else:
-                self.ipStatus.setText("Not Connected")
-
-        # Disable controls when not connected
-        for button_name in ["doorLockButton", "playPauseButton", "stopButton"]:
-            button = self.all_components.get(button_name, {}).get("instance")
-            if button:
-                button.setEnabled(connected)
+    # def _update_connection_status(self, connected, ip_address=None):
+    #     """Update printer connection status"""
+    #     self.printer_connected = connected
+    #
+    #     if self.ipStatus:
+    #         if connected and ip_address:
+    #             self.ipStatus.setText(f"Connected: {ip_address}")
+    #         else:
+    #             self.ipStatus.setText("Not Connected")
+    #
+    #     # Disable controls when not connected
+    #     for button_name in ["doorLockButton", "playPauseButton", "stopButton"]:
+    #         button = self.all_components.get(button_name, {}).get("instance")
+    #         if button:
+    #             button.setEnabled(connected)
 
     # Event handlers
 
