@@ -1,7 +1,11 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QListWidget, QLabel, QToolButton
 from utils.helpers import check_ui_elements
+from utils import logger
 from utils.logger import setup_logger
+from utils import dialog
+
+import subprocess
 
 class PrintFromLocation(QWidget):
     def __init__(self, main_window):
@@ -207,22 +211,48 @@ class PrintFromLocation(QWidget):
             self.logger.info("Local Storage: scrolling up")
 
     def fileListLocal(self):
-        """Shows the local file list screen and populates the list with local files"""
-        self.logger.info("Showing local file list")
-        
-        if self.stackedWidget and self.fileListLocalPage:
+        """
+        Gets the file list from octoprint server, displays it on the list, as well as
+        sets the stacked widget page to the file list page
+        """
+        logger.info("MainUiClass.fileListLocal started")
+        try:
             self.stackedWidget.setCurrentWidget(self.fileListLocalPage)
-            self.logger.info("Switched to local file list")
-        # TODO: Populate file list from octoprint server
+            files = []
+            for file in self.main_window.octoprint_client.retrieveFileInformation()['files']:
+                if file["type"] == "machinecode":
+                    files.append(file)
+
+            self.fileListWidget.clear()
+            files.sort(key=lambda d: d['date'], reverse=True)
+            # for item in [f['name'] for f in files] :
+            #     self.fileListWidget.addItem(item)
+            self.fileListWidget.addItems([f['name'] for f in files])
+            self.fileListWidget.setCurrentRow(0)
+        except Exception as e:
+            logger.error("Error in MainUiClass.fileListLocal: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.fileListLocal: {}".format(e), overlay=True)
 
     def fileListUSB(self):
-        """Shows the USB file list screen and populates the list with USB files"""
-        self.logger.info("Showing USB file list")
-        
-        if self.stackedWidget and self.fileListUSBPage:
+        """
+        Gets the file list from octoprint server, displays it on the list, as well as
+        sets the stacked widget page to the file list page
+        ToDO: Add deapth of folders recursively get all gcodes
+        """
+        logger.info("MainUiClass.fileListUSB started")
+        try:
             self.stackedWidget.setCurrentWidget(self.fileListUSBPage)
-            self.logger.info("Switched to USB file list")
-        # TODO: Populate file list from USB drive
+            self.fileListWidgetUSB.clear()
+            files = subprocess.Popen("ls /media/usb0 | grep gcode", stdout=subprocess.PIPE, shell=True).communicate()[0]
+            files = files.decode('utf-8').split('\n')
+            files = filter(None, files)
+            # for item in files:
+            #     self.fileListWidgetUSB.addItem(item)
+            self.fileListWidgetUSB.addItems(files)
+            self.fileListWidgetUSB.setCurrentRow(0)
+        except Exception as e:
+            logger.error("Error in MainUiClass.fileListUSB: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.fileListUSB: {}".format(e), overlay=True)
 
     def printSelectedLocal(self):
         """Displays the selected local file details before printing"""
