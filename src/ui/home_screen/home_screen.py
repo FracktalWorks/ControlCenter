@@ -20,6 +20,7 @@ class HomeScreen(QWidget):
         
         # Job info
         self.current_file = "No file selected"
+        self.current_image = None
         self.print_progress = 0
         self.print_time = "00:00:00"
         self.time_left = "00:00:00"
@@ -179,7 +180,7 @@ class HomeScreen(QWidget):
                 self.playPauseButton.setChecked(False)
                 self.stopButton.setDisabled(False)
                 # self.motionTab.setDisabled(False)
-                self.changeFilamentButton.setDisabled(False)
+                # self.changeFilamentButton.setDisabled(False)
                 self.menuCalibrateButton.setDisabled(True)
                 self.menuPrintButton.setDisabled(True)
                 self.doorLockButton.setDisabled(False)
@@ -188,7 +189,7 @@ class HomeScreen(QWidget):
                 self.stopButton.setDisabled(True)
                 self.playPauseButton.setChecked(False)
                 # self.motionTab.setDisabled(False)
-                self.changeFilamentButton.setDisabled(False)
+                # self.changeFilamentButton.setDisabled(False)
                 self.menuCalibrateButton.setDisabled(False)
                 self.menuPrintButton.setDisabled(False)
                 self.doorLockButton.setDisabled(True)
@@ -196,6 +197,58 @@ class HomeScreen(QWidget):
         except Exception as e:
             logger.error("Error in HomeScreen.updatePrinterStatus: {}".format(e))
             dialog.WarningOk(self, "Error in HomeScreen.updatePrinterStatus: {}".format(e), overlay=True)
+
+    def updatePrintStatus(self, file):
+        """
+        displays infromation of a particular file on the home page
+        It is a slot for the signal emited from the thread that keeps pooling for printer status
+        runs at 1HZ, so do things that need to be constantly updated only
+        :param file: dict of all the attributes of a particualr file
+        """
+        try:
+            if file is None:
+                self.current_image = None
+                self.timeLeft.setText("-")
+                self.fileName.setText("-")
+                self.printProgressBar.setValue(0)
+                self.printTime.setText("-")
+                self.playPauseButton.setDisabled(True)  # if file is not available, disable playPauseButton
+
+            else:
+                self.playPauseButton.setDisabled(False)  # if file available, make play buttom visible
+                self.fileName.setText(file['job']['file']['name'])
+                self.current_file = file['job']['file']['name']
+                if file['progress']['printTime'] is None:
+                    self.printTime.setText("-")
+                else:
+                    m, s = divmod(file['progress']['printTime'], 60)
+                    h, m = divmod(m, 60)
+                    d, h = divmod(h, 24)
+                    self.printTime.setText("%d:%d:%02d:%02d" % (d, h, m, s))
+
+                if file['progress']['printTimeLeft'] is None:
+                    self.timeLeft.setText("-")
+                else:
+                    m, s = divmod(file['progress']['printTimeLeft'], 60)
+                    h, m = divmod(m, 60)
+                    d, h = divmod(h, 24)
+                    self.timeLeft.setText("%d:%d:%02d:%02d" % (d, h, m, s))
+
+                if file['progress']['completion'] is None:
+                    self.printProgressBar.setValue(0)
+                else:
+                    self.printProgressBar.setValue(file['progress']['completion'])
+
+                '''
+                If image is available from server, set it, otherwise display default image.
+                If the image was already loaded, dont load it again.
+                '''
+                if self.current_image != self.current_file:
+                    self.current_image = self.current_file
+                    self.displayThumbnail(self.printPreviewMain, self.current_file, usb=False)
+        except Exception as e:
+            logger.error("Error in MainUiClass.updatePrintStatus: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.updatePrintStatus: {}".format(e), overlay=True)
 
     def update_ui_from_printer_status(self):
         """Update UI based on current printer status"""
