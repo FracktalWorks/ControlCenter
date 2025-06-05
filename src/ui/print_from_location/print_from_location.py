@@ -7,8 +7,10 @@ from utils import dialog
 from octoprint_client.octoprint_threaded_file_upload import ThreadFileUpload
 
 import subprocess
+from datetime import datetime
 
 from utils.helpers import run_async
+from hurry.filesize.filesize import size
 
 
 try:
@@ -124,33 +126,43 @@ class PrintFromLocation(QWidget):
         # Connect all button signals with safety checks to prevent NoneType errors
         self.logger.debug("Connecting button signals")
         
-        # USB storage navigation
+        # ! USB storage navigation
         if self.USBStorageBackButton:
-            self.USBStorageBackButton.clicked.connect(lambda: self.stackedWidget.setCurrentWidget(self.printLocationPage))
+            self.USBStorageBackButton.clicked.connect(
+                lambda: self.stackedWidget.setCurrentWidget(self.printLocationPage)
+            )
         if self.USBStorageScrollDown:
             self.USBStorageScrollDown.clicked.connect(
-                lambda: self.fileListWidgetUSB.setCurrentRow(self.fileListWidgetUSB.currentRow() + 1))
+                lambda: self.fileListWidgetUSB.setCurrentRow(self.fileListWidgetUSB.currentRow() + 1)
+            )
         if self.USBStorageScrollUp:
             self.USBStorageScrollUp.clicked.connect(
-                lambda: self.fileListWidgetUSB.setCurrentRow(self.fileListWidgetUSB.currentRow() - 1))
+                lambda: self.fileListWidgetUSB.setCurrentRow(self.fileListWidgetUSB.currentRow() - 1)
+            )
         if self.USBStorageSelectButton:
             self.USBStorageSelectButton.clicked.connect(self.printSelectedUSB)
         if self.USBStorageSaveButton:
             self.USBStorageSaveButton.clicked.connect(self.transferToLocal)
-        
-        # Local storage navigation
+
+        # ! Local storage navigation
         if self.localStorageBackButton:
-            self.localStorageBackButton.clicked.connect(self._local_storage_back)
+            self.localStorageBackButton.clicked.connect(
+                lambda: self.stackedWidget.setCurrentWidget(self.printLocationPage)
+            )
         if self.localStorageScrollDown:
-            self.localStorageScrollDown.clicked.connect(self._local_scroll_down)
+            self.localStorageScrollDown.clicked.connect(
+                lambda: self.fileListWidgetLocal.setCurrentRow(self.fileListWidgetLocal.currentRow() + 1)
+            )
         if self.localStorageScrollUp:
-            self.localStorageScrollUp.clicked.connect(self._local_scroll_up)
+            self.localStorageScrollUp.clicked.connect(
+                lambda: self.fileListWidgetLocal.setCurrentRow(self.fileListWidgetLocal.currentRow() - 1)
+            )
         if self.localStorageSelectButton:
             self.localStorageSelectButton.clicked.connect(self.printSelectedLocal)
         if self.localStorageDeleteButton:
             self.localStorageDeleteButton.clicked.connect(self.deleteItem)
         
-        # Location selection buttons
+        # ! Location selection buttons
         if self.fromUsbButton:
             self.fromUsbButton.clicked.connect(self.fileListUSB)
         if self.fromLocalButton:
@@ -158,7 +170,7 @@ class PrintFromLocation(QWidget):
         if self.printLocationScreenBackButton:
             self.printLocationScreenBackButton.clicked.connect(self.main_window.switch_to_previous_screen)
         
-        # Selected file buttons - USB
+        # ! Selected file buttons - USB
         if self.fileSelectedUSBPrintButton:
             self.fileSelectedUSBPrintButton.clicked.connect(self.printFile)
         if self.fileSelectedUSBTransferButton:
@@ -166,20 +178,20 @@ class PrintFromLocation(QWidget):
         if self.fileSelectedUSBBackButton:
             self.fileSelectedUSBBackButton.clicked.connect(self.fileListUSB)
         
-        # Selected file buttons - Local
+        # ! Selected file buttons - Local
         if self.fileSelectedLocalPrintButton:
             self.fileSelectedLocalPrintButton.clicked.connect(self.printFile)
         if self.fileSelectedLocalBackButton:
             self.fileSelectedLocalBackButton.clicked.connect(self.fileListLocal)
         
-        # Set the default screen to printLocationPage if it exists
+        # ! Set the default screen to printLocationPage if it exists
         if self.stackedWidget and self.printLocationPage:
             self.stackedWidget.setCurrentWidget(self.printLocationPage)
             self.logger.info("Set initial page to printLocationPage")
         else:
             self.logger.warning("Could not set default page - required widgets missing")
 
-    # Helper methods for button connections
+    ''' ------------------------ HELPER METHODS -------------------------- '''
 
     def fileListLocal(self):
         """
@@ -226,16 +238,55 @@ class PrintFromLocation(QWidget):
             dialog.WarningOk(self, "Error in MainUiClass.fileListUSB: {}".format(e), overlay=True)
 
     def printSelectedLocal(self):
-        """Displays the selected local file details before printing"""
-        self.logger.info("Displaying selected local file")
-        
-        if self.fileListWidgetLocal and self.fileListWidgetLocal.currentItem():
-            # TODO: Get file details and preview
-            if self.stackedWidget and self.printSelectedLocalPage:
-                self.stackedWidget.setCurrentWidget(self.printSelectedLocalPage)
-                self.logger.info("Showing selected local file details")
-        else:
-            self.logger.warning("No file selected")
+
+        """
+        gets information about the selected file from octoprint server,
+        as well as sets the current page to the print selected page.
+        This function also selects the file to print from octoprint
+        """
+        logger.info("MainUiClass.printSelectedLocal started")
+        try:
+            self.fileSelectedLocalName.setText(self.fileListWidgetLocal.currentItem().text())
+            self.stackedWidget.setCurrentWidget(self.printSelectedLocalPage)
+            file = self.main_window.octoprint_client.retrieveFileInformation(self.fileListWidgetLocal.currentItem().text())
+            try:
+                self.fileSizeSelected.setText(size(file['size']))
+            except KeyError:
+                self.fileSizeSelected.setText('-')
+            try:
+                self.fileDateSelected.setText(datetime.fromtimestamp(file['date']).strftime('%d/%m/%Y %H:%M:%S'))
+            except KeyError:
+                self.fileDateSelected.setText('-')
+            try:
+                m, s = divmod(file['gcodeAnalysis']['estimatedPrintTime'], 60)
+                h, m = divmod(m, 60)
+                d, h = divmod(h, 24)
+                self.filePrintTimeSelected.setText("%dd:%dh:%02dm:%02ds" % (d, h, m, s))
+            except KeyError:
+                self.filePrintTimeSelected.setText('-')
+            try:
+                self.filamentVolumeSelected.setText(
+                    ("%.2f cm" % file['gcodeAnalysis']['filament']['tool0']['volume']) + chr(179))
+            except KeyError:
+                self.filamentVolumeSelected.setText('-')
+
+            try:
+                self.filamentLengthFileSelected.setText(
+                    "%.2f mm" % file['gcodeAnalysis']['filament']['tool0']['length'])
+            except KeyError:
+                self.filamentLengthFileSelected.setText('-')
+            # uncomment to select the file when selectedd in list
+            # octopiclient.selectFile(self.fileListWidget.currentItem().text(), False)
+            self.stackedWidget.setCurrentWidget(self.printSelectedLocalPage)
+
+            '''
+            If image is available from server, set it, otherwise display default image
+            '''
+            self.displayThumbnail(self.printPreviewSelectedLocal, str(self.fileListWidgetLocal.currentItem().text()), usb=False)
+
+        except Exception as e:
+            logger.error("Error in MainUiClass.printSelectedLocal: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.printSelectedLocal: {}".format(e), overlay=True)
 
     def printSelectedUSB(self):
         """
@@ -259,14 +310,18 @@ class PrintFromLocation(QWidget):
         self.main_window.switch_to_home_screen()
 
     def deleteItem(self):
-        """Deletes the selected local file"""
-        self.logger.info("Deleting file")
-        
-        if self.fileListWidgetLocal and self.fileListWidgetLocal.currentItem():
-            # TODO: Delete the selected file
-            self.logger.info(f"Deleting file: {self.fileListWidgetLocal.currentItem().text()}")
-        else:
-            self.logger.warning("No file selected to delete")
+        """
+        Deletes a gcode file, and if associates, its image file from the memory
+        """
+        logger.info("MainUiClass.deleteItem started")
+        try:
+            self.main_window.octoprint_client.deleteFile(self.fileListWidgetLocal.currentItem().text())
+            self.main_window.octoprint_client.deleteFile(self.fileListWidgetLocal.currentItem().text().replace(".gcode", ".png"))
+            # delete PNG also
+            self.fileListLocal()
+        except Exception as e:
+            logger.error("Error in MainUiClass.deleteItem: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.deleteItem: {}".format(e), overlay=True)
 
     def transferToLocal(self, prnt=False):
         """
