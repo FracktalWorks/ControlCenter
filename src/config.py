@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 # Configuration settings
 ip = '0.0.0.0:5000'
-apiKey = 'B508534ED20348F090B4D0AD637D3660'
+apiKey = 'B508534ED20348F090B4D0AD637D3660'   
 
 file_name = ''
 
