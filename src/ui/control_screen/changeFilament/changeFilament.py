@@ -68,7 +68,7 @@ class ChangeFilament(QWidget):
         if self.changeFilamentBackButton3:
             self.changeFilamentBackButton3.clicked.connect(self._handle_back_button)
         if self.changeFilamentLoadButton:
-            self.changeFilamentLoadButton.clicked.connect(self.start_loading_filament())
+            self.changeFilamentLoadButton.clicked.connect(self.start_loading_filament)
         if self.changeFilamentUnloadButton:
             self.changeFilamentUnloadButton.clicked.connect(self.start_unloading_filament)
         if self.toolToggleChangeFilamentButton:

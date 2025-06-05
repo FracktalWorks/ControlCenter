@@ -1,0 +1,5 @@
+include README.md
+recursive-include src/config *
+recursive-include src/firmware *
+include versioneer.py
+include src/_version.py
