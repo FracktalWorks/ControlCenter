@@ -172,9 +172,9 @@ class PrintFromLocation(QWidget):
         
         # ! Selected file buttons - USB
         if self.fileSelectedUSBPrintButton:
-            self.fileSelectedUSBPrintButton.clicked.connect(self.printFile)
+            self.fileSelectedUSBPrintButton.clicked.connect(lambda: self.transferToLocal(prnt=True))
         if self.fileSelectedUSBTransferButton:
-            self.fileSelectedUSBTransferButton.clicked.connect(self.transferToLocal)
+            self.fileSelectedUSBTransferButton.clicked.connect(lambda: self.transferToLocal(prnt=False))
         if self.fileSelectedUSBBackButton:
             self.fileSelectedUSBBackButton.clicked.connect(self.fileListUSB)
         
@@ -206,12 +206,12 @@ class PrintFromLocation(QWidget):
                 if file["type"] == "machinecode":
                     files.append(file)
 
-            self.fileListWidget.clear()
+            self.fileListWidgetLocal.clear()
             files.sort(key=lambda d: d['date'], reverse=True)
             # for item in [f['name'] for f in files] :
             #     self.fileListWidget.addItem(item)
-            self.fileListWidget.addItems([f['name'] for f in files])
-            self.fileListWidget.setCurrentRow(0)
+            self.fileListWidgetLocal.addItems([f['name'] for f in files])
+            self.fileListWidgetLocal.setCurrentRow(0)
         except Exception as e:
             logger.error("Error in MainUiClass.fileListLocal: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.fileListLocal: {}".format(e), overlay=True)
@@ -303,12 +303,6 @@ class PrintFromLocation(QWidget):
             logger.error("Error in MainUiClass.printSelectedUSB: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.printSelectedUSB: {}".format(e), overlay=True)
 
-    def printFile(self):
-        """Sends the selected file to printer and starts printing"""
-        self.logger.info("Printing file")
-        # TODO: Send file to printer and switch to the home screen to show print progress
-        self.main_window.switch_to_home_screen()
-
     def deleteItem(self):
         """
         Deletes a gcode file, and if associates, its image file from the memory
@@ -339,6 +333,20 @@ class PrintFromLocation(QWidget):
         except Exception as e:
             logger.error("Error in MainUiClass.transferToLocal: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.transferToLocal: {}".format(e), overlay=True)
+
+    def printFile(self):
+        """
+        Prints the file selected from printSelected()
+        """
+        logger.info("MainUiClass.printFile started")
+        try:
+            self.main_window.octoprint_client.home(['x', 'y', 'z'])
+            self.main_window.octoprint_client.selectFile(self.fileListWidgetLocal.currentItem().text(), True)
+            self.main_window.checkKlipperPrinterCFG()
+            self.stackedWidget.setCurrentWidget(self.main_window.home_screen)
+        except Exception as e:
+            logger.error("Error in MainUiClass.printFile: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.printFile: {}".format(e), overlay=True)
 
     @run_async
     def displayThumbnail(self, labelObject, fileLocation, usb=False):
