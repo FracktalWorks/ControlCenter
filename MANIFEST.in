@@ -1,5 +1,5 @@
 include README.md
-recursive-include src/config *
-recursive-include src/firmware *
+recursive-include octoprint_ControlCenter/config *
+recursive-include octoprint_ControlCenter/firmware *
 include versioneer.py
-include src/_version.py
+include octoprint_ControlCenter/_version.py
