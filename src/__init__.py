@@ -37,7 +37,7 @@ del get_versions
 # 			self.is_running = False
 
 
-class TwinDragon600x600CM4TouchUI(octoprint.plugin.StartupPlugin):
+class ControlCenter(octoprint.plugin.StartupPlugin):
     def on_after_startup(self):
         # self.resetInetrval = int(self._settings.get(["resetInetrval"]))
         self._logger.info("TouchUI Plugin Started")
@@ -56,19 +56,19 @@ class TwinDragon600x600CM4TouchUI(octoprint.plugin.StartupPlugin):
                 current=self._plugin_version,
 
                 # update method: pip
-                pip="https://github.com/FracktalWorks/TwinDragon600x600CM4TouchUI/archive/{target_version}.zip"
+                pip="https://github.com/FracktalWorks/ControlCenter/archive/{target_version}.zip"
             )
         )
 
 
-__plugin_name__ = "TwinDragon600x600CM4TouchUI"
+__plugin_name__ = "ControlCenter"
 __plugin_version__ = __version__
 __plugin_pythoncompat__ = ">=3,<4"
 
 
 def __plugin_load__():
     global __plugin_implementation__
-    __plugin_implementation__ = TwinDragon600x600CM4TouchUI()
+    __plugin_implementation__ = ControlCenter()
 
     global __plugin_hooks__
     __plugin_hooks__ = {
