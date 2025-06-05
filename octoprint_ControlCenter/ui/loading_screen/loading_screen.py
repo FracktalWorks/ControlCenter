@@ -12,6 +12,7 @@ class LoadingScreen(QWidget):
     def __init__(self, main_window):
         super(LoadingScreen, self).__init__()
         self.main_window = main_window
+        self.movie = QMovie(":/Misc/img/loading_animation.gif")
         
         # Setup logger for this class
         self.logger = setup_logger('loading_screen')
