@@ -1,3 +1,5 @@
+import time
+
 from PyQt5 import uic
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QPalette, QColor
@@ -47,6 +49,7 @@ class ControlScreen(QWidget):
         self.setToolTempButton = self.findChild(QPushButton, "setToolTempButton")
         self.bedTempSpinBox = self.findChild(QSpinBox, "bedTempSpinBox")
         self.setBedTempButton = self.findChild(QPushButton, "setBedTempButton")
+        self.toolToggleTemperatureButton = self.findChild(QPushButton, "toolToggleTemperatureButton")
 
         # Motion controls
         self.step1mmButton = self.findChild(QPushButton, "step1mmButton")
@@ -137,11 +140,12 @@ class ControlScreen(QWidget):
         # Initialize filament sensor state
         self.filament_sensor_enabled = True
 
+    # ! To be commented out later
     def _initialize_sub_screens(self):
         """Initialize all control sub-screens"""
         try:
             # Create instance of change filament screen
-            self.screens["change_filament"] = ChangeFilament(self.main_window)
+            self.screens["change_filament"] = ChangeFilament(self.main_window, self, self.main_window.home_screen)
             # Add reference to the parent screen for navigation
             self.screens["change_filament"].parent_screen = self
             self.main_window.stacked_widget.addWidget(self.screens["change_filament"])

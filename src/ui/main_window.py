@@ -570,9 +570,9 @@ class MainWindow(QMainWindow):
             if client and client.is_connected():
                 try:
                     if any(error in msg for error in
-                           ["Can not update MCU","Error loading template", "Must home axis first", "probe", "Error during homing move", "still triggered after retract", "'mcu' must be specified"]):
+                           ["Can not update MCU", "Error loading template", "Must home axis first", "probe", "Error during homing move", "still triggered after retract", "'mcu' must be specified"]):
                         logger.error("CRITICAL ERROR SHUTDOWN NEEDED")
-                        if self.printerStatusText in ["Starting","Printing","Paused"]:
+                        if self.home_screen.printerStatusText in ["Starting","Printing","Paused"]:
                             client.cancelPrint()
                             client.gcode(command='M112')
                             try:

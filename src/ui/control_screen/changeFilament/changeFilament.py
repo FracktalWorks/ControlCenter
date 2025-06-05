@@ -1,13 +1,16 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QComboBox, QProgressBar, QLabel
 from utils.helpers import check_ui_elements
+from utils import logger
+from utils import dialog
 from utils.logger import setup_logger
 
 class ChangeFilament(QWidget):
-    def __init__(self, main_window):
+    def __init__(self, main_window, control_screen, home_screen):
         super(ChangeFilament, self).__init__()
         self.main_window = main_window
-        self.parent_screen = None  # Will be set by parent when screen is initialized
+        self.control_screen = control_screen
+        self.home_screen = home_screen
         
         # Setup logger
         self.logger = setup_logger(f"{self.__class__.__name__}")
@@ -59,13 +62,13 @@ class ChangeFilament(QWidget):
         
         # Connect signals to slots
         if self.changeFilamentBackButton:
-            self.changeFilamentBackButton.clicked.connect(self._handle_back_button)
+            self.changeFilamentBackButton.clicked.connect(self.control)
         if self.changeFilamentBackButton2:
             self.changeFilamentBackButton2.clicked.connect(self._handle_back_button)
         if self.changeFilamentBackButton3:
             self.changeFilamentBackButton3.clicked.connect(self._handle_back_button)
         if self.changeFilamentLoadButton:
-            self.changeFilamentLoadButton.clicked.connect(self.start_loading_filament)
+            self.changeFilamentLoadButton.clicked.connect(self.start_loading_filament())
         if self.changeFilamentUnloadButton:
             self.changeFilamentUnloadButton.clicked.connect(self.start_unloading_filament)
         if self.toolToggleChangeFilamentButton:
@@ -78,7 +81,7 @@ class ChangeFilament(QWidget):
             self.unloadDoneButton.clicked.connect(self.finish_unloading_filament)
         
         # Set the default screen
-        self._show_page('changeFilamentPage')
+        self._show_page('change_filament_screen')
 
     def _show_page(self, page_name):
         """Show a specific page in the stacked widget."""
@@ -94,6 +97,55 @@ class ChangeFilament(QWidget):
             self.logger.error(f"Cannot show page {page_name} - page not found")
             return False
 
+    def control(self):
+        """
+        Sets the current page to the control page
+        """
+        logger.info("MainUiClass.control started")
+        try:
+            self.stackedWidget.setCurrentWidget(self.control_screen)
+            if self.control_screen.toolToggleTemperatureButton.isChecked():
+                self.control_screen.toolTempSpinBox.setProperty(
+                    "value", float(self.home_screen.tool1TargetTemperature.text())
+                )
+            else:
+                self.control_screen.toolTempSpinBox.setProperty(
+                    "value", float(self.home_screen.tool0TargetTemperature.text())
+                )
+            self.control_screen.bedTempSpinBox.setProperty(
+                "value", float(self.home_screen.bedTargetTemperature.text())
+            )
+        except Exception as e:
+            logger.error("Error in MainUiClass.control: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.control: {}".format(e), overlay=True)
+
+    # def loadFilament(self):
+    #     logger.info("MainUiClass.loadFilament started")
+    #     try:
+    #         if self.printerStatusText not in ["Printing","Paused"]:
+    #             if self.activeExtruder == 1:
+    #                 octopiclient.jog(tool1PurgePosition['X'],tool1PurgePosition["Y"] ,absolute=True, speed=10000)
+    #
+    #             else:
+    #                 octopiclient.jog(tool0PurgePosition['X'],tool0PurgePosition["Y"] ,absolute=True, speed=10000)
+    #
+    #         if self.changeFilamentComboBox.findText("Loaded Filament") == -1:
+    #             octopiclient.setToolTemperature({"tool1": filaments[str(
+    #                 self.changeFilamentComboBox.currentText())]}) if self.activeExtruder == 1 else octopiclient.setToolTemperature(
+    #                 {"tool0": filaments[str(self.changeFilamentComboBox.currentText())]})
+    #         self.stackedWidget.setCurrentWidget(self.changeFilamentProgressPage)
+    #         self.changeFilamentStatus.setText("Heating Tool {}, Please Wait...".format(str(self.activeExtruder)))
+    #         self.changeFilamentNameOperation.setText("Loading {}".format(str(self.changeFilamentComboBox.currentText())))
+    #         # this flag tells the updateTemperature function that runs every second to update the filament change progress bar as well, and to load or unload after heating done
+    #         self.changeFilamentHeatingFlag = True
+    #         self.loadFlag = True
+    #     except Exception as e:
+    #         self.loadFlag = False
+    #         self.changeFilamentHeatingFlag = False
+    #         logger.error("Error in MainUiClass.loadFilament: {}".format(e))
+    #         dialog.WarningOk(self, "Error in MainUiClass.loadFilament: {}".format(e), overlay=True)
+
+    # ! To be commented out later:.............................................................................
     def _update_status(self, message):
         """Update the status label with a message"""
         if self.changeFilamentStatus:
@@ -109,8 +161,8 @@ class ChangeFilament(QWidget):
             if self.changeFilamentPage:
                 self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
             self.logger.debug("Back button: reset to first page")
-            
-        # Return to parent screen directly, bypassing history 
+
+        # Return to parent screen directly, bypassing history
         if self.parent_screen:
             self.logger.info("Returning directly to parent control screen")
             # Set current screen directly without modifying history
@@ -127,7 +179,7 @@ class ChangeFilament(QWidget):
         self.logger.info("Starting filament loading process")
         self._show_page('changeFilamentLoadPage')
         self._update_status("Insert filament and wait for automatic pull")
-        
+
         # Here you would add logic to send commands to the printer
         # e.g., self.main_window.octoprint_client.start_loading_filament()
 
@@ -136,7 +188,7 @@ class ChangeFilament(QWidget):
         self.logger.info("Starting filament unloading process")
         self._show_page('changeFilamentRetractPage')
         self._update_status("Retracting filament...")
-        
+
         # Here you would add logic to send commands to the printer
         # e.g., self.main_window.octoprint_client.start_unloading_filament()
 
@@ -155,7 +207,7 @@ class ChangeFilament(QWidget):
         self.logger.info("Filament loaded till extruder")
         self._show_page('changeFilamentExtrudePage')
         self._update_status("Extruding filament...")
-        
+
         # Here you would add logic to send commands to the printer
         # e.g., self.main_window.octoprint_client.extrude_filament()
 
@@ -163,7 +215,7 @@ class ChangeFilament(QWidget):
         """Finish the filament loading process"""
         self.logger.info("Filament loading process finished")
         self._update_status("Filament loaded successfully")
-        
+
         # Return to parent control screen directly instead of using navigation history
         if self.parent_screen:
             self.logger.info("Returning to parent control screen after loading filament")
@@ -176,10 +228,10 @@ class ChangeFilament(QWidget):
         """Finish the filament unloading process"""
         self.logger.info("Filament unloading process finished")
         self._update_status("Filament unloaded successfully")
-        
+
         # Reset to the first page
         self._show_page('changeFilamentPage')
-        
+
         # Return to parent control screen directly instead of using navigation history
         if self.parent_screen:
             self.logger.info("Returning to parent control screen after unloading filament")
@@ -192,8 +244,8 @@ class ChangeFilament(QWidget):
         """Reset the Change Filament wizard to its initial state."""
         # Reset to the first page
         self._show_page('changeFilamentPage')
-        
+
         # Clear the status message
         self._update_status("")
-        
+
         self.logger.info("Change Filament wizard reset to initial state")
