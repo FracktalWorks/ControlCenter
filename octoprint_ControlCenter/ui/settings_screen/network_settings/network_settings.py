@@ -24,7 +24,7 @@ class NetworkSettings(QWidget):
         
         # Load the UI
         try:
-            uic.loadUi('octoprint_ControlCenter/ui/settings_screen/network_settings/network_settings.ui', self)
+            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen/network_settings/network_settings.ui', self)
             logger.info("NetworkSettings UI loaded successfully")
         except Exception as e:
             logger.error(f"Failed to load NetworkSettings UI file: {e}")

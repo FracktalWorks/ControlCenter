@@ -179,8 +179,8 @@ class HomeScreen(QWidget):
                 self.stopButton.setDisabled(False)
                 # self.motionTab.setDisabled(True)
                 # self.changeFilamentButton.setDisabled(True) in some different file
-                self.menuCalibrateButton.setDisabled(True)
-                self.menuPrintButton.setDisabled(True)
+                self.main_window.menu_screen.menuCalibrateButton.setDisabled(True)
+                self.main_window.menu_screen.menuPrintButton.setDisabled(True)
                 self.doorLockButton.setDisabled(False)
                 # if not self.__timelapse_enabled:
                 #     octopiclient.cancelPrint()
@@ -191,8 +191,8 @@ class HomeScreen(QWidget):
                 self.stopButton.setDisabled(False)
                 # self.motionTab.setDisabled(False)
                 # self.changeFilamentButton.setDisabled(False)
-                self.menuCalibrateButton.setDisabled(True)
-                self.menuPrintButton.setDisabled(True)
+                self.main_window.menu_screen.menuCalibrateButton.setDisabled(True)
+                self.main_window.menu_screen.menuPrintButton.setDisabled(True)
                 self.doorLockButton.setDisabled(False)
 
             else:
@@ -200,8 +200,8 @@ class HomeScreen(QWidget):
                 self.playPauseButton.setChecked(False)
                 # self.motionTab.setDisabled(False)
                 # self.changeFilamentButton.setDisabled(False)
-                self.menuCalibrateButton.setDisabled(False)
-                self.menuPrintButton.setDisabled(False)
+                self.main_window.menu_screen.menuCalibrateButton.setDisabled(False)
+                self.main_window.menu_screen.menuPrintButton.setDisabled(False)
                 self.doorLockButton.setDisabled(True)
 
         except Exception as e:

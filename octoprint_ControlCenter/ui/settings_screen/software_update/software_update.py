@@ -13,7 +13,7 @@ class SoftwareUpdate(QWidget):
         
         # Load the UI
         try:
-            uic.loadUi('octoprint_ControlCenter/ui/settings_screen/software_update/software_update.ui', self)
+            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen/software_update/software_update.ui', self)
             print("SoftwareUpdate UI loaded successfully")
         except Exception as e:
             print(f"Failed to load SoftwareUpdate UI file: {e}")
