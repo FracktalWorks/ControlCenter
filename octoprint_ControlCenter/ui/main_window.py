@@ -259,6 +259,7 @@ class MainWindow(QMainWindow):
         # time.sleep(50000)
         # Switch to the home screen
         self.switch_to_home_screen()
+        self.home_screen.setIPStatus()
         
         # Start updating printer status if implemented
         if hasattr(self.home_screen, 'update_ui_from_printer_status'):

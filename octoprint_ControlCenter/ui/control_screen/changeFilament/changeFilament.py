@@ -103,7 +103,8 @@ class ChangeFilament(QWidget):
         """
         logger.info("MainUiClass.control started")
         try:
-            self.stackedWidget.setCurrentWidget(self.control_screen)
+            # self.stackedWidget.setCurrentWidget(self.control_screen)
+            self.main_window.switch_to_control_screen()
             if self.control_screen.toolToggleTemperatureButton.isChecked():
                 self.control_screen.toolTempSpinBox.setProperty(
                     "value", float(self.home_screen.tool1TargetTemperature.text())
