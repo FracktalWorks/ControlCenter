@@ -15,7 +15,7 @@ class BedLeveling(QWidget):
         self.logger.info("Initializing Bed Leveling screen")
 
         try:
-            uic.loadUi('octoprint_ControlCenter/ui/calibrate_screen/bedLevelingPage/bedLevelingPage.ui', self)
+            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/calibrate_screen/bedLevelingPage/bedLevelingPage.ui', self)
             self.logger.info("BedLeveling UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load BedLeveling UI file: {e}")

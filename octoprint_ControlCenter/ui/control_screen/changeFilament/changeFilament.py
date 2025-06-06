@@ -18,7 +18,7 @@ class ChangeFilament(QWidget):
         
         # Load UI
         try:
-            uic.loadUi('octoprint_ControlCenter/ui/control_screen/changeFilament/changeFilament.ui', self)
+            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/control_screen/changeFilament/changeFilament.ui', self)
             self.logger.info("ChangeFilament UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load ChangeFilament UI file: {e}", exc_info=True)

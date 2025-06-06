@@ -18,7 +18,7 @@ class ToolOffset(QWidget):
 
         # Load the UI
         try:
-            uic.loadUi('octoprint_ControlCenter/ui/calibrate_screen/toolOffset/toolOffset.ui', self)
+            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/calibrate_screen/toolOffset/toolOffset.ui', self)
             self.logger.info("ToolOffset UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load ToolOffset UI file: {e}")

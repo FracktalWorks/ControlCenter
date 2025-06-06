@@ -432,7 +432,7 @@ class MainWindow(QMainWindow):
         logger.info("MainUiClass.checkKlipperPrinterCFG started")
         if hasattr(self, 'octoprint_client'):
             client = self.octoprint_client
-            if client and client.is_connected():
+            if client:
                 try:
                     try:
                         with open('/home/pi/printer.cfg', 'r') as currentConfigFile:
@@ -489,7 +489,7 @@ class MainWindow(QMainWindow):
 
         if hasattr(self, 'octoprint_client'):
             client = self.octoprint_client
-            if client and client.is_connected():
+            if client:
                 try:
                     if dialog.WarningYesNo(self, file + " Did not finish, would you like to restore?"):
                         response = client.restore(restore=True)
@@ -509,7 +509,7 @@ class MainWindow(QMainWindow):
 
         if hasattr(self, 'octoprint_client'):
             client = self.octoprint_client
-            if client and client.is_connected():
+            if client:
                 try:
                     client.gcode(command='status') #get klipper status. hanle in
                     self.isFilamentSensorInstalled()
@@ -534,7 +534,7 @@ class MainWindow(QMainWindow):
 
         if hasattr(self, 'octoprint_client'):
             client = self.octoprint_client
-            if client and client.is_connected():
+            if client:
                 try:
                     success = False
                     try:
@@ -553,7 +553,7 @@ class MainWindow(QMainWindow):
         logger.info("MainUiClass.showProbingFailed started")
         if hasattr(self, 'octoprint_client'):
             client = self.octoprint_client
-            if client and client.is_connected():
+            if client:
                 try:
                     if dialog.WarningOk(self, msg, overlay=overlay):
                         client.cancelPrint()
@@ -567,7 +567,7 @@ class MainWindow(QMainWindow):
         logger.info("MainUiClass.showPrinterError started")
         if hasattr(self, 'octoprint_client'):
             client = self.octoprint_client
-            if client and client.is_connected():
+            if client:
                 try:
                     if any(error in msg for error in
                            ["Can not update MCU", "Error loading template", "Must home axis first", "probe", "Error during homing move", "still triggered after retract", "'mcu' must be specified"]):

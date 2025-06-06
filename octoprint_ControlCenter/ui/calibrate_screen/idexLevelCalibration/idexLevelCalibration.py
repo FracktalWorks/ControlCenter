@@ -16,7 +16,7 @@ class IdexLevelCalibration(QWidget):
 
         # Load the .ui file
         try:
-            uic.loadUi('octoprint_ControlCenter/ui/calibrate_screen/idexLevelCalibration/idexLevelCalibration.ui', self)
+            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/calibrate_screen/idexLevelCalibration/idexLevelCalibration.ui', self)
             self.logger.info("IdexLevelCalibration UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load IdexLevelCalibration UI file: {e}")

@@ -17,7 +17,7 @@ class TestPrintPage(QWidget):
         # Load the UI
         """Load the UI file with proper error handling"""
         try:
-            uic.loadUi('octoprint_ControlCenter/ui/calibrate_screen/testPrintPage/testPrintPage.ui', self)
+            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/calibrate_screen/testPrintPage/testPrintPage.ui', self)
             self.logger.info("TestPrintPage UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load TestPrintPage UI file: {e}", exc_info=True)

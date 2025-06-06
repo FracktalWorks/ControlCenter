@@ -13,7 +13,7 @@ class MenuScreen(QWidget):
 
         # Load the UI with proper error handling
         try:
-            uic.loadUi('octoprint_ControlCenter/ui/menu_screen/menu_screen.ui', self)
+            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/menu_screen/menu_screen.ui', self)
             self.logger.info("MenuScreen UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load MenuScreen UI file: {e}")

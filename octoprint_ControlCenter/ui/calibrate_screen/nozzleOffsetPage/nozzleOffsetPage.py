@@ -20,7 +20,7 @@ class NozzleOffsetPage(QWidget):
 
         # Load the UI
         try:
-            uic.loadUi('octoprint_ControlCenter/ui/calibrate_screen/nozzleOffsetPage/nozzleOffsetPage.ui', self)
+            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/calibrate_screen/nozzleOffsetPage/nozzleOffsetPage.ui', self)
             self.logger.info("NozzleOffsetPage UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load NozzleOffsetPage UI file: {e}", exc_info=True)

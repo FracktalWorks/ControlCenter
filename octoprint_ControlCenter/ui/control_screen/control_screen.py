@@ -26,7 +26,7 @@ class ControlScreen(QWidget):
 
         # Load the UI
         try:
-            uic.loadUi('octoprint_ControlCenter/ui/control_screen/control_screen.ui', self)
+            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/control_screen/control_screen.ui', self)
             self.logger.info("ControlScreen UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load ControlScreen UI file: {e}", exc_info=True)

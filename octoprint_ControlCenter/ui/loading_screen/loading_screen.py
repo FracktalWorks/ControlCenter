@@ -18,7 +18,7 @@ class LoadingScreen(QWidget):
         self.logger = setup_logger('loading_screen')
         
         try:
-            uic.loadUi('octoprint_ControlCenter/ui/loading_screen/loading_screen.ui', self)
+            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/loading_screen/loading_screen.ui', self)
             self.logger.info("LoadingScreen UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load LoadingScreen UI file: {e}")

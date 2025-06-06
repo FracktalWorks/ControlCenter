@@ -1,3 +1,5 @@
+import os
+
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QLabel, QProgressBar
 from PyQt5.QtCore import QTimer
@@ -32,7 +34,7 @@ class HomeScreen(QWidget):
 
         # Load the UI
         try:
-            uic.loadUi('octoprint_ControlCenter/ui/home_screen/home_screen.ui', self)
+            uic.loadUi("/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/home_screen/home_screen.ui", self)
             logger.info("HomeScreen UI loaded successfully")
         except Exception as e:
             logger.exception(f"Failed to load HomeScreen UI file: {e}")
@@ -155,6 +157,7 @@ class HomeScreen(QWidget):
         this function updates the status bar, as well as enables/disables relavent buttons
         :param status: String of the status text
         """
+        logger.info("HomeScreen.updatePrinterStatus called with status: {}".format(status))
         try:
             self.printerStatusText = status
             self.printerStatus.setText(status)
@@ -501,7 +504,7 @@ class HomeScreen(QWidget):
         # Send command to OctoPrint if connected
         if hasattr(self.main_window, 'octoprint_client'):
             client = self.main_window.octoprint_client
-            if client and client.is_connected():
+            if client:
                 # Replace with actual command for your printer
                 try:
                     command = "M280 P0 S10" if is_locked else "M280 P0 S90"
@@ -527,7 +530,7 @@ class HomeScreen(QWidget):
         # Send command to OctoPrint if connected
         if hasattr(self.main_window, 'octoprint_client'):
             client = self.main_window.octoprint_client
-            if client and client.is_connected():
+            if client:
                 try:
                     if dialog.WarningYesNo(self, "Are you sure you want to stop the print?"):
                         client.cancelPrint()
@@ -546,7 +549,7 @@ class HomeScreen(QWidget):
         # Send command to OctoPrint if connected
         if hasattr(self.main_window, 'octoprint_client'):
             client = self.main_window.octoprint_client
-            if client and client.is_connected():
+            if client:
                 try:
                     if self.printerStatusText == "Operational":
                         if self.playPauseButton.isChecked:

@@ -32,7 +32,7 @@ class PrintFromLocation(QWidget):
 
         # Load the UI file with proper error handling
         try:
-            uic.loadUi('octoprint_ControlCenter/ui/print_from_location/print_from_location.ui', self)
+            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/print_from_location/print_from_location.ui', self)
             self.logger.info("PrintFromLocation UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load PrintFromLocation UI file: {e}")

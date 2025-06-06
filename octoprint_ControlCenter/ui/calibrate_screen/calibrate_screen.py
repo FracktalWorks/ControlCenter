@@ -17,7 +17,7 @@ class CalibrateScreen(QWidget):
 
         # Load the UI
         try:
-            uic.loadUi('octoprint_ControlCenter/ui/calibrate_screen/calibrate_screen.ui', self)
+            uic.loadUi("/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/calibrate_screen/calibrate_screen.ui", self)
             logger.info("CalibrateScreen UI loaded successfully")
         except Exception as e:
             logger.exception(f"Failed to load CalibrateScreen UI file: {e}")
