@@ -68,6 +68,8 @@ class ControlScreen(QWidget):
         self.changeFilamentButton = self.findChild(QToolButton, "changeFilamentButton")
         self.toggleFilamentSensorButton = self.findChild(QToolButton, "toggleFilamentSensorButton")
 
+        self.toolToggleMotionButton = self.findChild(QPushButton, "toolToggleMotionButton")
+
         # Validate UI components
         check_ui_elements(self, [
             self.controlTabWidget, self.controlBackButton, self.feedRateSpinBox,
@@ -139,6 +141,38 @@ class ControlScreen(QWidget):
             
         # Initialize filament sensor state
         self.filament_sensor_enabled = True
+
+    # def changeFilament(self):
+    #     """
+    #     This function is called when the user wants to change the filament. It sets the current page to the change filament page
+    #     and preps the printer for filament change
+    #     """
+    #     logger.info("MainUiClass.changeFilament started")
+    #     try:
+    #         time.sleep(1)
+    #         if self.home_screen.printerStatusText not in ["Printing", "Paused"]:
+    #             self.main_window.octoprint_client.gcode("G28")
+    #         self.selectToolChangeFilament()
+    #
+    #         change_filament_screen = self.screens.get("change_filament")
+    #         if change_filament_screen and hasattr(change_filament_screen, "reset_wizard"):
+    #             change_filament_screen.reset_wizard()
+    #
+    #         # Use our consistent navigation method
+    #         self.show_control_subscreen("change_filament")
+    #
+    #         self.changeFilamentComboBox.clear()
+    #         self.changeFilamentComboBox.addItems(self.main_window.printer_model.filaments.keys())
+    #         #Update
+    #         print(self.tool0TargetTemperature)
+    #         if self.tool0TargetTemperature  and self.printerStatusText in ["Printing", "Paused"]:
+    #             self.changeFilamentComboBox.addItem("Loaded Filament")
+    #             index = self.changeFilamentComboBox.findText("Loaded Filament")
+    #             if index >= 0 :
+    #                 self.changeFilamentComboBox.setCurrentIndex(index)
+    #     except Exception as e:
+    #         logger.error("Error in MainUiClass.changeFilament: {}".format(e))
+    #         dialog.WarningOk(self, "Error in MainUiClass.changeFilament: {}".format(e), overlay=True)
 
     # ! To be commented out later
     def _initialize_sub_screens(self):

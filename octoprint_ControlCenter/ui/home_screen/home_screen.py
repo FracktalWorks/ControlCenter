@@ -31,6 +31,7 @@ class HomeScreen(QWidget):
         self.print_progress = 0
         self.print_time = "-"
         self.time_left = "-"
+        self.printerStatusText = ""
 
         # Load the UI
         try:
@@ -74,6 +75,9 @@ class HomeScreen(QWidget):
         self.timeLeft = self.findChild(QLabel, "timeLeft")
         self.printProgressBar = self.findChild(QProgressBar, "printProgressBar")
         self.printPreviewMain = self.findChild(QLabel, "printPreviewMain")
+
+        self.tool0Label = self.findChild(QLabel, "tool0Label")
+        self.tool1Label = self.findChild(QLabel, "tool1Label")
 
         # Validate UI components
         all_components = [

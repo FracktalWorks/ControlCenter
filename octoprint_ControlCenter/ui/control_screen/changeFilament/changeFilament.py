@@ -1,9 +1,15 @@
-from PyQt5 import uic
+from PyQt5 import uic, QtCore, QtGui
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QComboBox, QProgressBar, QLabel
 from utils.helpers import check_ui_elements
 from utils import logger
 from utils import dialog
 from utils.logger import setup_logger
+
+try:
+    _fromUtf8 = QtCore.QString.fromUtf8
+except AttributeError:
+    def _fromUtf8(s):
+        return s
 
 class ChangeFilament(QWidget):
     def __init__(self, main_window, control_screen, home_screen):
@@ -11,7 +17,10 @@ class ChangeFilament(QWidget):
         self.main_window = main_window
         self.control_screen = control_screen
         self.home_screen = home_screen
-        
+        self.changeFilamentHeatingFlag = False
+        self.loadFlag = None
+        self.activeExtruder = 0 # Default to extruder 0
+
         # Setup logger
         self.logger = setup_logger(f"{self.__class__.__name__}")
         self.logger.info("Initializing ChangeFilament widget")
@@ -43,6 +52,7 @@ class ChangeFilament(QWidget):
         self.changeFilamentComboBox = self.findChild(QComboBox, "changeFilamentComboBox")
         self.changeFilamentProgress = self.findChild(QProgressBar, "changeFilamentProgress")
         self.changeFilamentStatus = self.findChild(QLabel, "changeFilamentStatus")
+        self.changeFilamentNameOperation = self.findChild(QLabel, "changeFilamentNameOperation")
         
         # Validate UI components
         components = [
@@ -59,6 +69,9 @@ class ChangeFilament(QWidget):
             self.changeFilamentStatus
         ]
         check_ui_elements(self, components, "ChangeFilament")
+
+        # ! Local Signal Slot Connections
+        self.main_window.printer_model.active_extruder_changed.connect(self.setActiveExtruder)
         
         # Connect signals to slots
         if self.changeFilamentBackButton:
@@ -68,7 +81,7 @@ class ChangeFilament(QWidget):
         if self.changeFilamentBackButton3:
             self.changeFilamentBackButton3.clicked.connect(self._handle_back_button)
         if self.changeFilamentLoadButton:
-            self.changeFilamentLoadButton.clicked.connect(self.start_loading_filament)
+            self.changeFilamentLoadButton.clicked.connect(self.loadFilament)
         if self.changeFilamentUnloadButton:
             self.changeFilamentUnloadButton.clicked.connect(self.start_unloading_filament)
         if self.toolToggleChangeFilamentButton:
@@ -80,8 +93,41 @@ class ChangeFilament(QWidget):
         if self.unloadDoneButton:
             self.unloadDoneButton.clicked.connect(self.finish_unloading_filament)
         
-        # Set the default screen
-        self._show_page('change_filament_screen')
+        # # Set the default screen
+        # self._show_page('change_filament_screen')
+
+        try:
+            # Wait for components to initialize
+            QtCore.QTimer.singleShot(1000, self._init_change_filament)
+        except Exception as e:
+            logger.error(f"Error initializing change filament screen: {e}")
+            dialog.WarningOk(self, f"Error initializing change filament screen: {e}", overlay=True)
+
+    def _init_change_filament(self):
+        """Initialize the change filament screen with required settings"""
+        try:
+            if self.home_screen.printerStatusText not in ["Printing", "Paused"]:
+                self.main_window.octoprint_client.gcode("G28")
+
+            # Clear and update the filament combo box
+            if self.changeFilamentComboBox:
+                self.changeFilamentComboBox.clear()
+                self.changeFilamentComboBox.addItems(self.main_window.printer_model.filaments.keys())
+
+                # Add "Loaded Filament" option if printing
+                if (self.home_screen.tool0TargetTemperature and
+                        self.home_screen.printerStatusText in ["Printing", "Paused"]):
+                    self.changeFilamentComboBox.addItem("Loaded Filament")
+                    index = self.changeFilamentComboBox.findText("Loaded Filament")
+                    if index >= 0:
+                        self.changeFilamentComboBox.setCurrentIndex(index)
+
+            # Show the change filament page
+            self._show_page('change_filament_screen')
+
+        except Exception as e:
+            self.logger.error(f"Error in _init_change_filament: {e}")
+            dialog.WarningOk(self, f"Error in _init_change_filament: {e}", overlay=True)
 
     def _show_page(self, page_name):
         """Show a specific page in the stacked widget."""
@@ -120,31 +166,70 @@ class ChangeFilament(QWidget):
             logger.error("Error in MainUiClass.control: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.control: {}".format(e), overlay=True)
 
-    # def loadFilament(self):
-    #     logger.info("MainUiClass.loadFilament started")
-    #     try:
-    #         if self.printerStatusText not in ["Printing","Paused"]:
-    #             if self.activeExtruder == 1:
-    #                 octopiclient.jog(tool1PurgePosition['X'],tool1PurgePosition["Y"] ,absolute=True, speed=10000)
-    #
-    #             else:
-    #                 octopiclient.jog(tool0PurgePosition['X'],tool0PurgePosition["Y"] ,absolute=True, speed=10000)
-    #
-    #         if self.changeFilamentComboBox.findText("Loaded Filament") == -1:
-    #             octopiclient.setToolTemperature({"tool1": filaments[str(
-    #                 self.changeFilamentComboBox.currentText())]}) if self.activeExtruder == 1 else octopiclient.setToolTemperature(
-    #                 {"tool0": filaments[str(self.changeFilamentComboBox.currentText())]})
-    #         self.stackedWidget.setCurrentWidget(self.changeFilamentProgressPage)
-    #         self.changeFilamentStatus.setText("Heating Tool {}, Please Wait...".format(str(self.activeExtruder)))
-    #         self.changeFilamentNameOperation.setText("Loading {}".format(str(self.changeFilamentComboBox.currentText())))
-    #         # this flag tells the updateTemperature function that runs every second to update the filament change progress bar as well, and to load or unload after heating done
-    #         self.changeFilamentHeatingFlag = True
-    #         self.loadFlag = True
-    #     except Exception as e:
-    #         self.loadFlag = False
-    #         self.changeFilamentHeatingFlag = False
-    #         logger.error("Error in MainUiClass.loadFilament: {}".format(e))
-    #         dialog.WarningOk(self, "Error in MainUiClass.loadFilament: {}".format(e), overlay=True)
+    def loadFilament(self):
+        logger.info("MainUiClass.loadFilament started - Updated one")
+        try:
+            if self.home_screen.printerStatusText not in ["Printing", "Paused"]:
+                if self.activeExtruder == 1:
+                    self.main_window.octoprint_client.jog(
+                        self.main_window.printer_model.tool1PurgePosition['X'],
+                        self.main_window.printer_model.tool1PurgePosition["Y"],
+                        absolute=True, speed=10000
+                    )
+
+                else:
+                    self.main_window.octoprint_client.jog(
+                        self.main_window.printer_model.tool0PurgePosition['X'],
+                        self.main_window.printer_model.tool0PurgePosition["Y"],
+                        absolute=True, speed=10000
+                    )
+
+            if self.changeFilamentComboBox.findText("Loaded Filament") == -1:
+                self.main_window.octoprint_client.setToolTemperature({"tool1": self.main_window.printer_model.filaments[str(
+                    self.changeFilamentComboBox.currentText())]}) if self.activeExtruder == 1 else self.main_window.octoprint_client.setToolTemperature(
+                    {"tool0": self.main_window.printer_model.filaments[str(self.changeFilamentComboBox.currentText())]})
+            self.stackedWidget.setCurrentWidget(self.changeFilamentProgressPage)
+            self.changeFilamentStatus.setText("Heating Tool {}, Please Wait...".format(str(self.activeExtruder)))
+            self.changeFilamentNameOperation.setText("Loading {}".format(str(self.changeFilamentComboBox.currentText())))
+            # this flag tells the updateTemperature function that runs every second to update the filament change progress bar as well, and to load or unload after heating done
+            self.changeFilamentHeatingFlag = True
+            self.loadFlag = True
+        except Exception as e:
+            self.loadFlag = False
+            self.changeFilamentHeatingFlag = False
+            logger.error("Error in MainUiClass.loadFilament: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.loadFilament: {}".format(e), overlay=True)
+
+    def setActiveExtruder(self, activeNozzle):
+        """
+        Sets the active extruder, and changes the UI accordingly
+        Is a slot for the active_extruder_changed signal from the printer model.
+        """
+        logger.info("MainUiClass.setActiveExtruder started")
+        try:
+            activeNozzle = int(activeNozzle)
+            if activeNozzle == 0:
+                # self.home_screen.tool0Label.setPixmap(QtGui.QPixmap(_fromUtf8("ui/resources/img/icons/activeNozzle.png")))
+                # self.home_screen.tool1Label.setPixmap(QtGui.QPixmap(_fromUtf8("ui/resources/img/icons/Nozzle.png")))
+                self.toolToggleChangeFilamentButton.setChecked(False)
+                self.toolToggleChangeFilamentButton.setText("0")
+                self.control_screen.toolToggleMotionButton.setChecked(False)
+                self.control_screen.toolToggleMotionButton.setText("0")
+                self.activeExtruder = 0
+            elif activeNozzle == 1:
+                # self.home_screen.tool0Label.setPixmap(QtGui.QPixmap(_fromUtf8("ui/resources/img/icons/Nozzle.png")))
+                # self.home_screen.tool1Label.setPixmap(QtGui.QPixmap(_fromUtf8("ui/resources/img/icons/activeNozzle.png")))
+                self.toolToggleChangeFilamentButton.setChecked(True)
+                self.toolToggleChangeFilamentButton.setText("1")
+                self.control_screen.toolToggleMotionButton.setChecked(True)
+                self.control_screen.toolToggleMotionButton.setText("1")
+                self.activeExtruder = 1
+
+                # set button states
+                # set octoprint if mismatch
+        except Exception as e:
+            logger.error("Error in MainUiClass.setActiveExtruder: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.setActiveExtruder: {}".format(e), overlay=True)
 
     # ! To be commented out later:.............................................................................
     def _update_status(self, message):

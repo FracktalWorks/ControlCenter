@@ -73,8 +73,8 @@ class PrinterModel(QObject):
             'X4': 303, 'Y4': 20
         }
         
-        self.tool0_purge_position = {'X': -27, 'Y': -112}
-        self.tool1_purge_position = {'X': 648, 'Y': -112}
+        self.tool0PurgePosition = {'X': -27, 'Y': -112}
+        self.tool1PurgePosition = {'X': 648, 'Y': -112}
 
     def updateTemperature(self, temp_data):
         """ Updates the temperature data. Is a slot for the temperatures_updated signal. """

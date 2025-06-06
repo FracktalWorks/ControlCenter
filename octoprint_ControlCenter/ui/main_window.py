@@ -52,6 +52,7 @@ class MainWindow(QMainWindow):
         
         # Next screen for wizard-style multi-step flows
         self.next_screen = None
+        self.dialogShown = False
 
         try:
             # Load all screens
@@ -573,7 +574,7 @@ class MainWindow(QMainWindow):
                     if any(error in msg for error in
                            ["Can not update MCU", "Error loading template", "Must home axis first", "probe", "Error during homing move", "still triggered after retract", "'mcu' must be specified"]):
                         logger.error("CRITICAL ERROR SHUTDOWN NEEDED")
-                        if self.home_screen.printerStatusText in ["Starting","Printing","Paused"]:
+                        if self.home_screen.printerStatusText in ["Starting", "Printing", "Paused"]:
                             client.cancelPrint()
                             client.gcode(command='M112')
                             try:
