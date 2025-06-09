@@ -53,6 +53,10 @@ class ControlScreen(QWidget):
         self.bedTempSpinBox = self.findChild(QSpinBox, "bedTempSpinBox")
         self.setBedTempButton = self.findChild(QPushButton, "setBedTempButton")
         self.toolToggleTemperatureButton = self.findChild(QPushButton, "toolToggleTemperatureButton")
+        self.tool180PreheatButton = self.findChild(QPushButton, "tool180PreheatButton")
+        self.tool250PreheatButton = self.findChild(QPushButton, "tool250PreheatButton")
+        self.bed60PreheatButton = self.findChild(QPushButton, "bed60PreheatButton")
+        self.bed100PreheatButton = self.findChild(QPushButton, "bed100PreheatButton")
 
         # Motion controls
         self.step1mmButton = self.findChild(QPushButton, "step1mmButton")
@@ -62,6 +66,14 @@ class ControlScreen(QWidget):
         self.moveXMButton = self.findChild(QPushButton, "moveXMButton")
         self.moveYPButton = self.findChild(QPushButton, "moveYPButton")
         self.moveYMButton = self.findChild(QPushButton, "moveYMButton")
+        self.motorOffButton = self.findChild(QPushButton, "motorOffButton")
+        self.homeXYButton = self.findChild(QPushButton, "homeXYButton")
+        self.moveZMButton = self.findChild(QPushButton, "moveZMButton")
+        self.moveZPButton = self.findChild(QPushButton, "moveZPButton")
+        self.homeZButton = self.findChild(QPushButton, "homeZButton")
+        self.toolToggleMotionButton = self.findChild(QPushButton, "toolToggleMotionButton")
+        self.extruderButton = self.findChild(QPushButton, "extruderButton")
+        self.retractButton = self.findChild(QPushButton, "retractButton")
 
         # Filament controls
         self.flowRateSpinBox = self.findChild(QSpinBox, "flowRateSpinBox")
@@ -70,8 +82,6 @@ class ControlScreen(QWidget):
         # Change Filament and Filament Sensor controls
         self.changeFilamentButton = self.findChild(QToolButton, "changeFilamentButton")
         self.toggleFilamentSensorButton = self.findChild(QToolButton, "toggleFilamentSensorButton")
-
-        self.toolToggleMotionButton = self.findChild(QPushButton, "toolToggleMotionButton")
 
         # Validate UI components
         check_ui_elements(self, [
@@ -107,31 +117,57 @@ class ControlScreen(QWidget):
 
         # Temperature Buttons Signal Connections
         if self.fanOnButton:
-            self.fanOnButton.clicked.connect(self.turn_fan_on)
+            self.fanOnButton.clicked.connect(lambda: self.main_window.octoprint_client.gcode(command='M106 S255'))
         if self.fanOffButton:
-            self.fanOffButton.clicked.connect(self.turn_fan_off)
+            self.fanOffButton.clicked.connect(lambda: self.main_window.octoprint_client.gcode(command='M107'))
         if self.cooldownButton:
-            self.cooldownButton.clicked.connect(self.cooldown)
+            self.cooldownButton.clicked.connect(self.coolDownAction)
         if self.setToolTempButton:
-            self.setToolTempButton.clicked.connect(self.set_tool_temp)
+            self.setToolTempButton.clicked.connect(self.setToolTemp)
         if self.setBedTempButton:
-            self.setBedTempButton.clicked.connect(self.set_bed_temp)
+            self.setBedTempButton.clicked.connect(lambda: self.main_window.octoprint_client.setBedTemperature(self.bedTempSpinBox.value()))
+        if self.bed60PreheatButton:
+            self.bed60PreheatButton.pressed.connect(lambda: self.preheatBedTemp(60))
+        if self.bed100PreheatButton:
+            self.bed100PreheatButton.pressed.connect(lambda: self.preheatBedTemp(100))
+        if self.tool180PreheatButton:
+            self.tool180PreheatButton.pressed.connect(lambda: self.preheatToolTemp(180))
+        if self.tool250PreheatButton:
+            self.tool250PreheatButton.pressed.connect(lambda: self.preheatToolTemp(250))
+        if self.toolToggleTemperatureButton:
+            self.toolToggleTemperatureButton.pressed.connect(self.selectToolTemperature)
 
         # Motion Buttons Signal Connections
         if self.step1mmButton:
-            self.step1mmButton.clicked.connect(lambda: self.set_move_step(1))
+            self.step1mmButton.clicked.connect(lambda: self.setStep(1))
         if self.step10mmButton:
-            self.step10mmButton.clicked.connect(lambda: self.set_move_step(10))
+            self.step1mmButton.clicked.connect(lambda: self.setStep(10))
         if self.step100mmButton:
-            self.step100mmButton.clicked.connect(lambda: self.set_move_step(100))
+            self.step1mmButton.clicked.connect(lambda: self.setStep(100))
         if self.moveXPButton:
-            self.moveXPButton.clicked.connect(self.move_x_positive)
+            self.moveXPButton.clicked.connect(lambda: self.main_window.octoprint_client.jog(x=self.step, speed=2000))
         if self.moveXMButton:
-            self.moveXMButton.clicked.connect(self.move_x_negative)
+            self.moveXMButton.clicked.connect(lambda: self.main_window.octoprint_client.jog(x=-self.step, speed=2000))
         if self.moveYPButton:
-            self.moveYPButton.clicked.connect(self.move_y_positive)
+            self.moveYPButton.clicked.connect(lambda: self.main_window.octoprint_client.jog(y=self.step, speed=2000))
         if self.moveYMButton:
-            self.moveYMButton.clicked.connect(self.move_y_negative)
+            self.moveYPButton.clicked.connect(lambda: self.main_window.octoprint_client.jog(y=-self.step, speed=2000))
+        if self.motorOffButton:
+            self.motorOffButton.clicked.connect(lambda: self.main_window.octoprint_client.gcode(command='M18'))
+        if self.homeXYButton:
+            self.homeXYButton.clicked.connect(lambda: self.main_window.octoprint_client.home(['x', 'y']))
+        if self.moveZMButton:
+            self.moveZMButton.clicked.connect(lambda: self.main_window.octoprint_client.jog(z=-self.step, speed=2000))
+        if self.moveZPButton:
+            self.moveZPButton.clicked.connect(lambda: self.main_window.octoprint_client.jog(z=self.step, speed=2000))
+        if self.homeZButton:
+            self.homeZButton.clicked.connect(lambda: self.main_window.octoprint_client.home(['z']))
+        if self.toolToggleMotionButton:
+            self.toolToggleMotionButton.clicked.connect(self.selectToolMotion)
+        if self.extruderButton:
+            self.extruderButton.clicked.connect(lambda: self.main_window.octoprint_client.extrude(self.step))
+        if self.retractButton:
+            self.retractButton.clicked.connect(lambda: self.main_window.octoprint_client.extrude(-self.step))
 
         # Filament Buttons Signal Connections
         if self.setFlowRateButton:
@@ -368,3 +404,111 @@ class ControlScreen(QWidget):
         except Exception as e:
             logger.error("Error in MainUiClass.coolDownAction: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.coolDownAction: {}".format(e), overlay=True)
+
+    def setToolTemp(self):
+        """
+        Sets the temperature of the tool, depending on the tool selected
+        """
+        logger.info("MainUiClass.setToolTemp started")
+        try:
+            if self.toolToggleTemperatureButton.isChecked():
+                self.main_window.octoprint_client.gcode(command='M104 T1 S' + str(self.toolTempSpinBox.value()))
+                # octopiclient.setToolTemperature({"tool1": self.toolTempSpinBox.value()})
+            else:
+                self.main_window.octoprint_client.gcode(command='M104 T0 S' + str(self.toolTempSpinBox.value()))
+                # octopiclient.setToolTemperature({"tool0": self.toolTempSpinBox.value()})
+        except Exception as e:
+            logger.error("Error in MainUiClass.setToolTemp: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.setToolTemp: {}".format(e), overlay=True)
+
+    def preheatBedTemp(self, temp):
+        """
+        Preheats the bed to the given temperature
+        param temp: temperature to preheat to
+        """
+        logger.info("MainUiClass.preheatBedTemp started")
+        try:
+            self.main_window.octoprint_client.gcode(command='M140 S' + str(temp))
+            self.bedTempSpinBox.setProperty("value", temp)
+        except Exception as e:
+            logger.error("Error in MainUiClass.preheatBedTemp: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.preheatBedTemp: {}".format(e), overlay=True)
+
+    def preheatToolTemp(self, temp):
+        """
+        Preheats the tool to the given temperature
+        param temp: temperature to preheat to
+        """
+        logger.info("MainUiClass.preheatToolTemp started")
+        try:
+            if self.toolToggleTemperatureButton.isChecked():
+                self.main_window.octoprint_client.gcode(command='M104 T1 S' + str(temp))
+            else:
+                self.main_window.octoprint_client.gcode(command='M104 T0 S' + str(temp))
+            self.toolTempSpinBox.setProperty("value", temp)
+        except Exception as e:
+            logger.error("Error in MainUiClass.preheatToolTemp: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.preheatToolTemp: {}".format(e), overlay=True)
+
+    def selectToolTemperature(self):
+        """
+        Selects the tool whose temperature needs to be changed.
+        It accordingly changes the button text.it also updates the status of the other toggle buttons.
+        """
+        logger.info("MainUiClass.selectToolTemperature started")
+        try:
+            # self.toolToggleTemperatureButton.setText(
+            #     "1") if self.toolToggleTemperatureButton.isChecked() else self.toolToggleTemperatureButton.setText("0")
+            if self.toolToggleTemperatureButton.isChecked():
+                print("extruder 1 Temperature")
+                self.toolTempSpinBox.setProperty("value", float(self.main_window.home_screen.tool1TargetTemperature.text()))
+            else:
+                print("extruder 0 Temperature")
+                self.toolTempSpinBox.setProperty("value", float(self.main_window.home_screen.tool0TargetTemperature.text()))
+        except Exception as e:
+            logger.error("Error in MainUiClass.selectToolTemperature: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.selectToolTemperature: {}".format(e), overlay=True)
+
+    def selectToolMotion(self):
+        """
+        Selects the tool whose temperature needs to be changed. It accordingly changes the button text. it also updates the status of the other toggle buttons
+        """
+        logger.info("MainUiClass.selectToolMotion started")
+        try:
+            if self.toolToggleMotionButton.isChecked():
+                self.screens["change_filament"].setActiveExtruder(1)
+                self.main_window.octoprint_client.selectTool(1)
+
+            else:
+                self.screens["change_filament"].setActiveExtruder(0)
+                self.main_window.octoprint_client.selectTool(0)
+        except Exception as e:
+            logger.error("Error in MainUiClass.selectToolMotion: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.selectToolMotion: {}".format(e), overlay=True)
+
+    def setStep(self, stepRate):
+        """
+        Sets the class variable "Step" which would be needed for movement and joging
+        :param stepRate: step multiplier for movement in the move
+        :return: nothing
+        """
+        logger.info("MainUiClass.setStep started")
+        try:
+            if stepRate == 100:
+                self.step100mmButton.setFlat(True)
+                self.step1mmButton.setFlat(False)
+                self.step10mmButton.setFlat(False)
+                self.step = 100
+            if stepRate == 1:
+                self.step100mmButton.setFlat(False)
+                self.step1mmButton.setFlat(True)
+                self.step10mmButton.setFlat(False)
+                self.step = 1
+            if stepRate == 10:
+                self.step100mmButton.setFlat(False)
+                self.step1mmButton.setFlat(False)
+                self.step10mmButton.setFlat(True)
+                self.step = 10
+        except Exception as e:
+            logger.error("Error in MainUiClass.setStep: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.setStep: {}".format(e), overlay=True)
