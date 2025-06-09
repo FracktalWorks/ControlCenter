@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QVBoxLayout, Q
 from PyQt5.QtGui import QFont
 from utils.helpers import check_ui_elements
 from utils.logger import setup_logger
+from dialog import WarningYesNo, WarningOk
 
 class SettingsScreen(QWidget):
     def __init__(self, main_window):
@@ -232,3 +233,13 @@ class SettingsScreen(QWidget):
         """Restart the system."""
         self.logger.info("Restarting the system.")
         # Add logic to restart the system
+        try:
+            if WarningYesNO(self, "Are you sure you want to restart the system?", overlay=True):
+                self.logger.info("User confirmed reboot")
+                os.system("sudo reboot")
+
+            else:
+                self.logger.info("User cancelled reboot")
+        except Exception as e:
+            self.logger.error(f"Error during restart: {e}")
+            WarningOK(self,f"Error during restart: {e}", overlay= True)
