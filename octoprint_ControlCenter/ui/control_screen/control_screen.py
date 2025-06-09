@@ -89,15 +89,23 @@ class ControlScreen(QWidget):
         self.screens = {}
         self._initialize_sub_screens()
 
-        # Connect buttons to their respective methods
+        # Feed Rate Buttons Signal Connections
         if self.controlBackButton:
             self.controlBackButton.clicked.connect(self._go_back)
         if self.setFeedRateButton:
-            self.setFeedRateButton.clicked.connect(self.set_feed_rate)
+            self.setFeedRateButton.clicked.connect(
+                lambda: self.main_window.octoprint_client.feedrate(self.feedRateSpinBox.value())
+            )
         if self.moveZPBabyStep:
-            self.moveZPBabyStep.clicked.connect(self.move_z_positive_baby_step)
+            self.moveZPBabyStep.clicked.connect(
+                lambda: self.main_window.octoprint_client.gcode(command='M290 Z0.025')
+            )
         if self.moveZMBabyStep:
-            self.moveZMBabyStep.clicked.connect(self.move_z_negative_baby_step)
+            self.moveZMBabyStep.clicked.connect(
+                lambda: self.main_window.octoprint_client.gcode(command='M290 Z-0.025')
+            )
+
+        # Temperature Buttons Signal Connections
         if self.fanOnButton:
             self.fanOnButton.clicked.connect(self.turn_fan_on)
         if self.fanOffButton:
@@ -108,6 +116,8 @@ class ControlScreen(QWidget):
             self.setToolTempButton.clicked.connect(self.set_tool_temp)
         if self.setBedTempButton:
             self.setBedTempButton.clicked.connect(self.set_bed_temp)
+
+        # Motion Buttons Signal Connections
         if self.step1mmButton:
             self.step1mmButton.clicked.connect(lambda: self.set_move_step(1))
         if self.step10mmButton:
@@ -122,6 +132,8 @@ class ControlScreen(QWidget):
             self.moveYPButton.clicked.connect(self.move_y_positive)
         if self.moveYMButton:
             self.moveYMButton.clicked.connect(self.move_y_negative)
+
+        # Filament Buttons Signal Connections
         if self.setFlowRateButton:
             self.setFlowRateButton.clicked.connect(self.set_flow_rate)
         if self.changeFilamentButton:
@@ -216,11 +228,6 @@ class ControlScreen(QWidget):
             else:
                 self.main_window.switch_to_home_screen()
                 self.logger.debug("No parent screen found in history, defaulting to home screen")
-
-    def set_feed_rate(self):
-        if self.feedRateSpinBox:
-            value = self.feedRateSpinBox.value()
-            self.logger.info(f"Setting feed rate to {value}%")
 
     def move_z_positive_baby_step(self):
         self.logger.info("Moving Z up slightly (baby step)")
