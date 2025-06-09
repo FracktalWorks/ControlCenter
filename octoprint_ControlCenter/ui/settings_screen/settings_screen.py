@@ -3,6 +3,7 @@ import importlib.util
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QVBoxLayout, QScrollArea
 from PyQt5.QtGui import QFont
+from utils import dialog, logger
 from utils.helpers import check_ui_elements
 from utils.logger import setup_logger
 from utils.dialog import WarningYesNo, WarningOk
@@ -251,11 +252,11 @@ class SettingsScreen(QWidget):
                 os.system('sudo cp -f firmware/TOOLHEADS_TD-01_TOOLHEAD0.cfg /home/pi/TOOLHEADS_TD-01_TOOLHEAD0.cfg')
                 os.system('sudo cp -f firmware/TOOLHEADS_TD-01_TOOLHEAD1.cfg /home/pi/TOOLHEADS_TD-01_TOOLHEAD1.cfg')
                 os.system('sudo cp -f firmware/variables.cfg /home/pi/variables.cfg')
-                #TODO: check printer variant setting and modify printer.cfg accordingly
-                octopiclient.gcode(command='M502')
-                octopiclient.gcode(command='M500')
-                octopiclient.gcode(command='FIRMWARE_RESTART')
-                octopiclient.gcode(command='RESTART')
+                # TODO: check printer variant setting and modify printer.cfg accordingly
+                self.main_window.octoprint_client.gcode(command='M502')
+                self.main_window.octoprint_client.gcode(command='M500')
+                self.main_window.octoprint_client.gcode(command='FIRMWARE_RESTART')
+                self.main_window.octoprint_client.gcode(command='RESTART')
         except Exception as e:
             logger.error("Error in MainUiClass.restorePrintDefaults: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.restorePrintDefaults: {}".format(e), overlay=True)

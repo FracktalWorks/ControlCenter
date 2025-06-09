@@ -7,8 +7,15 @@ from utils.helpers import check_ui_elements
 from utils.logger import setup_logger
 from utils import styles  # Import styles module
 from utils import keyboard  # Import keyboard module
-# Import dialog if needed for displaying errors
-# from utils import dialog
+
+# Network utils import
+from utils.network_utils import getIP, getHostname, getWifiAp, getMac
+from utils.network_utils import ThreadRestartNetworking
+
+from utils import dialog
+
+from utils.helpers import run_async
+import time
 
 # Initialize logger for NetworkSettings
 logger = setup_logger('network_settings')
@@ -123,7 +130,7 @@ class NetworkSettings(QWidget):
         
         # Action buttons
         if self.networkInfoButton:
-            self.networkInfoButton.clicked.connect(self.show_network_info)
+            self.networkInfoButton.clicked.connect(self.networkInfo)
         
         if self.configureStaticIPButton:
             self.configureStaticIPButton.clicked.connect(self.show_static_ip_settings)
@@ -151,6 +158,49 @@ class NetworkSettings(QWidget):
         self.staticIPGatewayLineEdit.clicked_signal.connect(lambda: self.staticIPShowKeyboard(self.staticIPGatewayLineEdit))
         self.staticIPNameServerLineEdit.clicked_signal.connect(lambda: self.staticIPShowKeyboard(self.staticIPNameServerLineEdit))
 
+        self.setIPStatus()
+
+    def networkInfo(self):
+        logger.info("MainUiClass.networkInfo started")
+        try:
+            ipWifi = getIP(ThreadRestartNetworking.WLAN)
+            ipEth = getIP(ThreadRestartNetworking.ETH)
+
+            self.hostname.setText(getHostname())
+            self.wifiAp.setText(getWifiAp())
+            self.wifiIp.setText("Not connected" if not ipWifi else ipWifi)
+            self.ipStatus.setText("Not connected" if not ipWifi else ipWifi)
+            self.lanIp.setText("Not connected" if not ipEth else ipEth)
+            self.wifiMac.setText(getMac(ThreadRestartNetworking.WLAN).decode('utf8'))
+            self.lanMac.setText(getMac(ThreadRestartNetworking.ETH).decode('utf8'))
+            self.stackedWidget.setCurrentWidget(self.networkInfoPage)
+        except Exception as e:
+            logger.error("Error in MainUiClass.networkInfo: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.networkInfo: {}".format(e), overlay=True)
+
+    @run_async
+    def setIPStatus(self):
+        """
+        Function to update IP address of printer on the status bar. Refreshes at a particular interval.
+        """
+        try:
+            while True:
+                try:
+                    if getIP("eth0"):
+                        self.ipStatus.setText(getIP("eth0"))
+                    elif getIP("wlan0"):
+                        self.ipStatus.setText(getIP("wlan0"))
+                    else:
+                        self.ipStatus.setText("Not connected")
+
+                except:
+                    self.ipStatus.setText("Not connected")
+                time.sleep(60)
+        except Exception as e:
+            logger.error("Error in MainUiClass.setIPStatus: {}".format(e))
+
+
+    # ! TO BE COMMENTED OUT
     def save_network_settings(self):
         """Save network settings and return to main network page."""
         logger.info("Save Network Settings button clicked")
