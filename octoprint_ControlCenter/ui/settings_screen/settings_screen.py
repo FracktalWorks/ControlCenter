@@ -15,6 +15,9 @@ class SettingsScreen(QWidget):
         # Setup logger
         self.logger = setup_logger('settings_screen')
 
+
+
+
         # Load the UI with proper error handling
         try:
             uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen/settings_screen.ui', self)
@@ -100,6 +103,19 @@ class SettingsScreen(QWidget):
 
         # Load settings widgets from subfolders
         self.load_settings_widgets()
+    
+
+    def tellAndReboot(self, msg="Rebooting...", overlay=True):
+        if dialog.WarningOk(self, msg, overlay=overlay):
+            os.system('sudo reboot now')
+            return True
+        return False
+
+    def askAndReboot(self, msg="Are you sure you want to reboot?", overlay=True):
+        if dialog.WarningYesNo(self, msg, overlay=overlay):
+            os.system('sudo reboot now')
+            return True
+        return False
 
     def load_settings_widgets(self):
         """Load settings widgets from subfolders in the "Settings Screen" folder."""
@@ -223,11 +239,52 @@ class SettingsScreen(QWidget):
         """Restore the print settings to their default values."""
         self.logger.info("Restoring print settings to default values.")
         # Add logic to restore print settings
+        
+        try:
+            if dialog.WarningYesNo(self, "Are you sure you want to restore default print settings?\nWarning: Doing so will erase offsets and bed leveling info",overlay=True):
+                os.system('sudo cp -f firmware/COMMON_FILAMENT_SENSOR.cfg /home/pi/COMMON_FILAMENT_SENSOR.cfg')
+                os.system('sudo cp -f firmware/COMMON_GCODE_MACROS.cfg /home/pi/COMMON_GCODE_MACROS.cfg')
+                os.system('sudo cp -f firmware/COMMON_IDEX.cfg /home/pi/COMMON_IDEX.cfg')
+                os.system('sudo cp -f firmware/COMMON_MOTHERBOARD.cfg /home/pi/COMMON_MOTHERBOARD.cfg')
+                os.system('sudo cp -f firmware/PRINTERS_TWINDRAGON_600x300.cfg /home/pi/PRINTERS_TWINDRAGON_600x300.cfg')
+                os.system('sudo cp -f firmware/PRINTERS_TWINDRAGON_600x600.cfg /home/pi/PRINTERS_TWINDRAGON_600x600.cfg')
+                os.system('sudo cp -f firmware/TOOLHEADS_TD-01_TOOLHEAD0.cfg /home/pi/TOOLHEADS_TD-01_TOOLHEAD0.cfg')
+                os.system('sudo cp -f firmware/TOOLHEADS_TD-01_TOOLHEAD1.cfg /home/pi/TOOLHEADS_TD-01_TOOLHEAD1.cfg')
+                os.system('sudo cp -f firmware/variables.cfg /home/pi/variables.cfg')
+                #TODO: check printer variant setting and modify printer.cfg accordingly
+                octopiclient.gcode(command='M502')
+                octopiclient.gcode(command='M500')
+                octopiclient.gcode(command='FIRMWARE_RESTART')
+                octopiclient.gcode(command='RESTART')
+        except Exception as e:
+            logger.error("Error in MainUiClass.restorePrintDefaults: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.restorePrintDefaults: {}".format(e), overlay=True)
+
+
+
+
+
 
     def restore_factory_defaults(self):
         """Restore the system to factory default settings."""
         self.logger.info("Restoring system to factory default settings.")
         # Add logic to restore factory default settings
+
+
+        try:
+            if dialog.WarningYesNo(self, "Are you sure you want to restore machine state to factory defaults?\nWarning: Doing so will also reset printer profiles, WiFi & Ethernet config.",overlay=True):
+                os.system('sudo cp -f config/dhcpcd.conf /etc/dhcpcd.conf')
+                os.system('sudo cp -f config/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf')
+                os.system('sudo rm -rf /home/pi/.octoprint/users.yaml')
+                os.system('sudo cp -f config/users.yaml /home/pi/.octoprint/users.yaml')
+                os.system('sudo rm -rf /home/pi/.octoprint/printerProfiles/*')
+                os.system('sudo rm -rf /home/pi/.octoprint/scripts/gcode')
+                os.system('sudo rm -rf /home/pi/.octoprint/print_restore.json')
+                os.system('sudo cp -f config/config.yaml /home/pi/.octoprint/config.yaml')
+                self.tellAndReboot("Settings restored. Rebooting...")
+        except Exception as e:
+            logger.error("Error in MainUiClass.restoreFactoryDefaults: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.restoreFactoryDefaults: {}".format(e), overlay=True)
 
     def restart_system(self):
         """Restart the system."""
