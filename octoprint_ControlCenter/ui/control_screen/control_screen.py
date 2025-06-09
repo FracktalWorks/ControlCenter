@@ -141,9 +141,9 @@ class ControlScreen(QWidget):
         if self.step1mmButton:
             self.step1mmButton.clicked.connect(lambda: self.setStep(1))
         if self.step10mmButton:
-            self.step1mmButton.clicked.connect(lambda: self.setStep(10))
+            self.step10mmButton.clicked.connect(lambda: self.setStep(10))
         if self.step100mmButton:
-            self.step1mmButton.clicked.connect(lambda: self.setStep(100))
+            self.step100mmButton.clicked.connect(lambda: self.setStep(100))
         if self.moveXPButton:
             self.moveXPButton.clicked.connect(lambda: self.main_window.octoprint_client.jog(x=self.step, speed=2000))
         if self.moveXMButton:
@@ -171,7 +171,7 @@ class ControlScreen(QWidget):
 
         # Filament Buttons Signal Connections
         if self.setFlowRateButton:
-            self.setFlowRateButton.clicked.connect(self.set_flow_rate)
+            self.setFlowRateButton.clicked.connect(lambda: self.main_window.octoprint_client.flowrate(self.flowRateSpinBox.value()))
         if self.changeFilamentButton:
             self.changeFilamentButton.clicked.connect(self.open_change_filament_screen)
         if self.toggleFilamentSensorButton:
