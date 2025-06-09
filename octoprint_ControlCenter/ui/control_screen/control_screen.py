@@ -16,6 +16,7 @@ except AttributeError:
     def _fromUtf8(s):
         return s
 
+
 class ControlScreen(QWidget):
     def __init__(self, main_window):
         super(ControlScreen, self).__init__()
@@ -26,7 +27,9 @@ class ControlScreen(QWidget):
 
         # Load the UI
         try:
-            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/control_screen/control_screen.ui', self)
+            uic.loadUi(
+                '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/control_screen/control_screen.ui',
+                self)
             self.logger.info("ControlScreen UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load ControlScreen UI file: {e}", exc_info=True)
@@ -63,7 +66,7 @@ class ControlScreen(QWidget):
         # Filament controls
         self.flowRateSpinBox = self.findChild(QSpinBox, "flowRateSpinBox")
         self.setFlowRateButton = self.findChild(QPushButton, "setFlowRateButton")
-        
+
         # Change Filament and Filament Sensor controls
         self.changeFilamentButton = self.findChild(QToolButton, "changeFilamentButton")
         self.toggleFilamentSensorButton = self.findChild(QToolButton, "toggleFilamentSensorButton")
@@ -138,41 +141,9 @@ class ControlScreen(QWidget):
         # Default to tab 0
         if self.controlTabWidget:
             self.controlTabWidget.setCurrentIndex(0)
-            
+
         # Initialize filament sensor state
         self.filament_sensor_enabled = True
-
-    # def changeFilament(self):
-    #     """
-    #     This function is called when the user wants to change the filament. It sets the current page to the change filament page
-    #     and preps the printer for filament change
-    #     """
-    #     logger.info("MainUiClass.changeFilament started")
-    #     try:
-    #         time.sleep(1)
-    #         if self.home_screen.printerStatusText not in ["Printing", "Paused"]:
-    #             self.main_window.octoprint_client.gcode("G28")
-    #         self.selectToolChangeFilament()
-    #
-    #         change_filament_screen = self.screens.get("change_filament")
-    #         if change_filament_screen and hasattr(change_filament_screen, "reset_wizard"):
-    #             change_filament_screen.reset_wizard()
-    #
-    #         # Use our consistent navigation method
-    #         self.show_control_subscreen("change_filament")
-    #
-    #         self.changeFilamentComboBox.clear()
-    #         self.changeFilamentComboBox.addItems(self.main_window.printer_model.filaments.keys())
-    #         #Update
-    #         print(self.tool0TargetTemperature)
-    #         if self.tool0TargetTemperature  and self.printerStatusText in ["Printing", "Paused"]:
-    #             self.changeFilamentComboBox.addItem("Loaded Filament")
-    #             index = self.changeFilamentComboBox.findText("Loaded Filament")
-    #             if index >= 0 :
-    #                 self.changeFilamentComboBox.setCurrentIndex(index)
-    #     except Exception as e:
-    #         logger.error("Error in MainUiClass.changeFilament: {}".format(e))
-    #         dialog.WarningOk(self, "Error in MainUiClass.changeFilament: {}".format(e), overlay=True)
 
     # ! To be commented out later
     def _initialize_sub_screens(self):
@@ -189,7 +160,7 @@ class ControlScreen(QWidget):
 
     def show_control_subscreen(self, target_screen=None):
         """Show a specific control subscreen
-        
+
         Args:
             target_screen: String identifying which sub-screen to navigate to.
         """
@@ -218,16 +189,16 @@ class ControlScreen(QWidget):
     def _go_back(self):
         """Handle back button logic for ControlScreen"""
         self.logger.info("Control Screen: returning to previous screen")
-        
+
         # Find the last non-subscreen in history to directly navigate to it
         non_subscreen_index = -1
         subscreen_ids = [id(screen) for screen in self.screens.values()]
-        
+
         for i in range(len(self.main_window.screen_history) - 1, -1, -1):
             if id(self.main_window.screen_history[i]) not in subscreen_ids:
                 non_subscreen_index = i
                 break
-                
+
         if non_subscreen_index >= 0:
             # Get the parent screen and remove all subscreens from history
             target_screen = self.main_window.screen_history[non_subscreen_index]
@@ -295,18 +266,19 @@ class ControlScreen(QWidget):
         if self.flowRateSpinBox:
             value = self.flowRateSpinBox.value()
             self.logger.info(f"Setting flow rate to {value}%")
-            
+
     def open_change_filament_screen(self):
         """Navigate to the Change Filament screen"""
         self.logger.info("Opening Change Filament screen")
-        
+
         # Get the screen and make sure it's reset to initial state
         change_filament_screen = self.screens.get("change_filament")
         if change_filament_screen and hasattr(change_filament_screen, "reset_wizard"):
             change_filament_screen.reset_wizard()
-            
+
         # Use our consistent navigation method
         self.show_control_subscreen("change_filament")
+        change_filament_screen.changeFilament()
 
     def toggleFilamentSensor(self):
         """
@@ -315,7 +287,8 @@ class ControlScreen(QWidget):
         logger.info("MainUiClass.toggleFilamentSensor started")
         icon = 'filamentSensorOn' if self.toggleFilamentSensorButton.isChecked() else 'filamentSensorOff'
         self.toggleFilamentSensorButton.setIcon(QtGui.QIcon(_fromUtf8("resources/img/icons/" + icon)))
-        self.main_window.octoprint_client.gcode(command="PRIMARY_SFS_ENABLE{}".format(int(self.toggleFilamentSensorButton.isChecked())))
+        self.main_window.octoprint_client.gcode(
+            command="PRIMARY_SFS_ENABLE{}".format(int(self.toggleFilamentSensorButton.isChecked())))
 
     def filamentSensorHandler(self, data):
         """
@@ -347,21 +320,23 @@ class ControlScreen(QWidget):
             if 'enabled' in data:
                 self.toggleFilamentSensorButton.setIcon(QtGui.QIcon(_fromUtf8("templates/img/filamentSensorOn")))
 
-            if triggered_extruder0 and self.stackedWidget.currentWidget() not in [change_filament_screen.changeFilamentPage,
-                                                                                  change_filament_screen.changeFilamentProgressPage,
-                                                                                  change_filament_screen.changeFilamentExtrudePage,
-                                                                                  change_filament_screen.changeFilamentRetractPage,
-                                                                                  change_filament_screen.changeFilamentLoadPage]:
+            if triggered_extruder0 and self.stackedWidget.currentWidget() not in [
+                change_filament_screen.changeFilamentPage,
+                change_filament_screen.changeFilamentProgressPage,
+                change_filament_screen.changeFilamentExtrudePage,
+                change_filament_screen.changeFilamentRetractPage,
+                change_filament_screen.changeFilamentLoadPage]:
                 self.main_window.octoprint_client.gcode(command='PAUSE')
                 if dialog.WarningOk(self,
                                     "Filament outage or clog detected in Extruder 0. Please check the external motors. Print paused"):
                     pass
 
-            if triggered_extruder1 and self.stackedWidget.currentWidget() not in [change_filament_screen.changeFilamentPage,
-                                                                                  change_filament_screen.changeFilamentProgressPage,
-                                                                                  change_filament_screen.changeFilamentExtrudePage,
-                                                                                  change_filament_screen.changeFilamentRetractPage,
-                                                                                  change_filament_screen.changeFilamentLoadPage]:
+            if triggered_extruder1 and self.stackedWidget.currentWidget() not in [
+                change_filament_screen.changeFilamentPage,
+                change_filament_screen.changeFilamentProgressPage,
+                change_filament_screen.changeFilamentExtrudePage,
+                change_filament_screen.changeFilamentRetractPage,
+                change_filament_screen.changeFilamentLoadPage]:
                 self.main_window.octoprint_client.gcode(command='PAUSE')
                 if dialog.WarningOk(self,
                                     "Filament outage or clog detected in Extruder 1. Please check the external motors. Print paused"):
