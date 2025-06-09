@@ -471,7 +471,7 @@ class MainWindow(QMainWindow):
                         dialog.WarningOk(self, "Printer Config File corrupted. Contact Fracktal support or raise a ticket at care.fracktal.in")
                         if self.printerStatus == "Printing":
                             client.cancelPrint()
-                            self.coolDownAction()
+                            self.control_screen.coolDownAction()
                     elif not configCorruptedFlag:
                         backupFiles = sorted(glob.glob('/home/pi/printer-*.cfg'), key=os.path.getmtime, reverse=True)
                         try:

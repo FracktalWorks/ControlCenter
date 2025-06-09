@@ -76,6 +76,8 @@ class PrinterModel(QObject):
         self.tool0PurgePosition = {'X': -27, 'Y': -112}
         self.tool1PurgePosition = {'X': 648, 'Y': -112}
 
+        self.ptfeTubeLength = 2400  # 2400 for 600x600, 1500 for 600x300 keep as multiples of 300 only
+
     def updateTemperature(self, temp_data):
         """ Updates the temperature data. Is a slot for the temperatures_updated signal. """
         self.temperatures = temp_data

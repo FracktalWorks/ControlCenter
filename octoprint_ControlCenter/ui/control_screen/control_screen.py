@@ -345,3 +345,19 @@ class ControlScreen(QWidget):
         except Exception as e:
             logger.error("Error in MainUiClass.filamentSensorHandler: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.filamentSensorHandler: {}".format(e), overlay=True)
+
+    def coolDownAction(self):
+        """'
+        Turns all heaters and fans off
+        """
+        logger.info("MainUiClass.coolDownAction started")
+        try:
+            self.main_window.octoprint_client.gcode(command='M107')
+            self.main_window.octoprint_client.setToolTemperature({"tool0": 0, "tool1": 0})
+            # octopiclient.setToolTemperature({"tool0": 0})
+            self.main_window.octoprint_client.setBedTemperature(0)
+            self.toolTempSpinBox.setProperty("value", 0)
+            self.bedTempSpinBox.setProperty("value", 0)
+        except Exception as e:
+            logger.error("Error in MainUiClass.coolDownAction: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.coolDownAction: {}".format(e), overlay=True)

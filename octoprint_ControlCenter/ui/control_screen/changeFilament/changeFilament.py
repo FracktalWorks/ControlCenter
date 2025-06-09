@@ -6,6 +6,7 @@ from utils.helpers import check_ui_elements
 from utils import logger
 from utils import dialog
 from utils.logger import setup_logger
+from utils.helpers import run_async
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -82,9 +83,9 @@ class ChangeFilament(QWidget):
         if self.changeFilamentBackButton:
             self.changeFilamentBackButton.clicked.connect(self.control)
         if self.changeFilamentBackButton2:
-            self.changeFilamentBackButton2.clicked.connect(self._handle_back_button)
+            self.changeFilamentBackButton2.clicked.connect(self.changeFilamentCancel)
         if self.changeFilamentBackButton3:
-            self.changeFilamentBackButton3.clicked.connect(self._handle_back_button)
+            self.changeFilamentBackButton3.clicked.connect(self.changeFilamentCancel)
         if self.changeFilamentLoadButton:
             self.changeFilamentLoadButton.clicked.connect(self.loadFilament)
         if self.changeFilamentUnloadButton:
@@ -92,11 +93,11 @@ class ChangeFilament(QWidget):
         if self.toolToggleChangeFilamentButton:
             self.toolToggleChangeFilamentButton.clicked.connect(self.selectToolChangeFilament)
         if self.loadedTillExtruderButton:
-            self.loadedTillExtruderButton.clicked.connect(self.filament_loaded_till_extruder)
+            self.loadedTillExtruderButton.clicked.connect(self.changeFilamentExtrudePageFunction)
         if self.loadDoneButton:
-            self.loadDoneButton.clicked.connect(self.finish_loading_filament)
+            self.loadDoneButton.clicked.connect(self.control)
         if self.unloadDoneButton:
-            self.unloadDoneButton.clicked.connect(self.finish_unloading_filament)
+            self.unloadDoneButton.clicked.connect(self.changeFilament)
 
         # # Set the default screen
         # self._show_page('change_filament_screen')
@@ -327,6 +328,59 @@ class ChangeFilament(QWidget):
         except Exception as e:
             logger.error("Error in MainUiClass.selectToolChangeFilament: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.selectToolChangeFilament: {}".format(e), overlay=True)
+
+    @run_async
+    def changeFilamentExtrudePageFunction(self):
+        """
+        once filament is loaded, this function is called to extrude filament till the toolhead
+        """
+        logger.info("MainUiClass.changeFilamentExtrudePageFunction started")
+        try:
+            self.stackedWidget.setCurrentWidget(self.changeFilamentExtrudePage)
+            for i in range(int(self.main_window.printer_model.ptfeTubeLength / 150)):
+                self.main_window.octoprint_client.gcode("G91")
+                self.main_window.octoprint_client.gcode("G1 E150 F1500")
+                self.main_window.octoprint_client.gcode("G90")
+                time.sleep(self.calcExtrudeTime(150, 1500))
+                if self.stackedWidget.currentWidget() is not self.changeFilamentExtrudePage:
+                    break
+
+            while self.stackedWidget.currentWidget() == self.changeFilamentExtrudePage:
+                if self.changeFilamentComboBox.currentText() == "TPU":
+                    self.main_window.octoprint_client.gcode("G91")
+                    self.main_window.octoprint_client.gcode("G1 E20 F300")
+                    self.main_window.octoprint_client.gcode("G90")
+                    time.sleep(self.calcExtrudeTime(20, 300))
+                else:
+                    self.main_window.octoprint_client.gcode("G91")
+                    self.main_window.octoprint_client.gcode("G1 E20 F600")
+                    self.main_window.octoprint_client.gcode("G90")
+                    time.sleep(self.calcExtrudeTime(20, 600))
+        except Exception as e:
+            logger.error("Error in MainUiClass.changeFilamentExtrudePageFunction: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.changeFilamentExtrudePageFunction: {}".format(e), overlay=True)
+
+    def calcExtrudeTime(self, length, speed):
+        """
+        Calculate the time it takes to extrude a certain length of filament at a certain speed
+        :param length: length of filament to extrude
+        :param speed: speed at which to extrude
+        :return: time in seconds
+        """
+        return length / (speed / 60)
+
+    def changeFilamentCancel(self):
+        logger.info("MainUiClass.changeFilamentCancel started")
+        try:
+            self.changeFilamentHeatingFlag = False
+            if self.home_screen.printerStatusText not in ["Printing", "Paused"]:
+                self.control_screen.coolDownAction()
+            self.control()
+            self.loadFlag = False
+            self.changeFilamentHeatingFlag = False
+        except Exception as e:
+            logger.error("Error in MainUiClass.changeFilamentCancel: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.changeFilamentCancel: {}".format(e), overlay=True)
 
     # ! To be commented out later:.............................................................................
     def _update_status(self, message):
