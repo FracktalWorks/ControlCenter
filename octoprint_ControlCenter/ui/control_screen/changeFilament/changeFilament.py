@@ -78,6 +78,7 @@ class ChangeFilament(QWidget):
 
         # ! Local Signal Slot Connections
         self.main_window.printer_model.active_extruder_changed.connect(self.setActiveExtruder)
+        self.main_window.printer_model.temperatures_updated.connect(self.updateTemperature)
 
         # Connect signals to slots
         if self.changeFilamentBackButton:
@@ -243,6 +244,48 @@ class ChangeFilament(QWidget):
             logger.error("Error in MainUiClass.unloadFilament: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.unloadFilament: {}".format(e), overlay=True)
 
+    def updateTemperature(self, temperature):
+        try:
+            if self.changeFilamentHeatingFlag:
+                if self.activeExtruder == 0:
+                    if temperature['tool0Target'] == 0:
+                        self.changeFilamentProgress.setMaximum(300)
+                    elif temperature['tool0Target'] - temperature['tool0Actual'] > 1:
+                        self.changeFilamentProgress.setMaximum(temperature['tool0Target'])
+                    else:
+                        self.changeFilamentProgress.setMaximum(temperature['tool0Actual'])
+                        self.changeFilamentHeatingFlag = False
+                        if self.loadFlag:
+                            self.changeFilamentLoadFunction()
+                            # self.stackedWidget.setCurrentWidget(self.changeFilamentExtrudePage)
+                        else:
+                            # self.stackedWidget.setCurrentWidget(self.changeFilamentRetractPage)
+                            self.main_window.octoprint_client.extrude(5)  # extrudes some amount of filament to prevent plugging
+                            self.changeFilamentRetractFunction()
+
+                    self.changeFilamentProgress.setValue(temperature['tool0Actual'])
+                elif self.activeExtruder == 1:
+                    if temperature['tool1Target'] == 0:
+                        self.changeFilamentProgress.setMaximum(300)
+                    elif temperature['tool1Target'] - temperature['tool1Actual'] > 1:
+                        self.changeFilamentProgress.setMaximum(temperature['tool1Target'])
+                    else:
+                        self.changeFilamentProgress.setMaximum(temperature['tool1Actual'])
+                        self.changeFilamentHeatingFlag = False
+                        if self.loadFlag:
+                            self.changeFilamentLoadFunction()
+                            # self.stackedWidget.setCurrentWidget(self.changeFilamentExtrudePage)
+                        else:
+                            # self.stackedWidget.setCurrentWidget(self.changeFilamentRetractPage)
+                            self.main_window.octoprint_client.extrude(5)  # extrudes some amount of filament to prevent plugging
+                            self.changeFilamentRetractFunction()
+
+                    self.changeFilamentProgress.setValue(temperature['tool1Actual'])
+
+        except Exception as e:
+            logger.error("Error in MainUiClass.updateTemperature: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.updateTemperature: {}".format(e), overlay=True)
+
     def setActiveExtruder(self, activeNozzle):
         """
         Sets the active extruder, and changes the UI accordingly
@@ -330,6 +373,23 @@ class ChangeFilament(QWidget):
             dialog.WarningOk(self, "Error in MainUiClass.selectToolChangeFilament: {}".format(e), overlay=True)
 
     @run_async
+    def changeFilamentLoadFunction(self):
+        """
+        This function is called once the heating is done, which slowly moves the extruder so that it starts pulling filament
+        """
+        logger.info("MainUiClass.changeFilamentLoadFunction started")
+        try:
+            self.stackedWidget.setCurrentWidget(self.changeFilamentLoadPage)
+            while self.stackedWidget.currentWidget() == self.changeFilamentLoadPage:
+                self.main_window.octoprint_client.gcode("G91")
+                self.main_window.octoprint_client.gcode("G1 E5 F500")
+                self.main_window.octoprint_client.gcode("G90")
+                time.sleep(self.calcExtrudeTime(5, 500))
+        except Exception as e:
+            logger.error("Error in MainUiClass.changeFilamentLoadFunction: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.changeFilamentLoadFunction: {}".format(e), overlay=True)
+
+    @run_async
     def changeFilamentExtrudePageFunction(self):
         """
         once filament is loaded, this function is called to extrude filament till the toolhead
@@ -359,6 +419,46 @@ class ChangeFilament(QWidget):
         except Exception as e:
             logger.error("Error in MainUiClass.changeFilamentExtrudePageFunction: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.changeFilamentExtrudePageFunction: {}".format(e), overlay=True)
+
+    @run_async
+    def changeFilamentRetractFunction(self):
+        """
+        Remove the filament from the toolhead
+        """
+        logger.info("MainUiClass.changeFilamentRetractFunction started")
+        try:
+            self.stackedWidget.setCurrentWidget(self.changeFilamentRetractPage)
+            # Tip Shaping to prevent filament jamming in nozzle
+            if self.changeFilamentComboBox.currentText() == "TPU":
+                self.main_window.octoprint_client.gcode("G91")
+                self.main_window.octoprint_client.gcode("G1 E10 F300")
+                time.sleep(self.calcExtrudeTime(10, 300))
+            else:
+                self.main_window.octoprint_client.gcode("G91")
+                self.main_window.octoprint_client.gcode("G1 E10 F600")
+                time.sleep(self.calcExtrudeTime(10, 600))
+            self.main_window.octoprint_client.gcode("G1 E-25 F6000")
+            time.sleep(self.calcExtrudeTime(20, 6000))
+            time.sleep(8)  # wait for filament to cool inside the nozzle
+            self.main_window.octoprint_client.gcode("G1 E-150 F5000")
+            time.sleep(self.calcExtrudeTime(150, 5000))
+            self.main_window.octoprint_client.gcode("G90")
+            for i in range(int(self.main_window.printer_model.ptfeTubeLength / 150)):
+                self.main_window.octoprint_client.gcode("G91")
+                self.main_window.octoprint_client.gcode("G1 E-150 F2000")
+                self.main_window.octoprint_client.gcode("G90")
+                time.sleep(self.calcExtrudeTime(150, 2000))
+                if self.stackedWidget.currentWidget() is not self.changeFilamentRetractPage:
+                    break
+
+            while self.stackedWidget.currentWidget() == self.changeFilamentRetractPage:
+                self.main_window.octoprint_client.gcode("G91")
+                self.main_window.octoprint_client.gcode("G1 E-5 F1000")
+                self.main_window.octoprint_client.gcode("G90")
+                time.sleep(self.calcExtrudeTime(5, 1000))
+        except Exception as e:
+            logger.error("Error in MainUiClass.changeFilamentRetractFunction: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.changeFilamentRetractFunction: {}".format(e), overlay=True)
 
     def calcExtrudeTime(self, length, speed):
         """

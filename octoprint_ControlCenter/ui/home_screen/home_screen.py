@@ -76,9 +76,6 @@ class HomeScreen(QWidget):
         self.printProgressBar = self.findChild(QProgressBar, "printProgressBar")
         self.printPreviewMain = self.findChild(QLabel, "printPreviewMain")
 
-        self.tool0Label = self.findChild(QLabel, "tool0Label")
-        self.tool1Label = self.findChild(QLabel, "tool1Label")
-
         # Validate UI components
         all_components = [
             self.doorLockButton, self.menuButton, self.stopButton, self.playPauseButton, self.controlButton,

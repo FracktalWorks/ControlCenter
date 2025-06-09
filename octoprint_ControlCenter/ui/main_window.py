@@ -31,11 +31,10 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__()
         self.octoprint_websocket = None
         logger.info("Initializing MainWindow")
-        
+
         # Flag to indicate if we're in minimal UI mode due to startup error
         self.minimal_ui_mode = False
         self.printer_model = PrinterModel()
-
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -49,7 +48,7 @@ class MainWindow(QMainWindow):
         # Screen navigation history for back button functionality
         self.screen_history = []
         self.current_screen = None
-        
+
         # Next screen for wizard-style multi-step flows
         self.next_screen = None
         self.dialogShown = False
@@ -70,13 +69,13 @@ class MainWindow(QMainWindow):
             # Adjust the size of the main window to fit its contents
             self.adjustSize()
             logger.info("MainWindow initialized successfully")
-            
+
         except Exception as e:
             logger.exception("Error during MainWindow initialization")
-            WarningOk(self, 
+            WarningOk(self,
                       f"Application Error\n\nAn error occurred while initializing the application: {str(e)}\n\nPlease check the logs for more details.",
                       overlay=True)
-        
+
         # Initialize the OctoPrint singleton
         try:
             logger.info("Initializing OctoPrint singleton")
@@ -85,7 +84,7 @@ class MainWindow(QMainWindow):
             # Get the OctoPrint client instance - this can access all functions of octoprintAPI
             self.octoprint_client = octoprint_singleton.get_client()
             logger.info("OctoPrint singleton initialized successfully")
-            
+
             # Initialize the sanity check to verify OctoPrint connectivity
             # ! Transferred to loading_screen.py
             # self.sanityCheck = ThreadSanityCheck(ip=config.ip, api_key=config.apiKey, virtual=False)
@@ -98,7 +97,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             logger.error(f"Failed to initialize OctoPrint singleton: {e}")
             # Continue initialization, we'll handle the error in the loading screen
-        
+
     def handleStartupError(self):
         """
         Error Handler when Octoprint gives up
@@ -128,22 +127,22 @@ class MainWindow(QMainWindow):
         logger.info("Showing minimal UI due to startup error")
         # Stop the loading GIF animation
         self.loading_screen.movie.stop()
-        
+
         # Set the minimal UI mode flag
         self.minimal_ui_mode = True
         print(".......LOADED IN MINIMAL MODE .......")
-        
+
         # Add the minimal set of screens to the stacked widget
         # These should already be loaded in __init__
-        
+
         # Show a message to the user about the limited functionality
         WarningOk(
-            self, 
+            self,
             "Server Connection Error\n\nThe printer server is not reachable. Only basic features are available.\n\n"
             "Please check your network connection and printer status.",
             overlay=True
         )
-        
+
         # Disable buttons in Home Screen
         if hasattr(self.home_screen, 'stopButton') and self.home_screen.stopButton:
             self.home_screen.stopButton.setDisabled(True)
@@ -151,7 +150,7 @@ class MainWindow(QMainWindow):
             self.home_screen.controlButton.setDisabled(True)
         if hasattr(self.home_screen, 'playPauseButton') and self.home_screen.playPauseButton:
             self.home_screen.playPauseButton.setDisabled(True)
-            
+
         # Disable buttons in Menu Screen
         if hasattr(self.menu_screen, 'menuControlButton') and self.menu_screen.menuControlButton:
             self.menu_screen.menuControlButton.setDisabled(True)
@@ -159,26 +158,26 @@ class MainWindow(QMainWindow):
             self.menu_screen.menuPrintButton.setDisabled(True)
         if hasattr(self.menu_screen, 'menuCalibrateButton') and self.menu_screen.menuCalibrateButton:
             self.menu_screen.menuCalibrateButton.setDisabled(True)
-                    
+
         # Check for software update related buttons
         if hasattr(self.settings_screen, 'softwareUpdateBackButton') and self.settings_screen.softwareUpdateBackButton:
             self.settings_screen.softwareUpdateBackButton.setDisabled(True)
         if hasattr(self.settings_screen, 'performUpdateButton') and self.settings_screen.performUpdateButton:
             self.settings_screen.performUpdateButton.setDisabled(True)
-            
+
         # Check for filament sensor toggle
-        if hasattr(self.control_screen, 'toggleFilamentSensorButton') and self.control_screen.toggleFilamentSensorButton:
+        if hasattr(self.control_screen,
+                   'toggleFilamentSensorButton') and self.control_screen.toggleFilamentSensorButton:
             self.control_screen.toggleFilamentSensorButton.setDisabled(True)
-            
+
         # Switch to the home screen initially
         self.switch_to_home_screen()
-        
+
         # Show a visual indicator on the home screen that we're in limited mode
         if hasattr(self.home_screen, 'printerStatus') and self.home_screen.printerStatus:
             self.home_screen.printerStatus.setText("Disconnected - Limited Mode")
         if hasattr(self.home_screen, 'printerStatusColour') and self.home_screen.printerStatusColour:
             self.home_screen.printerStatusColour.setStyleSheet(printer_status_red)
-
 
     def loadFullUI(self):
         """
@@ -189,7 +188,7 @@ class MainWindow(QMainWindow):
 
         # Stop the loading screen GIF
         self.loading_screen.movie.stop()
-        
+
         # Reset the minimal UI mode flag
         self.minimal_ui_mode = False
         print(".......LOADED IN FULL MODE .......")
@@ -215,12 +214,12 @@ class MainWindow(QMainWindow):
         self.octoprint_websocket.z_probing_failed_signal.connect(self.showProbingFailed)
         self.octoprint_websocket.printer_error_signal.connect(self.showPrinterError)
 
-        #TODO:
+        # TODO:
         # Connect Signals emitted by printer_model functions from above -
         # - to slots defined in each screen
-        
+
         # Re-enable buttons that were disabled in showMinimalUI
-        
+
         # Enable buttons in Home Screen
         if hasattr(self.home_screen, 'stopButton') and self.home_screen.stopButton:
             self.home_screen.stopButton.setEnabled(True)
@@ -228,7 +227,7 @@ class MainWindow(QMainWindow):
             self.home_screen.controlButton.setEnabled(True)
         if hasattr(self.home_screen, 'playPauseButton') and self.home_screen.playPauseButton:
             self.home_screen.playPauseButton.setEnabled(True)
-            
+
         # Enable buttons in Menu Screen
         if hasattr(self.menu_screen, 'menuControlButton') and self.menu_screen.menuControlButton:
             self.menu_screen.menuControlButton.setEnabled(True)
@@ -236,21 +235,22 @@ class MainWindow(QMainWindow):
             self.menu_screen.menuPrintButton.setEnabled(True)
         if hasattr(self.menu_screen, 'menuCalibrateButton') and self.menu_screen.menuCalibrateButton:
             self.menu_screen.menuCalibrateButton.setEnabled(True)
-                    
+
         # Check for software update related buttons
         if hasattr(self.settings_screen, 'softwareUpdateBackButton') and self.settings_screen.softwareUpdateBackButton:
             self.settings_screen.softwareUpdateBackButton.setEnabled(True)
         if hasattr(self.settings_screen, 'performUpdateButton') and self.settings_screen.performUpdateButton:
             self.settings_screen.performUpdateButton.setEnabled(True)
-            
+
         # Check for filament sensor toggle
-        if hasattr(self.control_screen, 'toggleFilamentSensorButton') and self.control_screen.toggleFilamentSensorButton:
+        if hasattr(self.control_screen,
+                   'toggleFilamentSensorButton') and self.control_screen.toggleFilamentSensorButton:
             self.control_screen.toggleFilamentSensorButton.setEnabled(True)
-        
+
         # All screens were already loaded in __init__, so we just need to:
         # 1. Update status indicators
         # 2. Switch to home screen
-        
+
         # Update home screen connection status
         if hasattr(self.home_screen, 'printerStatus') and self.home_screen.printerStatus:
             self.home_screen.printerStatus.setText("Connected")
@@ -261,7 +261,7 @@ class MainWindow(QMainWindow):
         # Switch to the home screen
         self.switch_to_home_screen()
         self.home_screen.setIPStatus()
-        
+
         # Start updating printer status if implemented
         if hasattr(self.home_screen, 'update_ui_from_printer_status'):
             self.home_screen.update_ui_from_printer_status()
@@ -335,7 +335,7 @@ class MainWindow(QMainWindow):
             # Main calibration screen
             self.calibrate_screen = CalibrateScreen(self)
             self.stacked_widget.addWidget(self.calibrate_screen)
-            
+
             logger.debug("Calibration screen loaded successfully")
         except Exception as e:
             logger.exception("Failed to load calibration screens")
@@ -345,27 +345,29 @@ class MainWindow(QMainWindow):
     def switch_screen(self, widget):
         """Switch to the given screen and update navigation history."""
         logger.debug(f"Switching to screen: {widget.__class__.__name__}")
-        logger.debug(f"Current screen before switch: {self.current_screen.__class__.__name__ if self.current_screen else None}")
-        
+        logger.debug(
+            f"Current screen before switch: {self.current_screen.__class__.__name__ if self.current_screen else None}")
+
         # Check if we're navigating between a main screen and its subscreens
         is_subscreen_navigation = False
-        
+
         # Check if current screen has subscreens and the widget is one of those subscreens
         if self.current_screen and hasattr(self.current_screen, 'screens'):
             is_subscreen_navigation = any(widget == subscreen for subscreen in self.current_screen.screens.values())
-        
+
         # Check if widget has subscreens and the current_screen is one of those subscreens
         if widget and hasattr(widget, 'screens') and self.current_screen:
-            is_subscreen_navigation = is_subscreen_navigation or any(self.current_screen == subscreen for subscreen in widget.screens.values())
-        
+            is_subscreen_navigation = is_subscreen_navigation or any(
+                self.current_screen == subscreen for subscreen in widget.screens.values())
+
         # Only update history if not navigating between a screen and its subscreens
         if self.current_screen is not None and not is_subscreen_navigation:
             self.screen_history.append(self.current_screen)
             logger.debug(f"Added {self.current_screen.__class__.__name__} to history")
-        
+
         self.current_screen = widget
         self.stacked_widget.setCurrentWidget(widget)
-        
+
         logger.debug(f"History now contains: {[screen.__class__.__name__ for screen in self.screen_history]}")
 
     def switch_to_previous_screen(self):
@@ -384,7 +386,7 @@ class MainWindow(QMainWindow):
         # Ensure the stacked widget's current page is updated for multi-step wizards
         if hasattr(self.current_screen, 'stackedWidget') and self.current_screen.stackedWidget:
             self.current_screen.stackedWidget.setCurrentIndex(0)
-            
+
     def switch_to_next_screen(self):
         """Used in multi-step flows like wizards to go to the next screen."""
         logger.debug("Attempting to switch to next screen")
@@ -468,7 +470,8 @@ class MainWindow(QMainWindow):
                                     except:
                                         pass
                         # If no valid backups found, show error dialog:
-                        dialog.WarningOk(self, "Printer Config File corrupted. Contact Fracktal support or raise a ticket at care.fracktal.in")
+                        dialog.WarningOk(self,
+                                         "Printer Config File corrupted. Contact Fracktal support or raise a ticket at care.fracktal.in")
                         if self.printerStatus == "Printing":
                             client.cancelPrint()
                             self.control_screen.coolDownAction()
@@ -513,7 +516,7 @@ class MainWindow(QMainWindow):
             client = self.octoprint_client
             if client:
                 try:
-                    client.gcode(command='status') #get klipper status. hanle in
+                    client.gcode(command='status')  # get klipper status. hanle in
                     self.isFilamentSensorInstalled()
                     try:
                         response = client.isFailureDetected()
@@ -521,7 +524,7 @@ class MainWindow(QMainWindow):
                             self.printRestoreMessageBox(response["file"])
                         else:
                             # self.firmwareUpdateCheck()
-                            pass #Firmware update Functionality not needed for Twin Dragon, need to modify this for updating cfg files
+                            pass  # Firmware update Functionality not needed for Twin Dragon, need to modify this for updating cfg files
                     except:
                         pass
                 except Exception as e:
@@ -541,7 +544,8 @@ class MainWindow(QMainWindow):
                     success = False
                     try:
                         headers = {'X-Api-Key': apiKey}
-                        req = requests.get('http://{}/plugin/Julia2018FilamentSensor/status'.format(ip), headers=headers)
+                        req = requests.get('http://{}/plugin/Julia2018FilamentSensor/status'.format(ip),
+                                           headers=headers)
                         success = req.status_code == requests.codes.ok
                     except:
                         pass
@@ -551,7 +555,7 @@ class MainWindow(QMainWindow):
                     logger.error("Error in MainUiClass.isFilamentSensorInstalled: {}".format(e))
                     dialog.WarningOk(self, "Error in MainUiClass.isFilamentSensorInstalled: {}".format(e), overlay=True)
 
-    def showProbingFailed(self,msg='Probing Failed, Calibrate bed again or check for hardware issue',overlay=True):
+    def showProbingFailed(self, msg='Probing Failed, Calibrate bed again or check for hardware issue', overlay=True):
         logger.info("MainUiClass.showProbingFailed started")
         if hasattr(self, 'octoprint_client'):
             client = self.octoprint_client
@@ -572,7 +576,8 @@ class MainWindow(QMainWindow):
             if client:
                 try:
                     if any(error in msg for error in
-                           ["Can not update MCU", "Error loading template", "Must home axis first", "probe", "Error during homing move", "still triggered after retract", "'mcu' must be specified"]):
+                           ["Can not update MCU", "Error loading template", "Must home axis first", "probe",
+                            "Error during homing move", "still triggered after retract", "'mcu' must be specified"]):
                         logger.error("CRITICAL ERROR SHUTDOWN NEEDED")
                         if self.home_screen.printerStatusText in ["Starting", "Printing", "Paused"]:
                             client.cancelPrint()
