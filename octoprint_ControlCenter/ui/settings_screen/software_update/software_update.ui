@@ -101,7 +101,7 @@ QPushButton:default {
      </property>
      <property name="icon">
       <iconset>
-       <normaloff>../../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/arrows-4.png</normaloff>../../../../../TwinDragon600x600CM4TouchUI/octoprint_TwinDragon600x600CM4TouchUI/templates/img/arrows-4.png</iconset>
+       <normaloff>:/Navigation/img/Navigation/arrows-4.png</normaloff>:/Navigation/img/Navigation/arrows-4.png</iconset>
      </property>
      <property name="iconSize">
       <size>

@@ -54,8 +54,7 @@ class SoftwareUpdate(QWidget):
             print("WARNING: Could not connect back button - button not found")
             
         if self.performUpdateButton:
-            self.performUpdateButton.clicked.connect(self.update_software)
-            print("Connected update button to update_software")
+            self.performUpdateButton.clicked.connect(lambda: self.mainSettingsWidget.main_window.octoprint_client.performSoftwareUpdate())
         else:
             print("WARNING: Could not connect update button - button not found")
         
