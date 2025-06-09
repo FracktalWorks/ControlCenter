@@ -88,7 +88,7 @@ class ChangeFilament(QWidget):
         if self.changeFilamentLoadButton:
             self.changeFilamentLoadButton.clicked.connect(self.loadFilament)
         if self.changeFilamentUnloadButton:
-            self.changeFilamentUnloadButton.clicked.connect(self.start_unloading_filament)
+            self.changeFilamentUnloadButton.clicked.connect(self.unloadFilament)
         if self.toolToggleChangeFilamentButton:
             self.toolToggleChangeFilamentButton.clicked.connect(self.selectToolChangeFilament)
         if self.loadedTillExtruderButton:
@@ -207,6 +207,40 @@ class ChangeFilament(QWidget):
             self.changeFilamentHeatingFlag = False
             logger.error("Error in MainUiClass.loadFilament: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.loadFilament: {}".format(e), overlay=True)
+
+    def unloadFilament(self):
+        logger.info("MainUiClass.unloadFilament started")
+        try:
+            if self.home_screen.printerStatusText not in ["Printing", "Paused"]:
+                if self.activeExtruder == 1:
+                    self.main_window.octoprint_client.jog(
+                        self.main_window.printer_model.tool1PurgePosition['X'],
+                        self.main_window.printer_model.tool1PurgePosition["Y"],
+                        absolute=True, speed=10000
+                    )
+
+                else:
+                    self.main_window.octoprint_client.jog(
+                        self.main_window.printer_model.tool0PurgePosition['X'],
+                        self.main_window.printer_model.tool0PurgePosition["Y"],
+                        absolute=True, speed=10000
+                    )
+
+            if self.changeFilamentComboBox.findText("Loaded Filament") == -1:
+                self.main_window.octoprint_client.setToolTemperature({"tool1": self.main_window.printer_model.filaments[str(
+                    self.changeFilamentComboBox.currentText())]}) if self.activeExtruder == 1 else self.main_window.octoprint_client.setToolTemperature(
+                    {"tool0": self.main_window.printer_model.filaments[str(self.changeFilamentComboBox.currentText())]})
+            self.stackedWidget.setCurrentWidget(self.changeFilamentProgressPage)
+            self.changeFilamentStatus.setText("Heating Tool {}, Please Wait...".format(str(self.activeExtruder)))
+            self.changeFilamentNameOperation.setText("Unloading {}".format(str(self.changeFilamentComboBox.currentText())))
+            # this flag tells the updateTemperature function that runs every second to update the filament change progress bar as well, and to load or unload after heating done
+            self.changeFilamentHeatingFlag = True
+            self.loadFlag = False
+        except Exception as e:
+            self.loadFlag = False
+            self.changeFilamentHeatingFlag = False
+            logger.error("Error in MainUiClass.unloadFilament: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.unloadFilament: {}".format(e), overlay=True)
 
     def setActiveExtruder(self, activeNozzle):
         """
