@@ -151,7 +151,7 @@ class ControlScreen(QWidget):
         if self.moveYPButton:
             self.moveYPButton.clicked.connect(lambda: self.main_window.octoprint_client.jog(y=self.step, speed=2000))
         if self.moveYMButton:
-            self.moveYPButton.clicked.connect(lambda: self.main_window.octoprint_client.jog(y=-self.step, speed=2000))
+            self.moveYMButton.clicked.connect(lambda: self.main_window.octoprint_client.jog(y=-self.step, speed=2000))
         if self.motorOffButton:
             self.motorOffButton.clicked.connect(lambda: self.main_window.octoprint_client.gcode(command='M18'))
         if self.homeXYButton:
