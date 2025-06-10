@@ -11,6 +11,7 @@ from ui.calibrate_screen.bedLevelingPage.bedLevelingPage import BedLeveling
 from ui.calibrate_screen.testPrintPage.testPrintPage import TestPrintPage
 from ui.calibrate_screen.idexLevelCalibration.idexLevelCalibration import IdexLevelCalibration
 
+
 class CalibrateScreen(QWidget):
     def __init__(self, main_window):
         super(CalibrateScreen, self).__init__()
@@ -18,7 +19,9 @@ class CalibrateScreen(QWidget):
 
         # Load the UI
         try:
-            uic.loadUi("/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/calibrate_screen/calibrate_screen.ui", self)
+            uic.loadUi(
+                "/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/calibrate_screen/calibrate_screen.ui",
+                self)
             logger.info("CalibrateScreen UI loaded successfully")
         except Exception as e:
             logger.exception(f"Failed to load CalibrateScreen UI file: {e}")
@@ -101,7 +104,7 @@ class CalibrateScreen(QWidget):
             error_message = f"Error in inptuShaperCalibrate: {str(e)}"
             logger.error(error_message)
             dialog.WarningOk(error_message, overlay=True)
-        
+
     def _show_tool_offset_z(self):
         """Show the tool offset screen with Z tab selected"""
         self.show_calibrate_screen("tool_offset")
@@ -113,7 +116,7 @@ class CalibrateScreen(QWidget):
                 logger.debug("Showing Tool Offset Z tab")
             else:
                 logger.error("Tool Offset Z page not found")
-    
+
     def _show_tool_offset_xy(self):
         """Show the tool offset screen with XY tab selected"""
         self.show_calibrate_screen("tool_offset")
@@ -161,9 +164,10 @@ class CalibrateScreen(QWidget):
         if not self.calibration_stacked_widget or not self.main_calibrate_page:
             logger.error("Cannot handle back button - required widgets missing")
             return
-            
+
         current_widget = self.calibration_stacked_widget.currentWidget()
-        logger.debug(f"Back button pressed. Current widget: {current_widget.objectName() if hasattr(current_widget, 'objectName') else 'unknown'}")
+        logger.debug(
+            f"Back button pressed. Current widget: {current_widget.objectName() if hasattr(current_widget, 'objectName') else 'unknown'}")
 
         if current_widget == self.main_calibrate_page:
             # If we're on the main calibrate page, use navigation history to go back
@@ -181,6 +185,7 @@ class CalibrateScreen(QWidget):
         if bed_leveling_screen and hasattr(bed_leveling_screen, "reset_wizard"):
             bed_leveling_screen.reset_wizard()
         self.show_calibrate_screen("bed_leveling")
+        bed_leveling_screen.quickStep1()
 
     def navigate_to_idex_calibration(self):
         """Open the IDEX Level Calibration screen and reset the wizard."""

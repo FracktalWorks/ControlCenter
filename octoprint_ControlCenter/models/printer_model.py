@@ -66,7 +66,7 @@ class PrinterModel(QObject):
             "Breakaway": 220
         }
         
-        self.calibration_positions = {
+        self.calibrationPosition = {
             'X1': 63, 'Y1': 67,
             'X2': 542, 'Y2': 67,
             'X3': 303, 'Y3': 567,
