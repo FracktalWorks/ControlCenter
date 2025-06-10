@@ -8,6 +8,7 @@ from utils.helpers import check_ui_elements
 from utils.logger import setup_logger
 from utils.dialog import WarningYesNo, WarningOk
 
+
 class SettingsScreen(QWidget):
     def __init__(self, main_window):
         super(SettingsScreen, self).__init__()
@@ -16,12 +17,11 @@ class SettingsScreen(QWidget):
         # Setup logger
         self.logger = setup_logger('settings_screen')
 
-
-
-
         # Load the UI with proper error handling
         try:
-            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen/settings_screen.ui', self)
+            uic.loadUi(
+                '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen/settings_screen.ui',
+                self)
             self.logger.info("Settings screen UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load settings screen UI file: {e}")
@@ -32,7 +32,7 @@ class SettingsScreen(QWidget):
         self.stackedWidget = self.findChild(QStackedWidget, "mainSettingsStackedWidget")
         self.mainSettingsPage = self.findChild(QWidget, "mainSettingsPage")
         self.scrollArea = self.findChild(QScrollArea, "scrollArea")
-        
+
         # Button widgets for navigation and actions
         self.backButton = self.findChild(QPushButton, "settingsBackButton")
         self.restorePrintSettingsButton = self.findChild(QPushButton, "restorePrintSettingsButton")
@@ -70,15 +70,15 @@ class SettingsScreen(QWidget):
         if self.backButton:
             self.backButton.clicked.connect(self.go_back)
             self.logger.debug("Connected settingsBackButton to handler")
-        
+
         if self.restorePrintSettingsButton:
             self.restorePrintSettingsButton.clicked.connect(self.restore_print_settings)
             self.logger.debug("Connected restorePrintSettingsButton to handler")
-            
+
         if self.restoreFactoryDefaultsButton:
             self.restoreFactoryDefaultsButton.clicked.connect(self.restore_factory_defaults)
             self.logger.debug("Connected restoreFactoryDefaultsButton to handler")
-            
+
         if self.restartButton:
             self.restartButton.clicked.connect(self.restart_system)
             self.logger.debug("Connected restartButton to handler")
@@ -89,7 +89,7 @@ class SettingsScreen(QWidget):
             if self.backButton:
                 self.verticalLayout.insertWidget(0, self.backButton)
                 self.logger.debug("Added back button to the top of the vertical layout")
-                
+
             # Add restart button at the bottom
             if self.restartButton:
                 self.verticalLayout.addWidget(self.restartButton)
@@ -104,7 +104,6 @@ class SettingsScreen(QWidget):
 
         # Load settings widgets from subfolders
         self.load_settings_widgets()
-    
 
     def tellAndReboot(self, msg="Rebooting...", overlay=True):
         if dialog.WarningOk(self, msg, overlay=overlay):
@@ -123,7 +122,7 @@ class SettingsScreen(QWidget):
         if not (self.stackedWidget and self.verticalLayout):
             self.logger.error("Cannot load settings widgets: stackedWidget or verticalLayout is missing")
             return
-            
+
         settings_folder = '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen'
         try:
             for subfolder in os.listdir(settings_folder):
@@ -189,7 +188,7 @@ class SettingsScreen(QWidget):
         if not self.stackedWidget:
             self.logger.error("Cannot switch widgets - stacked widget is missing")
             return
-            
+
         for i in range(self.stackedWidget.count()):
             widget = self.stackedWidget.widget(i)
             if widget.findChild(QWidget, widget_name):
@@ -208,6 +207,7 @@ class SettingsScreen(QWidget):
         Returns:
             QWidget: An instance of the dynamically loaded widget.
         """
+
         class DynamicWidget(QWidget):
             def __init__(self, parent):
                 super(DynamicWidget, self).__init__(parent)
@@ -240,15 +240,19 @@ class SettingsScreen(QWidget):
         """Restore the print settings to their default values."""
         self.logger.info("Restoring print settings to default values.")
         # Add logic to restore print settings
-        
+
         try:
-            if dialog.WarningYesNo(self, "Are you sure you want to restore default print settings?\nWarning: Doing so will erase offsets and bed leveling info",overlay=True):
+            if dialog.WarningYesNo(self,
+                                   "Are you sure you want to restore default print settings?\nWarning: Doing so will erase offsets and bed leveling info",
+                                   overlay=True):
                 os.system('sudo cp -f firmware/COMMON_FILAMENT_SENSOR.cfg /home/pi/COMMON_FILAMENT_SENSOR.cfg')
                 os.system('sudo cp -f firmware/COMMON_GCODE_MACROS.cfg /home/pi/COMMON_GCODE_MACROS.cfg')
                 os.system('sudo cp -f firmware/COMMON_IDEX.cfg /home/pi/COMMON_IDEX.cfg')
                 os.system('sudo cp -f firmware/COMMON_MOTHERBOARD.cfg /home/pi/COMMON_MOTHERBOARD.cfg')
-                os.system('sudo cp -f firmware/PRINTERS_TWINDRAGON_600x300.cfg /home/pi/PRINTERS_TWINDRAGON_600x300.cfg')
-                os.system('sudo cp -f firmware/PRINTERS_TWINDRAGON_600x600.cfg /home/pi/PRINTERS_TWINDRAGON_600x600.cfg')
+                os.system(
+                    'sudo cp -f firmware/PRINTERS_TWINDRAGON_600x300.cfg /home/pi/PRINTERS_TWINDRAGON_600x300.cfg')
+                os.system(
+                    'sudo cp -f firmware/PRINTERS_TWINDRAGON_600x600.cfg /home/pi/PRINTERS_TWINDRAGON_600x600.cfg')
                 os.system('sudo cp -f firmware/TOOLHEADS_TD-01_TOOLHEAD0.cfg /home/pi/TOOLHEADS_TD-01_TOOLHEAD0.cfg')
                 os.system('sudo cp -f firmware/TOOLHEADS_TD-01_TOOLHEAD1.cfg /home/pi/TOOLHEADS_TD-01_TOOLHEAD1.cfg')
                 os.system('sudo cp -f firmware/variables.cfg /home/pi/variables.cfg')
@@ -261,19 +265,15 @@ class SettingsScreen(QWidget):
             logger.error("Error in MainUiClass.restorePrintDefaults: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.restorePrintDefaults: {}".format(e), overlay=True)
 
-
-
-
-
-
     def restore_factory_defaults(self):
         """Restore the system to factory default settings."""
         self.logger.info("Restoring system to factory default settings.")
         # Add logic to restore factory default settings
 
-
         try:
-            if dialog.WarningYesNo(self, "Are you sure you want to restore machine state to factory defaults?\nWarning: Doing so will also reset printer profiles, WiFi & Ethernet config.",overlay=True):
+            if dialog.WarningYesNo(self,
+                                   "Are you sure you want to restore machine state to factory defaults?\nWarning: Doing so will also reset printer profiles, WiFi & Ethernet config.",
+                                   overlay=True):
                 os.system('sudo cp -f config/dhcpcd.conf /etc/dhcpcd.conf')
                 os.system('sudo cp -f config/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf')
                 os.system('sudo rm -rf /home/pi/.octoprint/users.yaml')
@@ -300,4 +300,4 @@ class SettingsScreen(QWidget):
                 self.logger.info("User cancelled reboot")
         except Exception as e:
             self.logger.error(f"Error during restart: {e}")
-            WarningOk(self, f"Error during restart: {e}", overlay= True)
+            WarningOk(self, f"Error during restart: {e}", overlay=True)

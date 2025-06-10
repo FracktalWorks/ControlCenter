@@ -1,6 +1,6 @@
 from PyQt5 import QtGui, QtCore
 from PyQt5 import uic
-from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget
+from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel
 from functools import partial  # Add missing import for partial function
 from utils.custom_widgets import ClickableLineEdit
 from utils.helpers import check_ui_elements
@@ -16,33 +16,39 @@ from utils import dialog
 
 from utils.helpers import run_async
 import time
+import qrcode
+from utils.qrcode_image import Image
 
 # Initialize logger for NetworkSettings
 logger = setup_logger('network_settings')
+
 
 class NetworkSettings(QWidget):
     """
     Network Settings widget that allows users to configure network connections
     including WiFi and Static IP settings.
     """
+
     def __init__(self, parent, settings_screen):
         super(NetworkSettings, self).__init__(parent)
         self.mainSettingsWidget = settings_screen  # Reference to the main settings widget
-        
+
         # Load the UI
         try:
-            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen/network_settings/network_settings.ui', self)
+            uic.loadUi(
+                '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen/network_settings/network_settings.ui',
+                self)
             logger.info("NetworkSettings UI loaded successfully")
         except Exception as e:
             logger.error(f"Failed to load NetworkSettings UI file: {e}")
-        
+
         # Initialize UI components
         # Navigation buttons
         self.networkSettingsBackButton = self.findChild(QPushButton, "networkSettingsBackButton")
         self.networkInfoBackButton = self.findChild(QPushButton, "networkInfoBackButton")
         self.staticIPSettingsCancelButton = self.findChild(QPushButton, "staticIPSettingsCancelButton")
         self.wifiSettingsCancelButton = self.findChild(QPushButton, "wifiSettingsCancelButton")
-        
+
         # Action buttons
         self.networkInfoButton = self.findChild(QPushButton, "networkInfoButton")
         self.configureStaticIPButton = self.findChild(QPushButton, "configureStaticIPButton")
@@ -50,20 +56,22 @@ class NetworkSettings(QWidget):
         self.staticIPSettingsDoneButton = self.findChild(QPushButton, "staticIPSettingsDoneButton")
         self.wifiSettingsDoneButton = self.findChild(QPushButton, "wifiSettingsDoneButton")
         self.deleteStaticIPSettingsButton = self.findChild(QPushButton, "deleteStaticIPSettingsButton")
-        
+
         # Keyboard buttons
         self.staticIPKeyboardButton = self.findChild(QPushButton, "staticIPKeyboardButton")
         self.staticIPGatewayKeyboardButton = self.findChild(QPushButton, "staticIPGatewayKeyboardButton")
         self.staticIPNameServerKeyboardButton = self.findChild(QPushButton, "staticIPNameServerKeyboardButton")
         self.wifiSettingsSSIDKeyboardButton = self.findChild(QPushButton, "wifiSettingsSSIDKeyboardButton")
-        
+
         # UI containers and pages
         self.stackedWidget = self.findChild(QStackedWidget, "stackedWidget")
         self.networkSettingsPage = self.findChild(QWidget, "networkSettingsPage")
         self.networkInfoPage = self.findChild(QWidget, "networkInfoPage")
         self.staticIPSettingsPage = self.findChild(QWidget, "staticIPSettingsPage")
         self.wifiSettingsPage = self.findChild(QWidget, "wifiSettingsPage")
-        
+
+        self.QRCodeLabel = self.findChild(QLabel, "QRCodeLabel")
+
         # Validate UI components using simplified check_ui_elements
         # Convert all UI components into a single list for validation
         ui_components = [
@@ -75,12 +83,12 @@ class NetworkSettings(QWidget):
             self.staticIPKeyboardButton, self.staticIPGatewayKeyboardButton,
             self.staticIPNameServerKeyboardButton, self.wifiSettingsSSIDKeyboardButton,
             self.stackedWidget, self.networkSettingsPage, self.networkInfoPage,
-            self.staticIPSettingsPage, self.wifiSettingsPage
+            self.staticIPSettingsPage, self.wifiSettingsPage, self.QRCodeLabel
         ]
-        
+
         # Validate all components at once
         check_ui_elements(self, ui_components, "NetworkSettings UI Components")
-        
+
         # Create ClickableLineEdit components
         # Fonts and styles
         font = QtGui.QFont()
@@ -113,52 +121,52 @@ class NetworkSettings(QWidget):
         self.staticIPNameServerLineEdit.setFont(font)
         self.staticIPNameServerLineEdit.setStyleSheet(styles.textedit)
         self.staticIPNameServerLineEdit.setObjectName("staticIPNameServerLineEdit")
-        
+
         # Connect buttons to their respective functions
         # Navigation buttons
         if self.networkSettingsBackButton:
             self.networkSettingsBackButton.clicked.connect(self.go_back_to_settings_screen)
-        
+
         if self.networkInfoBackButton:
             self.networkInfoBackButton.clicked.connect(self.go_back)
-        
+
         if self.staticIPSettingsCancelButton:
             self.staticIPSettingsCancelButton.clicked.connect(self.cancel_network_settings)
-        
+
         if self.wifiSettingsCancelButton:
             self.wifiSettingsCancelButton.clicked.connect(self.cancel_network_settings)
-        
+
         # Action buttons
         if self.networkInfoButton:
             self.networkInfoButton.clicked.connect(self.networkInfo)
-        
+
         if self.configureStaticIPButton:
             self.configureStaticIPButton.clicked.connect(self.show_static_ip_settings)
-        
+
         if self.configureWifiButton:
             self.configureWifiButton.clicked.connect(self.show_wifi_settings)
-        
+
         if self.staticIPSettingsDoneButton:
             self.staticIPSettingsDoneButton.clicked.connect(self.save_network_settings)
-        
+
         if self.wifiSettingsDoneButton:
             self.wifiSettingsDoneButton.clicked.connect(self.save_network_settings)
-        
+
         # Set the default page in stacked widget
         if self.stackedWidget and self.networkSettingsPage:
             self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
             logger.info("Set default page to networkSettingsPage")
         else:
             logger.warning("Could not set default page - required widgets missing")
-            
+
         # Connect text input fields to keyboard
         # Text Input events
         self.wifiPasswordLineEdit.clicked_signal.connect(lambda: self.startKeyboard(self.wifiPasswordLineEdit.setText))
         self.staticIPLineEdit.clicked_signal.connect(lambda: self.staticIPShowKeyboard(self.staticIPLineEdit))
-        self.staticIPGatewayLineEdit.clicked_signal.connect(lambda: self.staticIPShowKeyboard(self.staticIPGatewayLineEdit))
-        self.staticIPNameServerLineEdit.clicked_signal.connect(lambda: self.staticIPShowKeyboard(self.staticIPNameServerLineEdit))
-
-        self.setIPStatus()
+        self.staticIPGatewayLineEdit.clicked_signal.connect(
+            lambda: self.staticIPShowKeyboard(self.staticIPGatewayLineEdit))
+        self.staticIPNameServerLineEdit.clicked_signal.connect(
+            lambda: self.staticIPShowKeyboard(self.staticIPNameServerLineEdit))
 
     def networkInfo(self):
         logger.info("MainUiClass.networkInfo started")
@@ -169,36 +177,32 @@ class NetworkSettings(QWidget):
             self.hostname.setText(getHostname())
             self.wifiAp.setText(getWifiAp())
             self.wifiIp.setText("Not connected" if not ipWifi else ipWifi)
-            self.ipStatus.setText("Not connected" if not ipWifi else ipWifi)
+            self.mainSettingsWidget.main_window.home_screen.ipStatus.setText("Not connected" if not ipWifi else ipWifi)
             self.lanIp.setText("Not connected" if not ipEth else ipEth)
             self.wifiMac.setText(getMac(ThreadRestartNetworking.WLAN).decode('utf8'))
             self.lanMac.setText(getMac(ThreadRestartNetworking.ETH).decode('utf8'))
             self.stackedWidget.setCurrentWidget(self.networkInfoPage)
+            self.displayQRCode()
         except Exception as e:
             logger.error("Error in MainUiClass.networkInfo: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.networkInfo: {}".format(e), overlay=True)
 
-    @run_async
-    def setIPStatus(self):
-        """
-        Function to update IP address of printer on the status bar. Refreshes at a particular interval.
-        """
+    def displayQRCode(self):
+        # Display QR Code
         try:
-            while True:
-                try:
-                    if getIP("eth0"):
-                        self.ipStatus.setText(getIP("eth0"))
-                    elif getIP("wlan0"):
-                        self.ipStatus.setText(getIP("wlan0"))
-                    else:
-                        self.ipStatus.setText("Not connected")
-
-                except:
-                    self.ipStatus.setText("Not connected")
-                time.sleep(60)
+            if getIP(ThreadRestartNetworking.ETH) is not None:
+                qrip = getIP(ThreadRestartNetworking.ETH)
+            elif getIP(ThreadRestartNetworking.WLAN) is not None:
+                qrip = getIP(ThreadRestartNetworking.WLAN)
+            else:
+                if dialog.WarningOk(self, "Network Disconnected"):
+                    return
+            self.QRCodeLabel.setPixmap(
+                qrcode.make("http://" + qrip, image_factory=Image).pixmap())
+            # self.stackedWidget.setCurrentWidget(self.QRCodePage)
         except Exception as e:
-            logger.error("Error in MainUiClass.setIPStatus: {}".format(e))
-
+            logger.error("Error in Network Settings: QR CODE {}".format(e))
+            dialog.WarningOk(self, "Error in Network Settings: QR CODE {}".format(e), overlay=True)
 
     # ! TO BE COMMENTED OUT
     def save_network_settings(self):
@@ -263,7 +267,7 @@ class NetworkSettings(QWidget):
             logger.info("Navigated to WiFi settings page")
         else:
             logger.error("Cannot navigate - required widgets missing")
-    
+
     def staticIPShowKeyboard(self, textbox):
         """
         Opens the keyboard with IP-specific settings (numeric only, no spaces)

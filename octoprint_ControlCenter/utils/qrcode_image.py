@@ -1,5 +1,5 @@
 from PyQt5 import QtGui, QtCore
-import qrcode.image.base
+import qrcode
 
 class Image(qrcode.image.base.BaseImage):
     def __init__(self, border, width, box_size):
