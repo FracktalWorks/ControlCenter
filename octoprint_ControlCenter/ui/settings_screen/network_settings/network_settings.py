@@ -1,6 +1,7 @@
 from PyQt5 import QtGui, QtCore
 from PyQt5 import uic
-from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel
+from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel, QCheckBox
 from functools import partial  # Add missing import for partial function
 from utils.custom_widgets import ClickableLineEdit
 from utils.helpers import check_ui_elements
@@ -16,7 +17,9 @@ from utils import dialog
 
 from utils.helpers import run_async
 import time
+import subprocess
 import qrcode
+import io
 from utils.qrcode_image import Image
 
 # Initialize logger for NetworkSettings
@@ -71,6 +74,7 @@ class NetworkSettings(QWidget):
         self.wifiSettingsPage = self.findChild(QWidget, "wifiSettingsPage")
 
         self.QRCodeLabel = self.findChild(QLabel, "QRCodeLabel")
+        self.hiddenCheckBox = self.findChild(QCheckBox, "hiddenCheckBox")
 
         # Validate UI components using simplified check_ui_elements
         # Convert all UI components into a single list for validation
@@ -144,13 +148,16 @@ class NetworkSettings(QWidget):
             self.configureStaticIPButton.clicked.connect(self.show_static_ip_settings)
 
         if self.configureWifiButton:
-            self.configureWifiButton.clicked.connect(self.show_wifi_settings)
+            self.configureWifiButton.clicked.connect(self.wifiSettings)
 
         if self.staticIPSettingsDoneButton:
             self.staticIPSettingsDoneButton.clicked.connect(self.save_network_settings)
 
         if self.wifiSettingsDoneButton:
-            self.wifiSettingsDoneButton.clicked.connect(self.save_network_settings)
+            self.wifiSettingsDoneButton.clicked.connect(self.acceptWifiSettings)
+
+        if self.hiddenCheckBox:
+            self.hiddenCheckBox.stateChanged.connect(self.togglePasswordVisibility)
 
         # Set the default page in stacked widget
         if self.stackedWidget and self.networkSettingsPage:
@@ -167,6 +174,8 @@ class NetworkSettings(QWidget):
             lambda: self.staticIPShowKeyboard(self.staticIPGatewayLineEdit))
         self.staticIPNameServerLineEdit.clicked_signal.connect(
             lambda: self.staticIPShowKeyboard(self.staticIPNameServerLineEdit))
+        self.wifiSettingsSSIDKeyboardButton.clicked.connect(
+            lambda: self.startKeyboard(self.wifiSettingsComboBox.addItem))
 
     def networkInfo(self):
         logger.info("MainUiClass.networkInfo started")
@@ -203,6 +212,112 @@ class NetworkSettings(QWidget):
         except Exception as e:
             logger.error("Error in Network Settings: QR CODE {}".format(e))
             dialog.WarningOk(self, "Error in Network Settings: QR CODE {}".format(e), overlay=True)
+
+    def startKeyboard(self, returnFn, onlyNumeric=False, noSpace=False, text=""):
+        """
+        starts the keyboard screen for entering Password
+        """
+        logger.info("MainUiClass.startKeyboard started")
+        try:
+            keyBoardobj = keyboard.Keyboard(onlyNumeric=onlyNumeric, noSpace=noSpace, text=text)
+            keyBoardobj.keyboard_signal.connect(returnFn)
+            keyBoardobj.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+            keyBoardobj.show()
+        except Exception as e:
+            logger.error("Error in MainUiClass.startKeyboard: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.startKeyboard: {}".format(e), overlay=True)
+
+    def wifiSettings(self):
+        logger.info("MainUiClass.wifiSettings started")
+        try:
+            self.stackedWidget.setCurrentWidget(self.wifiSettingsPage)
+            self.wifiSettingsComboBox.clear()
+            self.wifiSettingsComboBox.addItems(self.scan_wifi())
+            self.wifiPasswordLineEdit.clear()
+        except Exception as e:
+            logger.error("Error in MainUiClass.wifiSettings: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.wifiSettings: {}".format(e), overlay=True)
+
+    def scan_wifi(self):
+        """
+        uses linux shell and WIFI interface to scan available networks
+        :return: dictionary of the SSID and the signal strength
+        """
+        logger.info("MainUiClass.scan_wifi started")
+        try:
+            # scanData = {}
+            # print "Scanning available wireless signals available to wlan0"
+            scan_result = \
+                subprocess.Popen("iwlist wlan0 scan | grep 'ESSID'", stdout=subprocess.PIPE, shell=True).communicate()[0]
+            # Processing STDOUT into a dictionary that later will be converted to a json file later
+            scan_result = scan_result.decode('utf8').split('ESSID:')  # each ssid and pass from an item in a list ([ssid pass,ssid paas])
+            scan_result = [s.strip() for s in scan_result]
+            scan_result = [s.strip('"') for s in scan_result]
+            scan_result = filter(None, scan_result)
+            return scan_result
+        except Exception as e:
+            logger.error("Error in MainUiClass.scan_wifi: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.scan_wifi: {}".format(e), overlay=True)
+            return []
+
+    def acceptWifiSettings(self):
+        logger.info("MainUiClass.acceptWifiSettings started")
+        try:
+            wlan0_config_file = io.open("/etc/wpa_supplicant/wpa_supplicant.conf", "r+", encoding='utf8')
+            wlan0_config_file.truncate()
+            ascii_ssid = self.wifiSettingsComboBox.currentText()
+            # unicode_ssid = ascii_ssid.decode('string_escape').decode('utf-8')
+            wlan0_config_file.write(u"country=IN\n")
+            wlan0_config_file.write(u"ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev\n")
+            wlan0_config_file.write(u"update_config=1\n")
+            wlan0_config_file.write(u"network={\n")
+            wlan0_config_file.write(u'ssid="' + str(ascii_ssid) + '"\n')
+            if self.hiddenCheckBox.isChecked():
+                wlan0_config_file.write(u'scan_ssid=1\n')
+            # wlan0_config_file.write(u"scan_ssid=1\n")
+            if str(self.wifiPasswordLineEdit.text()) != "":
+                wlan0_config_file.write(u'psk="' + str(self.wifiPasswordLineEdit.text()) + '"\n')
+            # wlan0_config_file.write(u"key_mgmt=WPA-PSK\n")
+            wlan0_config_file.write(u'}')
+            wlan0_config_file.close()
+            self.restartWifiThreadObject = ThreadRestartNetworking(ThreadRestartNetworking.WLAN)
+            self.restartWifiThreadObject.signal.connect(self.wifiReconnectResult)
+            self.restartWifiThreadObject.start()
+            self.wifiMessageBox = dialog.dialog(self,
+                                                "Restarting networking, please wait...",
+                                                icon="exclamation-mark.png",
+                                                buttons=QtWidgets.QMessageBox.Cancel)
+            if self.wifiMessageBox.exec_() in {QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Cancel}:
+                self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
+        except Exception as e:
+            logger.error("Error in MainUiClass.acceptWifiSettings: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.acceptWifiSettings: {}".format(e), overlay=True)
+
+    def wifiReconnectResult(self, x):
+        logger.info("MainUiClass.wifiReconnectResult started")
+        try:
+            self.wifiMessageBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
+            if x is not None:
+                print("Ouput from signal " + x)
+                self.wifiMessageBox.setLocalIcon('success.png')
+                self.wifiMessageBox.setText('Connected, IP: ' + x)
+                self.wifiMessageBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
+                self.mainSettingsWidget.main_window.home_screen.ipStatus.setText(x)  # sets the IP addr. in the status bar
+
+            else:
+                self.wifiMessageBox.setText("Not able to connect to WiFi")
+        except Exception as e:
+            logger.error("Error in MainUiClass.wifiReconnectResult: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.wifiReconnectResult: {}".format(e), overlay=True)
+
+    def togglePasswordVisibility(self, state):
+        """
+        Toggles the visibility of the WiFi password based on the hidden checkbox state.
+        """
+        if state == QtCore.Qt.Checked:
+            self.wifiPasswordLineEdit.setEchoMode(QtWidgets.QLineEdit.Password)  # Hide password
+        else:
+            self.wifiPasswordLineEdit.setEchoMode(QtWidgets.QLineEdit.Normal)  # Show password
 
     # ! TO BE COMMENTED OUT
     def save_network_settings(self):
@@ -279,18 +394,3 @@ class NetworkSettings(QWidget):
             logger.error(f"Error in NetworkSettings.staticIPShowKeyboard: {e}")
             # If you have a dialog module:
             # dialog.WarningOk(self, f"Error in NetworkSettings.staticIPShowKeyboard: {e}", overlay=True)
-
-    def startKeyboard(self, returnFn, onlyNumeric=False, noSpace=False, text=""):
-        """
-        Starts the keyboard screen for entering text
-        """
-        logger.info("NetworkSettings.startKeyboard started")
-        try:
-            keyBoardobj = keyboard.Keyboard(onlyNumeric=onlyNumeric, noSpace=noSpace, text=text)
-            keyBoardobj.keyboard_signal.connect(returnFn)
-            keyBoardobj.setWindowFlags(QtCore.Qt.FramelessWindowHint)
-            keyBoardobj.show()
-        except Exception as e:
-            logger.error(f"Error in NetworkSettings.startKeyboard: {e}")
-            # If you have a dialog module:
-            # dialog.WarningOk(self, f"Error in NetworkSettings.startKeyboard: {e}", overlay=True)
