@@ -20,6 +20,7 @@ import time
 import subprocess
 import qrcode
 import io
+import re
 from utils.qrcode_image import Image
 
 # Initialize logger for NetworkSettings
@@ -109,19 +110,19 @@ class NetworkSettings(QWidget):
         # Static IP Line Edits
         font.setPointSize(11)
         self.staticIPLineEdit = ClickableLineEdit(self.staticIPSettingsPage)
-        self.staticIPLineEdit.setGeometry(QtCore.QRect(200, 15, 450, 40))
+        self.staticIPLineEdit.setGeometry(QtCore.QRect(200, 135, 450, 40))
         self.staticIPLineEdit.setFont(font)
         self.staticIPLineEdit.setStyleSheet(styles.textedit)
         self.staticIPLineEdit.setObjectName("staticIPLineEdit")
 
         self.staticIPGatewayLineEdit = ClickableLineEdit(self.staticIPSettingsPage)
-        self.staticIPGatewayLineEdit.setGeometry(QtCore.QRect(200, 85, 450, 40))
+        self.staticIPGatewayLineEdit.setGeometry(QtCore.QRect(200, 205, 450, 40))
         self.staticIPGatewayLineEdit.setFont(font)
         self.staticIPGatewayLineEdit.setStyleSheet(styles.textedit)
         self.staticIPGatewayLineEdit.setObjectName("staticIPGatewayLineEdit")
 
         self.staticIPNameServerLineEdit = ClickableLineEdit(self.staticIPSettingsPage)
-        self.staticIPNameServerLineEdit.setGeometry(QtCore.QRect(200, 155, 450, 40))
+        self.staticIPNameServerLineEdit.setGeometry(QtCore.QRect(200, 275, 450, 40))
         self.staticIPNameServerLineEdit.setFont(font)
         self.staticIPNameServerLineEdit.setStyleSheet(styles.textedit)
         self.staticIPNameServerLineEdit.setObjectName("staticIPNameServerLineEdit")
@@ -135,7 +136,9 @@ class NetworkSettings(QWidget):
             self.networkInfoBackButton.clicked.connect(self.go_back)
 
         if self.staticIPSettingsCancelButton:
-            self.staticIPSettingsCancelButton.clicked.connect(self.cancel_network_settings)
+            self.staticIPSettingsCancelButton.clicked.connect(
+                lambda: self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
+            )
 
         if self.wifiSettingsCancelButton:
             self.wifiSettingsCancelButton.clicked.connect(self.cancel_network_settings)
@@ -145,13 +148,13 @@ class NetworkSettings(QWidget):
             self.networkInfoButton.clicked.connect(self.networkInfo)
 
         if self.configureStaticIPButton:
-            self.configureStaticIPButton.clicked.connect(self.show_static_ip_settings)
+            self.configureStaticIPButton.clicked.connect(self.staticIPSettings)
 
         if self.configureWifiButton:
             self.configureWifiButton.clicked.connect(self.wifiSettings)
 
         if self.staticIPSettingsDoneButton:
-            self.staticIPSettingsDoneButton.clicked.connect(self.save_network_settings)
+            self.staticIPSettingsDoneButton.clicked.connect(self.staticIPSaveStaticNetworkInfo)
 
         if self.wifiSettingsDoneButton:
             self.wifiSettingsDoneButton.clicked.connect(self.acceptWifiSettings)
@@ -168,14 +171,34 @@ class NetworkSettings(QWidget):
 
         # Connect text input fields to keyboard
         # Text Input events
-        self.wifiPasswordLineEdit.clicked_signal.connect(lambda: self.startKeyboard(self.wifiPasswordLineEdit.setText))
-        self.staticIPLineEdit.clicked_signal.connect(lambda: self.staticIPShowKeyboard(self.staticIPLineEdit))
+        self.wifiPasswordLineEdit.clicked_signal.connect(
+            lambda: self.startKeyboard(self.wifiPasswordLineEdit.setText)
+        )
+        self.staticIPLineEdit.clicked_signal.connect(
+            lambda: self.staticIPShowKeyboard(self.staticIPLineEdit)
+        )
         self.staticIPGatewayLineEdit.clicked_signal.connect(
-            lambda: self.staticIPShowKeyboard(self.staticIPGatewayLineEdit))
+            lambda: self.staticIPShowKeyboard(self.staticIPGatewayLineEdit)
+        )
         self.staticIPNameServerLineEdit.clicked_signal.connect(
-            lambda: self.staticIPShowKeyboard(self.staticIPNameServerLineEdit))
+            lambda: self.staticIPShowKeyboard(self.staticIPNameServerLineEdit)
+        )
         self.wifiSettingsSSIDKeyboardButton.clicked.connect(
-            lambda: self.startKeyboard(self.wifiSettingsComboBox.addItem))
+            lambda: self.startKeyboard(self.wifiSettingsComboBox.addItem)
+        )
+
+        self.staticIPKeyboardButton.clicked.connect(
+            lambda: self.staticIPShowKeyboard(self.staticIPLineEdit)
+        )
+        self.staticIPGatewayKeyboardButton.clicked.connect(
+            lambda: self.staticIPShowKeyboard(self.staticIPGatewayLineEdit)
+        )
+        self.staticIPNameServerKeyboardButton.pressed.connect(
+            lambda: self.staticIPShowKeyboard(self.staticIPNameServerLineEdit)
+        )
+        self.deleteStaticIPSettingsButton.pressed.connect(self.deleteStaticIPSettings)
+
+    ''' -------------------------- NETWORK INFO DISPLAY ---------------------------------- '''
 
     def networkInfo(self):
         logger.info("MainUiClass.networkInfo started")
@@ -226,6 +249,8 @@ class NetworkSettings(QWidget):
         except Exception as e:
             logger.error("Error in MainUiClass.startKeyboard: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.startKeyboard: {}".format(e), overlay=True)
+
+    ''' -------------------------- WIFI SETTINGS ---------------------------------- '''
 
     def wifiSettings(self):
         logger.info("MainUiClass.wifiSettings started")
@@ -319,15 +344,116 @@ class NetworkSettings(QWidget):
         else:
             self.wifiPasswordLineEdit.setEchoMode(QtWidgets.QLineEdit.Normal)  # Show password
 
-    # ! TO BE COMMENTED OUT
-    def save_network_settings(self):
-        """Save network settings and return to main network page."""
-        logger.info("Save Network Settings button clicked")
-        if self.stackedWidget and self.networkSettingsPage:
+    ''' -------------------------- STATIC IP SETTINGS ---------------------------------- '''
+
+    def staticIPSettings(self):
+        logger.info("MainUiClass.staticIPSettings started")
+        try:
+            self.stackedWidget.setCurrentWidget(self.staticIPSettingsPage)
+            #add "eth0" and "wlan0" to staticIPComboBox:
+            self.staticIPComboBox.clear()
+            self.staticIPComboBox.addItems(["eth0", "wlan0"])
+        except Exception as e:
+            logger.error("Error in MainUiClass.staticIPSettings: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.staticIPSettings: {}".format(e), overlay=True)
+
+    def isIpErr(self, ip):
+        return (re.search(r"^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$", ip) is None)
+
+    def showIpErr(self, var):
+        return dialog.WarningOk(self, "Invalid input: {0}".format(var))
+
+    def staticIPSaveStaticNetworkInfo(self):
+        logger.info("MainUiClass.staticIPSaveStaticNetworkInfo started")
+        try:
+            txtStaticIPInterface = self.staticIPComboBox.currentText()
+            txtStaticIPAddress = str(self.staticIPLineEdit.text())
+            txtStaticIPGateway = str(self.staticIPGatewayLineEdit.text())
+            txtStaticIPNameServer = str(self.staticIPNameServerLineEdit.text())
+            if self.isIpErr(txtStaticIPAddress):
+                return self.showIpErr("IP Address")
+            if self.isIpErr(txtStaticIPGateway):
+                return self.showIpErr("Gateway")
+            if txtStaticIPNameServer is not "":
+                if self.isIpErr(txtStaticIPNameServer):
+                    return self.showIpErr("NameServer")
+            Globaltxt = subprocess.Popen("cat /etc/dhcpcd.conf", stdout=subprocess.PIPE, shell=True).communicate()[
+                0].decode('utf8')
+            staticIPConfig = ""
+            # using regex remove all lines staring with "interface" and "static" from txt
+            Globaltxt = re.sub(r"interface.*\n", "", Globaltxt)
+            Globaltxt = re.sub(r"static.*\n", "", Globaltxt)
+            Globaltxt = re.sub(r"^\s+", "", Globaltxt)
+            staticIPConfig = "\ninterface {0}\nstatic ip_address={1}/24\nstatic routers={2}\nstatic domain_name_servers=8.8.8.8 8.8.4.4 {3}\n\n".format(
+                txtStaticIPInterface, txtStaticIPAddress, txtStaticIPGateway, txtStaticIPNameServer)
+            Globaltxt = staticIPConfig + Globaltxt
+            with open("/etc/dhcpcd.conf", "w") as f:
+                f.write(Globaltxt)
+
+            if txtStaticIPInterface == 'eth0':
+                print("Restarting networking for eth0")
+                self.restartStaticIPThreadObject = ThreadRestartNetworking(ThreadRestartNetworking.ETH)
+                self.restartStaticIPThreadObject.signal.connect(self.staticIPReconnectResult)
+                self.restartStaticIPThreadObject.start()
+                # self.connect(self.restartStaticIPThreadObject, QtCore.SIGNAL(signal), self.staticIPReconnectResult)
+                self.staticIPMessageBox = dialog.dialog(self,
+                                                        "Restarting networking, please wait...",
+                                                        icon="exclamation-mark.png",
+                                                        buttons=QtWidgets.QMessageBox.Cancel)
+                if self.staticIPMessageBox.exec_() in {QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Cancel}:
+                    self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
+            elif txtStaticIPInterface == 'wlan0':
+                print("Restarting networking for wlan0")
+                self.restartWifiThreadObject = ThreadRestartNetworking(ThreadRestartNetworking.WLAN)
+                self.restartWifiThreadObject.signal.connect(self.wifiReconnectResult)
+                self.restartWifiThreadObject.start()
+                self.wifiMessageBox = dialog.dialog(self,
+                                                    "Restarting networking, please wait...",
+                                                    icon="exclamation-mark.png",
+                                                    buttons=QtWidgets.QMessageBox.Cancel)
+                if self.wifiMessageBox.exec_() in {QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Cancel}:
+                    self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
+        except Exception as e:
+            logger.error("Error in MainUiClass.staticIPSaveStaticNetworkInfo: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.staticIPSaveStaticNetworkInfo: {}".format(e), overlay=True)
+
+    def deleteStaticIPSettings(self):
+        logger.info("MainUiClass.deleteStaticIPSettings started")
+        try:
+            Globaltxt = subprocess.Popen("cat /etc/dhcpcd.conf", stdout=subprocess.PIPE, shell=True).communicate()[
+                0].decode('utf8')
+            # using regex remove all lines staring with "interface" and "static" from txt
+            Globaltxt = re.sub(r"interface.*\n", "", Globaltxt)
+            Globaltxt = re.sub(r"static.*\n", "", Globaltxt)
+            Globaltxt = re.sub(r"^\s+", "", Globaltxt)
+            with open("/etc/dhcpcd.conf", "w") as f:
+                f.write(Globaltxt)
             self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
-            logger.info("Returned to network settings page after save")
-        else:
-            logger.error("Cannot navigate - required widgets missing")
+        except Exception as e:
+            logger.error("Error in MainUiClass.deleteStaticIPSettings: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.deleteStaticIPSettings: {}".format(e), overlay=True)
+
+    def staticIPReconnectResult(self, x):
+        logger.info("MainUiClass.staticIPReconnectResult started")
+        try:
+            self.staticIPMessageBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
+            if x is not None:
+                self.staticIPMessageBox.setLocalIcon('success.png')
+                self.staticIPMessageBox.setText('Connected, IP: ' + x)
+            else:
+
+                self.staticIPMessageBox.setText("Not able to set Static IP")
+        except Exception as e:
+            logger.error("Error in MainUiClass.staticIPReconnectResult: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.staticIPReconnectResult: {}".format(e), overlay=True)
+
+    def staticIPShowKeyboard(self, textbox):
+        logger.info("MainUiClass.staticIPShowKeyboard started")
+        try:
+            self.startKeyboard(textbox.setText, onlyNumeric=True, noSpace=True, text=str(textbox.text()))
+        except Exception as e:
+            logger.error("Error in MainUiClass.staticIPShowKeyboard: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.staticIPShowKeyboard: {}".format(e), overlay=True)
 
     def cancel_network_settings(self):
         """Cancel network settings change and return to main network page."""
@@ -341,7 +467,8 @@ class NetworkSettings(QWidget):
     def go_back_to_settings_screen(self):
         """Return to the main settings screen."""
         logger.info("Back to settings screen button clicked")
-        if hasattr(self.mainSettingsWidget, 'stackedWidget') and hasattr(self.mainSettingsWidget, 'mainSettingsPage'):
+        if hasattr(self.mainSettingsWidget, 'stackedWidget') and hasattr(self.mainSettingsWidget,
+                                                                         'mainSettingsPage'):
             self.mainSettingsWidget.stackedWidget.setCurrentWidget(self.mainSettingsWidget.mainSettingsPage)
             logger.info("Navigated back to main settings screen")
         else:
@@ -355,42 +482,3 @@ class NetworkSettings(QWidget):
             logger.info("Navigated back to network settings page")
         else:
             logger.error("Cannot navigate - required widgets missing")
-
-    def show_network_info(self):
-        """Show network information page."""
-        logger.info("Network Info button clicked")
-        if self.stackedWidget and self.networkInfoPage:
-            self.stackedWidget.setCurrentWidget(self.networkInfoPage)
-            logger.info("Navigated to network info page")
-        else:
-            logger.error("Cannot navigate - required widgets missing")
-
-    def show_static_ip_settings(self):
-        """Show static IP configuration page."""
-        logger.info("Static IP Settings button clicked")
-        if self.stackedWidget and self.staticIPSettingsPage:
-            self.stackedWidget.setCurrentWidget(self.staticIPSettingsPage)
-            logger.info("Navigated to static IP settings page")
-        else:
-            logger.error("Cannot navigate - required widgets missing")
-
-    def show_wifi_settings(self):
-        """Show WiFi configuration page."""
-        logger.info("WiFi Settings button clicked")
-        if self.stackedWidget and self.wifiSettingsPage:
-            self.stackedWidget.setCurrentWidget(self.wifiSettingsPage)
-            logger.info("Navigated to WiFi settings page")
-        else:
-            logger.error("Cannot navigate - required widgets missing")
-
-    def staticIPShowKeyboard(self, textbox):
-        """
-        Opens the keyboard with IP-specific settings (numeric only, no spaces)
-        """
-        logger.info("NetworkSettings.staticIPShowKeyboard started")
-        try:
-            self.startKeyboard(textbox.setText, onlyNumeric=True, noSpace=True, text=str(textbox.text()))
-        except Exception as e:
-            logger.error(f"Error in NetworkSettings.staticIPShowKeyboard: {e}")
-            # If you have a dialog module:
-            # dialog.WarningOk(self, f"Error in NetworkSettings.staticIPShowKeyboard: {e}", overlay=True)
