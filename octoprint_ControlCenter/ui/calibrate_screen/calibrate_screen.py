@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QStackedWidget
 from PyQt5 import uic
 from utils.helpers import check_ui_elements
 from utils import logger  # Import the logger
+from utils import dialog
 
 # Import all calibration sub-screens
 from ui.calibrate_screen.nozzleOffsetPage.nozzleOffsetPage import NozzleOffsetPage
@@ -54,7 +55,7 @@ class CalibrateScreen(QWidget):
         if self.testPrintsButton:
             self.testPrintsButton.clicked.connect(lambda: self.show_calibrate_screen("test_prints"))
         if self.inputShaperCalibrateButton:
-            self.inputShaperCalibrateButton.clicked.connect(self._input_shaper_not_implemented)
+            self.inputShaperCalibrateButton.clicked.connect(self.inputShaperCalibrate)
         if self.nozzleOffsetButton:
             self.nozzleOffsetButton.clicked.connect(lambda: self.show_calibrate_screen("nozzle_offset"))
         if self.toolOffsetZButton:
@@ -88,9 +89,18 @@ class CalibrateScreen(QWidget):
         except Exception as e:
             logger.exception(f"Error initializing sub-screens: {e}")
 
-    def _input_shaper_not_implemented(self):
-        """Print a message when inputShaperCalibrateButton is clicked"""
-        logger.info("Input Shaper Calibration not yet implemented")
+    def inputShaperCalibrate(self):
+        logger.info("MainUiClass.inputShaperCalibrate started")
+        try:
+            dialog.WarningOk(self, "Wait for all calibration movements to finish before proceeding.", overlay=True)
+            self.main_window.octoprint_client.gcode(command='G28')
+            self.main_window.octoprint_client.gcode(command='SHAPER_CALIBRATE')
+            self.main_window.octoprint_client.gcode(command='SAVE_CONFIG')
+
+        except Exception as e:
+            error_message = f"Error in inptuShaperCalibrate: {str(e)}"
+            logger.error(error_message)
+            dialog.WarningOk(error_message, overlay=True)
         
     def _show_tool_offset_z(self):
         """Show the tool offset screen with Z tab selected"""
