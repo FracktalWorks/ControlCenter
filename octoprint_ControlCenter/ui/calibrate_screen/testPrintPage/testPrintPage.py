@@ -61,11 +61,21 @@ class TestPrintPage(QWidget):
         ], "TestPrintPage UI Elements")
 
         # Connect signals to slots
-        self.testPrintsNextButton.pressed.connect(lambda: self.stackedWidget.setCurrentWidget(self.testPrintPage2))
+        self.testPrintsNextButton.pressed.connect(
+            lambda: self.stackedWidget.setCurrentWidget(
+                self.testPrintPage2
+            )
+        )
         self.testPrintsBackButton.pressed.connect(
-            lambda: self.stackedWidget.setCurrentWidget(self.main_window.calibrate_screen.main_calibrate_page))
+            lambda: self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
+                    self.main_window.calibrate_screen.main_calibrate_page
+            )
+        )
         self.testPrintsCancelButton.pressed.connect(
-            lambda: self.stackedWidget.setCurrentWidget(self.main_window.calibrate_screen.main_calibrate_page))
+            lambda: self.stackedWidget.setCurrentWidget(
+                    self.testPrintPage1
+            )
+        )
 
         self.dualCaliberationPrintButton.pressed.connect(
             lambda: self.testPrint(
