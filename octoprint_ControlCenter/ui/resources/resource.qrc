@@ -99,4 +99,9 @@
     <file>img/Navigation/next.png</file>
     <file>img/Navigation/remove.png</file>
   </qresource>
+  <qresource prefix="Keyboard">
+    <file>img/Keyboard/backspace-arrow.png</file>
+    <file>img/Keyboard/caps_lock_pinned.png</file>
+    <file>img/Keyboard/caps-lock-button.png</file>
+  </qresource>
 </RCC>

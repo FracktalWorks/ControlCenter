@@ -60,7 +60,7 @@ p, li { white-space: pre-wrap; }
     </font>
    </property>
    <property name="currentIndex">
-    <number>3</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="pgAlpha">
     <widget class="QPushButton" name="bt48">
@@ -772,8 +772,9 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>templates/img/caps-lock-button.png</normaloff>templates/img/caps-lock-button.png</iconset>
+      <iconset resource="ui/resources/resource.qrc">
+       <normaloff>:/Keyboard/img/Keyboard/caps-lock-button.png</normaloff>
+       <normalon>:/Keyboard/img/Keyboard/caps-lock-button.png</normalon>:/Keyboard/img/Keyboard/caps-lock-button.png</iconset>
      </property>
     </widget>
     <widget class="QPushButton" name="bt49">
@@ -1433,8 +1434,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>templates/img/backspace-arrow.png</normaloff>templates/img/backspace-arrow.png</iconset>
+      <iconset resource="ui/resources/resource.qrc">
+       <normaloff>:/Keyboard/img/Keyboard/backspace-arrow.png</normaloff>:/Keyboard/img/Keyboard/backspace-arrow.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -1747,8 +1748,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>templates/img/verification-mark.png</normaloff>templates/img/verification-mark.png</iconset>
+      <iconset resource="ui/resources/resource.qrc">
+       <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -1863,11 +1864,9 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>templates/img/caps-lock-button.png</normaloff>
-       <normalon>templates/img/caps_lock_pinned.png</normalon>
-       <activeon>templates/img/caps_lock_pinned.png</activeon>
-       <selectedon>templates/img/caps_lock_pinned.png</selectedon>templates/img/caps-lock-button.png</iconset>
+      <iconset resource="ui/resources/resource.qrc">
+       <normaloff>:/Keyboard/img/Keyboard/caps-lock-button.png</normaloff>
+       <normalon>:/Keyboard/img/Keyboard/caps_lock_pinned.png</normalon>:/Keyboard/img/Keyboard/caps-lock-button.png</iconset>
      </property>
      <property name="checkable">
       <bool>true</bool>
@@ -3248,8 +3247,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>templates/img/backspace-arrow.png</normaloff>templates/img/backspace-arrow.png</iconset>
+      <iconset resource="ui/resources/resource.qrc">
+       <normaloff>:/Keyboard/img/Keyboard/backspace-arrow.png</normaloff>:/Keyboard/img/Keyboard/backspace-arrow.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -3561,8 +3560,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>templates/img/verification-mark.png</normaloff>templates/img/verification-mark.png</iconset>
+      <iconset resource="ui/resources/resource.qrc">
+       <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -4131,8 +4130,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>templates/img/back-arrow.png</normaloff>templates/img/back-arrow.png</iconset>
+      <iconset resource="ui/resources/resource.qrc">
+       <normaloff>:/Navigation/img/Navigation/back-arrow.png</normaloff>:/Navigation/img/Navigation/back-arrow.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -4445,8 +4444,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>templates/img/verification-mark.png</normaloff>templates/img/verification-mark.png</iconset>
+      <iconset resource="ui/resources/resource.qrc">
+       <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -4555,8 +4554,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>templates/img/backspace-arrow.png</normaloff>templates/img/backspace-arrow.png</iconset>
+      <iconset resource="ui/resources/resource.qrc">
+       <normaloff>:/Keyboard/img/Keyboard/backspace-arrow.png</normaloff>:/Keyboard/img/Keyboard/backspace-arrow.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -6093,8 +6092,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>templates/img/back-arrow.png</normaloff>templates/img/back-arrow.png</iconset>
+      <iconset resource="ui/resources/resource.qrc">
+       <normaloff>:/Navigation/img/Navigation/back-arrow.png</normaloff>:/Navigation/img/Navigation/back-arrow.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -6204,8 +6203,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>templates/img/backspace-arrow.png</normaloff>templates/img/backspace-arrow.png</iconset>
+      <iconset resource="ui/resources/resource.qrc">
+       <normaloff>:/Keyboard/img/Keyboard/backspace-arrow.png</normaloff>:/Keyboard/img/Keyboard/backspace-arrow.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -6417,8 +6416,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>templates/img/verification-mark.png</normaloff>templates/img/verification-mark.png</iconset>
+      <iconset resource="ui/resources/resource.qrc">
+       <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -6512,8 +6511,8 @@ QPushButton:focus {
     <string/>
    </property>
    <property name="icon">
-    <iconset>
-     <normaloff>templates/img/arrows-4.png</normaloff>templates/img/arrows-4.png</iconset>
+    <iconset resource="ui/resources/resource.qrc">
+     <normaloff>:/Navigation/img/Navigation/arrows-4.png</normaloff>:/Navigation/img/Navigation/arrows-4.png</iconset>
    </property>
    <property name="iconSize">
     <size>
@@ -6569,8 +6568,8 @@ QPushButton:focus {
     <string/>
    </property>
    <property name="icon">
-    <iconset>
-     <normaloff>templates/img/arrows-2.png</normaloff>templates/img/arrows-2.png</iconset>
+    <iconset resource="ui/resources/resource.qrc">
+     <normaloff>:/Navigation/img/Navigation/arrows-2.png</normaloff>:/Navigation/img/Navigation/arrows-2.png</iconset>
    </property>
    <property name="iconSize">
     <size>
@@ -6580,6 +6579,8 @@ QPushButton:focus {
    </property>
   </widget>
  </widget>
- <resources/>
+ <resources>
+  <include location="ui/resources/resource.qrc"/>
+ </resources>
  <connections/>
 </ui>
