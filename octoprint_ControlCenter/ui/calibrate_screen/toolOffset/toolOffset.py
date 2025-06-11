@@ -4,6 +4,10 @@ from PyQt5.QtGui import QPalette, QColor
 from utils.helpers import check_ui_elements
 from utils.logger import setup_logger
 
+from utils import logger
+from utils import dialog
+
+
 class ToolOffset(QWidget):
     """
     Tool Offset configuration page that allows users to set the XY and Z offsets
@@ -71,11 +75,11 @@ class ToolOffset(QWidget):
         if self.toolOffsetZBackButton:
             self.toolOffsetZBackButton.clicked.connect(self._return_to_main_calibration)
         if self.toolOffsetXSetButton:
-            self.toolOffsetXSetButton.clicked.connect(self._set_tool_offset_x)
+            self.toolOffsetXSetButton.clicked.connect(self.setToolOffsetX)
         if self.toolOffsetYSetButton:
-            self.toolOffsetYSetButton.clicked.connect(self._set_tool_offset_y)
+            self.toolOffsetYSetButton.clicked.connect(self.setToolOffsetY)
         if self.toolOffsetZSetButton:
-            self.toolOffsetZSetButton.clicked.connect(self._set_tool_offset_z)
+            self.toolOffsetZSetButton.clicked.connect(self.setToolOffsetZ)
 
     def _return_to_main_calibration(self):
         """Return to the main calibration page"""
@@ -91,26 +95,39 @@ class ToolOffset(QWidget):
         else:
             self.logger.error("Cannot return to main calibration - main_window.calibrate_screen not found")
 
-    def _set_tool_offset_x(self):
-        """Set the X offset for the tool."""
-        if self.toolOffsetXDoubleSpinBox:
-            x_offset = self.toolOffsetXDoubleSpinBox.value()
-            self.logger.info(f"Tool X Offset set to: {x_offset} mm")
-        else:
-            self.logger.error("Cannot set X offset - spin box not found")
+    def setToolOffsetX(self):
+        logger.info("MainUiClass.setToolOffsetX started")
+        try:
+            self.main_window.octoprint_client.gcode(
+                command='M218 T1 X{}'.format(round(self.toolOffsetXDoubleSpinBox.value(), 2))
+            )  # restore eeprom settings to get Z home offset, mesh bed leveling back
+            self.main_window.octoprint_client.gcode(command='M500')
+            logger.info("X offset set to: {}".format(round(self.toolOffsetXDoubleSpinBox.value(), 2)))
+        except Exception as e:
+            logger.error("Error in MainUiClass.setToolOffsetX: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.setToolOffsetX: {}".format(e), overlay=True)
 
-    def _set_tool_offset_y(self):
-        """Set the Y offset for the tool."""
-        if self.toolOffsetYDoubleSpinBox:
-            y_offset = self.toolOffsetYDoubleSpinBox.value()
-            self.logger.info(f"Tool Y Offset set to: {y_offset} mm")
-        else:
-            self.logger.error("Cannot set Y offset - spin box not found")
+    def setToolOffsetY(self):
+        logger.info("MainUiClass.setToolOffsetY started")
+        try:
+            self.main_window.octoprint_client.gcode(
+                command='M218 T1 Y{}'.format(round(self.toolOffsetYDoubleSpinBox.value(), 2))
+            )  # restore eeprom settings to get Z home offset, mesh bed leveling back
+            self.main_window.octoprint_client.gcode(command='M500')
+            self.main_window.octoprint_client.gcode(command='M500')
+            logger.info("Y offset set to: {}".format(round(self.toolOffsetYDoubleSpinBox.value(), 2)))
+        except Exception as e:
+            logger.error("Error in MainUiClass.setToolOffsetY: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.setToolOffsetY: {}".format(e), overlay=True)
 
-    def _set_tool_offset_z(self):
-        """Set the Z offset for the tool."""
-        if self.toolOffsetZDoubleSpinBox:
-            z_offset = self.toolOffsetZDoubleSpinBox.value()
-            self.logger.info(f"Tool Z Offset set to: {z_offset} mm")
-        else:
-            self.logger.error("Cannot set Z offset - spin box not found")
+    def setToolOffsetZ(self):
+        logger.info("MainUiClass.setToolOffsetZ started")
+        try:
+            self.main_window.octoprint_client.gcode(
+                command='M218 T1 Z{}'.format(round(self.toolOffsetZDoubleSpinBox.value(), 2))
+            )  # restore eeprom settings to get Z home offset, mesh bed leveling back
+            self.main_window.octoprint_client.gcode(command='M500')
+            logger.info("Z offset set to: {}".format(round(self.toolOffsetZDoubleSpinBox.value(), 2)))
+        except Exception as e:
+            logger.error("Error in MainUiClass.setToolOffsetZ: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.setToolOffsetZ: {}".format(e), overlay=True)
