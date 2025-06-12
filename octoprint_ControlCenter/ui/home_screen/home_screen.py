@@ -217,7 +217,7 @@ class HomeScreen(QWidget):
         :param file: dict of all the attributes of a particualr file
         """
         try:
-            if file is None:
+            if file["job"] is None:
                 self.current_image = None
                 self.timeLeft.setText("-")
                 self.fileName.setText("-")

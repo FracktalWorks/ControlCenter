@@ -89,7 +89,7 @@ class PrinterModel(QObject):
 
     def updatePrintStatus(self, file_info):
         """Updates print job status"""
-        if file_info is None:
+        if file_info["job"] is None:
             self.current_file = None
             self.current_image = None
             self.print_progress = 0

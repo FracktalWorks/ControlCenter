@@ -257,7 +257,7 @@ class OctoPrintWebSocket(QThread):
                 if file_info['job']['file']['name'] is not None:
                     self.print_status_signal.emit(file_info)
                 else:
-                    self.print_status_signal.emit(None)
+                    self.print_status_signal.emit({"job": None, "progress": None})
 
                 def temp(data, tool, temp):
                     try:
