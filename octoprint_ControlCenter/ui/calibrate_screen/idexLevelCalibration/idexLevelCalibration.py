@@ -319,7 +319,12 @@ class IdexLevelCalibration(QWidget):
             self.main_window.octoprint_client.home(['x', 'y'])
             self.main_window.octoprint_client.gcode(command='M104 S0')
             self.main_window.octoprint_client.gcode(command='M104 T1 S0')
-            self.main_window.octoprint_client.gcode(command='M218 T1 Z{}'.format(self.idexToolOffsetRestoreValue))
+            self.main_window.calibrate_screen.screens.get("tool_offset")
+            self.main_window.octoprint_client.gcode(
+                command='M218 T1 Z{}'.format(
+                    self.main_window.calibrate_screen.screens.get("tool_offset").idexToolOffsetRestoreValue
+                )
+            )
             self.main_window.octoprint_client.gcode(command='M84')
         except Exception as e:
             logger.error("Error in MainUiClass.idexCancelStep: {}".format(e))

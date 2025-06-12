@@ -17,21 +17,21 @@ class PrinterModel(QObject):
     """
     # Signal definitions
     # this one should have signal slot connections probably
-    temperatures_updated = pyqtSignal(dict)
-    status_updated = pyqtSignal(str)
-    print_status_updated = pyqtSignal(dict)
-    active_extruder_changed = pyqtSignal(int)
-    z_probe_offset_updated = pyqtSignal(float)
-    tool_offset_updated = pyqtSignal(dict)
-    printer_error_signal = pyqtSignal(str)
-    filament_sensor_triggered = pyqtSignal(str)  # should be connected to the method in control_screen.py
-    z_probing_failed = pyqtSignal()
-    z_tool_offset_updated = pyqtSignal(float)
-    update_started_signal = pyqtSignal(dict)
-    update_log_signal = pyqtSignal(dict)
-    update_log_result_signal = pyqtSignal(dict)
-    update_failed_signal = pyqtSignal(dict)
-    connected_signal = pyqtSignal()
+    temperatures_updated = pyqtSignal(dict)  # done
+    status_updated = pyqtSignal(str)  # done
+    print_status_updated = pyqtSignal(dict)  # done
+    active_extruder_changed = pyqtSignal(int)  # done
+    z_probe_offset_updated = pyqtSignal(float)  # done
+    tool_offset_updated = pyqtSignal(dict)  # ! REMAINING
+    printer_error_signal = pyqtSignal(str)  # done
+    filament_sensor_triggered = pyqtSignal(str)  # ! REMAINING
+    z_probing_failed = pyqtSignal()  # ! REMAINING
+    z_tool_offset_updated = pyqtSignal(float)  # ! REMAINING
+    update_started_signal = pyqtSignal(dict)  # ! REMAINING
+    update_log_signal = pyqtSignal(dict)  # ! REMAINING
+    update_log_result_signal = pyqtSignal(dict)  # ! REMAINING
+    update_failed_signal = pyqtSignal(dict)  # ! REMAINING
+    connected_signal = pyqtSignal()  # done
 
     def __init__(self):
         super(PrinterModel, self).__init__()
