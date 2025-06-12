@@ -194,3 +194,4 @@ class CalibrateScreen(QWidget):
         if idex_calibration_screen and hasattr(idex_calibration_screen, "reset_wizard"):
             idex_calibration_screen.reset_wizard()
         self.show_calibrate_screen("idex_calibration")
+        idex_calibration_screen.idexConfigStep1()

@@ -1,7 +1,9 @@
-from PyQt5 import uic
-from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget
+from PyQt5 import uic, QtGui, QtCore
+from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel
 from utils.helpers import check_ui_elements
 from utils.logger import setup_logger
+
+from utils import logger, dialog
 
 class IdexLevelCalibration(QWidget):
     """
@@ -23,53 +25,65 @@ class IdexLevelCalibration(QWidget):
 
         # Initialize UI elements
         self.stacked_widget = self.findChild(QStackedWidget, "stackedWidget")
-        self.page1 = self.findChild(QWidget, "idexConfigStep1Page")
-        self.page2 = self.findChild(QWidget, "idexConfigStep2Page")
-        self.page3 = self.findChild(QWidget, "idexConfigStep3Page")
-        self.page4 = self.findChild(QWidget, "idexConfigStep4Page")
-        self.page5 = self.findChild(QWidget, "idexConfigStep5Page")
+        self.idexConfigStep1Page = self.findChild(QWidget, "idexConfigStep1Page")
+        self.idexConfigStep2Page = self.findChild(QWidget, "idexConfigStep2Page")
+        self.idexConfigStep3Page = self.findChild(QWidget, "idexConfigStep3Page")
+        self.idexConfigStep4Page = self.findChild(QWidget, "idexConfigStep4Page")
+        self.idexConfigStep5Page = self.findChild(QWidget, "idexConfigStep5Page")
 
-        self.next_button1 = self.findChild(QPushButton, "idexConfigStep1NextButton")
-        self.next_button2 = self.findChild(QPushButton, "idexConfigStep2NextButton")
-        self.next_button3 = self.findChild(QPushButton, "idexConfigStep3NextButton")
-        self.next_button4 = self.findChild(QPushButton, "idexConfigStep4NextButton")
-        self.next_button5 = self.findChild(QPushButton, "idexConfigStep5NextButton")
+        self.idexConfigStep1NextButton = self.findChild(QPushButton, "idexConfigStep1NextButton")
+        self.idexConfigStep2NextButton = self.findChild(QPushButton, "idexConfigStep2NextButton")
+        self.idexConfigStep3NextButton = self.findChild(QPushButton, "idexConfigStep3NextButton")
+        self.idexConfigStep4NextButton = self.findChild(QPushButton, "idexConfigStep4NextButton")
+        self.idexConfigStep5NextButton = self.findChild(QPushButton, "idexConfigStep5NextButton")
 
-        self.cancel_button1 = self.findChild(QPushButton, "idexConfigStep1CancelButton")
-        self.cancel_button2 = self.findChild(QPushButton, "idexConfigStep2CancelButton")
-        self.cancel_button3 = self.findChild(QPushButton, "idexConfigStep3CancelButton")
-        self.cancel_button4 = self.findChild(QPushButton, "idexConfigStep4CancelButton")
-        self.cancel_button5 = self.findChild(QPushButton, "idexConfigStep5CancelButton")
+        self.idexConfigStep1CancelButton = self.findChild(QPushButton, "idexConfigStep1CancelButton")
+        self.idexConfigStep2CancelButton = self.findChild(QPushButton, "idexConfigStep2CancelButton")
+        self.idexConfigStep3CancelButton = self.findChild(QPushButton, "idexConfigStep3CancelButton")
+        self.idexConfigStep4CancelButton = self.findChild(QPushButton, "idexConfigStep4CancelButton")
+        self.idexConfigStep5CancelButton = self.findChild(QPushButton, "idexConfigStep5CancelButton")
+
+        self.CalibrationPoint1_2 = self.findChild(QLabel, "CalibrationPoint1_2")
+        self.CalibrationPoint2_2 = self.findChild(QLabel, "CalibrationPoint2_2")
+        self.CalibrationPoint3 = self.findChild(QLabel, "CalibrationPoint3")
+        self.Nozzlelevel1 = self.findChild(QLabel, "Nozzlelevel1")
+        self.Nozzlelevel2 = self.findChild(QLabel, "Nozzlelevel2")
+
+        self.moveZMIdexButton = self.findChild(QPushButton, "moveZMIdexButton")
+        self.moveZPIdexButton = self.findChild(QPushButton, "moveZPIdexButton")
 
         # Validate UI elements
         check_ui_elements(self, [
-            self.stacked_widget, self.page1, self.page2, self.page3, self.page4, self.page5,
-            self.next_button1, self.next_button2, self.next_button3, self.next_button4, self.next_button5,
-            self.cancel_button1, self.cancel_button2, self.cancel_button3, self.cancel_button4, self.cancel_button5
+            self.idexConfigStep1Page, self.idexConfigStep2Page, self.idexConfigStep3Page, self.idexConfigStep4Page, self.idexConfigStep5Page,
+            self.idexConfigStep1NextButton, self.idexConfigStep2NextButton, self.idexConfigStep3NextButton, self.idexConfigStep4NextButton, self.idexConfigStep5NextButton,
+            self.idexConfigStep1CancelButton, self.idexConfigStep2CancelButton, self.idexConfigStep3CancelButton, self.idexConfigStep4CancelButton, self.idexConfigStep5CancelButton,
         ], "IDEX Level Calibration")
 
         # Connect buttons to their respective functions
-        if self.next_button1:
-            self.next_button1.clicked.connect(lambda: self._navigate_to_step(2))
-        if self.next_button2:
-            self.next_button2.clicked.connect(lambda: self._navigate_to_step(3))
-        if self.next_button3:
-            self.next_button3.clicked.connect(lambda: self._navigate_to_step(4))
-        if self.next_button4:
-            self.next_button4.clicked.connect(lambda: self._navigate_to_step(5))
-        if self.next_button5:
-            self.next_button5.clicked.connect(self._finish_calibration)
+        if self.idexConfigStep1NextButton:
+            self.idexConfigStep1NextButton.clicked.connect(self.idexConfigStep2)
+        if self.idexConfigStep2NextButton:
+            self.idexConfigStep2NextButton.clicked.connect(self.idexConfigStep3)
+        if self.idexConfigStep3NextButton:
+            self.idexConfigStep3NextButton.clicked.connect(self.idexConfigStep4)
+        if self.idexConfigStep4NextButton:
+            self.idexConfigStep4NextButton.clicked.connect(self.idexConfigStep5)
+        if self.idexConfigStep5NextButton:
+            self.idexConfigStep5NextButton.clicked.connect(self.idexDoneStep)
 
-        if self.cancel_button1:
-            self.cancel_button1.clicked.connect(self._cancel_calibration)
-        if self.cancel_button2:
-            self.cancel_button2.clicked.connect(self._cancel_calibration)
-        if self.cancel_button3:
-            self.cancel_button3.clicked.connect(self._cancel_calibration)
-        if self.cancel_button4:
-            self.cancel_button4.clicked.connect(self._cancel_calibration)
-        if self.cancel_button5:
-            self.cancel_button5.clicked.connect(self._cancel_calibration)
+        if self.idexConfigStep1CancelButton:
+            self.idexConfigStep1CancelButton.clicked.connect(self.idexCancelStep)
+        if self.idexConfigStep2CancelButton:
+            self.idexConfigStep2CancelButton.clicked.connect(self.idexCancelStep)
+        if self.idexConfigStep3CancelButton:
+            self.idexConfigStep3CancelButton.clicked.connect(self.idexCancelStep)
+        if self.idexConfigStep4CancelButton:
+            self.idexConfigStep4CancelButton.clicked.connect(self.idexCancelStep)
+        if self.idexConfigStep5CancelButton:
+            self.idexConfigStep5CancelButton.clicked.connect(self.idexCancelStep)
+
+        self.moveZMIdexButton.pressed.connect(lambda: self.main_window.octoprint_client.jog(z=-0.1))
+        self.moveZPIdexButton.pressed.connect(lambda: self.main_window.octoprint_client.jog(z=0.1))
 
         # Set the default screen
         self.reset_wizard()
@@ -110,5 +124,203 @@ class IdexLevelCalibration(QWidget):
 
     def reset_wizard(self):
         """Reset the IDEX Level Calibration wizard to its initial state."""
-        self._navigate_to_step(1)
-        self.logger.info("IDEX Level Calibration wizard reset to initial state")
+        if self.stackedWidget and self.idexConfigStep1Page:
+            self.stackedWidget.setCurrentWidget(self.idexConfigStep1Page)
+            self.logger.info("Bed Leveling wizard reset to initial state")
+        else:
+            self.logger.error("Cannot reset wizard - required widgets not found")
+
+    def idexConfigStep1(self):
+        """
+        Shows welcome message.
+        Welcome Page, Give Info. Unlock nozzle and push down
+        :return:
+        """
+        logger.info("MainUiClass.idexConfigStep1 started")
+        try:
+            self.main_window.octoprint_client.gcode(command='M503')  # Gets old tool offset position
+            self.main_window.octoprint_client.gcode(command='M218 T1 Z0')  # set nozzle tool offsets to 0
+            self.main_window.octoprint_client.gcode(command='M104 S200')
+            self.main_window.octoprint_client.gcode(command='M104 T1 S200')
+            self.main_window.octoprint_client.home(['x', 'y', 'z'])
+            self.main_window.octoprint_client.gcode(command='G1 X10 Y10 Z20 F5000')
+            self.main_window.octoprint_client.gcode(command='T0')  # Set active tool to t0
+            self.main_window.octoprint_client.gcode(command='M420 S0')  # Dissable mesh bed leveling for good measure
+            self.stackedWidget.setCurrentWidget(self.idexConfigStep1Page)
+            self.movie5 = QtGui.QMovie(
+                "/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/resources/img/Calibration/Nozzlelevel1.gif"
+            )
+            self.Nozzlelevel1.setMovie(self.movie5)
+            self.movie5.start()
+        except Exception as e:
+            logger.error("Error in MainUiClass.idexConfigStep1: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.idexConfigStep1: {}".format(e), overlay=True)
+            try:
+                self.movie5.stop()
+            except:
+                pass
+
+    def idexConfigStep2(self):
+        """
+        levels first position (RIGHT)
+        :return:
+        """
+        logger.info("MainUiClass.idexConfigStep2 started")
+        try:
+            self.stackedWidget.setCurrentWidget(self.idexConfigStep2Page)
+            self.main_window.octoprint_client.jog(
+                x=self.main_window.printer_model.calibrationPosition['X1'],
+                y=self.main_window.printer_model.calibrationPosition['Y1'],
+                absolute=True, speed=10000
+            )
+            self.main_window.octoprint_client.jog(z=0, absolute=True, speed=1500)
+            self.movie5.stop()
+            self.movie6 = QtGui.QMovie(
+                "/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/resources/img/Calibration/CalibrationPoint1.gif"
+            )
+            self.CalibrationPoint1_2.setMovie(self.movie6)
+            self.movie6.start()
+        except Exception as e:
+            logger.error("Error in MainUiClass.idexConfigStep2: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.idexConfigStep2: {}".format(e), overlay=True)
+            try:
+                self.movie5.stop()
+                self.movie6.stop()
+            except:
+                pass
+
+    def idexConfigStep3(self):
+        """
+        levels second leveling position (LEFT)
+        """
+        logger.info("MainUiClass.idexConfigStep3 started")
+        try:
+            self.stackedWidget.setCurrentWidget(self.idexConfigStep3Page)
+            self.main_window.octoprint_client.jog(z=10, absolute=True, speed=1500)
+            self.main_window.octoprint_client.jog(
+                x=self.main_window.printer_model.calibrationPosition['X2'],
+                y=self.main_window.printer_model.calibrationPosition['Y2'],
+                absolute=True, speed=10000
+            )
+            self.main_window.octoprint_client.jog(z=0, absolute=True, speed=1500)
+            self.movie6.stop()
+            self.movie7 = QtGui.QMovie(
+                "/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/resources/img/Calibration/CalibrationPoint2.gif"
+            )
+            self.CalibrationPoint2_2.setMovie(self.movie7)
+            self.movie7.start()
+        except Exception as e:
+            logger.error("Error in MainUiClass.idexConfigStep3: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.idexConfigStep3: {}".format(e), overlay=True)
+            try:
+                self.movie6.stop()
+                self.movie7.stop()
+            except:
+                pass
+
+    def idexConfigStep4(self):
+        """
+        Set to Mirror mode and asks to loosen the carriage, push both doen to max
+        :return:
+        """
+        logger.info("MainUiClass.idexConfigStep4 started")
+        try:
+            self.stackedWidget.setCurrentWidget(self.idexConfigStep4Page)
+            self.main_window.octoprint_client.jog(z=10, absolute=True, speed=1500)
+            self.main_window.octoprint_client.gcode(command='M605 S3')
+            self.main_window.octoprint_client.jog(
+                x=self.main_window.printer_model.calibrationPosition['X1'],
+                y=self.main_window.printer_model.calibrationPosition['Y1'],
+                absolute=True, speed=10000
+            )
+            self.movie7.stop()
+            self.movie8 = QtGui.QMovie(
+                "/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/resources/img/Calibration/NozzleLevelNew1.gif"
+            )
+            self.CalibrationPoint3.setMovie(self.movie8)
+            self.movie8.start()
+        except Exception as e:
+            logger.error("Error in MainUiClass.idexConfigStep4: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.idexConfigStep4: {}".format(e), overlay=True)
+            try:
+                self.movie7.stop()
+                self.movie8.stop()
+            except:
+                pass
+
+    def idexConfigStep5(self):
+        """
+        take bed up until both nozzles touch the bed. ASk to take nozzle up and down till nozzle just rests on the bed and tighten
+        :return:
+        """
+        logger.info("MainUiClass.idexConfigStep5 started")
+        try:
+            self.stackedWidget.setCurrentWidget(self.idexConfigStep5Page)
+            self.main_window.octoprint_client.jog(z=1, absolute=True, speed=10000)
+            self.movie8.stop()
+            self.movie9 = QtGui.QMovie(
+                "/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/resources/img/Calibration/NozzlelevelNew2.gif"
+            )
+            self.Nozzlelevel2.setMovie(self.movie9)
+            self.movie9.start()
+        except Exception as e:
+            logger.error("Error in MainUiClass.idexConfigStep5: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.idexConfigStep5: {}".format(e), overlay=True)
+            try:
+                self.movie8.stop()
+                self.movie9.stop()
+            except:
+                pass
+
+    def idexDoneStep(self):
+        """
+        Exits leveling
+        :return:
+        """
+        logger.info("MainUiClass.idexDoneStep started")
+        try:
+            self.main_window.octoprint_client.jog(z=4, absolute=True, speed=1500)
+            self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
+                self.main_window.calibrate_screen.main_calibrate_page
+            )
+            self.movie9.stop()
+            self.main_window.octoprint_client.home(['z'])
+            self.main_window.octoprint_client.home(['x', 'y'])
+            self.main_window.octoprint_client.gcode(command='M104 S0')
+            self.main_window.octoprint_client.gcode(command='M104 T1 S0')
+            self.main_window.octoprint_client.gcode(command='M605 S1')
+            self.main_window.octoprint_client.gcode(command='M218 T1 Z0') #set nozzle offsets to 0
+            self.main_window.octoprint_client.gcode(command='M84')
+            self.main_window.octoprint_client.gcode(command='M500')  # store eeprom settings to get Z home offset, mesh bed leveling back
+        except Exception as e:
+            logger.error("Error in MainUiClass.idexDoneStep: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.idexDoneStep: {}".format(e), overlay=True)
+            try:
+                self.movie9.stop()
+            except:
+                pass
+
+    def idexCancelStep(self):
+        logger.info("MainUiClass.idexCancelStep started")
+        try:
+            self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
+                self.main_window.calibrate_screen.main_calibrate_page
+            )
+            try:
+                self.movie5.stop()
+                self.movie6.stop()
+                self.movie7.stop()
+                self.movie8.stop()
+                self.movie9.stop()
+            except:
+                pass
+            self.main_window.octoprint_client.gcode(command='M605 S1')
+            self.main_window.octoprint_client.home(['z'])
+            self.main_window.octoprint_client.home(['x', 'y'])
+            self.main_window.octoprint_client.gcode(command='M104 S0')
+            self.main_window.octoprint_client.gcode(command='M104 T1 S0')
+            self.main_window.octoprint_client.gcode(command='M218 T1 Z{}'.format(self.idexToolOffsetRestoreValue))
+            self.main_window.octoprint_client.gcode(command='M84')
+        except Exception as e:
+            logger.error("Error in MainUiClass.idexCancelStep: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.idexCancelStep: {}".format(e), overlay=True)
