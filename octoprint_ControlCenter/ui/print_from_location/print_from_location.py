@@ -347,7 +347,15 @@ class PrintFromLocation(QWidget):
             self.main_window.octoprint_client.home(['x', 'y', 'z'])
             self.main_window.octoprint_client.selectFile(self.fileListWidgetLocal.currentItem().text(), True)
             self.main_window.checkKlipperPrinterCFG()
-            self.stackedWidget.setCurrentWidget(self.main_window.home_screen)
+
+            # Ensure the home_screen is part of the stackedWidget
+            # if self.main_window.home_screen not in [self.stackedWidget.widget(i) for i in
+            #                                         range(self.stackedWidget.count())]:
+            #     self.stackedWidget.addWidget(self.main_window.home_screen)
+
+            self.main_window.switch_to_home_screen()
+
+            # self.stackedWidget.setCurrentWidget(self.main_window.home_screen)
         except Exception as e:
             logger.error("Error in MainUiClass.printFile: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.printFile: {}".format(e), overlay=True)
