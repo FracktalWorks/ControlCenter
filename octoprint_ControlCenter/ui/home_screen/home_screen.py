@@ -256,7 +256,7 @@ class HomeScreen(QWidget):
                 '''
                 if self.current_image != self.current_file:
                     self.current_image = self.current_file
-                    self.displayThumbnail(self.printPreviewMain, self.current_file, usb=False)
+                    self.main_window.print_location_screen.displayThumbnail(self.printPreviewMain, self.current_file, usb=False)
         except Exception as e:
             logger.error("Error in MainUiClass.updatePrintStatus: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.updatePrintStatus: {}".format(e), overlay=True)
@@ -494,8 +494,8 @@ class HomeScreen(QWidget):
 
     def toggle_door_lock(self):
         """Toggle printer door lock"""
-        if not self.printer_connected:
-            return
+        # if not self.printer_connected:
+        #     return
 
         logger.debug("Toggle Door Lock button clicked")
         is_locked = self.doorLockButton.isChecked()
@@ -522,8 +522,8 @@ class HomeScreen(QWidget):
 
     def stop_print(self):
         """Stop current print job"""
-        if not self.printer_connected:
-            return
+        # if not self.printer_connected:
+        #     return
 
         logger.info("MainUiClass.stopActionMessageBox started")
         logger.debug("Stop Print button clicked")
@@ -541,8 +541,8 @@ class HomeScreen(QWidget):
 
     def play_pause_print(self):
         """Play or pause print job based on current state"""
-        if not self.printer_connected:
-            return
+        # if not self.printer_connected:
+        #     return
 
         is_paused = self.playPauseButton.isChecked()
         logger.debug(f"Play/Pause button clicked: {'Pausing' if not is_paused else 'Resuming'}")

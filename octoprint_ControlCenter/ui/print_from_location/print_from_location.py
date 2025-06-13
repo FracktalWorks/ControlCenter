@@ -12,7 +12,6 @@ from datetime import datetime
 from utils.helpers import run_async
 from hurry.filesize.filesize import size
 
-
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:
@@ -25,107 +24,109 @@ class PrintFromLocation(QWidget):
         """Initialize the PrintFromLocation screen with all UI components and connections."""
         super(PrintFromLocation, self).__init__()
         self.main_window = main_window
-        
+
         # Setup logger
         self.logger = setup_logger('PrintFromLocation')
         self.logger.info("Initializing PrintFromLocation screen")
 
         # Load the UI file with proper error handling
         try:
-            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/print_from_location/print_from_location.ui', self)
+            uic.loadUi(
+                '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/print_from_location/print_from_location.ui',
+                self)
             self.logger.info("PrintFromLocation UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load PrintFromLocation UI file: {e}")
             return
-        
+
         # Initialize UI components directly
         self.logger.debug("Initializing UI components")
-        
+
         # Main container widget
         self.stackedWidget = self.findChild(QStackedWidget, "stackedWidget")
-        
+
         # Pages for stacked widget
         self.printLocationPage = self.findChild(QWidget, "printLocationPage")
         self.fileListLocalPage = self.findChild(QWidget, "fileListLocalPage")
         self.fileListUSBPage = self.findChild(QWidget, "fileListUSBPage")
         self.printSelectedLocalPage = self.findChild(QWidget, "printSelectedLocalPage")
         self.printSelectedUSBPage = self.findChild(QWidget, "printSelectedUSBPage")
-        
+
         # USB storage related buttons
         self.USBStorageBackButton = self.findChild(QPushButton, "USBStorageBackButton")
         self.USBStorageScrollDown = self.findChild(QPushButton, "USBStorageScrollDown")
         self.USBStorageScrollUp = self.findChild(QPushButton, "USBStorageScrollUp")
         self.USBStorageSelectButton = self.findChild(QPushButton, "USBStorageSelectButton")
         self.USBStorageSaveButton = self.findChild(QPushButton, "USBStorageSaveButton")
-        
+
         # Local storage related buttons
         self.localStorageBackButton = self.findChild(QPushButton, "localStorageBackButton")
         self.localStorageScrollDown = self.findChild(QPushButton, "localStorageScrollDown")
         self.localStorageScrollUp = self.findChild(QPushButton, "localStorageScrollUp")
         self.localStorageSelectButton = self.findChild(QPushButton, "localStorageSelectButton")
         self.localStorageDeleteButton = self.findChild(QPushButton, "localStorageDeleteButton")
-        
+
         # Location selection buttons
         self.fromUsbButton = self.findChild(QPushButton, "fromUsbButton")
         self.fromLocalButton = self.findChild(QPushButton, "fromLocalButton")
         self.printLocationScreenBackButton = self.findChild(QPushButton, "printLocationScreenBackButton")
-        
+
         # Selected file buttons - USB
         self.fileSelectedUSBPrintButton = self.findChild(QToolButton, "fileSelectedUSBPrintButton")
         self.fileSelectedUSBTransferButton = self.findChild(QToolButton, "fileSelectedUSBTransferButton")
         self.fileSelectedUSBBackButton = self.findChild(QPushButton, "fileSelectedUSBBackButton")
-        
+
         # Selected file buttons - Local
         self.fileSelectedLocalPrintButton = self.findChild(QToolButton, "fileSelectedLocalPrintButton")
         self.fileSelectedLocalBackButton = self.findChild(QPushButton, "fileSelectedLocalBackButton")
-        
+
         # List widgets
         self.fileListWidgetLocal = self.findChild(QListWidget, "fileListWidgetLocal")
         self.fileListWidgetUSB = self.findChild(QListWidget, "fileListWidgetUSB")
-        
+
         # Preview and info labels
         self.fileSelectedLocalName = self.findChild(QLabel, "fileSelectedLocalName")
         self.fileSelectedUSBName = self.findChild(QLabel, "fileSelectedUSBName")
         self.printPreviewSelectedLocal = self.findChild(QLabel, "printPreviewSelectedLocal")
         self.printPreviewSelectedUSB = self.findChild(QLabel, "printPreviewSelectedUSB")
-        
+
         # Check all UI elements exist in one consolidated list
         check_ui_elements(self, [
             # Main container
             self.stackedWidget,
-            
+
             # Pages
             self.printLocationPage, self.fileListLocalPage, self.fileListUSBPage,
             self.printSelectedLocalPage, self.printSelectedUSBPage,
-            
+
             # USB storage buttons
             self.USBStorageBackButton, self.USBStorageScrollDown, self.USBStorageScrollUp,
             self.USBStorageSelectButton, self.USBStorageSaveButton,
-            
+
             # Local storage buttons
             self.localStorageBackButton, self.localStorageScrollDown, self.localStorageScrollUp,
             self.localStorageSelectButton, self.localStorageDeleteButton,
-            
+
             # Location selection buttons
             self.fromUsbButton, self.fromLocalButton, self.printLocationScreenBackButton,
-            
+
             # USB file buttons
             self.fileSelectedUSBPrintButton, self.fileSelectedUSBTransferButton, self.fileSelectedUSBBackButton,
-            
+
             # Local file buttons
             self.fileSelectedLocalPrintButton, self.fileSelectedLocalBackButton,
-            
+
             # List widgets
             self.fileListWidgetLocal, self.fileListWidgetUSB,
-            
+
             # Info labels
             self.fileSelectedLocalName, self.fileSelectedUSBName,
             self.printPreviewSelectedLocal, self.printPreviewSelectedUSB
         ], "PrintFromLocation - All UI Elements")
-        
+
         # Connect all button signals with safety checks to prevent NoneType errors
         self.logger.debug("Connecting button signals")
-        
+
         # ! USB storage navigation
         if self.USBStorageBackButton:
             self.USBStorageBackButton.clicked.connect(
@@ -161,7 +162,7 @@ class PrintFromLocation(QWidget):
             self.localStorageSelectButton.clicked.connect(self.printSelectedLocal)
         if self.localStorageDeleteButton:
             self.localStorageDeleteButton.clicked.connect(self.deleteItem)
-        
+
         # ! Location selection buttons
         if self.fromUsbButton:
             self.fromUsbButton.clicked.connect(self.fileListUSB)
@@ -169,7 +170,7 @@ class PrintFromLocation(QWidget):
             self.fromLocalButton.clicked.connect(self.fileListLocal)
         if self.printLocationScreenBackButton:
             self.printLocationScreenBackButton.clicked.connect(self.main_window.switch_to_previous_screen)
-        
+
         # ! Selected file buttons - USB
         if self.fileSelectedUSBPrintButton:
             self.fileSelectedUSBPrintButton.clicked.connect(lambda: self.transferToLocal(prnt=True))
@@ -177,13 +178,13 @@ class PrintFromLocation(QWidget):
             self.fileSelectedUSBTransferButton.clicked.connect(lambda: self.transferToLocal(prnt=False))
         if self.fileSelectedUSBBackButton:
             self.fileSelectedUSBBackButton.clicked.connect(self.fileListUSB)
-        
+
         # ! Selected file buttons - Local
         if self.fileSelectedLocalPrintButton:
             self.fileSelectedLocalPrintButton.clicked.connect(self.printFile)
         if self.fileSelectedLocalBackButton:
             self.fileSelectedLocalBackButton.clicked.connect(self.fileListLocal)
-        
+
         # ! Set the default screen to printLocationPage if it exists
         if self.stackedWidget and self.printLocationPage:
             self.stackedWidget.setCurrentWidget(self.printLocationPage)
@@ -248,7 +249,8 @@ class PrintFromLocation(QWidget):
         try:
             self.fileSelectedLocalName.setText(self.fileListWidgetLocal.currentItem().text())
             self.stackedWidget.setCurrentWidget(self.printSelectedLocalPage)
-            file = self.main_window.octoprint_client.retrieveFileInformation(self.fileListWidgetLocal.currentItem().text())
+            file = self.main_window.octoprint_client.retrieveFileInformation(
+                self.fileListWidgetLocal.currentItem().text())
             try:
                 self.fileSizeSelected.setText(size(file['size']))
             except KeyError:
@@ -282,7 +284,8 @@ class PrintFromLocation(QWidget):
             '''
             If image is available from server, set it, otherwise display default image
             '''
-            self.displayThumbnail(self.printPreviewSelectedLocal, str(self.fileListWidgetLocal.currentItem().text()), usb=False)
+            self.displayThumbnail(self.printPreviewSelectedLocal, str(self.fileListWidgetLocal.currentItem().text()),
+                                  usb=False)
 
         except Exception as e:
             logger.error("Error in MainUiClass.printSelectedLocal: {}".format(e))
@@ -310,7 +313,8 @@ class PrintFromLocation(QWidget):
         logger.info("MainUiClass.deleteItem started")
         try:
             self.main_window.octoprint_client.deleteFile(self.fileListWidgetLocal.currentItem().text())
-            self.main_window.octoprint_client.deleteFile(self.fileListWidgetLocal.currentItem().text().replace(".gcode", ".png"))
+            self.main_window.octoprint_client.deleteFile(
+                self.fileListWidgetLocal.currentItem().text().replace(".gcode", ".png"))
             # delete PNG also
             self.fileListLocal()
         except Exception as e:
