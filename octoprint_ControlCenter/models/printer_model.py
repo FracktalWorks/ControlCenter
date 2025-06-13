@@ -27,7 +27,7 @@ class PrinterModel(QObject):
     filament_sensor_triggered = pyqtSignal(str)  # done
     z_probing_failed = pyqtSignal()  # done
     z_tool_offset_updated = pyqtSignal(float)  # done
-    update_started_signal = pyqtSignal(dict)  # ! REMAINING
+    update_started_signal = pyqtSignal(dict)
     update_log_signal = pyqtSignal(dict)  # ! REMAINING
     update_log_result_signal = pyqtSignal(dict)  # ! REMAINING
     update_failed_signal = pyqtSignal(dict)  # ! REMAINING

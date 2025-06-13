@@ -1,6 +1,8 @@
-from PyQt5 import uic
+from PyQt5 import uic, QtCore
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QListWidget, QTextEdit
 from utils.helpers import check_ui_elements
+from utils import dialog
+from utils import logger
 
 class SoftwareUpdate(QWidget):
     """
@@ -54,7 +56,9 @@ class SoftwareUpdate(QWidget):
             print("WARNING: Could not connect back button - button not found")
             
         if self.performUpdateButton:
-            self.performUpdateButton.clicked.connect(lambda: self.mainSettingsWidget.main_window.octoprint_client.performSoftwareUpdate())
+            self.performUpdateButton.clicked.connect(
+                lambda: self.mainSettingsWidget.main_window.octoprint_client.performSoftwareUpdate()
+            )
         else:
             print("WARNING: Could not connect update button - button not found")
         
@@ -64,6 +68,9 @@ class SoftwareUpdate(QWidget):
             print("Set default page to OTAUpdatePage")
         else:
             print("WARNING: Could not set default page - required widgets missing")
+
+        # ! LOCAL SIGNAL AND SLOT CONNECTIONS:
+        self.mainSettingsWidget.main_window.octoprint_client.update_started_signal.connect(self.softwareUpdateProgress)
 
     def go_back_to_settings_screen(self):
         """Return to the settings screen."""
@@ -96,3 +103,15 @@ class SoftwareUpdate(QWidget):
         # 3. Verify downloaded packages
         # 4. Apply updates
         # 5. Restart system if necessary
+
+    def softwareUpdateProgress(self, data):
+        logger.info("MainUiClass.softwareUpdateProgress started")
+        try:
+            self.stackedWidget.setCurrentWidget(self.softwareUpdateProgressPage)
+            self.logTextEdit.setTextColor(QtCore.Qt.red)
+            self.logTextEdit.append("---------------------------------------------------------------\n"
+                                    "Updating " + data["name"] + " to " + data["version"] + "\n"
+                                    "---------------------------------------------------------------")
+        except Exception as e:
+            logger.error("Error in MainUiClass.softwareUpdateProgress: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.softwareUpdateProgress: {}".format(e), overlay=True)
