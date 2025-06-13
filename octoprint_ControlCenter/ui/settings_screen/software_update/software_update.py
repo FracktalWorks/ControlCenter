@@ -71,6 +71,9 @@ class SoftwareUpdate(QWidget):
 
         # ! LOCAL SIGNAL AND SLOT CONNECTIONS:
         self.mainSettingsWidget.main_window.octoprint_client.update_started_signal.connect(self.softwareUpdateProgress)
+        self.mainSettingsWidget.main_window.octoprint_client.update_log_signal.connect(self.softwareUpdateProgressLog)
+        self.mainSettingsWidget.main_window.octoprint_client.update_log_result_signal.connect(self.softwareUpdateResult)
+        self.mainSettingsWidget.main_window.octoprint_client.update_failed_signal.connect(self.updateFailed)
 
     def go_back_to_settings_screen(self):
         """Return to the settings screen."""
@@ -115,3 +118,47 @@ class SoftwareUpdate(QWidget):
         except Exception as e:
             logger.error("Error in MainUiClass.softwareUpdateProgress: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.softwareUpdateProgress: {}".format(e), overlay=True)
+
+
+
+    def softwareUpdateProgressLog(self,data):
+        logger.info("MainUiClass.softwareUpdateProgressLog started")
+        try:
+             self.logTextEdit.setTextColor(QtCore.Qt.white)
+             for line in data:
+                self.logTextEdit.append(line["line"])
+        
+        except Exception as e:
+            logger.error("Error in MainUiClass.softwareUpdateProgressLog: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.softwareUpdateProgressLog: {}".format(e), overlay=True)
+
+
+    def updateFailed(self, data):
+        logger.info("MainUiClass.updateFailed started")
+        try:
+            self.stackedWidget.setCurrentWidget(self.settingsPage)
+            messageText = (data["name"] + " failed to update\n")
+            if dialog.WarningOkCancel(self, messageText, overlay=True):
+                pass
+        except Exception as e:
+            logger.error("Error in MainUiClass.updateFailed: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.updateFailed: {}".format(e), overlay=True)
+
+    
+
+
+    def softwareUpdateResult(self, data):
+        logger.info("MainUiClass.softwareUpdateResult started")
+        try:
+            messageText = ""
+            for item in data:
+                messageText += item + ": " + data[item][0] + ".\n"
+            messageText += "Restart required"
+            self.askAndReboot(messageText)
+        except Exception as e:
+            logger.error("Error in MainUiClass.softwareUpdateResult: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.softwareUpdateResult: {}".format(e), overlay=True)
+
+
+    
+
