@@ -22,11 +22,11 @@ class PrinterModel(QObject):
     print_status_updated = pyqtSignal(dict)  # done
     active_extruder_changed = pyqtSignal(int)  # done
     z_probe_offset_updated = pyqtSignal(float)  # done
-    tool_offset_updated = pyqtSignal(dict)  # ! REMAINING
+    tool_offset_updated = pyqtSignal(dict)  # done
     printer_error_signal = pyqtSignal(str)  # done
-    filament_sensor_triggered = pyqtSignal(str)  # ! REMAINING
-    z_probing_failed = pyqtSignal()  # ! REMAINING
-    z_tool_offset_updated = pyqtSignal(float)  # ! REMAINING
+    filament_sensor_triggered = pyqtSignal(str)  # done
+    z_probing_failed = pyqtSignal()  # done
+    z_tool_offset_updated = pyqtSignal(float)  # done
     update_started_signal = pyqtSignal(dict)  # ! REMAINING
     update_log_signal = pyqtSignal(dict)  # ! REMAINING
     update_log_result_signal = pyqtSignal(dict)  # ! REMAINING

@@ -81,8 +81,11 @@ class ToolOffset(QWidget):
         if self.toolOffsetZSetButton:
             self.toolOffsetZSetButton.clicked.connect(self.setToolOffsetZ)
 
+        self.setNewToolZOffsetFromCurrentZBool = False
+
     # ! Local signal slot connections
         self.main_window.printer_model.tool_offset_updated.connect(self.getToolOffset)
+        self.main_window.printer_model.z_tool_offset_updated.connect(self.setZToolOffset)
 
     def _return_to_main_calibration(self):
         """Return to the main calibration page"""
@@ -151,3 +154,29 @@ class ToolOffset(QWidget):
         except Exception as e:
             logger.error("Error in MainUiClass.getToolOffset: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.getToolOffset: {}".format(e), overlay=True)
+
+    def setZToolOffset(self, offset):
+        """
+        Sets the home offset after the caliberation wizard is done, which is a callback to
+        the response of M114 that is sent at the end of the Wizard in doneStep()
+        :param offset: the value off the offset to set. is a str is coming from M114, and is float if coming from the nozzleOffsetPage
+        :return:
+
+        #TODO can make this simpler, asset the offset value to string float to begin with instead of doing confitionals
+        """
+        logger.info("MainUiClass.setZToolOffset started")
+        self.currentZPosition = offset #gets the current z position, used to set new tool offsets.
+        try:
+            if self.setNewToolZOffsetFromCurrentZBool:
+                print(self.toolOffsetZ)
+                print(self.currentZPosition)
+                newToolOffsetZ = (float(self.toolOffsetZ) + float(self.currentZPosition))
+                self.main_window.octoprint_client.gcode(
+                    command='M218 T1 Z{}'.format(newToolOffsetZ)
+                )  # restore eeprom settings to get Z home offset, mesh bed leveling back
+
+                self.setNewToolZOffsetFromCurrentZBool =False
+                self.main_window.octoprint_client.gcode(command='SAVE_CONFIG')  # store eeprom settings to get Z home offset
+        except Exception as e:
+            logger.error("Error in MainUiClass.setZToolOffset: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.setZToolOffset: {}".format(e), overlay=True)

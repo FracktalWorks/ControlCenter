@@ -219,8 +219,8 @@ class OctoPrintWebSocket(QThread):
                         if 'Primary FS Status' in item:
                             self.filament_sensor_triggered_signal.emit(item)
 
-                        if 'M206' in item:  # response to M503, send current Z offset value
-                            self.z_home_offset_signal.emit(item[item.index('Z') + 1:].split(' ', 1)[0])
+                        # if 'M206' in item:  # response to M503, send current Z offset value
+                        #     self.z_home_offset_signal.emit(item[item.index('Z') + 1:].split(' ', 1)[0])
                             
                         if 'Count' in item:  # can get through the positionUpdate event
                             self.set_z_tool_offset_signal.emit(item[item.index('z') + 2:].split(',', 1)[0], False)
