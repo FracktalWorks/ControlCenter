@@ -193,6 +193,9 @@ class ControlScreen(QWidget):
         # Initialize filament sensor state
         self.filament_sensor_enabled = True
 
+        # local signal slot connections
+        self.main_window.printer_model.filament_sensor_triggered.connect(self.filamentSensorHandler)
+
     # ! To be commented out later
     def _initialize_sub_screens(self):
         """Initialize all control sub-screens"""
