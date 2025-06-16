@@ -163,11 +163,11 @@ class PrinterModel(QObject):
 
     def softwareUpdateResult(self, update_info):
         self.updateData = update_info
-        self.update_log_signal.emit(update_info)
+        self.update_log_result_signal.emit(update_info)
 
     def updateFailed(self, update_info):
         self.updateData = update_info
-        self.update_log_signal.emit(update_info)
+        self.update_failed_signal.emit(update_info)
 
 
     """ Boilerplate code - might not be needed. getting the functions from the original code """
