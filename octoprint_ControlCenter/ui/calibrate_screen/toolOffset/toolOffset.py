@@ -165,7 +165,7 @@ class ToolOffset(QWidget):
         #TODO can make this simpler, asset the offset value to string float to begin with instead of doing confitionals
         """
         logger.info("MainUiClass.setZToolOffset started")
-        self.currentZPosition = offset #gets the current z position, used to set new tool offsets.
+        self.currentZPosition = offset  # gets the current z position, used to set new tool offsets.
         try:
             if self.setNewToolZOffsetFromCurrentZBool:
                 print(self.toolOffsetZ)
@@ -175,7 +175,7 @@ class ToolOffset(QWidget):
                     command='M218 T1 Z{}'.format(newToolOffsetZ)
                 )  # restore eeprom settings to get Z home offset, mesh bed leveling back
 
-                self.setNewToolZOffsetFromCurrentZBool =False
+                self.setNewToolZOffsetFromCurrentZBool = False
                 self.main_window.octoprint_client.gcode(command='SAVE_CONFIG')  # store eeprom settings to get Z home offset
         except Exception as e:
             logger.error("Error in MainUiClass.setZToolOffset: {}".format(e))

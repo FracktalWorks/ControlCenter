@@ -26,7 +26,7 @@ class OctoPrintWebSocket(QThread):
     # z_home_offset_signal = pyqtSignal(str) ... deprecated, uses probe_offset
     temperatures_signal = pyqtSignal(dict) #! done
     status_signal = pyqtSignal(str) #! done
-    print_status_signal = pyqtSignal(dict) #! done
+    print_status_signal = pyqtSignal('PyQt_PyObject') #! done
     update_started_signal = pyqtSignal(dict) #! done
     update_log_signal = pyqtSignal(dict) #! done
     update_log_result_signal = pyqtSignal(dict) #! done

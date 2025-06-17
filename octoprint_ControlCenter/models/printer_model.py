@@ -19,14 +19,14 @@ class PrinterModel(QObject):
     # this one should have signal slot connections probably
     temperatures_updated = pyqtSignal(dict)  # done
     status_updated = pyqtSignal(str)  # done
-    print_status_updated = pyqtSignal(dict)  # done
-    active_extruder_changed = pyqtSignal(int)  # done
-    z_probe_offset_updated = pyqtSignal(float)  # done
-    tool_offset_updated = pyqtSignal(dict)  # done
+    print_status_updated = pyqtSignal('PyQt_PyObject')  # ! done
+    active_extruder_changed = pyqtSignal(str)  # ! done
+    z_probe_offset_updated = pyqtSignal(str)  # ! done
+    tool_offset_updated = pyqtSignal(str)  # done
     printer_error_signal = pyqtSignal(str)  # done
     filament_sensor_triggered = pyqtSignal(str)  # done
     z_probing_failed = pyqtSignal()  # done
-    z_tool_offset_updated = pyqtSignal(float)  # done
+    z_tool_offset_updated = pyqtSignal(str, bool)  # done
     update_started_signal = pyqtSignal(dict)
     update_log_signal = pyqtSignal(dict)  # ! REMAINING
     update_log_result_signal = pyqtSignal(dict)  # ! REMAINING
@@ -128,14 +128,15 @@ class PrinterModel(QObject):
     def getToolOffset(self, M218Data):
         """ Set the tool offsets from M218 response """
         try:
-            if 'X' in M218Data:
-                self.tool_offsets['X'] = M218Data[M218Data.index('X') + 1:].split(' ', 1)[0]
-            if 'Y' in M218Data:
-                self.tool_offsets['Y'] = M218Data[M218Data.index('Y') + 1:].split(' ', 1)[0]
-            if 'Z' in M218Data:
-                self.tool_offsets['Z'] = M218Data[M218Data.index('Z') + 1:].split(' ', 1)[0]
-
-            self.tool_offset_updated.emit(self.tool_offsets)
+            # if 'X' in M218Data:
+            #     self.tool_offsets['X'] = M218Data[M218Data.index('X') + 1:].split(' ', 1)[0]
+            # if 'Y' in M218Data:
+            #     self.tool_offsets['Y'] = M218Data[M218Data.index('Y') + 1:].split(' ', 1)[0]
+            # if 'Z' in M218Data:
+            #     self.tool_offsets['Z'] = M218Data[M218Data.index('Z') + 1:].split(' ', 1)[0]
+            #
+            # self.tool_offset_updated.emit(self.tool_offsets)
+            self.tool_offset_updated.emit(M218Data)
         except Exception as e:
             logger.error("Error in MainUiClass.getToolOffset: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.getToolOffset: {}".format(e), overlay=True)
@@ -148,7 +149,7 @@ class PrinterModel(QObject):
         self.filament_sensor_triggered.emit(data)
 
     def setZToolOffset(self, offset):
-        self.tool_offsets['Z'] = offset
+        # self.tool_offsets['Z'] = offset
         self.z_tool_offset_updated.emit(offset)
         pass
 
