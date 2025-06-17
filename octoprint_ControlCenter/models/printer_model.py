@@ -111,7 +111,7 @@ class PrinterModel(QObject):
     def setActiveExtruder(self, extruder):
         """Sets the active extruder"""
         try:
-            self.active_extruder = int(extruder)
+            self.active_extruder = extruder
             self.active_extruder_changed.emit(self.active_extruder)
         except ValueError:
             logger.error(f"Invalid extruder value: {extruder}")
@@ -119,7 +119,7 @@ class PrinterModel(QObject):
     def updateEEPROMProbeOffset(self, offset):
         """ Updates the Z probe offset in EEPROM """
         try:
-            self.z_probe_offset = float(offset)
+            self.z_probe_offset = offset
             self.z_probe_offset_updated.emit(self.z_probe_offset)
         except ValueError:
             logger.error(f"Invalid Z probe offset value: {offset}")
