@@ -99,6 +99,9 @@ class ControlScreen(QWidget):
         self.screens = {}
         self._initialize_sub_screens()
 
+        # set the active extruder to 0 initially
+        self.screens["change_filament"].setActiveExtruder(0)
+
         # Feed Rate Buttons Signal Connections
         if self.controlBackButton:
             self.controlBackButton.clicked.connect(self._go_back)
