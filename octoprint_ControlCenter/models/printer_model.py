@@ -67,14 +67,14 @@ class PrinterModel(QObject):
         }
         
         self.calibrationPosition = {
-            'X1': 63, 'Y1': 67,
-            'X2': 542, 'Y2': 67,
-            'X3': 303, 'Y3': 567,
-            'X4': 303, 'Y4': 20
+            'X1': 110, 'Y1': 18,
+            'X2': 510, 'Y2': 18,
+            'X3': 310, 'Y3': 308,
+            'X4': 310, 'Y4': 178
         }
-        
-        self.tool0PurgePosition = {'X': -27, 'Y': -112}
-        self.tool1PurgePosition = {'X': 648, 'Y': -112}
+
+        self.tool0PurgePosition = {'X': -30, 'Y': -77}
+        self.tool1PurgePosition = {'X': 655, 'Y': -77}
 
         self.ptfeTubeLength = 1500  # 2400 for 600x600, 1500 for 600x300 keep as multiples of 300 only
 
