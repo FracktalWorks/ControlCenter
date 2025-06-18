@@ -24,6 +24,7 @@ class ChangeFilament(QWidget):
         self.changeFilamentHeatingFlag = False
         self.loadFlag = None
         self.activeExtruder = 0  # Default to extruder 0
+        self.loadStopFlag = False
 
         # Setup logger
         self.logger = setup_logger(f"{self.__class__.__name__}")
@@ -157,6 +158,7 @@ class ChangeFilament(QWidget):
         logger.info("MainUiClass.control started")
         try:
             # self.stackedWidget.setCurrentWidget(self.control_screen)
+            self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
             self.main_window.switch_to_control_screen()
             if self.control_screen.toolToggleTemperatureButton.isChecked():
                 self.control_screen.toolTempSpinBox.setProperty(
@@ -169,6 +171,9 @@ class ChangeFilament(QWidget):
             self.control_screen.bedTempSpinBox.setProperty(
                 "value", float(self.home_screen.bedTargetTemperature.text())
             )
+            self.loadFlag = False
+            self.changeFilamentHeatingFlag = False
+            self.loadStopFlag = True
         except Exception as e:
             logger.error("Error in MainUiClass.control: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.control: {}".format(e), overlay=True)
@@ -176,6 +181,7 @@ class ChangeFilament(QWidget):
     def loadFilament(self):
         logger.info("MainUiClass.loadFilament started - Updated one")
         try:
+            self.loadStopFlag = False
             if self.home_screen.printerStatusText not in ["Printing", "Paused"]:
                 if self.activeExtruder == 1:
                     self.main_window.octoprint_client.jog(
@@ -324,6 +330,7 @@ class ChangeFilament(QWidget):
         """
         logger.info("MainUiClass.changeFilament started")
         try:
+            self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
             time.sleep(1)
             if self.home_screen.printerStatusText not in ["Printing", "Paused"]:
                 self.main_window.octoprint_client.gcode("G28")
@@ -390,22 +397,26 @@ class ChangeFilament(QWidget):
             dialog.WarningOk(self, "Error in MainUiClass.changeFilamentLoadFunction: {}".format(e), overlay=True)
 
     @run_async
-    def changeFilamentExtrudePageFunction(self):
+    def changeFilamentExtrudePageFunction(self, *args, **kwargs):
         """
         once filament is loaded, this function is called to extrude filament till the toolhead
         """
         logger.info("MainUiClass.changeFilamentExtrudePageFunction started")
         try:
+            print("______________________________Entered extrusion function____________________________")
             self.stackedWidget.setCurrentWidget(self.changeFilamentExtrudePage)
             for i in range(int(self.main_window.printer_model.ptfeTubeLength / 150)):
+                print("___________________________Entered the for loop______________________________")
                 self.main_window.octoprint_client.gcode("G91")
                 self.main_window.octoprint_client.gcode("G1 E150 F1500")
                 self.main_window.octoprint_client.gcode("G90")
                 time.sleep(self.calcExtrudeTime(150, 1500))
                 if self.stackedWidget.currentWidget() is not self.changeFilamentExtrudePage:
+                    print("___________________________widget not set____________________________")
                     break
-
+            print("___________________________Exited the for loop______________________________")
             while self.stackedWidget.currentWidget() == self.changeFilamentExtrudePage:
+                print("___________________________Still extruding____________________________")
                 if self.changeFilamentComboBox.currentText() == "TPU":
                     self.main_window.octoprint_client.gcode("G91")
                     self.main_window.octoprint_client.gcode("G1 E20 F300")
@@ -416,6 +427,7 @@ class ChangeFilament(QWidget):
                     self.main_window.octoprint_client.gcode("G1 E20 F600")
                     self.main_window.octoprint_client.gcode("G90")
                     time.sleep(self.calcExtrudeTime(20, 600))
+            print("___________________________Exited the while loop______________________________")
         except Exception as e:
             logger.error("Error in MainUiClass.changeFilamentExtrudePageFunction: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.changeFilamentExtrudePageFunction: {}".format(e), overlay=True)

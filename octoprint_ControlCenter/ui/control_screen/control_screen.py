@@ -322,8 +322,8 @@ class ControlScreen(QWidget):
 
         # Get the screen and make sure it's reset to initial state
         change_filament_screen = self.screens.get("change_filament")
-        if change_filament_screen and hasattr(change_filament_screen, "reset_wizard"):
-            change_filament_screen.reset_wizard()
+        # if change_filament_screen and hasattr(change_filament_screen, "reset_wizard"):
+        #     change_filament_screen.reset_wizard()
 
         # Use our consistent navigation method
         self.show_control_subscreen("change_filament")
@@ -369,7 +369,7 @@ class ControlScreen(QWidget):
             if 'enabled' in data:
                 self.toggleFilamentSensorButton.setIcon(QtGui.QIcon(_fromUtf8("templates/img/filamentSensorOn")))
 
-            if triggered_extruder0 and self.stackedWidget.currentWidget() not in [
+            if triggered_extruder0 and self.main_window.stacked_widget.currentWidget() not in [
                 change_filament_screen.changeFilamentPage,
                 change_filament_screen.changeFilamentProgressPage,
                 change_filament_screen.changeFilamentExtrudePage,
@@ -380,7 +380,7 @@ class ControlScreen(QWidget):
                                     "Filament outage or clog detected in Extruder 0. Please check the external motors. Print paused"):
                     pass
 
-            if triggered_extruder1 and self.stackedWidget.currentWidget() not in [
+            if triggered_extruder1 and self.main_window.stacked_widget.currentWidget() not in [
                 change_filament_screen.changeFilamentPage,
                 change_filament_screen.changeFilamentProgressPage,
                 change_filament_screen.changeFilamentExtrudePage,
