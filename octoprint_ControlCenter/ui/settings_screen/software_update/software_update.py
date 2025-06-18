@@ -75,6 +75,8 @@ class SoftwareUpdate(QWidget):
         self.mainSettingsWidget.main_window.octoprint_client.update_log_result_signal.connect(self.softwareUpdateResult)
         self.mainSettingsWidget.main_window.octoprint_client.update_failed_signal.connect(self.updateFailed)
 
+        self.displayVersionInfo()
+
     def go_back_to_settings_screen(self):
         """Return to the settings screen."""
         print("Back to settings screen button clicked")
@@ -119,8 +121,6 @@ class SoftwareUpdate(QWidget):
             logger.error("Error in MainUiClass.softwareUpdateProgress: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.softwareUpdateProgress: {}".format(e), overlay=True)
 
-
-
     def softwareUpdateProgressLog(self,data):
         logger.info("MainUiClass.softwareUpdateProgressLog started")
         try:
@@ -132,7 +132,6 @@ class SoftwareUpdate(QWidget):
             logger.error("Error in MainUiClass.softwareUpdateProgressLog: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.softwareUpdateProgressLog: {}".format(e), overlay=True)
 
-
     def updateFailed(self, data):
         logger.info("MainUiClass.updateFailed started")
         try:
@@ -143,9 +142,6 @@ class SoftwareUpdate(QWidget):
         except Exception as e:
             logger.error("Error in MainUiClass.updateFailed: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.updateFailed: {}".format(e), overlay=True)
-
-    
-
 
     def softwareUpdateResult(self, data):
         logger.info("MainUiClass.softwareUpdateResult started")
@@ -159,6 +155,50 @@ class SoftwareUpdate(QWidget):
             logger.error("Error in MainUiClass.softwareUpdateResult: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.softwareUpdateResult: {}".format(e), overlay=True)
 
+    def displayVersionInfo(self):
+        """
+        Displays the version information for octoprint plugins
+        """
+        logger.info("MainUiClass.displayVersionInfo started")
+        try:
+            self.updateListWidget.clear()
+            updateAvailable = False
+            self.performUpdateButton.setDisabled(True)
 
-    
+            # Firmware version on the MKS https://github.com/FracktalWorks/OctoPrint-JuliaFirmwareUpdater
+            # self.updateListWidget.addItem(self.getFirmwareVersion())
 
+            data = self.mainSettingsWidget.main_window.octoprint_client.getSoftwareUpdateInfo()
+            if data:
+                for item in data["information"]:
+                    # print(item)
+                    plugin = data["information"][item]
+                    info = u'\u2713' if not plugin["updateAvailable"] else u"\u2717"    # icon
+                    info += plugin["displayName"] + "  " + plugin["displayVersion"] + "\n"
+                    info += "   Available: "
+                    if "information" in plugin and "remote" in plugin["information"] and plugin["information"]["remote"]["value"] is not None:
+                        info += plugin["information"]["remote"]["value"]
+                    else:
+                        info += "Unknown"
+                    self.updateListWidget.addItem(info)
+
+                    if plugin["updateAvailable"]:
+                        updateAvailable = True
+
+                    # if not updatable:
+                    #     self.updateListWidget.addItem(u'\u2713' + data["information"][item]["displayName"] +
+                    #                                   "  " + data["information"][item]["displayVersion"] + "\n"
+                    #                                   + "   Available: " +
+                    #                                   )
+                    # else:
+                    #     updateAvailable = True
+                    #     self.updateListWidget.addItem(u"\u2717" + data["information"][item]["displayName"] +
+                    #                                   "  " + data["information"][item]["displayVersion"] + "\n"
+                    #                                   + "   Available: " +
+                    #                                   data["information"][item]["information"]["remote"]["value"])
+            if updateAvailable:
+                self.performUpdateButton.setDisabled(False)
+            self.stackedWidget.setCurrentWidget(self.OTAUpdatePage)
+        except Exception as e:
+            logger.error("Error in MainUiClass.displayVersionInfo: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.displayVersionInfo: {}".format(e), overlay=True)
