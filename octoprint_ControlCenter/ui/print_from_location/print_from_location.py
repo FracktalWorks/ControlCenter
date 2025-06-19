@@ -333,6 +333,7 @@ class PrintFromLocation(QWidget):
             self.uploadThread = ThreadFileUpload(file, prnt=prnt)
             self.uploadThread.start()
             if prnt:
+                self.stackedWidget.setCurrentWidget(self.printLocationPage)
                 self.stackedWidget.setCurrentWidget(self.main_window.home_screen)
         except Exception as e:
             logger.error("Error in MainUiClass.transferToLocal: {}".format(e))
@@ -352,7 +353,7 @@ class PrintFromLocation(QWidget):
             # if self.main_window.home_screen not in [self.stackedWidget.widget(i) for i in
             #                                         range(self.stackedWidget.count())]:
             #     self.stackedWidget.addWidget(self.main_window.home_screen)
-
+            self.stackedWidget.setCurrentWidget(self.printLocationPage)
             self.main_window.switch_to_home_screen()
 
             # self.stackedWidget.setCurrentWidget(self.main_window.home_screen)

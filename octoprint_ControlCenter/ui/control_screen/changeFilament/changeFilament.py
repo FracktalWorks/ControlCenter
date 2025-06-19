@@ -439,6 +439,7 @@ class ChangeFilament(QWidget):
         """
         logger.info("MainUiClass.changeFilamentRetractFunction started")
         try:
+            print("______________________________Entered retraction function____________________________")
             self.stackedWidget.setCurrentWidget(self.changeFilamentRetractPage)
             # Tip Shaping to prevent filament jamming in nozzle
             if self.changeFilamentComboBox.currentText() == "TPU":
@@ -456,18 +457,22 @@ class ChangeFilament(QWidget):
             time.sleep(self.calcExtrudeTime(150, 5000))
             self.main_window.octoprint_client.gcode("G90")
             for i in range(int(self.main_window.printer_model.ptfeTubeLength / 150)):
+                print("___________________________Entered the for loop______________________________")
                 self.main_window.octoprint_client.gcode("G91")
                 self.main_window.octoprint_client.gcode("G1 E-150 F2000")
                 self.main_window.octoprint_client.gcode("G90")
                 time.sleep(self.calcExtrudeTime(150, 2000))
                 if self.stackedWidget.currentWidget() is not self.changeFilamentRetractPage:
+                    print("___________________________widget not set____________________________")
                     break
 
             while self.stackedWidget.currentWidget() == self.changeFilamentRetractPage:
+                print("___________________________Still retracting____________________________")
                 self.main_window.octoprint_client.gcode("G91")
                 self.main_window.octoprint_client.gcode("G1 E-5 F1000")
                 self.main_window.octoprint_client.gcode("G90")
                 time.sleep(self.calcExtrudeTime(5, 1000))
+            print("___________________________Exited the while loop______________________________")
         except Exception as e:
             logger.error("Error in MainUiClass.changeFilamentRetractFunction: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.changeFilamentRetractFunction: {}".format(e), overlay=True)
