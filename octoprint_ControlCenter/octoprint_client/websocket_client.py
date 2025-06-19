@@ -66,20 +66,14 @@ class OctoPrintWebSocket(QThread):
             logger.error(f"Error initializing WebSocket: {e}")
 
     def run(self):
-        """
-        Run the WebSocket connection in its own thread
-        """
-        logger.info("Starting WebSocket connection")
+        logger.info("QtWebsocket.run started")
         try:
             self.ws.run_forever()
             self.reset_heartbeat_timer()
         except Exception as e:
-            logger.error(f"Error in WebSocket connection: {e}")
+            logger.error("Error in QtWebsocket.run: {}".format(e))
 
     def reset_heartbeat_timer(self):
-        """
-        Reset the heartbeat timer to detect connection loss
-        """
         try:
             if self.heartbeat_timer is not None:
                 self.heartbeat_timer.cancel()
@@ -87,18 +81,21 @@ class OctoPrintWebSocket(QThread):
             self.heartbeat_timer = threading.Timer(120, self.reestablish_connection)  # 120 seconds = 2 minutes
             self.heartbeat_timer.start()
         except Exception as e:
-            logger.error(f"Error resetting heartbeat timer: {e}")
+            logger.error("Error in QtWebsocket.reset_heartbeat_timer: {}".format(e))
 
     def reestablish_connection(self):
-        """
-        Try to reconnect if the connection is lost
-        """
-        logger.info("Attempting to reestablish WebSocket connection")
+        logger.info("Reestablishing WebSocket connection...")
         try:
-            self.__init__(self.ip, self.api_key)
+            self.reconnect_attempts += 1
+            if self.reconnect_attempts > self.max_reconnect_attempts:
+                logger.error("Max reconnect attempts reached. Giving up.")
+                return
+
+            self._initialize_websocket()
             self.start()
+            logger.info("Reconnection attempt {} succeeded.".format(self.reconnect_attempts))
         except Exception as e:
-            logger.error(f"Error reestablishing WebSocket connection: {e}")
+            logger.error("Error in QtWebsocket.reestablish_connection: {}".format(e))
 
     def send(self, data):
         """
@@ -169,20 +166,13 @@ class OctoPrintWebSocket(QThread):
         """
         self.authenticate()
 
-    def on_close(self, ws):
-        """
-        Handle WebSocket connection close
-        :param ws: WebSocket instance
-        """
-        pass
+    def on_close(self, ws, *args, **kwargs):
+        logger.warning("WebSocket connection closed. Attempting to reconnect...")
+        self.reestablish_connection()
 
     def on_error(self, ws, error):
-        """
-        Handle WebSocket errors
-        :param ws: WebSocket instance
-        :param error: Error message
-        """
-        logger.error(f"WebSocket error: {error}")
+        logger.error("Error in WebSocket connection: {}".format(error))
+        self.reestablish_connection()
 
     @run_async
     def process(self, data):

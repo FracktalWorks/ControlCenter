@@ -268,6 +268,20 @@ class HomeScreen(QWidget):
         :param temperature: dict containing key:value pairs with keys being the tools, bed and their values being their corresponding temperratures
         """
         try:
+            # ideally the none to 0 conversion should happen here
+            if temperature['tool0Actual'] is None:
+                temperature['tool0Actual'] = 0
+            if temperature['tool0Target'] is None:
+                temperature['tool0Target'] = 180
+            if temperature['tool1Actual'] is None:
+                temperature['tool1Actual'] = 0
+            if temperature['tool1Target'] is None:
+                temperature['tool1Target'] = 180
+            if temperature['bedActual'] is None:
+                temperature['bedActual'] = 0
+            if temperature['bedTarget'] is None:
+                temperature['bedTarget'] = 60
+
             # Update extruder 0 temperature
             if temperature['tool0Target'] == 0:
                 self.tool0TempBar.setMaximum(300)
