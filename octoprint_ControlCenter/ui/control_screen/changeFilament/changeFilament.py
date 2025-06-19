@@ -131,7 +131,7 @@ class ChangeFilament(QWidget):
                         self.changeFilamentComboBox.setCurrentIndex(index)
 
             # Show the change filament page
-            self._show_page('change_filament_screen')
+            self._show_page('changeFilamentPage')
 
         except Exception as e:
             self.logger.error(f"Error in _init_change_filament: {e}")
