@@ -123,7 +123,7 @@ class SettingsScreen(QWidget):
             self.logger.error("Cannot load settings widgets: stackedWidget or verticalLayout is missing")
             return
 
-        settings_folder = '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen'
+        settings_folder = '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen/'
         try:
             for subfolder in os.listdir(settings_folder):
                 subfolder_path = os.path.join(settings_folder, subfolder)

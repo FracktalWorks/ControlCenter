@@ -15,7 +15,7 @@ class Keyboard(QtWidgets.QDialog):
         super(Keyboard, self).__init__(parent)
 
         # Load the UI directly from the .ui file
-        uic.loadUi('octoprint_ControlCenter/utils/win_keyboard.ui', self)
+        uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/win_keyboard.ui', self)
 
         self.setAlphaUpperState(False)
 

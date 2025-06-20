@@ -335,7 +335,9 @@ class ControlScreen(QWidget):
         """
         logger.info("MainUiClass.toggleFilamentSensor started")
         icon = 'filamentSensorOn' if self.toggleFilamentSensorButton.isChecked() else 'filamentSensorOff'
-        self.toggleFilamentSensorButton.setIcon(QtGui.QIcon(_fromUtf8("resources/img/icons/" + icon)))
+        self.toggleFilamentSensorButton.setIcon(QtGui.QIcon(_fromUtf8(
+            "/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/resources/img/icons/" + icon))
+        )
         self.main_window.octoprint_client.gcode(
             command="PRIMARY_SFS_ENABLE{}".format(int(self.toggleFilamentSensorButton.isChecked())))
 
