@@ -53,6 +53,19 @@ class MainWindow(QMainWindow):
         self.next_screen = None
         self.dialogShown = False
 
+        # Initialize the OctoPrint singleton
+        try:
+            logger.info("Initializing OctoPrint singleton")
+            octoprint_singleton.initialize(config.ip, config.apiKey)
+
+            # Get the OctoPrint client instance - this can access all functions of octoprintAPI
+            self.octoprint_client = octoprint_singleton.get_client()
+            logger.info("OctoPrint singleton initialized successfully")
+
+        except Exception as e:
+            logger.error(f"Failed to initialize OctoPrint singleton: {e}")
+            # Continue initialization, we'll handle the error in the loading screen
+
         try:
             # Load all screens
             self.load_home_screen()
@@ -76,14 +89,7 @@ class MainWindow(QMainWindow):
                       f"Application Error\n\nAn error occurred while initializing the application: {str(e)}\n\nPlease check the logs for more details.",
                       overlay=True)
 
-        # Initialize the OctoPrint singleton
-        try:
-            logger.info("Initializing OctoPrint singleton")
-            octoprint_singleton.initialize(config.ip, config.apiKey)
 
-            # Get the OctoPrint client instance - this can access all functions of octoprintAPI
-            self.octoprint_client = octoprint_singleton.get_client()
-            logger.info("OctoPrint singleton initialized successfully")
 
             # Initialize the sanity check to verify OctoPrint connectivity
             # ! Transferred to loading_screen.py
@@ -91,12 +97,6 @@ class MainWindow(QMainWindow):
             # self.sanityCheck.start()
             # self.sanityCheck.loaded_signal.connect(self.loadFullUI)
             # self.sanityCheck.startup_error_signal.connect(self.handleStartupError)
-
-
-
-        except Exception as e:
-            logger.error(f"Failed to initialize OctoPrint singleton: {e}")
-            # Continue initialization, we'll handle the error in the loading screen
 
     def handleStartupError(self):
         """

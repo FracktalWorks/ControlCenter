@@ -4,38 +4,42 @@ from utils.helpers import check_ui_elements
 from utils import dialog
 from utils import logger
 
+
 class SoftwareUpdate(QWidget):
     """
     Software Update widget that allows users to check for and perform
     software updates on the printer's firmware and system.
     """
+
     def __init__(self, parent, settings_screen):
         super(SoftwareUpdate, self).__init__(parent)
         self.mainSettingsWidget = settings_screen  # Reference to the main settings widget
-        
+
         # Load the UI
         try:
-            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen/software_update/software_update.ui', self)
+            uic.loadUi(
+                '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen/software_update/software_update.ui',
+                self)
             print("SoftwareUpdate UI loaded successfully")
         except Exception as e:
             print(f"Failed to load SoftwareUpdate UI file: {e}")
-        
+
         # Initialize UI components
         # Navigation buttons
         self.softwareUpdateBackButton = self.findChild(QPushButton, "softwareUpdateBackButton")
-        
+
         # Action buttons
         self.performUpdateButton = self.findChild(QPushButton, "performUpdateButton")
-        
+
         # UI containers and pages
         self.stackedWidget = self.findChild(QStackedWidget, "stackedWidget")
         self.OTAUpdatePage = self.findChild(QWidget, "OTAUpdatePage")
         self.softwareUpdateProgressPage = self.findChild(QWidget, "softwareUpdateProgressPage")
-        
+
         # UI content elements
         self.updateListWidget = self.findChild(QListWidget, "updateListWidget")
         self.logTextEdit = self.findChild(QTextEdit, "logTextEdit")
-        
+
         # Check if UI elements exist and report missing ones
         # Use a simple list of UI elements instead of a dictionary
         check_ui_elements(self, [
@@ -47,21 +51,21 @@ class SoftwareUpdate(QWidget):
             self.updateListWidget,
             self.logTextEdit
         ], "SoftwareUpdate")
-        
+
         # Connect buttons to their respective functions with safety checks
         if self.softwareUpdateBackButton:
             self.softwareUpdateBackButton.clicked.connect(self.go_back_to_settings_screen)
             print("Connected back button to go_back_to_settings_screen")
         else:
             print("WARNING: Could not connect back button - button not found")
-            
+
         if self.performUpdateButton:
             self.performUpdateButton.clicked.connect(
                 lambda: self.mainSettingsWidget.main_window.octoprint_client.performSoftwareUpdate()
             )
         else:
             print("WARNING: Could not connect update button - button not found")
-        
+
         # Set the default page in stacked widget
         if self.stackedWidget and self.OTAUpdatePage:
             self.stackedWidget.setCurrentWidget(self.OTAUpdatePage)
@@ -70,10 +74,12 @@ class SoftwareUpdate(QWidget):
             print("WARNING: Could not set default page - required widgets missing")
 
         # ! LOCAL SIGNAL AND SLOT CONNECTIONS:
-        self.mainSettingsWidget.main_window.octoprint_client.update_started_signal.connect(self.softwareUpdateProgress)
-        self.mainSettingsWidget.main_window.octoprint_client.update_log_signal.connect(self.softwareUpdateProgressLog)
-        self.mainSettingsWidget.main_window.octoprint_client.update_log_result_signal.connect(self.softwareUpdateResult)
-        self.mainSettingsWidget.main_window.octoprint_client.update_failed_signal.connect(self.updateFailed)
+        self.mainSettingsWidget.main_window.printer_model.update_started_signal.connect(self.softwareUpdateProgress)
+        self.mainSettingsWidget.main_window.printer_model.update_log_signal.connect(self.softwareUpdateProgressLog)
+        self.mainSettingsWidget.main_window.printer_model.update_log_result_signal.connect(self.softwareUpdateResult)
+        self.mainSettingsWidget.main_window.printer_model.update_failed_signal.connect(self.updateFailed)
+
+        self.displayVersionInfo()
 
     def go_back_to_settings_screen(self):
         """Return to the settings screen."""
@@ -87,11 +93,11 @@ class SoftwareUpdate(QWidget):
     def update_software(self):
         """Update the software."""
         print("Updating software...")
-        
+
         if self.stackedWidget and self.softwareUpdateProgressPage:
             self.stackedWidget.setCurrentWidget(self.softwareUpdateProgressPage)
             print("Switched to software update progress page")
-            
+
             if self.logTextEdit:
                 self.logTextEdit.append("Software update in progress...")
                 print("Added log message to text edit")
@@ -99,7 +105,7 @@ class SoftwareUpdate(QWidget):
                 print("WARNING: Could not add log message - logTextEdit not found")
         else:
             print("ERROR: Cannot update software - required widgets missing")
-            
+
         # Actual implementation would include code to:
         # 1. Check for network connectivity
         # 2. Download updates
@@ -114,18 +120,18 @@ class SoftwareUpdate(QWidget):
             self.logTextEdit.setTextColor(QtCore.Qt.red)
             self.logTextEdit.append("---------------------------------------------------------------\n"
                                     "Updating " + data["name"] + " to " + data["version"] + "\n"
-                                    "---------------------------------------------------------------")
+                                                                                            "---------------------------------------------------------------")
         except Exception as e:
             logger.error("Error in MainUiClass.softwareUpdateProgress: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.softwareUpdateProgress: {}".format(e), overlay=True)
 
-    def softwareUpdateProgressLog(self,data):
+    def softwareUpdateProgressLog(self, data):
         logger.info("MainUiClass.softwareUpdateProgressLog started")
         try:
-             self.logTextEdit.setTextColor(QtCore.Qt.white)
-             for line in data:
+            self.logTextEdit.setTextColor(QtCore.Qt.white)
+            for line in data:
                 self.logTextEdit.append(line["line"])
-        
+
         except Exception as e:
             logger.error("Error in MainUiClass.softwareUpdateProgressLog: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.softwareUpdateProgressLog: {}".format(e), overlay=True)
@@ -171,10 +177,11 @@ class SoftwareUpdate(QWidget):
                 for item in data["information"]:
                     # print(item)
                     plugin = data["information"][item]
-                    info = u'\u2713' if not plugin["updateAvailable"] else u"\u2717"    # icon
+                    info = u'\u2713' if not plugin["updateAvailable"] else u"\u2717"  # icon
                     info += plugin["displayName"] + "  " + plugin["displayVersion"] + "\n"
                     info += "   Available: "
-                    if "information" in plugin and "remote" in plugin["information"] and plugin["information"]["remote"]["value"] is not None:
+                    if "information" in plugin and "remote" in plugin["information"] and \
+                            plugin["information"]["remote"]["value"] is not None:
                         info += plugin["information"]["remote"]["value"]
                     else:
                         info += "Unknown"
