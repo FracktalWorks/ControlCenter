@@ -32,6 +32,19 @@ class MainWindow(QMainWindow):
         self.octoprint_websocket = None
         logger.info("Initializing MainWindow")
 
+        # Initialize the OctoPrint singleton
+        try:
+            logger.info("Initializing OctoPrint singleton")
+            octoprint_singleton.initialize(config.ip, config.apiKey)
+
+            # Get the OctoPrint client instance - this can access all functions of octoprintAPI
+            self.octoprint_client = octoprint_singleton.get_client()
+            logger.info("OctoPrint singleton initialized successfully")
+
+        except Exception as e:
+            logger.error(f"Failed to initialize OctoPrint singleton: {e}")
+            # Continue initialization, we'll handle the error in the loading screen
+
         # Flag to indicate if we're in minimal UI mode due to startup error
         self.minimal_ui_mode = False
         self.printer_model = PrinterModel()
@@ -75,28 +88,6 @@ class MainWindow(QMainWindow):
             WarningOk(self,
                       f"Application Error\n\nAn error occurred while initializing the application: {str(e)}\n\nPlease check the logs for more details.",
                       overlay=True)
-
-        # Initialize the OctoPrint singleton
-        try:
-            logger.info("Initializing OctoPrint singleton")
-            octoprint_singleton.initialize(config.ip, config.apiKey)
-
-            # Get the OctoPrint client instance - this can access all functions of octoprintAPI
-            self.octoprint_client = octoprint_singleton.get_client()
-            logger.info("OctoPrint singleton initialized successfully")
-
-            # Initialize the sanity check to verify OctoPrint connectivity
-            # ! Transferred to loading_screen.py
-            # self.sanityCheck = ThreadSanityCheck(ip=config.ip, api_key=config.apiKey, virtual=False)
-            # self.sanityCheck.start()
-            # self.sanityCheck.loaded_signal.connect(self.loadFullUI)
-            # self.sanityCheck.startup_error_signal.connect(self.handleStartupError)
-
-
-
-        except Exception as e:
-            logger.error(f"Failed to initialize OctoPrint singleton: {e}")
-            # Continue initialization, we'll handle the error in the loading screen
 
     def handleStartupError(self):
         """

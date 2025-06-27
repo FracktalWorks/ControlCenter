@@ -214,6 +214,7 @@ class SettingsScreen(QWidget):
                 uic.loadUi(ui_file, self)
                 self.setObjectName(os.path.basename(ui_file).split('.')[0])
                 self.load_backend(py_file, parent)
+                print("PARENT NAME: ", parent)
 
             def load_backend(self, py_file, parent):
                 spec = importlib.util.spec_from_file_location("module.name", py_file)
@@ -221,6 +222,9 @@ class SettingsScreen(QWidget):
                 spec.loader.exec_module(module)
                 # Assuming the class name in the .py file is the same as the subfolder name
                 class_name = os.path.basename(py_file).split('.')[0].title().replace('_', '')
+                print("Class name: ", class_name)
+                print("py_file: ", py_file)
+
                 try:
                     backend_class = getattr(module, class_name)
                     backend_instance = backend_class(self, parent)
