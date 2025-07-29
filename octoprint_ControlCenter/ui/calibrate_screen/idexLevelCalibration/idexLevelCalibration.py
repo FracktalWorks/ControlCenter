@@ -1,9 +1,10 @@
 from PyQt5 import uic, QtGui, QtCore
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel
 from utils.helpers import check_ui_elements
-from utils.logger import setup_logger
+from utils.logger import get_logger
+from utils import dialog
 
-from utils import logger, dialog
+logger = get_logger(__name__)
 
 class IdexLevelCalibration(QWidget):
     """
@@ -13,7 +14,7 @@ class IdexLevelCalibration(QWidget):
     def __init__(self, main_window):
         super(IdexLevelCalibration, self).__init__()
         self.main_window = main_window
-        self.logger = setup_logger('idex_calibration')
+        self.logger = get_logger(self.__class__.__name__)
         self.logger.info("Initializing IDEX Level Calibration screen")
 
         # Load the .ui file

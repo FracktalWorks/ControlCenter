@@ -2,10 +2,10 @@ from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QDoubleSpinBox, QLabel
 from PyQt5.QtGui import QPalette, QColor
 from utils.helpers import check_ui_elements
-from utils.logger import setup_logger
-
-from utils import logger
+from utils.logger import get_logger
 from utils import dialog
+
+
 
 
 class NozzleOffsetPage(QWidget):
@@ -19,8 +19,8 @@ class NozzleOffsetPage(QWidget):
         self.main_window = main_window
         self.current_nozzle_offset = 0.0
 
-        # Set up logger for this class
-        self.logger = setup_logger('NozzleOffsetPage')
+        # Use centralized logger
+        self.logger = get_logger(self.__class__.__name__)
         self.logger.info("Initializing NozzleOffsetPage")
 
         # Load the UI

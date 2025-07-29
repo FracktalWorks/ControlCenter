@@ -1,15 +1,17 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton
 from utils.helpers import check_ui_elements
-from utils.logger import setup_logger
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 class MenuScreen(QWidget):
     def __init__(self, main_window):
         super(MenuScreen, self).__init__()
         self.main_window = main_window
 
-        # Setup logger
-        self.logger = setup_logger('menu_screen')
+        # Use centralized logger
+        self.logger = get_logger(self.__class__.__name__)
 
         # Load the UI with proper error handling
         try:

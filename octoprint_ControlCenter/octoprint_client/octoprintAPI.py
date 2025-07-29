@@ -3,7 +3,8 @@ import os
 import requests
 import json
 import base64
-from utils import logger
+from utils.logger import get_logger
+logger = get_logger(__name__)
 
 class octoprintAPI:
     def __init__(self, ip=None, apiKey=None):

@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QStackedWidget
 from PyQt5 import uic
 from utils.helpers import check_ui_elements
-from utils import logger  # Import the logger
+from utils.logger import get_logger
 from utils import dialog
 
 # Import all calibration sub-screens
@@ -12,19 +12,22 @@ from ui.calibrate_screen.testPrintPage.testPrintPage import TestPrintPage
 from ui.calibrate_screen.idexLevelCalibration.idexLevelCalibration import IdexLevelCalibration
 
 
+logger = get_logger(__name__)
+
 class CalibrateScreen(QWidget):
     def __init__(self, main_window):
         super(CalibrateScreen, self).__init__()
         self.main_window = main_window
+        self.logger = get_logger(self.__class__.__name__)
 
         # Load the UI
         try:
             uic.loadUi(
                 "/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/calibrate_screen/calibrate_screen.ui",
                 self)
-            logger.info("CalibrateScreen UI loaded successfully")
+            self.logger.info("CalibrateScreen UI loaded successfully")
         except Exception as e:
-            logger.exception(f"Failed to load CalibrateScreen UI file: {e}")
+            self.logger.exception(f"Failed to load CalibrateScreen UI file: {e}")
 
         # Initialize UI components
         self.calibration_stacked_widget = self.findChild(QStackedWidget, "mainCalibrateStackedWidget")
@@ -73,7 +76,7 @@ class CalibrateScreen(QWidget):
         # Show the main calibration page initially
         if self.calibration_stacked_widget and self.main_calibrate_page:
             self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
-            logger.debug("Set current widget to mainCalibratePage")
+            self.logger.debug("Set current widget to mainCalibratePage")
 
     def _initialize_sub_screens(self):
         """Initialize all calibration sub-screens"""
@@ -88,12 +91,12 @@ class CalibrateScreen(QWidget):
             # Add each screen to the stacked widget
             for name, screen in self.screens.items():
                 self.calibration_stacked_widget.addWidget(screen)
-                logger.info(f"Added {name} screen to calibration stacked widget")
+                self.logger.info(f"Added {name} screen to calibration stacked widget")
         except Exception as e:
-            logger.exception(f"Error initializing sub-screens: {e}")
+            self.logger.exception(f"Error initializing sub-screens: {e}")
 
     def inputShaperCalibrate(self):
-        logger.info("MainUiClass.inputShaperCalibrate started")
+        self.logger.info("MainUiClass.inputShaperCalibrate started")
         try:
             dialog.WarningOk(self, "Wait for all calibration movements to finish before proceeding.", overlay=True)
             self.main_window.octoprint_client.gcode(command='G28')
@@ -102,7 +105,7 @@ class CalibrateScreen(QWidget):
 
         except Exception as e:
             error_message = f"Error in inptuShaperCalibrate: {str(e)}"
-            logger.error(error_message)
+            self.logger.error(error_message)
             dialog.WarningOk(error_message, overlay=True)
 
     def _show_tool_offset_z(self):
@@ -113,9 +116,9 @@ class CalibrateScreen(QWidget):
         if tool_offset_screen and hasattr(tool_offset_screen, "stackedWidget"):
             if hasattr(tool_offset_screen, "toolOffsetZPage"):
                 tool_offset_screen.stackedWidget.setCurrentWidget(tool_offset_screen.toolOffsetZPage)
-                logger.debug("Showing Tool Offset Z tab")
+                self.logger.debug("Showing Tool Offset Z tab")
             else:
-                logger.error("Tool Offset Z page not found")
+                self.logger.error("Tool Offset Z page not found")
 
     def _show_tool_offset_xy(self):
         """Show the tool offset screen with XY tab selected"""
@@ -125,9 +128,9 @@ class CalibrateScreen(QWidget):
         if tool_offset_screen and hasattr(tool_offset_screen, "stackedWidget"):
             if hasattr(tool_offset_screen, "toolOffsetXYPage"):
                 tool_offset_screen.stackedWidget.setCurrentWidget(tool_offset_screen.toolOffsetXYPage)
-                logger.debug("Showing Tool Offset XY tab")
+                self.logger.debug("Showing Tool Offset XY tab")
             else:
-                logger.error("Tool Offset XY page not found")
+                self.logger.error("Tool Offset XY page not found")
 
     def show_calibrate_screen(self, target_screen=None):
         """Show a specific calibration screen or the main calibration page
@@ -136,7 +139,7 @@ class CalibrateScreen(QWidget):
             target_screen: Optional string identifying which sub-screen to navigate to.
                            None means show the main calibration page.
         """
-        logger.debug(f"show_calibrate_screen called with target_screen={target_screen}")
+        self.logger.debug(f"show_calibrate_screen called with target_screen={target_screen}")
 
         # Only switch to this screen in the main window if we're not already on it
         if self.main_window.current_screen != self:
@@ -146,18 +149,18 @@ class CalibrateScreen(QWidget):
         if not target_screen:
             if self.calibration_stacked_widget and self.main_calibrate_page:
                 self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
-                logger.debug("Showing main calibration page")
+                self.logger.debug("Showing main calibration page")
             return
 
         # Check if the requested screen exists
         if target_screen not in self.screens:
-            logger.error(f"Requested screen '{target_screen}' not found in available screens")
+            self.logger.error(f"Requested screen '{target_screen}' not found in available screens")
             return
 
         # Navigate to the requested sub-screen
         screen = self.screens[target_screen]
         self.calibration_stacked_widget.setCurrentWidget(screen)
-        logger.info(f"Navigated to {target_screen}")
+        self.logger.info(f"Navigated to {target_screen}")
 
     def _handle_back_button(self):
         """Handle back button logic for CalibrateScreen"""
@@ -166,21 +169,21 @@ class CalibrateScreen(QWidget):
             return
 
         current_widget = self.calibration_stacked_widget.currentWidget()
-        logger.debug(
+        self.logger.debug(
             f"Back button pressed. Current widget: {current_widget.objectName() if hasattr(current_widget, 'objectName') else 'unknown'}")
 
         if current_widget == self.main_calibrate_page:
             # If we're on the main calibrate page, use navigation history to go back
-            logger.debug("On main page, returning to previous screen")
+            self.logger.debug("On main page, returning to previous screen")
             self.main_window.switch_to_previous_screen()
         else:
             # If we're on a sub-screen, return to the main calibrate page
-            logger.debug("On sub-screen, returning to main calibration page")
+            self.logger.debug("On sub-screen, returning to main calibration page")
             self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
 
     def navigate_to_bed_leveling(self):
         """Open the Bed Leveling screen and reset the wizard."""
-        logger.info("Navigating to Bed Leveling screen")
+        self.logger.info("Navigating to Bed Leveling screen")
         bed_leveling_screen = self.screens.get("bed_leveling")
         if bed_leveling_screen and hasattr(bed_leveling_screen, "reset_wizard"):
             bed_leveling_screen.reset_wizard()
@@ -189,7 +192,7 @@ class CalibrateScreen(QWidget):
 
     def navigate_to_idex_calibration(self):
         """Open the IDEX Level Calibration screen and reset the wizard."""
-        logger.info("Navigating to IDEX Level Calibration screen")
+        self.logger.info("Navigating to IDEX Level Calibration screen")
         idex_calibration_screen = self.screens.get("idex_calibration")
         if idex_calibration_screen and hasattr(idex_calibration_screen, "reset_wizard"):
             idex_calibration_screen.reset_wizard()

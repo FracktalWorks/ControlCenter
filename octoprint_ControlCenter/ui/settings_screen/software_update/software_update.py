@@ -2,8 +2,9 @@ from PyQt5 import uic, QtCore
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QListWidget, QTextEdit
 from utils.helpers import check_ui_elements
 from utils import dialog
-from utils import logger
+from utils.logger import get_logger
 
+logger = get_logger(__name__)
 
 class SoftwareUpdate(QWidget):
     """
@@ -15,14 +16,18 @@ class SoftwareUpdate(QWidget):
         super(SoftwareUpdate, self).__init__(parent)
         self.mainSettingsWidget = settings_screen  # Reference to the main settings widget
 
+        # Set up logger
+        self.logger = get_logger(self.__class__.__name__)
+        self.logger.info("Initializing SoftwareUpdate screen")
+
         # Load the UI
         try:
             uic.loadUi(
                 '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen/software_update/software_update.ui',
                 self)
-            print("SoftwareUpdate UI loaded successfully")
+            self.logger.info("SoftwareUpdate UI loaded successfully")
         except Exception as e:
-            print(f"Failed to load SoftwareUpdate UI file: {e}")
+            self.logger.error(f"Failed to load SoftwareUpdate UI file: {e}")
 
         # Initialize UI components
         # Navigation buttons
@@ -114,7 +119,7 @@ class SoftwareUpdate(QWidget):
         # 5. Restart system if necessary
 
     def softwareUpdateProgress(self, data):
-        logger.info("MainUiClass.softwareUpdateProgress started")
+        self.logger.info("MainUiClass.softwareUpdateProgress started")
         try:
             self.stackedWidget.setCurrentWidget(self.softwareUpdateProgressPage)
             self.logTextEdit.setTextColor(QtCore.Qt.red)
@@ -122,33 +127,33 @@ class SoftwareUpdate(QWidget):
                                     "Updating " + data["name"] + " to " + data["version"] + "\n"
                                                                                             "---------------------------------------------------------------")
         except Exception as e:
-            logger.error("Error in MainUiClass.softwareUpdateProgress: {}".format(e))
+            self.logger.error("Error in MainUiClass.softwareUpdateProgress: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.softwareUpdateProgress: {}".format(e), overlay=True)
 
     def softwareUpdateProgressLog(self, data):
-        logger.info("MainUiClass.softwareUpdateProgressLog started")
+        self.logger.info("MainUiClass.softwareUpdateProgressLog started")
         try:
             self.logTextEdit.setTextColor(QtCore.Qt.white)
             for line in data:
                 self.logTextEdit.append(line["line"])
 
         except Exception as e:
-            logger.error("Error in MainUiClass.softwareUpdateProgressLog: {}".format(e))
+            self.logger.error("Error in MainUiClass.softwareUpdateProgressLog: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.softwareUpdateProgressLog: {}".format(e), overlay=True)
 
     def updateFailed(self, data):
-        logger.info("MainUiClass.updateFailed started")
+        self.logger.info("MainUiClass.updateFailed started")
         try:
             self.stackedWidget.setCurrentWidget(self.settingsPage)
             messageText = (data["name"] + " failed to update\n")
             if dialog.WarningOkCancel(self, messageText, overlay=True):
                 pass
         except Exception as e:
-            logger.error("Error in MainUiClass.updateFailed: {}".format(e))
+            self.logger.error("Error in MainUiClass.updateFailed: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.updateFailed: {}".format(e), overlay=True)
 
     def softwareUpdateResult(self, data):
-        logger.info("MainUiClass.softwareUpdateResult started")
+        self.logger.info("MainUiClass.softwareUpdateResult started")
         try:
             messageText = ""
             for item in data:
@@ -156,14 +161,14 @@ class SoftwareUpdate(QWidget):
             messageText += "Restart required"
             self.askAndReboot(messageText)
         except Exception as e:
-            logger.error("Error in MainUiClass.softwareUpdateResult: {}".format(e))
+            self.logger.error("Error in MainUiClass.softwareUpdateResult: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.softwareUpdateResult: {}".format(e), overlay=True)
 
     def displayVersionInfo(self):
         """
         Displays the version information for octoprint plugins
         """
-        logger.info("MainUiClass.displayVersionInfo started")
+        self.logger.info("MainUiClass.displayVersionInfo started")
         try:
             self.updateListWidget.clear()
             updateAvailable = False
@@ -205,5 +210,5 @@ class SoftwareUpdate(QWidget):
                 self.performUpdateButton.setDisabled(False)
             self.stackedWidget.setCurrentWidget(self.OTAUpdatePage)
         except Exception as e:
-            logger.error("Error in MainUiClass.displayVersionInfo: {}".format(e))
+            self.logger.error("Error in MainUiClass.displayVersionInfo: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.displayVersionInfo: {}".format(e), overlay=True)

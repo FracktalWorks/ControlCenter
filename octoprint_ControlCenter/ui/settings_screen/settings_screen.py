@@ -3,19 +3,20 @@ import importlib.util
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QVBoxLayout, QScrollArea
 from PyQt5.QtGui import QFont
-from utils import dialog, logger
+from utils import dialog
 from utils.helpers import check_ui_elements
-from utils.logger import setup_logger
+from utils.logger import get_logger
 from utils.dialog import WarningYesNo, WarningOk
 
+logger = get_logger(__name__)
 
 class SettingsScreen(QWidget):
     def __init__(self, main_window):
         super(SettingsScreen, self).__init__()
         self.main_window = main_window
 
-        # Setup logger
-        self.logger = setup_logger('settings_screen')
+        # Use the centralized logger
+        self.logger = get_logger(self.__class__.__name__)
 
         # Load the UI with proper error handling
         try:
@@ -266,7 +267,7 @@ class SettingsScreen(QWidget):
                 self.main_window.octoprint_client.gcode(command='FIRMWARE_RESTART')
                 self.main_window.octoprint_client.gcode(command='RESTART')
         except Exception as e:
-            logger.error("Error in MainUiClass.restorePrintDefaults: {}".format(e))
+            self.logger.error("Error in MainUiClass.restorePrintDefaults: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.restorePrintDefaults: {}".format(e), overlay=True)
 
     def restore_factory_defaults(self):
@@ -288,7 +289,7 @@ class SettingsScreen(QWidget):
                 os.system('sudo cp -f config/config.yaml /home/pi/.octoprint/config.yaml')
                 self.tellAndReboot("Settings restored. Rebooting...")
         except Exception as e:
-            logger.error("Error in MainUiClass.restoreFactoryDefaults: {}".format(e))
+            self.logger.error("Error in MainUiClass.restoreFactoryDefaults: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.restoreFactoryDefaults: {}".format(e), overlay=True)
 
     def restart_system(self):

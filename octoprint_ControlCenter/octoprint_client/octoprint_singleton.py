@@ -3,7 +3,8 @@ OctoPrint Singleton Module
 Provides a single point of access to the OctoPrint API client for all components
 """
 
-from utils import logger
+from utils.logger import get_logger
+logger = get_logger(__name__)
 from octoprint_client.octoprintAPI import octoprintAPI
 
 # Global client instance

@@ -4,10 +4,9 @@ Handles printer state, temperature monitoring, and operations
 """
 import time
 from PyQt5.QtCore import QObject, pyqtSignal
-from utils.logger import setup_logger
+from utils.logger import get_logger
+logger = get_logger(__name__)
 from utils import dialog
-
-logger = setup_logger("printer_model")
 
 class PrinterModel(QObject):
     """

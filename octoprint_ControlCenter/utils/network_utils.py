@@ -1,10 +1,10 @@
 from PyQt5 import QtCore
-import logging
 import subprocess
 import time
 import re
+from utils.logger import get_logger
 
-logger = logging.getLogger(__name__)
+
 
 class ThreadRestartNetworking(QtCore.QThread):
     """Thread to restart network interfaces without blocking the UI"""
@@ -19,11 +19,12 @@ class ThreadRestartNetworking(QtCore.QThread):
         """Initialize the network restart thread"""
         super(ThreadRestartNetworking, self).__init__()
         self.interface = interface
-        logger.info(f"Initialized ThreadRestartNetworking for {interface}")
+        self.logger = get_logger(self.__class__.__name__)
+        self.logger.info(f"Initialized ThreadRestartNetworking for {interface}")
         
     def run(self):
         """Run the network restart process"""
-        logger.info(f"Restarting network interface: {self.interface}")
+        self.logger.info(f"Restarting network interface: {self.interface}")
         self.restart_interface()
         
         # Try up to 3 times to get an IP address
@@ -31,17 +32,17 @@ class ThreadRestartNetworking(QtCore.QThread):
         while attempt < 3:
             ip = self.get_ip()
             if ip:
-                logger.info(f"Network interface {self.interface} restarted with IP: {ip}")
+                self.logger.info(f"Network interface {self.interface} restarted with IP: {ip}")
                 self.signal.emit(ip)
                 break
             else:
                 attempt += 1
                 time.sleep(5)
-                logger.warning(f"No IP address for {self.interface}, attempt {attempt}/3")
+                self.logger.warning(f"No IP address for {self.interface}, attempt {attempt}/3")
         
         # If we tried 3 times and failed, emit None
         if attempt >= 3:
-            logger.error(f"Failed to get IP address for {self.interface} after 3 attempts")
+            self.logger.error(f"Failed to get IP address for {self.interface} after 3 attempts")
             self.signal.emit(None)
 
     def restart_interface(self):
@@ -50,19 +51,19 @@ class ThreadRestartNetworking(QtCore.QThread):
             if self.interface == self.WLAN:
                 # For WiFi, use wpa_cli to reconfigure
                 subprocess.call(["wpa_cli", "-i", self.interface, "reconfigure"], shell=False)
-                logger.info("WiFi interface reconfigured")
+                self.logger.info("WiFi interface reconfigured")
             elif self.interface == self.ETH:
                 # For Ethernet, cycle the interface
                 subprocess.call(["ifconfig", self.interface, "down"], shell=False)
                 time.sleep(1)
                 subprocess.call(["ifconfig", self.interface, "up"], shell=False)
-                logger.info("Ethernet interface cycled")
+                self.logger.info("Ethernet interface cycled")
             
             # Give the interface time to come up
             time.sleep(5)
             
         except Exception as e:
-            logger.error(f"Failed to restart interface {self.interface}: {e}")
+            self.logger.error(f"Failed to restart interface {self.interface}: {e}")
             
     def get_ip(self):
         """Get the IP address for this interface"""
@@ -78,12 +79,13 @@ class ThreadRestartNetworking(QtCore.QThread):
                 return ip
             return None
         except Exception as e:
-            logger.error(f"Failed to get IP for {self.interface}: {e}")
+            self.logger.error(f"Failed to get IP for {self.interface}: {e}")
             return None
 
 
 
 def getIP(interface):
+    logger = get_logger(__name__)
     try:
         scan_result = (
             subprocess.Popen(
@@ -102,6 +104,7 @@ def getIP(interface):
 
 
 def getMac(interface):
+    logger = get_logger(__name__)
     logger.info("Getting MAC for interface: {}".format(interface))
     try:
         mac = subprocess.Popen(
@@ -118,6 +121,7 @@ def getMac(interface):
 
 
 def getWifiAp():
+    logger = get_logger(__name__)
     logger.info("Getting Wifi AP")
     try:
         ap = subprocess.Popen(
@@ -132,6 +136,7 @@ def getWifiAp():
 
 
 def getHostname():
+    logger = get_logger(__name__)
     logger.info("Getting Hostname")
     try:
         hostname = subprocess.Popen(

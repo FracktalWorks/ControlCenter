@@ -3,9 +3,8 @@ import time
 from PyQt5 import uic, QtCore, QtGui
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QComboBox, QProgressBar, QLabel
 from utils.helpers import check_ui_elements
-from utils import logger
+from utils.logger import get_logger
 from utils import dialog
-from utils.logger import setup_logger
 from utils.helpers import run_async
 
 try:
@@ -14,6 +13,8 @@ except AttributeError:
     def _fromUtf8(s):
         return s
 
+
+logger = get_logger(__name__)
 
 class ChangeFilament(QWidget):
     def __init__(self, main_window, control_screen, home_screen):
@@ -26,8 +27,8 @@ class ChangeFilament(QWidget):
         self.activeExtruder = 0  # Default to extruder 0
         self.loadStopFlag = False
 
-        # Setup logger
-        self.logger = setup_logger(f"{self.__class__.__name__}")
+        # Use centralized logger
+        self.logger = get_logger(self.__class__.__name__)
         self.logger.info("Initializing ChangeFilament widget")
 
         # Load UI

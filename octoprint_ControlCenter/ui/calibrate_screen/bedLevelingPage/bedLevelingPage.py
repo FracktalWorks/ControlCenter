@@ -1,11 +1,11 @@
 from PyQt5 import uic, QtGui
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget
 from utils.helpers import check_ui_elements
-from utils.logger import setup_logger
-
-from utils import logger
+from utils.logger import get_logger
 from utils import dialog
 
+
+logger = get_logger(__name__)
 
 class BedLeveling(QWidget):
     """
@@ -16,7 +16,7 @@ class BedLeveling(QWidget):
     def __init__(self, main_window):
         super().__init__()
         self.main_window = main_window
-        self.logger = setup_logger('bed_leveling')
+        self.logger = get_logger(self.__class__.__name__)  # Using the centralized logger
         self.logger.info("Initializing Bed Leveling screen")
 
         try:
@@ -100,7 +100,7 @@ class BedLeveling(QWidget):
         goes to position where leveling screws can be opened
         :return:
         """
-        logger.info("MainUiClass.quickStep1 started")
+        self.logger.info("MainUiClass.quickStep1 started")
         try:
             self.toolZOffsetCaliberationPageCount = 0
             self.main_window.octoprint_client.gcode(command='M104 S200')
@@ -115,7 +115,7 @@ class BedLeveling(QWidget):
             self.main_window.octoprint_client.gcode(command='T0')
             self.main_window.octoprint_client.jog(x=40, y=40, absolute=True, speed=2000)
         except Exception as e:
-            logger.error("Error in MainUiClass.quickStep1: {}".format(e))
+            self.logger.error("Error in MainUiClass.quickStep1: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.quickStep1: {}".format(e), overlay=True)
 
     def quickStep2(self):
@@ -123,7 +123,7 @@ class BedLeveling(QWidget):
         levels first position (RIGHT)
         :return:
         """
-        logger.info("MainUiClass.quickStep2 started")
+        self.logger.info("MainUiClass.quickStep2 started")
         try:
             self.stackedWidget.setCurrentWidget(self.quickStep2Page)
             self.main_window.octoprint_client.jog(
@@ -138,7 +138,7 @@ class BedLeveling(QWidget):
             self.CalibrationPoint1.setMovie(self.movie1)
             self.movie1.start()
         except Exception as e:
-            logger.error("Error in MainUiClass.quickStep2: {}".format(e))
+            self.logger.error("Error in MainUiClass.quickStep2: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.quickStep2: {}".format(e), overlay=True)
             try:
                 self.movie1.stop()
@@ -149,7 +149,7 @@ class BedLeveling(QWidget):
         """
         levels second leveling position (LEFT)
         """
-        logger.info("MainUiClass.quickStep3 started")
+        self.logger.info("MainUiClass.quickStep3 started")
         try:
             self.stackedWidget.setCurrentWidget(self.quickStep3Page)
             self.main_window.octoprint_client.jog(z=10, absolute=True, speed=1500)
@@ -166,7 +166,7 @@ class BedLeveling(QWidget):
             self.CalibrationPoint2.setMovie(self.movie2)
             self.movie2.start()
         except Exception as e:
-            logger.error("Error in MainUiClass.quickStep3: {}".format(e))
+            self.logger.error("Error in MainUiClass.quickStep3: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.quickStep3: {}".format(e), overlay=True)
             try:
                 self.movie1.stop()
@@ -179,7 +179,7 @@ class BedLeveling(QWidget):
         levels third leveling position  (BACK)
         :return:
         """
-        logger.info("MainUiClass.quickStep4 started")
+        self.logger.info("MainUiClass.quickStep4 started")
         try:
             # sent twice for some reason
             self.stackedWidget.setCurrentWidget(self.quickStep4Page)
@@ -197,7 +197,7 @@ class BedLeveling(QWidget):
             self.CalibrationPoint3.setMovie(self.movie3)
             self.movie3.start()
         except Exception as e:
-            logger.error("Error in MainUiClass.quickStep4: {}".format(e))
+            self.logger.error("Error in MainUiClass.quickStep4: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.quickStep4: {}".format(e), overlay=True)
             try:
                 self.movie2.stop()
@@ -206,7 +206,7 @@ class BedLeveling(QWidget):
                 pass
 
     def nozzleHeightStep1(self):
-        logger.info("MainUiClass.nozzleHeightStep1 started")
+        self.logger.info("MainUiClass.nozzleHeightStep1 started")
         try:
             self.movie3.stop()
             if self.toolZOffsetCaliberationPageCount == 0:
@@ -236,7 +236,7 @@ class BedLeveling(QWidget):
             else:
                 self.doneStep()
         except Exception as e:
-            logger.error("Error in MainUiClass.nozzleHeightStep1: {}".format(e))
+            self.logger.error("Error in MainUiClass.nozzleHeightStep1: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.nozzleHeightStep1: {}".format(e), overlay=True)
             try:
                 self.movie1.stop()
@@ -250,7 +250,7 @@ class BedLeveling(QWidget):
         Exits leveling
         :return:
         """
-        logger.info("MainUiClass.doneStep started")
+        self.logger.info("MainUiClass.doneStep started")
         try:
             self.setNewToolZOffsetFromCurrentZBool = True
             self.main_window.octoprint_client.gcode(command='M114')
@@ -266,7 +266,7 @@ class BedLeveling(QWidget):
             self.main_window.octoprint_client.gcode(
                 command='M500')  # store eeprom settings to get Z home offset, mesh bed leveling back
         except Exception as e:
-            logger.error("Error in MainUiClass.doneStep: {}".format(e))
+            self.logger.error("Error in MainUiClass.doneStep: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.doneStep: {}".format(e), overlay=True)
             try:
                 self.movie1.stop()
@@ -276,7 +276,7 @@ class BedLeveling(QWidget):
                 pass
 
     def cancelStep(self):
-        logger.info("MainUiClass.cancelStep started")
+        self.logger.info("MainUiClass.cancelStep started")
         try:
             self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
                 self.main_window.calibrate_screen.main_calibrate_page)
@@ -292,7 +292,7 @@ class BedLeveling(QWidget):
                 pass
         except Exception as e:
             # self._return_to_main_calibration()
-            logger.error("Error in MainUiClass.cancelStep: {}".format(e))
+            self.logger.error("Error in MainUiClass.cancelStep: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.cancelStep: {}".format(e), overlay=True)
             try:
                 self.movie1.stop()

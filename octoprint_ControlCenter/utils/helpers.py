@@ -1,4 +1,4 @@
-from utils import logger
+from utils.logger import get_logger
 import subprocess
 import re
 from threading import Thread
@@ -11,6 +11,7 @@ def format_printer_status(status):
 
 def handle_api_error(error):
     """Handle errors from the OctoPrint API."""
+    logger = get_logger(__name__)
     logger.error(f"API Error: {error}")
 
 def validate_ip_address(ip):
@@ -34,7 +35,7 @@ def check_ui_elements(ui_class, elements_list, screen_name):
         elements_list: List of UI element objects
         screen_name: Name of the screen for logging purposes
     """
-    from utils import logger
+    logger = get_logger(__name__)
     missing_elements = []
     
     for element in elements_list:
@@ -53,7 +54,7 @@ def check_ui_elements(ui_class, elements_list, screen_name):
             logger.warning(f"  - {element}")
     else:
         pass
-        # logger.info(f"All UI elements validated successfully for {screen_name}")
+        # my_logger.info(f"All UI elements validated successfully for {screen_name}")
 
 def run_async(func):
     """

@@ -1,8 +1,7 @@
 from PyQt5 import uic, QtGui, QtCore
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QListWidget, QLabel, QToolButton
 from utils.helpers import check_ui_elements
-from utils import logger
-from utils.logger import setup_logger
+from utils.logger import get_logger
 from utils import dialog
 from octoprint_client.octoprint_threaded_file_upload import ThreadFileUpload
 
@@ -25,8 +24,8 @@ class PrintFromLocation(QWidget):
         super(PrintFromLocation, self).__init__()
         self.main_window = main_window
 
-        # Setup logger
-        self.logger = setup_logger('PrintFromLocation')
+        # Use centralized logger
+        self.logger = get_logger(self.__class__.__name__)
         self.logger.info("Initializing PrintFromLocation screen")
 
         # Load the UI file with proper error handling
@@ -199,7 +198,7 @@ class PrintFromLocation(QWidget):
         Gets the file list from octoprint server, displays it on the list, as well as
         sets the stacked widget page to the file list page
         """
-        logger.info("MainUiClass.fileListLocal started")
+        self.logger.info("MainUiClass.fileListLocal started")
         try:
             self.stackedWidget.setCurrentWidget(self.fileListLocalPage)
             files = []
@@ -214,7 +213,7 @@ class PrintFromLocation(QWidget):
             self.fileListWidgetLocal.addItems([f['name'] for f in files])
             self.fileListWidgetLocal.setCurrentRow(0)
         except Exception as e:
-            logger.error("Error in MainUiClass.fileListLocal: {}".format(e))
+            self.logger.error("Error in MainUiClass.fileListLocal: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.fileListLocal: {}".format(e), overlay=True)
 
     def fileListUSB(self):
@@ -223,7 +222,7 @@ class PrintFromLocation(QWidget):
         sets the stacked widget page to the file list page
         ToDO: Add deapth of folders recursively get all gcodes
         """
-        logger.info("MainUiClass.fileListUSB started")
+        self.logger.info("MainUiClass.fileListUSB started")
         try:
             self.stackedWidget.setCurrentWidget(self.fileListUSBPage)
             self.fileListWidgetUSB.clear()
@@ -235,7 +234,7 @@ class PrintFromLocation(QWidget):
             self.fileListWidgetUSB.addItems(files)
             self.fileListWidgetUSB.setCurrentRow(0)
         except Exception as e:
-            logger.error("Error in MainUiClass.fileListUSB: {}".format(e))
+            self.logger.error("Error in MainUiClass.fileListUSB: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.fileListUSB: {}".format(e), overlay=True)
 
     def printSelectedLocal(self):
@@ -245,7 +244,7 @@ class PrintFromLocation(QWidget):
         as well as sets the current page to the print selected page.
         This function also selects the file to print from octoprint
         """
-        logger.info("MainUiClass.printSelectedLocal started")
+        self.logger.info("MainUiClass.printSelectedLocal started")
         try:
             self.fileSelectedLocalName.setText(self.fileListWidgetLocal.currentItem().text())
             self.stackedWidget.setCurrentWidget(self.printSelectedLocalPage)
@@ -288,7 +287,7 @@ class PrintFromLocation(QWidget):
                                   usb=False)
 
         except Exception as e:
-            logger.error("Error in MainUiClass.printSelectedLocal: {}".format(e))
+            self.logger.error("Error in MainUiClass.printSelectedLocal: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.printSelectedLocal: {}".format(e), overlay=True)
 
     def printSelectedUSB(self):
@@ -296,21 +295,21 @@ class PrintFromLocation(QWidget):
         Sets the screen to the print selected screen for USB, on which you can transfer to local drive and view preview image.
         :return:
         """
-        logger.info("MainUiClass.printSelectedUSB started")
+        self.logger.info("MainUiClass.printSelectedUSB started")
         try:
             self.fileSelectedUSBName.setText(self.fileListWidgetUSB.currentItem().text())
             self.stackedWidget.setCurrentWidget(self.printSelectedUSBPage)
             self.displayThumbnail(self.printPreviewSelectedUSB,
                                   '/media/usb0/' + str(self.fileListWidgetUSB.currentItem().text()), usb=True)
         except Exception as e:
-            logger.error("Error in MainUiClass.printSelectedUSB: {}".format(e))
+            self.logger.error("Error in MainUiClass.printSelectedUSB: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.printSelectedUSB: {}".format(e), overlay=True)
 
     def deleteItem(self):
         """
         Deletes a gcode file, and if associates, its image file from the memory
         """
-        logger.info("MainUiClass.deleteItem started")
+        self.logger.info("MainUiClass.deleteItem started")
         try:
             self.main_window.octoprint_client.deleteFile(self.fileListWidgetLocal.currentItem().text())
             self.main_window.octoprint_client.deleteFile(
@@ -318,7 +317,7 @@ class PrintFromLocation(QWidget):
             # delete PNG also
             self.fileListLocal()
         except Exception as e:
-            logger.error("Error in MainUiClass.deleteItem: {}".format(e))
+            self.logger.error("Error in MainUiClass.deleteItem: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.deleteItem: {}".format(e), overlay=True)
 
     def transferToLocal(self, prnt=False):
@@ -326,7 +325,7 @@ class PrintFromLocation(QWidget):
         Transfers a file from USB mounted at /media/usb0 to octoprint's watched folder so that it gets automatically detected bu Octoprint.
         Warning: If the file is read-only, octoprint API for reading the file crashes.
         """
-        logger.info("MainUiClass.transferToLocal started")
+        self.logger.info("MainUiClass.transferToLocal started")
         try:
             file = '/media/usb0/' + str(self.fileListWidgetUSB.currentItem().text())
 
@@ -336,14 +335,14 @@ class PrintFromLocation(QWidget):
                 self.stackedWidget.setCurrentWidget(self.printLocationPage)
                 self.stackedWidget.setCurrentWidget(self.main_window.home_screen)
         except Exception as e:
-            logger.error("Error in MainUiClass.transferToLocal: {}".format(e))
+            self.logger.error("Error in MainUiClass.transferToLocal: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.transferToLocal: {}".format(e), overlay=True)
 
     def printFile(self):
         """
         Prints the file selected from printSelected()
         """
-        logger.info("MainUiClass.printFile started")
+        self.logger.info("MainUiClass.printFile started")
         try:
             self.main_window.octoprint_client.home(['x', 'y', 'z'])
             self.main_window.octoprint_client.selectFile(self.fileListWidgetLocal.currentItem().text(), True)
@@ -358,7 +357,7 @@ class PrintFromLocation(QWidget):
 
             # self.stackedWidget.setCurrentWidget(self.main_window.home_screen)
         except Exception as e:
-            logger.error("Error in MainUiClass.printFile: {}".format(e))
+            self.logger.error("Error in MainUiClass.printFile: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.printFile: {}".format(e), overlay=True)
 
     @run_async
@@ -369,7 +368,7 @@ class PrintFromLocation(QWidget):
         :param fileLocation: location of the file
         :param usb: if the file is from
         """
-        logger.info("MainUiClass.displayThumbnail started")
+        self.logger.info("MainUiClass.displayThumbnail started")
         try:
             pixmap = QtGui.QPixmap()
             if usb:
@@ -383,4 +382,4 @@ class PrintFromLocation(QWidget):
                 labelObject.setPixmap(QtGui.QPixmap(_fromUtf8("templates/img/thumbnail.png")))
         except Exception as e:
             labelObject.setPixmap(QtGui.QPixmap(_fromUtf8("templates/img/thumbnail.png")))
-            logger.error("Error in MainUiClass.displayThumbnail: {}".format(e))
+            self.logger.error("Error in MainUiClass.displayThumbnail: {}".format(e))

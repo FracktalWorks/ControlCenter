@@ -1,7 +1,7 @@
 from PyQt5 import QtCore
-import logging
+from utils.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 class ThreadFileUpload(QtCore.QThread):
     """Thread to handle file uploads to OctoPrint without blocking UI"""
@@ -13,13 +13,14 @@ class ThreadFileUpload(QtCore.QThread):
         super(ThreadFileUpload, self).__init__()
         self.file = file
         self.print_after_upload = print_after_upload
-        logger.info(f"Initialized ThreadFileUpload for {file}")
+        self.logger = get_logger(self.__class__.__name__)
+        self.logger.info(f"Initialized ThreadFileUpload for {file}")
 
     def run(self):
         """Run the file upload process"""
         from octoprint_client import octoprint_singleton
         
-        logger.info(f"Starting file upload: {self.file}")
+        self.logger.info(f"Starting file upload: {self.file}")
         try:
             # Check if there's a thumbnail image to upload
             if self.file.lower().endswith('.gcode'):
@@ -27,22 +28,22 @@ class ThreadFileUpload(QtCore.QThread):
                 try:
                     import os
                     if os.path.exists(thumbnail_file):
-                        logger.info(f"Uploading thumbnail: {thumbnail_file}")
+                        self.logger.info(f"Uploading thumbnail: {thumbnail_file}")
                         octoprint_singleton.get_client().uploadImage(thumbnail_file)
                 except Exception as e:
-                    logger.error(f"Failed to upload thumbnail: {e}")
+                    self.logger.error(f"Failed to upload thumbnail: {e}")
             
             # Upload the gcode file
             if self.print_after_upload:
-                logger.info(f"Uploading and printing file: {self.file}")
+                self.logger.info(f"Uploading and printing file: {self.file}")
                 octoprint_singleton.get_client().uploadGcode(file=self.file, select=True, prnt=True)
             else:
-                logger.info(f"Uploading file: {self.file}")
+                self.logger.info(f"Uploading file: {self.file}")
                 octoprint_singleton.get_client().uploadGcode(file=self.file, select=False, prnt=False)
                 
             self.upload_complete_signal.emit(True, self.file)
-            logger.info("File upload completed successfully")
+            self.logger.info("File upload completed successfully")
             
         except Exception as e:
-            logger.error(f"File upload failed: {e}")
+            self.logger.error(f"File upload failed: {e}")
             self.upload_complete_signal.emit(False, str(e))

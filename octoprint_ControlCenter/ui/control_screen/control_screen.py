@@ -5,9 +5,8 @@ from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import QWidget, QPushButton, QSpinBox, QTabWidget, QToolButton
 from utils.helpers import check_ui_elements
-from utils.logger import setup_logger
 from ui.control_screen.changeFilament.changeFilament import ChangeFilament
-from utils import logger
+from utils.logger import get_logger
 from utils import dialog
 
 try:
@@ -17,13 +16,15 @@ except AttributeError:
         return s
 
 
+logger = get_logger(__name__)
+
 class ControlScreen(QWidget):
     def __init__(self, main_window):
         super(ControlScreen, self).__init__()
         self.main_window = main_window
 
-        # Setup logger for this screen
-        self.logger = setup_logger('control_screen')
+        # Use centralized logger
+        self.logger = get_logger(self.__class__.__name__)
 
         # Load the UI
         try:

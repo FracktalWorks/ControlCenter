@@ -3,10 +3,12 @@ from PyQt5.QtWidgets import QWidget, QLabel
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QMovie
 from utils.helpers import check_ui_elements
-from utils.logger import setup_logger
+from utils.logger import get_logger
 from octoprint_client.octoprint_startup_sanity_check import ThreadSanityCheck
 import config
 
+
+logger = get_logger(__name__)
 
 class LoadingScreen(QWidget):
     def __init__(self, main_window):
@@ -14,8 +16,8 @@ class LoadingScreen(QWidget):
         self.main_window = main_window
         self.movie = QMovie(":/Misc/img/loading_animation.gif")
         
-        # Setup logger for this class
-        self.logger = setup_logger('loading_screen')
+        # Use centralized logger
+        self.logger = get_logger(self.__class__.__name__)
         
         try:
             uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/loading_screen/loading_screen.ui', self)

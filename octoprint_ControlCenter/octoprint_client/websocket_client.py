@@ -12,14 +12,12 @@ import websocket
 import requests
 from PyQt5.QtCore import QThread, pyqtSignal
 
-from utils.logger import setup_logger
+from utils.logger import get_logger
 from utils.helpers import run_async
-
-logger = setup_logger("printer")
 
 class OctoPrintWebSocket(QThread):
     """
-    WebSocket client for OctoPrint that runs in its own thread
+from utils.logger import get_logger
     and emits signals when events occur
     """
     # Define signals for UI updates
@@ -27,6 +25,7 @@ class OctoPrintWebSocket(QThread):
     temperatures_signal = pyqtSignal(dict) #! done
     status_signal = pyqtSignal(str) #! done
     print_status_signal = pyqtSignal('PyQt_PyObject') #! done
+    # Use class-level logger for all logging
     update_started_signal = pyqtSignal(dict) #! done
     update_log_signal = pyqtSignal(dict) #! done
     update_log_result_signal = pyqtSignal(dict) #! done
@@ -53,6 +52,7 @@ class OctoPrintWebSocket(QThread):
         self.ws = None
         self.heartbeat_timer = None
 
+        self.logger = get_logger(self.__class__.__name__)
         try:
             url = f"ws://{self.ip}/sockjs/{random.randrange(0, stop=999):0>3d}/{uuid.uuid4()}/websocket"
             self.ws = websocket.WebSocketApp(
@@ -63,15 +63,15 @@ class OctoPrintWebSocket(QThread):
                 on_open=self.on_open
             )
         except Exception as e:
-            logger.error(f"Error initializing WebSocket: {e}")
+            self.logger.error(f"Error initializing WebSocket: {e}")
 
     def run(self):
-        logger.info("QtWebsocket.run started")
+        self.logger.info("QtWebsocket.run started")
         try:
             self.ws.run_forever()
             self.reset_heartbeat_timer()
         except Exception as e:
-            logger.error("Error in QtWebsocket.run: {}".format(e))
+            self.logger.error("Error in QtWebsocket.run: {}".format(e))
 
     def reset_heartbeat_timer(self):
         try:
@@ -81,39 +81,39 @@ class OctoPrintWebSocket(QThread):
             self.heartbeat_timer = threading.Timer(120, self.reestablish_connection)  # 120 seconds = 2 minutes
             self.heartbeat_timer.start()
         except Exception as e:
-            logger.error("Error in QtWebsocket.reset_heartbeat_timer: {}".format(e))
+            self.logger.error("Error in QtWebsocket.reset_heartbeat_timer: {}".format(e))
 
     def reestablish_connection(self):
-        logger.info("Reestablishing WebSocket connection...")
+        self.logger.info("Reestablishing WebSocket connection...")
         try:
             self.reconnect_attempts += 1
             if self.reconnect_attempts > self.max_reconnect_attempts:
-                logger.error("Max reconnect attempts reached. Giving up.")
+                self.logger.error("Max reconnect attempts reached. Giving up.")
                 return
 
             self._initialize_websocket()
             self.start()
-            logger.info("Reconnection attempt {} succeeded.".format(self.reconnect_attempts))
+            self.logger.info("Reconnection attempt {} succeeded.".format(self.reconnect_attempts))
         except Exception as e:
-            logger.error("Error in QtWebsocket.reestablish_connection: {}".format(e))
+            self.logger.error("Error in QtWebsocket.reestablish_connection: {}".format(e))
 
     def send(self, data):
         """
         Send data to the WebSocket
         :param data: Data to send
         """
-        logger.info("Sending data via WebSocket")
+        self.logger.info("Sending data via WebSocket")
         try:
             payload = '["' + json.dumps(data).replace('"', '\\"') + '"]'
             self.ws.send(payload)
         except Exception as e:
-            logger.error(f"Error sending data via WebSocket: {e}")
+            self.logger.error(f"Error sending data via WebSocket: {e}")
 
     def authenticate(self):
         """
         Authenticate with the OctoPrint server
         """
-        logger.info("Authenticating WebSocket connection")
+        self.logger.info("Authenticating WebSocket connection")
         try:
             # perform passive login to retrieve username and session key for API key
             url = f'http://{self.ip}/api/login'
@@ -128,7 +128,7 @@ class OctoPrintWebSocket(QThread):
             # send it
             self.send(auth_message)
         except Exception as e:
-            logger.error(f"Error authenticating WebSocket: {e}")
+            self.logger.error(f"Error authenticating WebSocket: {e}")
 
     def on_message(self, ws, message):
         """
@@ -167,11 +167,11 @@ class OctoPrintWebSocket(QThread):
         self.authenticate()
 
     def on_close(self, ws, *args, **kwargs):
-        logger.warning("WebSocket connection closed. Attempting to reconnect...")
+        self.logger.warning("WebSocket connection closed. Attempting to reconnect...")
         self.reestablish_connection()
 
     def on_error(self, ws, error):
-        logger.error("Error in WebSocket connection: {}".format(error))
+        self.logger.error("Error in WebSocket connection: {}".format(error))
         self.reestablish_connection()
 
     @run_async
@@ -184,7 +184,7 @@ class OctoPrintWebSocket(QThread):
             if "event" in data:
                 if data["event"]["type"] == "Connected":
                     self.connected_signal.emit()
-                    logger.info("Connected to OctoPrint server")
+                    self.logger.info("Connected to OctoPrint server")
             
             if "plugin" in data:
                 if data["plugin"]["plugin"] == 'JuliaFirmwareUpdater':
@@ -238,7 +238,7 @@ class OctoPrintWebSocket(QThread):
                         else:
                             if item.startswith('!!') or item.startswith('Error'):
                                 self.printer_error_signal.emit(item)
-                                logger.error(f"Error From Klipper/Printer: {item}")
+                                self.logger.error(f"Error From Klipper/Printer: {item}")
 
                 if data["current"]["state"]["text"]:
                     self.status_signal.emit(data["current"]["state"]["text"])
@@ -271,4 +271,4 @@ class OctoPrintWebSocket(QThread):
                     except KeyError:
                         pass
         except Exception as e:
-            logger.error(f"Error processing WebSocket data: {e}")
+            self.logger.error(f"Error processing WebSocket data: {e}")

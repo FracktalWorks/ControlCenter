@@ -1,7 +1,7 @@
 from PyQt5 import QtCore
 import time
 import subprocess
-from utils import logger
+from utils.logger import get_logger
 import websocket
 import json
 import requests
@@ -10,6 +10,8 @@ import uuid
 import threading
 from utils.helpers import run_async
 from utils import dialog
+
+
 
 class ThreadSanityCheck(QtCore.QThread):
     """
@@ -28,7 +30,8 @@ class ThreadSanityCheck(QtCore.QThread):
         self.MKSPort = None
         self.virtual = virtual
         self.shutdown_flag = False
-        logger.info("Initialized ThreadSanityCheck")
+        self.logger = get_logger(self.__class__.__name__)
+        self.logger.info("Initialized ThreadSanityCheck")
 
     def run(self):
         """Run the sanity check to verify OctoPrint connectivity"""
@@ -39,14 +42,14 @@ class ThreadSanityCheck(QtCore.QThread):
         # Get the first value of uptime (runtime check)
         uptime = 0
         
-        logger.info("Running OctoPrint connectivity check")
+        self.logger.info("Running OctoPrint connectivity check")
         # Keep trying until OctoPrint connects or timeout
         while True:
             try:
                 # If we've been trying for more than 60 seconds, give up
                 if uptime > 60:
                     self.shutdown_flag = True
-                    logger.error("OctoPrint connection timeout after 60 seconds")
+                    self.logger.error("OctoPrint connection timeout after 60 seconds")
                     self.startup_error_signal.emit()
                     break
                     
@@ -58,12 +61,12 @@ class ThreadSanityCheck(QtCore.QThread):
                     try:
                         # First try to connect to the Klipper printer
                         octoprint_singleton.get_client().connectPrinter(port="/tmp/printer", baudrate=115200)
-                        logger.info("Connected to Klipper printer on /tmp/printer")
+                        self.logger.info("Connected to Klipper printer on /tmp/printer")
                     except Exception as e:
                         # If that fails, try to connect in virtual mode
-                        logger.warning(f"Failed to connect to Klipper printer: {e}")
+                        self.logger.warning(f"Failed to connect to Klipper printer: {e}")
                         octoprint_singleton.get_client().connectPrinter(port="VIRTUAL", baudrate=115200)
-                        logger.info("Connected to printer in VIRTUAL mode")
+                        self.logger.info("Connected to printer in VIRTUAL mode")
                 
                 # If we got here, connection was successful
                 break
@@ -72,10 +75,10 @@ class ThreadSanityCheck(QtCore.QThread):
                 # Wait 1 second before trying again
                 time.sleep(1)
                 uptime += 1
-                logger.warning(f"OctoPrint connection attempt failed: {e}")
+                self.logger.warning(f"OctoPrint connection attempt failed: {e}")
                 
         # If we didn't set the shutdown flag, we were successful
         if not self.shutdown_flag:
-            logger.info("OctoPrint connectivity check successful")
+            self.logger.info("OctoPrint connectivity check successful")
             self.loaded_signal.emit()
 

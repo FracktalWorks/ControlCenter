@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel, QCheck
 from functools import partial  # Add missing import for partial function
 from utils.custom_widgets import ClickableLineEdit
 from utils.helpers import check_ui_elements
-from utils.logger import setup_logger
+from utils.logger import get_logger
 from utils import styles  # Import styles module
 from utils import keyboard  # Import keyboard module
 
@@ -23,10 +23,9 @@ import io
 import re
 from utils.qrcode_image import Image
 
-# Initialize logger for NetworkSettings
-logger = setup_logger('network_settings')
+logger = get_logger(__name__)
 
-
+# Use centralized logger
 class NetworkSettings(QWidget):
     """
     Network Settings widget that allows users to configure network connections
@@ -36,15 +35,16 @@ class NetworkSettings(QWidget):
     def __init__(self, parent, settings_screen):
         super(NetworkSettings, self).__init__(parent)
         self.mainSettingsWidget = settings_screen  # Reference to the main settings widget
+        self.logger = get_logger(self.__class__.__name__)  # Store logger reference
 
         # Load the UI
         try:
             uic.loadUi(
                 '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen/network_settings/network_settings.ui',
                 self)
-            logger.info("NetworkSettings UI loaded successfully")
+            self.logger.info("NetworkSettings UI loaded successfully")
         except Exception as e:
-            logger.error(f"Failed to load NetworkSettings UI file: {e}")
+            self.logger.error(f"Failed to load NetworkSettings UI file: {e}")
 
         # Initialize UI components
         # Navigation buttons
@@ -165,9 +165,9 @@ class NetworkSettings(QWidget):
         # Set the default page in stacked widget
         if self.stackedWidget and self.networkSettingsPage:
             self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
-            logger.info("Set default page to networkSettingsPage")
+            self.logger.info("Set default page to networkSettingsPage")
         else:
-            logger.warning("Could not set default page - required widgets missing")
+            self.logger.warning("Could not set default page - required widgets missing")
 
         # Connect text input fields to keyboard
         # Text Input events
@@ -201,7 +201,7 @@ class NetworkSettings(QWidget):
     ''' -------------------------- NETWORK INFO DISPLAY ---------------------------------- '''
 
     def networkInfo(self):
-        logger.info("MainUiClass.networkInfo started")
+        self.logger.info("MainUiClass.networkInfo started")
         try:
             ipWifi = getIP(ThreadRestartNetworking.WLAN)
             ipEth = getIP(ThreadRestartNetworking.ETH)
@@ -216,7 +216,7 @@ class NetworkSettings(QWidget):
             self.stackedWidget.setCurrentWidget(self.networkInfoPage)
             self.displayQRCode()
         except Exception as e:
-            logger.error("Error in MainUiClass.networkInfo: {}".format(e))
+            self.logger.error("Error in MainUiClass.networkInfo: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.networkInfo: {}".format(e), overlay=True)
 
     def displayQRCode(self):
@@ -233,34 +233,34 @@ class NetworkSettings(QWidget):
                 qrcode.make("http://" + qrip, image_factory=Image).pixmap())
             # self.stackedWidget.setCurrentWidget(self.QRCodePage)
         except Exception as e:
-            logger.error("Error in Network Settings: QR CODE {}".format(e))
+            self.logger.error("Error in Network Settings: QR CODE {}".format(e))
             dialog.WarningOk(self, "Error in Network Settings: QR CODE {}".format(e), overlay=True)
 
     def startKeyboard(self, returnFn, onlyNumeric=False, noSpace=False, text=""):
         """
         starts the keyboard screen for entering Password
         """
-        logger.info("MainUiClass.startKeyboard started")
+        self.logger.info("MainUiClass.startKeyboard started")
         try:
             keyBoardobj = keyboard.Keyboard(onlyNumeric=onlyNumeric, noSpace=noSpace, text=text)
             keyBoardobj.keyboard_signal.connect(returnFn)
             keyBoardobj.setWindowFlags(QtCore.Qt.FramelessWindowHint)
             keyBoardobj.show()
         except Exception as e:
-            logger.error("Error in MainUiClass.startKeyboard: {}".format(e))
+            self.logger.error("Error in MainUiClass.startKeyboard: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.startKeyboard: {}".format(e), overlay=True)
 
     ''' -------------------------- WIFI SETTINGS ---------------------------------- '''
 
     def wifiSettings(self):
-        logger.info("MainUiClass.wifiSettings started")
+        self.logger.info("MainUiClass.wifiSettings started")
         try:
             self.stackedWidget.setCurrentWidget(self.wifiSettingsPage)
             self.wifiSettingsComboBox.clear()
             self.wifiSettingsComboBox.addItems(self.scan_wifi())
             self.wifiPasswordLineEdit.clear()
         except Exception as e:
-            logger.error("Error in MainUiClass.wifiSettings: {}".format(e))
+            self.logger.error("Error in MainUiClass.wifiSettings: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.wifiSettings: {}".format(e), overlay=True)
 
     def scan_wifi(self):
@@ -268,7 +268,7 @@ class NetworkSettings(QWidget):
         uses linux shell and WIFI interface to scan available networks
         :return: dictionary of the SSID and the signal strength
         """
-        logger.info("MainUiClass.scan_wifi started")
+        self.logger.info("MainUiClass.scan_wifi started")
         try:
             # scanData = {}
             # print "Scanning available wireless signals available to wlan0"
@@ -281,12 +281,12 @@ class NetworkSettings(QWidget):
             scan_result = filter(None, scan_result)
             return scan_result
         except Exception as e:
-            logger.error("Error in MainUiClass.scan_wifi: {}".format(e))
+            self.logger.error("Error in MainUiClass.scan_wifi: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.scan_wifi: {}".format(e), overlay=True)
             return []
 
     def acceptWifiSettings(self):
-        logger.info("MainUiClass.acceptWifiSettings started")
+        self.logger.info("MainUiClass.acceptWifiSettings started")
         try:
             wlan0_config_file = io.open("/etc/wpa_supplicant/wpa_supplicant.conf", "r+", encoding='utf8')
             wlan0_config_file.truncate()
@@ -315,11 +315,11 @@ class NetworkSettings(QWidget):
             if self.wifiMessageBox.exec_() in {QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Cancel}:
                 self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
         except Exception as e:
-            logger.error("Error in MainUiClass.acceptWifiSettings: {}".format(e))
+            self.logger.error("Error in MainUiClass.acceptWifiSettings: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.acceptWifiSettings: {}".format(e), overlay=True)
 
     def wifiReconnectResult(self, x):
-        logger.info("MainUiClass.wifiReconnectResult started")
+        self.logger.info("MainUiClass.wifiReconnectResult started")
         try:
             self.wifiMessageBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
             if x is not None:
@@ -332,7 +332,7 @@ class NetworkSettings(QWidget):
             else:
                 self.wifiMessageBox.setText("Not able to connect to WiFi")
         except Exception as e:
-            logger.error("Error in MainUiClass.wifiReconnectResult: {}".format(e))
+            self.logger.error("Error in MainUiClass.wifiReconnectResult: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.wifiReconnectResult: {}".format(e), overlay=True)
 
     def togglePasswordVisibility(self, state):
@@ -347,14 +347,14 @@ class NetworkSettings(QWidget):
     ''' -------------------------- STATIC IP SETTINGS ---------------------------------- '''
 
     def staticIPSettings(self):
-        logger.info("MainUiClass.staticIPSettings started")
+        self.logger.info("MainUiClass.staticIPSettings started")
         try:
             self.stackedWidget.setCurrentWidget(self.staticIPSettingsPage)
             #add "eth0" and "wlan0" to staticIPComboBox:
             self.staticIPComboBox.clear()
             self.staticIPComboBox.addItems(["eth0", "wlan0"])
         except Exception as e:
-            logger.error("Error in MainUiClass.staticIPSettings: {}".format(e))
+            self.logger.error("Error in MainUiClass.staticIPSettings: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.staticIPSettings: {}".format(e), overlay=True)
 
     def isIpErr(self, ip):
@@ -364,7 +364,7 @@ class NetworkSettings(QWidget):
         return dialog.WarningOk(self, "Invalid input: {0}".format(var))
 
     def staticIPSaveStaticNetworkInfo(self):
-        logger.info("MainUiClass.staticIPSaveStaticNetworkInfo started")
+        self.logger.info("MainUiClass.staticIPSaveStaticNetworkInfo started")
         try:
             txtStaticIPInterface = self.staticIPComboBox.currentText()
             txtStaticIPAddress = str(self.staticIPLineEdit.text())
@@ -414,11 +414,11 @@ class NetworkSettings(QWidget):
                 if self.wifiMessageBox.exec_() in {QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Cancel}:
                     self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
         except Exception as e:
-            logger.error("Error in MainUiClass.staticIPSaveStaticNetworkInfo: {}".format(e))
+            self.logger.error("Error in MainUiClass.staticIPSaveStaticNetworkInfo: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.staticIPSaveStaticNetworkInfo: {}".format(e), overlay=True)
 
     def deleteStaticIPSettings(self):
-        logger.info("MainUiClass.deleteStaticIPSettings started")
+        self.logger.info("MainUiClass.deleteStaticIPSettings started")
         try:
             Globaltxt = subprocess.Popen("cat /etc/dhcpcd.conf", stdout=subprocess.PIPE, shell=True).communicate()[
                 0].decode('utf8')
@@ -430,11 +430,11 @@ class NetworkSettings(QWidget):
                 f.write(Globaltxt)
             self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
         except Exception as e:
-            logger.error("Error in MainUiClass.deleteStaticIPSettings: {}".format(e))
+            self.logger.error("Error in MainUiClass.deleteStaticIPSettings: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.deleteStaticIPSettings: {}".format(e), overlay=True)
 
     def staticIPReconnectResult(self, x):
-        logger.info("MainUiClass.staticIPReconnectResult started")
+        self.logger.info("MainUiClass.staticIPReconnectResult started")
         try:
             self.staticIPMessageBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
             if x is not None:
@@ -444,41 +444,41 @@ class NetworkSettings(QWidget):
 
                 self.staticIPMessageBox.setText("Not able to set Static IP")
         except Exception as e:
-            logger.error("Error in MainUiClass.staticIPReconnectResult: {}".format(e))
+            self.logger.error("Error in MainUiClass.staticIPReconnectResult: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.staticIPReconnectResult: {}".format(e), overlay=True)
 
     def staticIPShowKeyboard(self, textbox):
-        logger.info("MainUiClass.staticIPShowKeyboard started")
+        self.logger.info("MainUiClass.staticIPShowKeyboard started")
         try:
             self.startKeyboard(textbox.setText, onlyNumeric=True, noSpace=True, text=str(textbox.text()))
         except Exception as e:
-            logger.error("Error in MainUiClass.staticIPShowKeyboard: {}".format(e))
+            self.logger.error("Error in MainUiClass.staticIPShowKeyboard: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.staticIPShowKeyboard: {}".format(e), overlay=True)
 
     def cancel_network_settings(self):
         """Cancel network settings change and return to main network page."""
-        logger.info("Cancel Network Settings button clicked")
+        self.logger.info("Cancel Network Settings button clicked")
         if self.stackedWidget and self.networkSettingsPage:
             self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
-            logger.info("Returned to network settings page after cancel")
+            self.logger.info("Returned to network settings page after cancel")
         else:
-            logger.error("Cannot navigate - required widgets missing")
+            self.logger.error("Cannot navigate - required widgets missing")
 
     def go_back_to_settings_screen(self):
         """Return to the main settings screen."""
-        logger.info("Back to settings screen button clicked")
+        self.logger.info("Back to settings screen button clicked")
         if hasattr(self.mainSettingsWidget, 'stackedWidget') and hasattr(self.mainSettingsWidget,
                                                                          'mainSettingsPage'):
             self.mainSettingsWidget.stackedWidget.setCurrentWidget(self.mainSettingsWidget.mainSettingsPage)
-            logger.info("Navigated back to main settings screen")
+            self.logger.info("Navigated back to main settings screen")
         else:
-            logger.error("Cannot navigate back - required widgets not found in mainSettingsWidget")
+            self.logger.error("Cannot navigate back - required widgets not found in mainSettingsWidget")
 
     def go_back(self):
         """Return to main network settings page from network info page."""
-        logger.info("Back to network settings page button clicked")
+        self.logger.info("Back to network settings page button clicked")
         if self.stackedWidget and self.networkSettingsPage:
             self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
-            logger.info("Navigated back to network settings page")
+            self.logger.info("Navigated back to network settings page")
         else:
-            logger.error("Cannot navigate - required widgets missing")
+            self.logger.error("Cannot navigate - required widgets missing")

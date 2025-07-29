@@ -1,11 +1,12 @@
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QComboBox
 from utils.helpers import check_ui_elements
-from utils.logger import setup_logger
-from utils import logger
+from utils.logger import get_logger
 from utils import dialog
 
 from octoprint_client.octoprint_threaded_file_upload import ThreadFileUpload
+
+
 
 
 class TestPrintPage(QWidget):
@@ -17,8 +18,8 @@ class TestPrintPage(QWidget):
     def __init__(self, main_window):
         super(TestPrintPage, self).__init__()
         self.main_window = main_window
-        # Set up logger for this class
-        self.logger = setup_logger('TestPrintPage')
+        # Use centralized logger
+        self.logger = get_logger(self.__class__.__name__)
 
         # Load the UI
         """Load the UI file with proper error handling"""

@@ -2,11 +2,11 @@ from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QDoubleSpinBox, QStackedWidget
 from PyQt5.QtGui import QPalette, QColor
 from utils.helpers import check_ui_elements
-from utils.logger import setup_logger
-
-from utils import logger
+from utils.logger import get_logger
 from utils import dialog
 
+
+logger = get_logger(__name__)
 
 class ToolOffset(QWidget):
     """
@@ -16,8 +16,8 @@ class ToolOffset(QWidget):
     def __init__(self, main_window):
         super(ToolOffset, self).__init__()
         self.main_window = main_window
-        # Properly initialize logger with a distinct name
-        self.logger = setup_logger('ToolOffset')
+        # Use centralized logger
+        self.logger = get_logger(self.__class__.__name__)
         self.logger.info("Initializing ToolOffset page")
 
         # Load the UI

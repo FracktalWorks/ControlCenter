@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QLabel, QProgress
 from PyQt5.QtCore import QTimer
 from utils.helpers import check_ui_elements
 from models.printer_model import PrinterModel  # Import the printer status model
-from utils import logger  # Import the logger
+from utils.logger import get_logger
 from utils.styles import printer_status_green, printer_status_red, printer_status_amber
 from utils import dialog
 from utils import styles
@@ -14,6 +14,8 @@ from utils.network_utils import getIP
 from utils.helpers import run_async
 import time
 
+
+logger = get_logger(__name__)
 
 class HomeScreen(QWidget):
     def __init__(self, main_window):
@@ -33,11 +35,14 @@ class HomeScreen(QWidget):
         self.time_left = "-"
         self.printerStatusText = ""
 
+        # Use class-level logger
+        self.logger = get_logger(self.__class__.__name__)
         # Load the UI
         try:
             uic.loadUi("/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/home_screen/home_screen.ui", self)
-            logger.info("HomeScreen UI loaded successfully")
+            self.logger.info("HomeScreen UI loaded successfully")
         except Exception as e:
+            self.logger.error(f"Failed to load HomeScreen UI file: {e}")
             logger.exception(f"Failed to load HomeScreen UI file: {e}")
 
         """ ---------- Initialize UI components by group ---------- """

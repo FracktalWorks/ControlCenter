@@ -9,7 +9,7 @@ from ui.settings_screen.settings_screen import SettingsScreen
 from ui.control_screen.control_screen import ControlScreen
 from ui.print_from_location.print_from_location import PrintFromLocation
 from ui.calibrate_screen.calibrate_screen import CalibrateScreen
-from utils import logger
+from utils.logger import get_logger
 from models.printer_model import PrinterModel
 import os
 import subprocess
@@ -25,6 +25,7 @@ from utils import dialog
 from octoprint_client.websocket_client import OctoPrintWebSocket
 from config import ip, apiKey
 
+logger = get_logger(__name__)
 
 class MainWindow(QMainWindow):
     def __init__(self):
