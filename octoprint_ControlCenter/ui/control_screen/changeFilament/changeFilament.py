@@ -104,13 +104,6 @@ class ChangeFilament(QWidget):
 
         self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
 
-        try:
-            # Wait for components to initialize
-            QtCore.QTimer.singleShot(1000, self._init_change_filament)
-        except Exception as e:
-            logger.error(f"Error initializing change filament screen: {e}")
-            dialog.WarningOk(self, f"Error initializing change filament screen: {e}", overlay=True)
-
 
     def control(self):
         """
