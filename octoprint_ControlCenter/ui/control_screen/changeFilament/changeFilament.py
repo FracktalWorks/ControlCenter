@@ -102,8 +102,7 @@ class ChangeFilament(QWidget):
         if self.unloadDoneButton:
             self.unloadDoneButton.clicked.connect(self.changeFilament)
 
-        # # Set the default screen
-        # self._show_page('change_filament_screen')
+        self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
 
         try:
             # Wait for components to initialize
@@ -112,45 +111,6 @@ class ChangeFilament(QWidget):
             logger.error(f"Error initializing change filament screen: {e}")
             dialog.WarningOk(self, f"Error initializing change filament screen: {e}", overlay=True)
 
-    def _init_change_filament(self):
-        """Initialize the change filament screen with required settings"""
-        try:
-            if self.home_screen.printerStatusText not in ["Printing", "Paused"]:
-                self.main_window.octoprint_client.gcode("G28")
-
-            # Clear and update the filament combo box
-            if self.changeFilamentComboBox:
-                self.changeFilamentComboBox.clear()
-                self.changeFilamentComboBox.addItems(self.main_window.printer_model.filaments.keys())
-
-                # Add "Loaded Filament" option if printing
-                if (self.home_screen.tool0TargetTemperature and
-                        self.home_screen.printerStatusText in ["Printing", "Paused"]):
-                    self.changeFilamentComboBox.addItem("Loaded Filament")
-                    index = self.changeFilamentComboBox.findText("Loaded Filament")
-                    if index >= 0:
-                        self.changeFilamentComboBox.setCurrentIndex(index)
-
-            # Show the change filament page
-            self._show_page('changeFilamentPage')
-
-        except Exception as e:
-            self.logger.error(f"Error in _init_change_filament: {e}")
-            dialog.WarningOk(self, f"Error in _init_change_filament: {e}", overlay=True)
-
-    def _show_page(self, page_name):
-        """Show a specific page in the stacked widget."""
-        if not self.stackedWidget:
-            self.logger.error("Cannot show page - stacked widget is missing")
-            return False
-        page = getattr(self, page_name, None)
-        if page:
-            self.stackedWidget.setCurrentWidget(page)
-            self.logger.info(f"Showing page: {page_name}")
-            return True
-        else:
-            self.logger.error(f"Cannot show page {page_name} - page not found")
-            return False
 
     def control(self):
         """
@@ -345,13 +305,12 @@ class ChangeFilament(QWidget):
         """
         logger.info("MainUiClass.changeFilament started")
         try:
-            self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
             time.sleep(1)
             if self.home_screen.printerStatusText not in ["Printing", "Paused"]:
                 self.main_window.octoprint_client.gcode("G28")
             self.selectToolChangeFilament()
 
-            # self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
+            self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
             self.changeFilamentComboBox.clear()
             self.changeFilamentComboBox.addItems(self.main_window.printer_model.filaments.keys())
             # Update

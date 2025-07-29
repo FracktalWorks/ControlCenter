@@ -84,8 +84,6 @@ class SoftwareUpdate(QWidget):
         self.mainSettingsWidget.main_window.printer_model.update_log_result_signal.connect(self.softwareUpdateResult)
         self.mainSettingsWidget.main_window.printer_model.update_failed_signal.connect(self.updateFailed)
 
-        self.displayVersionInfo()
-
     def go_back_to_settings_screen(self):
         """Return to the settings screen."""
         print("Back to settings screen button clicked")
