@@ -24,6 +24,8 @@ import glob
 from utils import dialog
 from octoprint_client.websocket_client import OctoPrintWebSocket
 from config import ip, apiKey
+from utils import klipper_cfg_utils
+
 
 logger = get_logger(__name__)
 
@@ -421,62 +423,34 @@ class MainWindow(QMainWindow):
 
     def checkKlipperPrinterCFG(self):
         """
-        Checks for valid printer.cfg and restores if needed
+        Checks for valid printer.cfg and restores if needed, using utility functions.
         """
 
-        # Open the printer.cfg file:
         logger.info("MainUiClass.checkKlipperPrinterCFG started")
-        if hasattr(self, 'octoprint_client'):
-            client = self.octoprint_client
-            if client:
-                try:
-                    try:
-                        with open('/home/pi/printer.cfg', 'r') as currentConfigFile:
-                            currentConfig = currentConfigFile.read()
-                            if "# MCU Config" in currentConfig:
-                                configCorruptedFlag = False
-                                logger.info("Printer Config File OK")
-                            else:
-                                configCorruptedFlag = True
-                                logger.error("Printer Config File Corrupted, Attempting to restore Backup")
-
-                    except:
-                        configCorruptedFlag = True
-                        logger.error("Printer Config File Not Found, Attempting to restore Backup")
-
-                    if configCorruptedFlag:
-                        backupFiles = sorted(glob.glob('/home/pi/printer-*.cfg'), key=os.path.getmtime, reverse=True)
-                        print("\n".join(backupFiles))
-                        for backupFile in backupFiles:
-                            with open(str(backupFile), 'r') as backupConfigFile:
-                                backupConfig = backupConfigFile.read()
-                                if "# MCU Config" in backupConfig:
-                                    try:
-                                        os.remove('/home/pi/printer.cfg')
-                                    except:
-                                        logger.error("printer.cfg does not exist for deletion")
-                                    try:
-                                        os.rename(backupFile, '/home/pi/printer.cfg')
-                                        logger.info("Printer Config File Restored")
-                                        return ()
-                                    except:
-                                        pass
-                        # If no valid backups found, show error dialog:
-                        dialog.WarningOk(self,
-                                         "Printer Config File corrupted. Contact Fracktal support or raise a ticket at care.fracktal.in")
-                        if self.printerStatus == "Printing":
-                            client.cancelPrint()
-                            self.control_screen.coolDownAction()
-                    elif not configCorruptedFlag:
-                        backupFiles = sorted(glob.glob('/home/pi/printer-*.cfg'), key=os.path.getmtime, reverse=True)
-                        try:
-                            for backupFile in backupFiles[5:]:
-                                os.remove(backupFile)
-                        except:
-                            pass
-                except Exception as e:
-                    logger.error("Error in MainUiClass.checkKlipperPrinterCFG: {}".format(e))
-                    dialog.WarningOk(self, "Error in MainUiClass.checkKlipperPrinterCFG: {}".format(e), overlay=True)
+        if not hasattr(self, 'octoprint_client'):
+            return
+        client = self.octoprint_client
+        if not client:
+            return
+        try:
+            if not klipper_cfg_utils.is_config_valid():
+                logger.error("Printer Config File Corrupted or Not Found, Attempting to restore Backup")
+                restored = klipper_cfg_utils.restore_backup_config()
+                if restored:
+                    logger.info("Printer Config File Restored from backup")
+                    return
+                # If no valid backups found, show error dialog:
+                dialog.WarningOk(self,
+                                 "Printer Config File corrupted. Contact Fracktal support or raise a ticket at care.fracktal.in")
+                if getattr(self, 'printerStatus', None) == "Printing":
+                    client.cancelPrint()
+                    self.control_screen.coolDownAction()
+            else:
+                logger.info("Printer Config File OK")
+                klipper_cfg_utils.cleanup_old_backups()
+        except Exception as e:
+            logger.error(f"Error in MainUiClass.checkKlipperPrinterCFG: {e}")
+            dialog.WarningOk(self, f"Error in MainUiClass.checkKlipperPrinterCFG: {e}", overlay=True)
 
     def printRestoreMessageBox(self, file):
         """
