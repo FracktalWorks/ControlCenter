@@ -14,6 +14,8 @@ from PyQt5.QtCore import QThread, pyqtSignal
 
 from utils.logger import get_logger
 from utils.helpers import run_async
+from octoprint_ControlCenter.config import IGNORED_PRINTER_ERRORS
+
 
 class OctoPrintWebSocket(QThread):
     """
@@ -227,11 +229,7 @@ from utils.logger import get_logger
                         if 'PROBING_FAILED' in item:
                             self.z_probing_failed_signal.emit()
 
-                        for ignore_item in [
-                            "!! Printer is not ready",
-                            "!! Move out of range:",
-                            "!! Shutdown due to M112"
-                        ]:
+                        for ignore_item in IGNORED_PRINTER_ERRORS:
                             if ignore_item in item:
                                 # Ignore this item
                                 break

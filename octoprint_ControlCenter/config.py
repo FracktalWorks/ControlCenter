@@ -1,3 +1,8 @@
+IGNORED_PRINTER_ERRORS = [
+    "!! Printer is not ready",
+    "!! Move out of range:",
+    "!! Shutdown due to M112"
+]
 from collections import OrderedDict
 
 # Configuration settings

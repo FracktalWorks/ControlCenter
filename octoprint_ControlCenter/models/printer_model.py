@@ -7,6 +7,8 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from utils.logger import get_logger
 logger = get_logger(__name__)
 from utils import dialog
+# Use configuration from config.py
+from octoprint_ControlCenter import config
 
 class PrinterModel(QObject):
     """
@@ -50,32 +52,12 @@ class PrinterModel(QObject):
         self.print_time_left = 0
         self.updateData = {}
         
-        # Configuration constants (to be moved to config file later)
-        self.filaments = {
-            "PLA": 190,
-            "ABS": 220,
-            "PETG": 220,
-            "PVA": 210,
-            "TPU": 230,
-            "Nylon": 220,
-            "PolyCarbonate": 240,
-            "HIPS": 220,
-            "WoodFill": 220,
-            "CopperFill": 200,
-            "Breakaway": 220
-        }
         
-        self.calibrationPosition = {
-            'X1': 110, 'Y1': 18,
-            'X2': 510, 'Y2': 18,
-            'X3': 310, 'Y3': 308,
-            'X4': 310, 'Y4': 178
-        }
-
-        self.tool0PurgePosition = {'X': -30, 'Y': -77}
-        self.tool1PurgePosition = {'X': 655, 'Y': -77}
-
-        self.ptfeTubeLength = 1500  # 2400 for 600x600, 1500 for 600x300 keep as multiples of 300 only
+        self.filaments = config.filaments
+        self.calibrationPosition = config.calibrationPosition
+        self.tool0PurgePosition = config.tool0PurgePosition
+        self.tool1PurgePosition = config.tool1PurgePosition
+        self.ptfeTubeLength = config.ptfeTubeLength
 
     def updateTemperature(self, temp_data):
         """ Updates the temperature data. Is a slot for the temperatures_updated signal. """
