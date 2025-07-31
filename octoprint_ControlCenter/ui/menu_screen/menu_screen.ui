@@ -250,11 +250,11 @@ QToolButton:default {
 }</string>
       </property>
       <property name="text">
-       <string>Cart</string>
+       <string>Filament / Nozzle</string>
       </property>
       <property name="icon">
        <iconset resource="../resources/resource.qrc">
-        <normaloff>:/Icons/img/icons/cart.png</normaloff>:/Icons/img/icons/cart.png</iconset>
+        <normaloff>:/Icons/img/icons/filamentNozzleMenuIcon.png</normaloff>:/Icons/img/icons/filamentNozzleMenuIcon.png</iconset>
       </property>
       <property name="iconSize">
        <size>

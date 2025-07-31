@@ -2847,72 +2847,15 @@ background-color: rgba(255, 255, 255, 0);</string>
       <string>Flow Rate :</string>
      </property>
     </widget>
-    <widget class="QToolButton" name="changeFilamentButton">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>10</y>
-       <width>431</width>
-       <height>131</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>Gotham</family>
-       <pointsize>16</pointsize>
-      </font>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">QToolButton  {
-     border: 1px solid rgb(87, 87, 87);
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-
-
-}
-
-QToolButton :pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QToolButton :flat {
-    border: none; /* no border for a flat push button */
-}
-
-QToolButton :default {
-    border-color: navy; /* make the default button prominent */
-}
-
-QToolButton :focus {
-	outline: none;
-}</string>
-     </property>
-     <property name="text">
-      <string>Change Filament</string>
-     </property>
-     <property name="icon">
-      <iconset resource="../resources/resource.qrc">
-       <normaloff>:/Icons/img/icons/changeFilament.png</normaloff>:/Icons/img/icons/changeFilament.png</iconset>
-     </property>
-     <property name="iconSize">
-      <size>
-       <width>70</width>
-       <height>70</height>
-      </size>
-     </property>
-     <property name="toolButtonStyle">
-      <enum>Qt::ToolButtonTextUnderIcon</enum>
-     </property>
-    </widget>
     <widget class="QToolButton" name="toggleFilamentSensorButton">
      <property name="enabled">
       <bool>true</bool>
      </property>
      <property name="geometry">
       <rect>
-       <x>430</x>
+       <x>0</x>
        <y>10</y>
-       <width>371</width>
+       <width>801</width>
        <height>131</height>
       </rect>
      </property>
@@ -2953,7 +2896,7 @@ QToolButton :focus {
             }</string>
      </property>
      <property name="text">
-      <string>Filament Sensor ON/OFF</string>
+      <string>Toggle Filament Sensor</string>
      </property>
      <property name="icon">
       <iconset resource="../resources/resource.qrc">
@@ -2979,7 +2922,6 @@ QToolButton :focus {
     <zorder>flowRateSpinBox</zorder>
     <zorder>setFlowRateButton</zorder>
     <zorder>flowRateLabelControlPage</zorder>
-    <zorder>changeFilamentButton</zorder>
     <zorder>toggleFilamentSensorButton</zorder>
    </widget>
   </widget>

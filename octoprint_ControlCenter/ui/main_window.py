@@ -263,7 +263,6 @@ class MainWindow(QMainWindow):
             self.home_screen.update_ui_from_printer_status()
 
         self.checkKlipperPrinterCFG()
-
     # Screen Loading Methods
     def load_home_screen(self):
         logger.debug("Loading home screen")

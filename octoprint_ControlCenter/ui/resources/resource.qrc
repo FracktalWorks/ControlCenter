@@ -16,6 +16,7 @@
     <file>img/splash_2.png</file>
   </qresource>
   <qresource prefix="Icons">
+    <file>img/icons/filamentNozzleMenuIcon.png</file>
     <file>img/icons/3d-printing.png</file>
     <file>img/icons/activeNozzle.png</file>
     <file>img/icons/Advanced Bed Leveling.png</file>
