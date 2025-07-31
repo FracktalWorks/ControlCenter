@@ -3,8 +3,8 @@ import os
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QLabel, QProgressBar
 from PyQt5.QtCore import QTimer
+from PyQt5 import QtGui
 from utils.helpers import check_ui_elements
-from models.printer_model import PrinterModel  # Import the printer status model
 from utils.logger import get_logger
 from utils.styles import printer_status_green, printer_status_red, printer_status_amber
 from utils import dialog
@@ -34,6 +34,7 @@ class HomeScreen(QWidget):
         self.print_time = "-"
         self.time_left = "-"
         self.printerStatusText = ""
+        self._last_status = ""
 
         # Use class-level logger
         self.logger = get_logger(self.__class__.__name__)
@@ -97,6 +98,7 @@ class HomeScreen(QWidget):
         self.main_window.printer_model.status_updated.connect(self.updatePrinterStatus)
         self.main_window.printer_model.print_status_updated.connect(self.updatePrintStatus)
         self.main_window.printer_model.temperatures_updated.connect(self.updateTemperature)
+        self.main_window.printer_model.active_extruder_changed.connect(self.setActiveExtruder)
 
         # Connect button signals to their handlers
         if self.doorLockButton:
@@ -163,7 +165,9 @@ class HomeScreen(QWidget):
         this function updates the status bar, as well as enables/disables relavent buttons
         :param status: String of the status text
         """
-        logger.info("HomeScreen.updatePrinterStatus called with status: {}".format(status))
+        if getattr(self, "_last_status", None) != status:
+            logger.info("HomeScreen.updatePrinterStatus called with status: {}".format(status))
+            self._last_status = status
         try:
             self.printerStatusText = status
             self.printerStatus.setText(status)
@@ -580,10 +584,27 @@ class HomeScreen(QWidget):
                     elif self.printerStatusText == "Paused":
                         client.pausePrint()
                 except Exception as e:
-                    logger.error("Error in MainUiClass.playPauseAction: {}".format(e))
-                    dialog.WarningOk(self, "Error in MainUiClass.playPauseAction: {}".format(e), overlay=True)
+                    logger.error("Error in home_screen.playPauseAction: {}".format(e))
+                    dialog.WarningOk(self, "Error in home_screen.playPauseAction: {}".format(e), overlay=True)
 
     def open_control_panel(self):
         """Navigate to control panel screen"""
         self.main_window.switch_to_control_screen()
         logger.debug("Control Panel button clicked")
+
+    def setActiveExtruder(self, activeNozzle):
+        """
+        Sets the active extruder, and changes the UI accordingly
+        """
+        logger.info("home_screen.setActiveExtruder started")
+        try:
+            if activeNozzle == 0:
+                self.tool0Label.setPixmap(QtGui.QPixmap("resources/img/activeNozzle.png"))
+                self.tool1Label.setPixmap(QtGui.QPixmap("resources/img/Nozzle.png"))
+            elif activeNozzle == 1:
+                self.tool0Label.setPixmap(QtGui.QPixmap(("resources/img/Nozzle.png")))
+                self.tool1Label.setPixmap(QtGui.QPixmap(("resources/img/activeNozzle.png")))
+                self.toolToggleChangeFilamentButton.setChecked(True)
+        except Exception as e:
+            logger.error("Error in MainUiClass.setActiveExtruder: {}".format(e))
+            dialog.WarningOk(self, "Error in home_screen.setActiveExtruder: {}".format(e), overlay=True)

@@ -8,7 +8,7 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 from utils import dialog
 # Use configuration from config.py
-from octoprint_ControlCenter import config
+import config
 
 class PrinterModel(QObject):
     """
@@ -61,6 +61,18 @@ class PrinterModel(QObject):
 
     def updateTemperature(self, temp_data):
         """ Updates the temperature data. Is a slot for the temperatures_updated signal. """
+        if temp_data['tool0Actual'] is None:
+            temp_data['tool0Actual'] = 0
+        if temp_data['tool0Target'] is None:
+            temp_data['tool0Target'] = 180
+        if temp_data['tool1Actual'] is None:
+            temp_data['tool1Actual'] = 0
+        if temp_data['tool1Target'] is None:
+            temp_data['tool1Target'] = 180
+        if temp_data['bedActual'] is None:
+            temp_data['bedActual'] = 0
+        if temp_data['bedTarget'] is None:
+            temp_data['bedTarget'] = 60
         self.temperatures = temp_data
         self.temperatures_updated.emit(temp_data)
 

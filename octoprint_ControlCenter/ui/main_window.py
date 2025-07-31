@@ -412,8 +412,26 @@ class MainWindow(QMainWindow):
         self.switch_screen(self.settings_screen)
 
     def switch_to_control_screen(self):
+        """
+        Sets the current page to the control page
+        """
         logger.debug("Switching to control screen")
-        self.switch_screen(self.control_screen)
+        try:
+            self.switch_screen(self.control_screen)
+            if self.control_screen.toolToggleTemperatureButton.isChecked():
+                self.control_screen.toolTempSpinBox.setProperty(
+                    "value", float(self.printer_model.temperatures.get("tool1", 0))
+                )
+            else:
+                self.control_screen.toolTempSpinBox.setProperty(
+                    "value", float(self.printer_model.temperatures.get("tool0", 0))
+                )
+            self.control_screen.bedTempSpinBox.setProperty(
+                "value", float(self.printer_model.temperatures.get("bed", 0))
+            )
+        except Exception as e:
+            logger.error("Error in MainUiClass.control: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.control: {}".format(e), overlay=True)
 
     def switch_to_print_location_screen(self):
         logger.debug("Switching to print location screen")

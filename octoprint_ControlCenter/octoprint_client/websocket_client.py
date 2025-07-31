@@ -14,7 +14,7 @@ from PyQt5.QtCore import QThread, pyqtSignal
 
 from utils.logger import get_logger
 from utils.helpers import run_async
-from octoprint_ControlCenter.config import IGNORED_PRINTER_ERRORS
+from config import IGNORED_PRINTER_ERRORS
 
 
 class OctoPrintWebSocket(QThread):

@@ -101,7 +101,7 @@ class ControlScreen(QWidget):
         self._initialize_sub_screens()
 
         # set the active extruder to 0 initially
-        self.screens["change_filament"].setActiveExtruder(0)
+        self.setActiveExtruder(0)  # Default to extruder 0
 
         # Feed Rate Buttons Signal Connections
         if self.controlBackButton:
@@ -205,7 +205,7 @@ class ControlScreen(QWidget):
         """Initialize all control sub-screens"""
         try:
             # Create instance of change filament screen
-            self.screens["change_filament"] = ChangeFilament(self.main_window, self, self.main_window.home_screen)
+            self.screens["change_filament"] = ChangeFilament(self.main_window)
             # Add reference to the parent screen for navigation
             self.screens["change_filament"].parent_screen = self
             self.main_window.stacked_widget.addWidget(self.screens["change_filament"])
@@ -485,12 +485,12 @@ class ControlScreen(QWidget):
         logger.info("MainUiClass.selectToolMotion started")
         try:
             if self.toolToggleMotionButton.isChecked():
-                self.screens["change_filament"].setActiveExtruder(1)
                 self.main_window.octoprint_client.selectTool(1)
+                self.setActiveExtruder(1)
 
             else:
-                self.screens["change_filament"].setActiveExtruder(0)
                 self.main_window.octoprint_client.selectTool(0)
+                self.setActiveExtruder(0)
         except Exception as e:
             logger.error("Error in MainUiClass.selectToolMotion: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.selectToolMotion: {}".format(e), overlay=True)
@@ -521,3 +521,21 @@ class ControlScreen(QWidget):
         except Exception as e:
             logger.error("Error in MainUiClass.setStep: {}".format(e))
             dialog.WarningOk(self, "Error in MainUiClass.setStep: {}".format(e), overlay=True)
+
+    def setActiveExtruder(self, activeNozzle):
+        """
+        Sets the active extruder, and changes the UI accordingly
+        """
+        logger.info("control_screen.setActiveExtruder started")
+        try:
+            if activeNozzle == 0:
+                self.toolToggleMotionButton.setChecked(False)
+                self.toolToggleMotionButton.setText("0")
+                self.activeExtruder = 0
+            elif activeNozzle == 1:
+                self.toolToggleMotionButton.setChecked(True)
+                self.toolToggleMotionButton.setText("1")
+                self.activeExtruder = 1
+        except Exception as e:
+            logger.error("Error in control_screen.setActiveExtruder: {}".format(e))
+            dialog.WarningOk(self, "Error in control_screen.setActiveExtruder: {}".format(e), overlay=True)
