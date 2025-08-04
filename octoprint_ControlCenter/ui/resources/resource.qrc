@@ -1,10 +1,52 @@
 <RCC>
   <qresource prefix="Logos &amp; Branding">
+    <file>img/Logos/Fracktal Logo_Transparent.png</file>
     <file>img/Logos/control_center_logo_text.png</file>
     <file>img/Logos/control_center_logo.png</file>
     <file>img/Logos/Fracktal Logo.png</file>
     <file>img/Logos/fracktal.png</file>
     <file>img/Logos/thumbnail.png</file>
+  </qresource>
+  <qresource prefix="Tabbed Manu">
+    <file>img/Tabbed Menu Icons/calibrate.png</file>
+    <file>img/Tabbed Menu Icons/calibrate_selected.png</file>
+    <file>img/Tabbed Menu Icons/filamentNozzleMenuIcon.png</file>
+    <file>img/Tabbed Menu Icons/filamentNozzleMenuIcon_selected.png</file>
+    <file>img/Tabbed Menu Icons/home.png</file>
+    <file>img/Tabbed Menu Icons/home_selected.png</file>
+    <file>img/Tabbed Menu Icons/print.png</file>
+    <file>img/Tabbed Menu Icons/print_selected.png</file>
+    <file>img/Tabbed Menu Icons/settings.png</file>
+    <file>img/Tabbed Menu Icons/settings_selected.png</file>
+    <file>img/Tabbed Menu Icons/tune.png</file>
+    <file>img/Tabbed Menu Icons/tune_selected.png</file>
+    <file>img/Tabbed Menu Icons/calibrate.png</file>
+    <file>img/Tabbed Menu Icons/calibrate_selected.png</file>
+    <file>img/Tabbed Menu Icons/filamentNozzleMenuIcon.png</file>
+    <file>img/Tabbed Menu Icons/filamentNozzleMenuIcon_selected.png</file>
+    <file>img/Tabbed Menu Icons/home.png</file>
+    <file>img/Tabbed Menu Icons/home_selected.png</file>
+    <file>img/Tabbed Menu Icons/print.png</file>
+    <file>img/Tabbed Menu Icons/print_selected.png</file>
+    <file>img/Tabbed Menu Icons/settings.png</file>
+    <file>img/Tabbed Menu Icons/settings_selected.png</file>
+    <file>img/Tabbed Menu Icons/calibrate.png</file>
+    <file>img/Tabbed Menu Icons/calibrate_selected.png</file>
+    <file>img/Tabbed Menu Icons/filamentNozzleMenuIcon.png</file>
+    <file>img/Tabbed Menu Icons/filamentNozzleMenuIcon_selected.png</file>
+    <file>img/Tabbed Menu Icons/home.png</file>
+    <file>img/Tabbed Menu Icons/home_selected.png</file>
+    <file>img/Tabbed Menu Icons/print.png</file>
+    <file>img/Tabbed Menu Icons/print_selected.png</file>
+    <file>img/Tabbed Menu Icons/home.png</file>
+    <file>img/Tabbed Menu Icons/home_selected.png</file>
+    <file>img/Tabbed Menu Icons/filamentNozzleMenuIcon.png</file>
+    <file>img/Tabbed Menu Icons/filamentNozzleMenuIcon_selected.png</file>
+  </qresource>
+  <qresource prefix="Filament Paths">
+    <file>img/Filament Paths/leftLoaded.png</file>
+    <file>img/Filament Paths/noneLoaded.png</file>
+    <file>img/Filament Paths/rightLoaded.png</file>
   </qresource>
   <qresource prefix="Misc">
     <file>img/loader1.gif</file>

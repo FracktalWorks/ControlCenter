@@ -1,8 +1,8 @@
 import os
 
 from PyQt5 import uic
-from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QLabel, QProgressBar
-from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QLabel, QProgressBar, QSizePolicy
+from PyQt5.QtCore import QTimer, Qt
 from PyQt5 import QtGui
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
@@ -40,8 +40,25 @@ class HomeScreen(QWidget):
         self.logger = get_logger(self.__class__.__name__)
         # Load the UI
         try:
-            uic.loadUi("/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/home_screen/home_screen.ui", self)
+            ui_file_path = os.path.join(os.path.dirname(__file__), 'home_screen.ui')
+            uic.loadUi(ui_file_path, self)
             self.logger.info("HomeScreen UI loaded successfully")
+            
+            # Set size policy for proper layout-based resizing
+            self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            
+            # Set the widget to respect its parent's size constraints
+            self.setContentsMargins(0, 0, 0, 0)
+            
+            # Set minimum size based on config but allow expansion
+            import config
+            self.setMinimumSize(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+            
+            # Enable automatic resizing when parent changes
+            self.setAttribute(Qt.WA_Resized, True)
+            
+            self.logger.debug(f"HomeScreen configured for layout-based resizing with minimum size: {config.SCREEN_WIDTH}x{config.SCREEN_HEIGHT}")
+            
         except Exception as e:
             self.logger.error(f"Failed to load HomeScreen UI file: {e}")
             logger.exception(f"Failed to load HomeScreen UI file: {e}")
@@ -50,10 +67,8 @@ class HomeScreen(QWidget):
 
         # Control buttons
         self.doorLockButton = self.findChild(QToolButton, "doorLockButton")  # Done
-        self.menuButton = self.findChild(QPushButton, "menuButton")  # Done
         self.stopButton = self.findChild(QPushButton, "stopButton")  # Done
         self.playPauseButton = self.findChild(QPushButton, "playPauseButton")
-        self.controlButton = self.findChild(QPushButton, "controlButton")
 
         # Temperature displays - Tool 0
         self.tool0TargetTemperature = self.findChild(QLabel, "tool0TargetTemperature")
@@ -84,7 +99,7 @@ class HomeScreen(QWidget):
 
         # Validate UI components
         all_components = [
-            self.doorLockButton, self.menuButton, self.stopButton, self.playPauseButton, self.controlButton,
+            self.doorLockButton, self.stopButton, self.playPauseButton,
             self.tool0TargetTemperature, self.tool0ActualTemperature, self.tool0TempBar,
             self.tool1TargetTemperature, self.tool1ActualTemperature, self.tool1TempBar,
             self.bedTargetTemperature, self.bedActualTemperatute, self.bedTempBar,
@@ -104,8 +119,6 @@ class HomeScreen(QWidget):
         if self.doorLockButton:
             self.doorLockButton.clicked.connect(self.toggle_door_lock)
 
-        if self.menuButton:
-            self.menuButton.clicked.connect(self.open_menu)
 
         if self.stopButton:
             self.stopButton.clicked.connect(self.stop_print)
@@ -113,8 +126,6 @@ class HomeScreen(QWidget):
         if self.playPauseButton:
             self.playPauseButton.clicked.connect(self.play_pause_print)
 
-        if self.controlButton:
-            self.controlButton.clicked.connect(self.open_control_panel)
 
         # Initialize UI state
         # Update temperature displays
@@ -159,6 +170,51 @@ class HomeScreen(QWidget):
         # self.update_timer.timeout.connect(self.update_ui_from_printer_status)
         # self.update_timer.start(1000)  # Update every second
 
+    def ensure_proper_sizing(self):
+        """Ensure the home screen is properly sized within its parent using layout system."""
+        try:
+            # Force the widget to update its geometry based on its layout
+            self.updateGeometry()
+            
+            # If we have a parent, let the layout system handle sizing
+            if self.parent():
+                parent = self.parent()
+                
+                # If parent has a layout, update it
+                if hasattr(parent, 'layout') and parent.layout():
+                    parent.layout().update()
+                    parent.updateGeometry()
+                    self.logger.debug("Updated parent layout for proper sizing")
+                
+                # Update our own size hint and geometry
+                self.adjustSize()
+                self.logger.debug("Home screen geometry updated via layout system")
+                return True
+            
+            # Fallback to config size if no parent layout
+            import config
+            self.resize(config.SCREEN_WIDTH, config.SCREEN_HEIGHT)
+            self.logger.debug(f"Home screen fallback resize to config size: {config.SCREEN_WIDTH}x{config.SCREEN_HEIGHT}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to ensure proper sizing: {e}")
+            return False
+    
+    def resizeEvent(self, event):
+        """Handle resize events for proper layout updates."""
+        super().resizeEvent(event)
+        try:
+            # Log the resize for debugging
+            new_size = event.size()
+            self.logger.debug(f"Home screen resized to: {new_size.width()}x{new_size.height()}")
+            
+            # Force layout update on resize
+            self.updateGeometry()
+            
+        except Exception as e:
+            self.logger.error(f"Error in resizeEvent: {e}")
+
     def updatePrinterStatus(self, status):
         """
         Updates the status bar, is a slot for the signal emited from the thread that constantly polls for printer status
@@ -189,8 +245,6 @@ class HomeScreen(QWidget):
                 self.stopButton.setDisabled(False)
                 # self.motionTab.setDisabled(True)
                 # self.changeFilamentButton.setDisabled(True) in some different file
-                self.main_window.menu_screen.menuCalibrateButton.setDisabled(True)
-                self.main_window.menu_screen.menuPrintButton.setDisabled(True)
                 self.doorLockButton.setDisabled(False)
                 # if not self.__timelapse_enabled:
                 #     octopiclient.cancelPrint()
@@ -201,8 +255,6 @@ class HomeScreen(QWidget):
                 self.stopButton.setDisabled(False)
                 # self.motionTab.setDisabled(False)
                 # self.changeFilamentButton.setDisabled(False)
-                self.main_window.menu_screen.menuCalibrateButton.setDisabled(True)
-                self.main_window.menu_screen.menuPrintButton.setDisabled(True)
                 self.doorLockButton.setDisabled(False)
 
             else:
@@ -210,8 +262,6 @@ class HomeScreen(QWidget):
                 self.playPauseButton.setChecked(False)
                 # self.motionTab.setDisabled(False)
                 # self.changeFilamentButton.setDisabled(False)
-                self.main_window.menu_screen.menuCalibrateButton.setDisabled(False)
-                self.main_window.menu_screen.menuPrintButton.setDisabled(False)
                 self.doorLockButton.setDisabled(True)
 
         except Exception as e:
@@ -354,167 +404,6 @@ class HomeScreen(QWidget):
         except Exception as e:
             logger.error("Error in MainUiClass.setIPStatus: {}".format(e))
 
-    # ! Below are the boilerplate functions
-
-    # def update_ui_from_printer_status(self):
-    #     """Update UI based on current printer status"""
-    #     if hasattr(self.main_window, 'octoprint_client'):
-    #         client = self.main_window.octoprint_client
-    #         if client and client.is_connected():
-    #             # Get latest status information
-    #             printer_data = client.get_printer_status()
-    #             job_data = client.get_job_status()
-    #
-    #             # Update our internal data
-    #             self._update_temperature_data(printer_data)
-    #             self._update_job_data(job_data)
-    #
-    #             # Update UI
-    #             self._update_temperature_displays()
-    #             self._update_print_info()
-    #             self._update_printer_status(printer_data.get("state", {}).get("text", "Unknown"))
-    #
-    #             # Update connection status
-    #             self._update_connection_status(True, client.get_ip_address())
-    #         else:
-    #             self._update_connection_status(False)
-
-    # def _update_temperature_data(self, printer_data):
-    #     """Update internal temperature data from printer status"""
-    #     if not printer_data or "temperature" not in printer_data:
-    #         return
-    #
-    #     temp_data = printer_data["temperature"]
-    #
-    #     # Update tool0 temperature
-    #     if "tool0" in temp_data:
-    #         self.temperature_data["tool0"]["actual"] = temp_data["tool0"]["actual"]
-    #         self.temperature_data["tool0"]["target"] = temp_data["tool0"]["target"]
-    #
-    #     # Update tool1 temperature
-    #     if "tool1" in temp_data:
-    #         self.temperature_data["tool1"]["actual"] = temp_data["tool1"]["actual"]
-    #         self.temperature_data["tool1"]["target"] = temp_data["tool1"]["target"]
-    #
-    #     # Update bed temperature
-    #     if "bed" in temp_data:
-    #         self.temperature_data["bed"]["actual"] = temp_data["bed"]["actual"]
-    #         self.temperature_data["bed"]["target"] = temp_data["bed"]["target"]
-
-    # def _update_job_data(self, job_data):
-    #     """Update internal job data from printer status"""
-    #     if not job_data:
-    #         return
-    #
-    #     # Update file name
-    #     if "file" in job_data and "name" in job_data["file"]:
-    #         self.current_file = job_data["file"]["name"]
-    #     else:
-    #         self.current_file = "No file selected"
-    #
-    #     # Update progress
-    #     if "progress" in job_data and "completion" in job_data["progress"]:
-    #         progress = job_data["progress"]["completion"]
-    #         self.print_progress = int(progress) if progress is not None else 0
-    #
-    #     # Update time information
-    #     if "progress" in job_data:
-    #         # Print time
-    #         if "printTime" in job_data["progress"]:
-    #             seconds = job_data["progress"]["printTime"] or 0
-    #             self.print_time = self._format_time(seconds)
-    #
-    #         # Time left
-    #         if "printTimeLeft" in job_data["progress"]:
-    #             seconds = job_data["progress"]["printTimeLeft"] or 0
-    #             self.time_left = self._format_time(seconds)
-
-    # def _format_time(self, seconds):
-    #     """Format seconds to HH:MM:SS"""
-    #     if seconds is None:
-    #         return "00:00:00"
-    #
-    #     hours = int(seconds // 3600)
-    #     minutes = int((seconds % 3600) // 60)
-    #     seconds = int(seconds % 60)
-    #     return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-
-    # def _update_temperature_displays(self):
-    #     """Update all temperature displays"""
-    #     # Tool 0
-    #     if self.tool0ActualTemperature and self.tool0TargetTemperature and self.tool0TempBar:
-    #         actual = self.temperature_data["tool0"]["actual"]
-    #         target = self.temperature_data["tool0"]["target"]
-    #
-    #         self.tool0ActualTemperature.setText(f"{actual:.1f}")
-    #         self.tool0TargetTemperature.setText(f"{target:.1f}")
-    #         self.tool0TempBar.setValue(min(int(actual), self.tool0TempBar.maximum()))
-    #
-    #     # Tool 1
-    #     if self.tool1ActualTemperature and self.tool1TargetTemperature and self.tool1TempBar:
-    #         actual = self.temperature_data["tool1"]["actual"]
-    #         target = self.temperature_data["tool1"]["target"]
-    #
-    #         self.tool1ActualTemperature.setText(f"{actual:.1f}")
-    #         self.tool1TargetTemperature.setText(f"{target:.1f}")
-    #         self.tool1TempBar.setValue(min(int(actual), self.tool1TempBar.maximum()))
-    #
-    #     # Bed
-    #     if self.bedActualTemperatute and self.bedTargetTemperature and self.bedTempBar:
-    #         actual = self.temperature_data["bed"]["actual"]
-    #         target = self.temperature_data["bed"]["target"]
-    #
-    #         self.bedActualTemperatute.setText(f"{actual:.1f}")
-    #         self.bedTargetTemperature.setText(f"{target:.1f}")
-    #         self.bedTempBar.setValue(min(int(actual), self.bedTempBar.maximum()))
-
-    # def _update_print_info(self):
-    #     """Update print job information"""
-    #     if self.fileName:
-    #         self.fileName.setText(self.current_file)
-    #
-    #     if self.printTime:
-    #         self.printTime.setText(self.print_time)
-    #
-    #     if self.timeLeft:
-    #         self.timeLeft.setText(self.time_left)
-    #
-    #     if self.printProgressBar:
-    #         self.printProgressBar.setValue(self.print_progress)
-
-    # def _update_printer_status(self, status_text):
-    #     """Update printer status display and indicator"""
-    #     if not self.printerStatus or not self.printerStatusColour:
-    #         return
-    #
-    #     self.printerStatus.setText(status_text)
-    #
-    #     # Set color based on status
-    #     if status_text.lower() in ["operational", "ready"]:
-    #         self.printerStatusColour.setStyleSheet(printer_status_green)
-    #     elif status_text.lower() in ["printing", "paused"]:
-    #         self.printerStatusColour.setStyleSheet(printer_status_amber)
-    #     else:
-    #         self.printerStatusColour.setStyleSheet(printer_status_red)
-
-    # def _update_connection_status(self, connected, ip_address=None):
-    #     """Update printer connection status"""
-    #     self.printer_connected = connected
-    #
-    #     if self.ipStatus:
-    #         if connected and ip_address:
-    #             self.ipStatus.setText(f"Connected: {ip_address}")
-    #         else:
-    #             self.ipStatus.setText("Not Connected")
-    #
-    #     # Disable controls when not connected
-    #     for button_name in ["doorLockButton", "playPauseButton", "stopButton"]:
-    #         button = self.all_components.get(button_name, {}).get("instance")
-    #         if button:
-    #             button.setEnabled(connected)
-
-    # Event handlers
-
     def toggle_door_lock(self):
         """Toggle printer door lock"""
         # if not self.printer_connected:
@@ -538,10 +427,6 @@ class HomeScreen(QWidget):
                     logger.error("Error in MainUiClass.doorLock: {}".format(e))
                     dialog.WarningOk(self, "Error in MainUiClass.doorLock: {}".format(e), overlay=True)
 
-    def open_menu(self):
-        """Navigate to menu screen"""
-        self.main_window.switch_to_menu_screen()
-        logger.debug("Menu button clicked")
 
     def stop_print(self):
         """Stop current print job"""
@@ -587,10 +472,6 @@ class HomeScreen(QWidget):
                     logger.error("Error in home_screen.playPauseAction: {}".format(e))
                     dialog.WarningOk(self, "Error in home_screen.playPauseAction: {}".format(e), overlay=True)
 
-    def open_control_panel(self):
-        """Navigate to control panel screen"""
-        self.main_window.switch_to_control_screen()
-        logger.debug("Control Panel button clicked")
 
     def setActiveExtruder(self, activeNozzle):
         """

@@ -20,9 +20,8 @@ class SettingsScreen(QWidget):
 
         # Load the UI with proper error handling
         try:
-            uic.loadUi(
-                '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen/settings_screen.ui',
-                self)
+            ui_file_path = os.path.join(os.path.dirname(__file__), 'settings_screen.ui')
+            uic.loadUi(ui_file_path, self)
             self.logger.info("Settings screen UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load settings screen UI file: {e}")

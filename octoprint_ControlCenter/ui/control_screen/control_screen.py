@@ -1,4 +1,5 @@
 import time
+import os
 
 from PyQt5 import uic
 from PyQt5 import QtGui, QtCore
@@ -28,9 +29,8 @@ class ControlScreen(QWidget):
 
         # Load the UI
         try:
-            uic.loadUi(
-                '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/control_screen/control_screen.ui',
-                self)
+            ui_file_path = os.path.join(os.path.dirname(__file__), 'control_screen.ui')
+            uic.loadUi(ui_file_path, self)
             self.logger.info("ControlScreen UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load ControlScreen UI file: {e}", exc_info=True)
@@ -208,7 +208,7 @@ class ControlScreen(QWidget):
             self.screens["change_filament"] = ChangeFilament(self.main_window)
             # Add reference to the parent screen for navigation
             self.screens["change_filament"].parent_screen = self
-            self.main_window.stacked_widget.addWidget(self.screens["change_filament"])
+            self.main_window.stackedWidget.addWidget(self.screens["change_filament"])
             self.logger.info("Added change_filament screen to main stacked widget")
         except Exception as e:
             self.logger.exception(f"Error initializing sub-screens: {e}")
@@ -261,16 +261,12 @@ class ControlScreen(QWidget):
             self.main_window.screen_history = self.main_window.screen_history[:non_subscreen_index]
             # Navigate directly to the target screen
             self.main_window.current_screen = target_screen
-            self.main_window.stacked_widget.setCurrentWidget(target_screen)
+            self.main_window.stackedWidget.setCurrentWidget(target_screen)
             self.logger.debug(f"Returned directly to parent screen: {target_screen.__class__.__name__}")
         else:
-            # If no parent screen found in history, default to menu screen
-            if hasattr(self.main_window, 'menu_screen'):
-                self.main_window.switch_to_menu_screen()
-                self.logger.debug("No parent screen found in history, defaulting to menu screen")
-            else:
-                self.main_window.switch_to_home_screen()
-                self.logger.debug("No parent screen found in history, defaulting to home screen")
+            # If no parent screen found in history, default to home screen (menu screen no longer exists)
+            self.main_window.switch_to_home_screen()
+            self.logger.debug("No parent screen found in history, defaulting to home screen")
 
     def move_z_positive_baby_step(self):
         self.logger.info("Moving Z up slightly (baby step)")
@@ -372,7 +368,7 @@ class ControlScreen(QWidget):
             if 'enabled' in data:
                 self.toggleFilamentSensorButton.setIcon(QtGui.QIcon(_fromUtf8("templates/img/filamentSensorOn")))
 
-            if triggered_extruder0 and self.main_window.stacked_widget.currentWidget() not in [
+            if triggered_extruder0 and self.main_window.stackedWidget.currentWidget() not in [
                 change_filament_screen.changeFilamentPage,
                 change_filament_screen.changeFilamentProgressPage,
                 change_filament_screen.changeFilamentExtrudePage,
@@ -383,7 +379,7 @@ class ControlScreen(QWidget):
                                     "Filament outage or clog detected in Extruder 0. Please check the external motors. Print paused"):
                     pass
 
-            if triggered_extruder1 and self.main_window.stacked_widget.currentWidget() not in [
+            if triggered_extruder1 and self.main_window.stackedWidget.currentWidget() not in [
                 change_filament_screen.changeFilamentPage,
                 change_filament_screen.changeFilamentProgressPage,
                 change_filament_screen.changeFilamentExtrudePage,

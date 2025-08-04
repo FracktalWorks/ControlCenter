@@ -6,7 +6,7 @@ IGNORED_PRINTER_ERRORS = [
 from collections import OrderedDict
 
 # Configuration settings
-ip = '0.0.0.0:5000'
+ip = '192.168.1.118'
 apiKey = 'B508534ED20348F090B4D0AD637D3660'   
 
 file_name = ''
@@ -39,3 +39,10 @@ tool0PurgePosition = {'X': -27, 'Y': -112}
 tool1PurgePosition = {'X': 648, 'Y': -112}
 
 ptfeTubeLength = 1500  # 2400 for 600x600, 1500 for 600x300 keep as multiples of 300 only
+
+# Screen resolution configuration
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 480
+
+# Testing configuration - set to True to force connection failure for testing minimal UI
+FORCE_CONNECTION_FAILURE = False
