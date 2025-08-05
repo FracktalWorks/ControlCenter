@@ -1,7 +1,7 @@
 <RCC>
   <qresource prefix="Logos &amp; Branding">
-    <file>img/Logos/Fracktal Logo_Transparent.png</file>
     <file>img/Logos/control_center_logo_text.png</file>
+    <file>img/Logos/Fracktal Logo_Transparent.png</file>
     <file>img/Logos/control_center_logo.png</file>
     <file>img/Logos/Fracktal Logo.png</file>
     <file>img/Logos/fracktal.png</file>

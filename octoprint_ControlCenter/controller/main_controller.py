@@ -27,9 +27,10 @@ class ThreadConnectionCheck(QtCore.QThread):
     Thread to check if OctoPrint is online and responding.
     This runs during startup to ensure connectivity before enabling UI features.
     """
-    # Define signals for connection status
+    # Define signals for connection status and progress
     loaded_signal = QtCore.pyqtSignal()
     startup_error_signal = QtCore.pyqtSignal()
+    progress_signal = QtCore.pyqtSignal(int, str)  # Progress percentage and message
 
     def __init__(self, ip=None, api_key=None, virtual=False):
         """Initialize the sanity check thread"""
@@ -46,10 +47,11 @@ class ThreadConnectionCheck(QtCore.QThread):
     def run(self):
         """Run the sanity check to verify OctoPrint connectivity"""        
         self.shutdown_flag = False
-        # Get the first value of uptime (runtime check)
         uptime = 0
         
         self.logger.info("Running OctoPrint connectivity check")
+        self.progress_signal.emit(10, "Starting OctoPrint connection check...")
+        
         # Keep trying until OctoPrint connects or timeout
         while True:
             try:
@@ -57,30 +59,39 @@ class ThreadConnectionCheck(QtCore.QThread):
                 if uptime > 60:
                     self.shutdown_flag = True
                     self.logger.error("OctoPrint connection timeout after 60 seconds")
+                    self.progress_signal.emit(0, "Connection timeout - Please check OctoPrint service")
                     self.startup_error_signal.emit()
                     break
-                    
-                # Try to create an OctoPrint API client
+                
+                # Update progress based on time elapsed
+                progress = min(20 + (uptime * 40 / 60), 60)  # Progress from 20% to 60% over 60 seconds
+                self.progress_signal.emit(int(progress), f"Connecting Hardware... )")
+                # Attempt to connect to OctoPrint
                 octoprint_singleton.initialize(self.ip, self.api_key)
                 
                 # If we're not in virtual mode, try to connect to the printer
                 if not self.virtual:
                     try:
+                        self.progress_signal.emit(75, "Connecting to Klipper ...")
                         # First try to connect to the Klipper printer
                         octoprint_singleton.get_client().connectPrinter(port="/tmp/printer", baudrate=115200)
                         self.logger.info("Connected to Klipper printer on /tmp/printer")
+                        self.progress_signal.emit(85, "Connected to Klipper printer")
                     except Exception as e:
                         # If that fails, try to connect in virtual mode
                         self.logger.warning(f"Failed to connect to Klipper printer: {e}")
-                        self.logger.info("Falling back to virtual printer connection")
+                        self.progress_signal.emit(80, "Falling back to virtual printer...")
                         # Attempt to connect in virtual mode
                         try:
                             octoprint_singleton.get_client().connectPrinter(port="VIRTUAL", baudrate=115200)
                             self.logger.info("Connected to printer in VIRTUAL mode")
+                            self.progress_signal.emit(85, "Connected to virtual printer")
                         except Exception as e:
                             self.logger.error(f"Failed to connect to printer in VIRTUAL mode: {e}")
+                            self.progress_signal.emit(85, "Printer connection failed - continuing...")
 
                 # If we got here, connection was successful
+                self.progress_signal.emit(90, "OctoPrint connection successful")
                 break
                 
             except Exception as e:
@@ -92,6 +103,7 @@ class ThreadConnectionCheck(QtCore.QThread):
         # If we didn't set the shutdown flag, we were successful
         if not self.shutdown_flag:
             self.logger.info("OctoPrint connectivity check successful")
+            self.progress_signal.emit(95, "Connection check completed")
             self.loaded_signal.emit()
 
 class MainController:
@@ -124,36 +136,55 @@ class MainController:
         try:
             # Set a fixed size for the main window before showing it
             self.main_window.setFixedSize(SCREEN_WIDTH, SCREEN_HEIGHT)  # Use config values for screen resolution
-            
             self.main_window.show()
             self.main_window.load_loading_screen()
             self.main_window.switch_to_loading_screen()
+            self.main_window.loading_screen.update_progress(5, "Initializing application...")
+            
             # Start the connection check thread
             self.connection_check = ThreadConnectionCheck(ip=ip, api_key=apiKey, virtual=False)
             self.connection_check.loaded_signal.connect(self.handleStartupSuccess)
             self.connection_check.startup_error_signal.connect(self.handleStartupError)
+            self.connection_check.progress_signal.connect(self.updateLoadingProgress)  # Connect progress signal
             self.connection_check.start()
         except Exception as e:
             logger.error(f"Error during startup: {e}")
             dialog.WarningOk(self.main_window, f"Error during startup: {e}", overlay=True)
             self.main_window.close()
 
+    def updateLoadingProgress(self, progress, message):
+        """Update the loading screen progress"""
+        self.main_window.loading_screen.update_progress(progress, message)
+
     def handleStartupSuccess(self):
         """Handle successful OctoPrint connection"""
         logger.info("OctoPrint connection successful")
         
         try:
+            # Update progress for different startup phases
+            self.main_window.loading_screen.update_progress(96, "Initializing client...")
+            
             # Now that we know OctoPrint is available, initialize the client
             self.octoprint_client = octoprint_singleton.get_client()
+            
+            self.main_window.loading_screen.update_progress(97, "Loading user interface...")
             
             # Load the full UI
             self.main_window.loadFullUI()
             
+            self.main_window.loading_screen.update_progress(98, "Initializing websocket connection...")
+            
             # Initialize websocket
             self.initalize_websocket()
             
+            self.main_window.loading_screen.update_progress(99, "Checking Klipper configuration...")
+            
             # Check Klipper config
             self.checkKlipperPrinterCFG()
+            
+            self.main_window.loading_screen.update_progress(100, "Startup complete!")
+
+            self.main_window.switch_to_home_screen()
             
         except Exception as e:
             logger.error(f"Error during startup success handling: {e}")
@@ -163,14 +194,28 @@ class MainController:
         """Handle OctoPrint connection failure"""
         logger.info("OctoPrint connection failed")
         try:
+            if hasattr(self.main_window, 'loading_screen'):
+                self.main_window.loading_screen.update_progress(0, "Connection failed - showing options...")
+                
             if dialog.WarningYesNo(self.main_window, "Server Error, Restore failsafe settings?", overlay=True):
                 logger.info("Restoring Failsafe Settings")
+                
+                if hasattr(self.main_window, 'loading_screen'):
+                    self.main_window.loading_screen.update_progress(25, "Restoring failsafe settings...")
+                
                 # Restore failsafe settings
                 os.system('sudo rm -rf /home/pi/.octoprint/users.yaml')
                 os.system('sudo rm -rf /home/pi/.octoprint/config.yaml')
                 os.system('sudo cp -f config/users.yaml /home/pi/.octoprint/users.yaml')
                 os.system('sudo cp -f config/config.yaml /home/pi/.octoprint/config.yaml')
+                
+                if hasattr(self.main_window, 'loading_screen'):
+                    self.main_window.loading_screen.update_progress(50, "Restarting OctoPrint service...")
+                
                 subprocess.call(["sudo", "systemctl", "restart", "octoprint"])
+                
+                if hasattr(self.main_window, 'loading_screen'):
+                    self.main_window.loading_screen.update_progress(10, "Retrying connection...")
                 
                 # Restart the connection check
                 self.connection_check.start()

@@ -70,10 +70,10 @@ class MainWindow(QMainWindow):
         self.minimal_ui_mode = True
         print(".......LOADED IN MINIMAL MODE .......")
         try:
-            # Load all screens
+            # Load minimal set of screens
             self.load_home_screen()
             self.load_menu_screen()
-            self.load_calibration_screens()
+            self.load_settings_screen()
 
             # Adjust the size of the main window to fit its contents
             self.adjustSize()
@@ -96,40 +96,26 @@ class MainWindow(QMainWindow):
         )
 
         # Disable buttons in Home Screen
-        if hasattr(self.home_screen, 'stopButton') and self.home_screen.stopButton:
-            self.home_screen.stopButton.setDisabled(True)
-        if hasattr(self.home_screen, 'controlButton') and self.home_screen.controlButton:
-            self.home_screen.controlButton.setDisabled(True)
-        if hasattr(self.home_screen, 'playPauseButton') and self.home_screen.playPauseButton:
-            self.home_screen.playPauseButton.setDisabled(True)
+        self.home_screen.stopButton.setDisabled(True)
+        self.home_screen.controlButton.setDisabled(True)
+        self.home_screen.playPauseButton.setDisabled(True)
 
         # Disable buttons in Menu Screen
-        if hasattr(self.menu_screen, 'menuControlButton') and self.menu_screen.menuControlButton:
-            self.menu_screen.menuControlButton.setDisabled(True)
-        if hasattr(self.menu_screen, 'menuPrintButton') and self.menu_screen.menuPrintButton:
-            self.menu_screen.menuPrintButton.setDisabled(True)
-        if hasattr(self.menu_screen, 'menuCalibrateButton') and self.menu_screen.menuCalibrateButton:
-            self.menu_screen.menuCalibrateButton.setDisabled(True)
+        self.menu_screen.menuControlButton.setDisabled(True)
+        self.menu_screen.menuPrintButton.setDisabled(True)
+        self.menu_screen.menuCalibrateButton.setDisabled(True)
+        self.menu_screen.menuFilamentNozzleButton.setDisabled(True)
 
         # Check for software update related buttons
-        if hasattr(self.settings_screen, 'softwareUpdateBackButton') and self.settings_screen.softwareUpdateBackButton:
-            self.settings_screen.softwareUpdateBackButton.setDisabled(True)
-        if hasattr(self.settings_screen, 'performUpdateButton') and self.settings_screen.performUpdateButton:
-            self.settings_screen.performUpdateButton.setDisabled(True)
-
-        # Check for filament sensor toggle
-        if hasattr(self.control_screen,
-                   'toggleFilamentSensorButton') and self.control_screen.toggleFilamentSensorButton:
-            self.control_screen.toggleFilamentSensorButton.setDisabled(True)
+        self.settings_screen.softwareUpdateBackButton.setDisabled(True)
+        self.settings_screen.performUpdateButton.setDisabled(True)
 
         # Switch to the home screen initially
         self.switch_to_home_screen()
 
         # Show a visual indicator on the home screen that we're in limited mode
-        if hasattr(self.home_screen, 'printerStatus') and self.home_screen.printerStatus:
-            self.home_screen.printerStatus.setText("Disconnected - Limited Mode")
-        if hasattr(self.home_screen, 'printerStatusColour') and self.home_screen.printerStatusColour:
-            self.home_screen.printerStatusColour.setStyleSheet(printer_status_red)
+        self.home_screen.printerStatus.setText("Disconnected - Limited Mode")
+        self.home_screen.printerStatusColour.setStyleSheet(printer_status_red)
 
     def loadFullUI(self):
         """
@@ -168,45 +154,31 @@ class MainWindow(QMainWindow):
         # Re-enable buttons that were disabled in showMinimalUI
 
         # Enable buttons in Home Screen
-        if hasattr(self.home_screen, 'stopButton') and self.home_screen.stopButton:
-            self.home_screen.stopButton.setEnabled(True)
-        if hasattr(self.home_screen, 'controlButton') and self.home_screen.controlButton:
-            self.home_screen.controlButton.setEnabled(True)
-        if hasattr(self.home_screen, 'playPauseButton') and self.home_screen.playPauseButton:
-            self.home_screen.playPauseButton.setEnabled(True)
+        self.home_screen.stopButton.setEnabled(True)
+        self.home_screen.controlButton.setEnabled(True)
+        self.home_screen.playPauseButton.setEnabled(True)
 
         # Enable buttons in Menu Screen
-        if hasattr(self.menu_screen, 'menuControlButton') and self.menu_screen.menuControlButton:
-            self.menu_screen.menuControlButton.setEnabled(True)
-        if hasattr(self.menu_screen, 'menuPrintButton') and self.menu_screen.menuPrintButton:
-            self.menu_screen.menuPrintButton.setEnabled(True)
-        if hasattr(self.menu_screen, 'menuCalibrateButton') and self.menu_screen.menuCalibrateButton:
-            self.menu_screen.menuCalibrateButton.setEnabled(True)
+        self.menu_screen.menuControlButton.setEnabled(True)
+        self.menu_screen.menuPrintButton.setEnabled(True)
+        self.menu_screen.menuCalibrateButton.setEnabled(True)
 
         # Check for software update related buttons
-        if hasattr(self.settings_screen, 'softwareUpdateBackButton') and self.settings_screen.softwareUpdateBackButton:
-            self.settings_screen.softwareUpdateBackButton.setEnabled(True)
-        if hasattr(self.settings_screen, 'performUpdateButton') and self.settings_screen.performUpdateButton:
-            self.settings_screen.performUpdateButton.setEnabled(True)
+        self.settings_screen.softwareUpdateBackButton.setEnabled(True)
+        self.settings_screen.performUpdateButton.setEnabled(True)
 
         # Check for filament sensor toggle
-        if hasattr(self.control_screen,
-                   'toggleFilamentSensorButton') and self.control_screen.toggleFilamentSensorButton:
-            self.control_screen.toggleFilamentSensorButton.setEnabled(True)
+        self.control_screen.toggleFilamentSensorButton.setEnabled(True)
 
         # All screens were already loaded in __init__, so we just need to:
         # 1. Update status indicators
         # 2. Switch to home screen
 
         # Update home screen connection status
-        if hasattr(self.home_screen, 'printerStatus') and self.home_screen.printerStatus:
-            self.home_screen.printerStatus.setText("Connected")
-        if hasattr(self.home_screen, 'printerStatusColour') and self.home_screen.printerStatusColour:
-            self.home_screen.printerStatusColour.setStyleSheet(printer_status_green)
+        self.home_screen.printerStatus.setText("Connected")
+        self.home_screen.printerStatusColour.setStyleSheet(printer_status_green)
 
-        # time.sleep(50000)
         # Switch to the home screen
-        self.switch_to_home_screen()
         self.home_screen.setIPStatus()
 
     # Screen Loading Methods

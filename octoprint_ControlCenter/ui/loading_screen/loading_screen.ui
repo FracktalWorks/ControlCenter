@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>432</width>
-    <height>325</height>
+    <width>769</width>
+    <height>476</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -36,34 +36,36 @@
      </property>
     </spacer>
    </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_3">
-     <item>
-      <widget class="QLabel" name="Logo">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>400</width>
-         <height>60</height>
-        </size>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-       <property name="pixmap">
-        <pixmap resource="../resources/resource.qrc">:/Logos &amp; Branding/img/Logos/Fracktal Logo_Transparent.png</pixmap>
-       </property>
-       <property name="scaledContents">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-    </layout>
+   <item alignment="Qt::AlignHCenter">
+    <widget class="QLabel" name="Logo">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>400</width>
+       <height>60</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>400</width>
+       <height>60</height>
+      </size>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="pixmap">
+      <pixmap resource="../resources/resource.qrc">:/Logos &amp; Branding/img/Logos/Fracktal Logo_Transparent.png</pixmap>
+     </property>
+     <property name="scaledContents">
+      <bool>true</bool>
+     </property>
+    </widget>
    </item>
    <item>
     <spacer name="verticalSpacer_2">
@@ -78,66 +80,62 @@
      </property>
     </spacer>
    </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_6">
-     <item>
-      <layout class="QVBoxLayout" name="verticalLayout_5">
-       <item alignment="Qt::AlignHCenter">
-        <widget class="QLabel" name="loading">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="font">
-          <font>
-           <family>Gotham Medium</family>
-           <pointsize>12</pointsize>
-          </font>
-         </property>
-         <property name="contextMenuPolicy">
-          <enum>Qt::NoContextMenu</enum>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">color: rgb(255, 255, 255);
+   <item alignment="Qt::AlignHCenter">
+    <widget class="QLabel" name="loading">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="font">
+      <font>
+       <family>Gotham Medium</family>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="contextMenuPolicy">
+      <enum>Qt::NoContextMenu</enum>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color: rgb(255, 255, 255);
 </string>
-         </property>
-         <property name="text">
-          <string>Loading ...</string>
-         </property>
-         <property name="scaledContents">
-          <bool>true</bool>
-         </property>
-         <property name="wordWrap">
-          <bool>false</bool>
-         </property>
-        </widget>
-       </item>
-       <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-        <widget class="QProgressBar" name="loadingProgressBar">
-         <property name="minimumSize">
-          <size>
-           <width>400</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>450</width>
-           <height>16777215</height>
-          </size>
-         </property>
-         <property name="font">
-          <font>
-           <family>Gotham</family>
-           <pointsize>16</pointsize>
-           <weight>50</weight>
-           <italic>false</italic>
-           <bold>false</bold>
-           <stylestrategy>PreferAntialias</stylestrategy>
-           <kerning>true</kerning>
-          </font>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">QProgressBar {
+     </property>
+     <property name="text">
+      <string>Loading ...</string>
+     </property>
+     <property name="scaledContents">
+      <bool>true</bool>
+     </property>
+     <property name="wordWrap">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item alignment="Qt::AlignHCenter">
+    <widget class="QProgressBar" name="loadingProgressBar">
+     <property name="minimumSize">
+      <size>
+       <width>400</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>450</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>Gotham</family>
+       <pointsize>16</pointsize>
+       <weight>50</weight>
+       <italic>false</italic>
+       <bold>false</bold>
+       <stylestrategy>PreferAntialias</stylestrategy>
+       <kerning>true</kerning>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QProgressBar {
     border: none;
     border-radius: 12px;
     background-color: qlineargradient(
@@ -161,30 +159,26 @@ QProgressBar::chunk {
     margin: 1px;
 }
 </string>
-         </property>
-         <property name="maximum">
-          <number>100</number>
-         </property>
-         <property name="value">
-          <number>60</number>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignCenter</set>
-         </property>
-         <property name="textVisible">
-          <bool>false</bool>
-         </property>
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="format">
-          <string>%p%</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-    </layout>
+     </property>
+     <property name="maximum">
+      <number>100</number>
+     </property>
+     <property name="value">
+      <number>60</number>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <property name="textVisible">
+      <bool>false</bool>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="format">
+      <string>%p%</string>
+     </property>
+    </widget>
    </item>
    <item>
     <widget class="QFrame" name="frame_2">

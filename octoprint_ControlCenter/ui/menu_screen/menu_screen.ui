@@ -215,7 +215,7 @@ QToolButton:default {
      </widget>
     </item>
     <item row="1" column="0" rowspan="2">
-     <widget class="QToolButton" name="menuCartButton">
+     <widget class="QToolButton" name="menuFilamentNozzleButton">
       <property name="minimumSize">
        <size>
         <width>266</width>
@@ -382,7 +382,7 @@ QPushButton:default {
      </widget>
     </item>
    </layout>
-   <zorder>menuCartButton</zorder>
+   <zorder>menuFilamentNozzleButton</zorder>
    <zorder>menuPrintButton</zorder>
    <zorder>menuCalibrateButton</zorder>
    <zorder>menuControlButton</zorder>
