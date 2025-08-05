@@ -6,8 +6,12 @@ IGNORED_PRINTER_ERRORS = [
 from collections import OrderedDict
 
 # Configuration settings
-ip = '0.0.0.0:5000'
+ip = '0.0.0.0'
 apiKey = 'B508534ED20348F090B4D0AD637D3660'   
+
+# Screen resolution settings
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 480
 
 file_name = ''
 

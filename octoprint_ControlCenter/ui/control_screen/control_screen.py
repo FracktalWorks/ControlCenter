@@ -1,5 +1,6 @@
 import time
 
+import os
 from PyQt5 import uic
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QPalette, QColor
@@ -28,9 +29,9 @@ class ControlScreen(QWidget):
 
         # Load the UI
         try:
-            uic.loadUi(
-                '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/control_screen/control_screen.ui',
-                self)
+            # Use relative path from the current module's directory
+            ui_file_path = os.path.join(os.path.dirname(__file__), "control_screen.ui")
+            uic.loadUi(ui_file_path, self)
             self.logger.info("ControlScreen UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load ControlScreen UI file: {e}", exc_info=True)

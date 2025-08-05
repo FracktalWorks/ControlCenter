@@ -1,3 +1,4 @@
+import os
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton
 from utils.helpers import check_ui_elements
@@ -15,7 +16,9 @@ class MenuScreen(QWidget):
 
         # Load the UI with proper error handling
         try:
-            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/menu_screen/menu_screen.ui', self)
+            # Use relative path from the current module's directory
+            ui_file_path = os.path.join(os.path.dirname(__file__), "menu_screen.ui")
+            uic.loadUi(ui_file_path, self)
             self.logger.info("MenuScreen UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load MenuScreen UI file: {e}")

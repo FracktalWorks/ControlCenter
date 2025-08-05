@@ -88,6 +88,11 @@ class BedLeveling(QWidget):
         if self.quickStep4CancelButton:
             self.quickStep4CancelButton.clicked.connect(self.cancelStep)
 
+        self.setNewToolZOffsetFromCurrentZBool = False
+
+        self.main_window.printer_model.z_tool_offset_updated.connect(self.setZToolOffset)
+
+
         # Initialize to the first page
         self.reset_wizard()
         # self.quickStep1()
@@ -253,7 +258,7 @@ class BedLeveling(QWidget):
         self.logger.info("MainUiClass.doneStep started")
         try:
             self.setNewToolZOffsetFromCurrentZBool = True
-            self.main_window.octoprint_client.gcode(command='M114')
+            self.main_window.octoprint_client.gcode(command='M114') #setZToolOffset ill set the new tool offset once M114 gives the current Z position from the websocket response
             self.main_window.octoprint_client.jog(z=4, absolute=True, speed=1500)
             self.main_window.octoprint_client.gcode(command='T0')
 
@@ -348,3 +353,29 @@ class BedLeveling(QWidget):
             self.logger.info("Bed Leveling wizard reset to initial state")
         else:
             self.logger.error("Cannot reset wizard - required widgets not found")
+
+    def setZToolOffset(self, offset):
+        """
+        Sets the home offset after the caliberation wizard is done, which is a callback to
+        the response of M114 that is sent at the end of the Wizard in doneStep()
+        :param offset: the value off the offset to set. is a str is coming from M114, and is float if coming from the nozzleOffsetPage
+        :return:
+
+        #TODO can make this simpler, asset the offset value to string float to begin with instead of doing confitionals
+        """
+        logger.info("MainUiClass.setZToolOffset started")
+        self.currentZPosition = offset  # gets the current z position, used to set new tool offsets.
+        try:
+            if self.setNewToolZOffsetFromCurrentZBool:
+                print(self.toolOffsetZ)
+                print(self.currentZPosition)
+                newToolOffsetZ = (float(self.toolOffsetZ) + float(self.currentZPosition))
+                self.main_window.octoprint_client.gcode(
+                    command='M218 T1 Z{}'.format(newToolOffsetZ)
+                )  # restore eeprom settings to get Z home offset, mesh bed leveling back
+
+                self.setNewToolZOffsetFromCurrentZBool = False
+                self.main_window.octoprint_client.gcode(command='SAVE_CONFIG')  # store eeprom settings to get Z home offset
+        except Exception as e:
+            logger.error("Error in MainUiClass.setZToolOffset: {}".format(e))
+            dialog.WarningOk(self, "Error in MainUiClass.setZToolOffset: {}".format(e), overlay=True)

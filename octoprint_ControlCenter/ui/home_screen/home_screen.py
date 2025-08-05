@@ -1,5 +1,4 @@
 import os
-
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QLabel, QProgressBar
 from PyQt5.QtCore import QTimer
@@ -40,7 +39,9 @@ class HomeScreen(QWidget):
         self.logger = get_logger(self.__class__.__name__)
         # Load the UI
         try:
-            uic.loadUi("/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/home_screen/home_screen.ui", self)
+            # Use relative path from the current module's directory
+            ui_file_path = os.path.join(os.path.dirname(__file__), "home_screen.ui")
+            uic.loadUi(ui_file_path, self)
             self.logger.info("HomeScreen UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load HomeScreen UI file: {e}")
@@ -59,11 +60,13 @@ class HomeScreen(QWidget):
         self.tool0TargetTemperature = self.findChild(QLabel, "tool0TargetTemperature")
         self.tool0ActualTemperature = self.findChild(QLabel, "tool0ActualTemperature")
         self.tool0TempBar = self.findChild(QProgressBar, "tool0TempBar")
+        self.tool0Label = self.findChild(QLabel, "tool0Label")
 
         # Temperature displays - Tool 1
         self.tool1TargetTemperature = self.findChild(QLabel, "tool1TargetTemperature")
         self.tool1ActualTemperature = self.findChild(QLabel, "tool1ActualTemperature")
         self.tool1TempBar = self.findChild(QProgressBar, "tool1TempBar")
+        self.tool1Label = self.findChild(QLabel, "tool1Label")
 
         # Temperature displays - Bed
         self.bedTargetTemperature = self.findChild(QLabel, "bedTargetTemperature")
@@ -85,8 +88,8 @@ class HomeScreen(QWidget):
         # Validate UI components
         all_components = [
             self.doorLockButton, self.menuButton, self.stopButton, self.playPauseButton, self.controlButton,
-            self.tool0TargetTemperature, self.tool0ActualTemperature, self.tool0TempBar,
-            self.tool1TargetTemperature, self.tool1ActualTemperature, self.tool1TempBar,
+            self.tool0TargetTemperature, self.tool0ActualTemperature, self.tool0TempBar, self.tool0Label,
+            self.tool1TargetTemperature, self.tool1ActualTemperature, self.tool1TempBar, self.tool1Label,
             self.bedTargetTemperature, self.bedActualTemperatute, self.bedTempBar,
             self.printerStatus, self.printerStatusColour, self.ipStatus,
             self.fileName, self.printTime, self.timeLeft, self.printProgressBar, self.printPreviewMain
@@ -154,10 +157,8 @@ class HomeScreen(QWidget):
         if self.ipStatus:
             self.ipStatus.setText("Not Connected")
 
-        # # Set up update timer
-        # self.update_timer = QTimer(self)
-        # self.update_timer.timeout.connect(self.update_ui_from_printer_status)
-        # self.update_timer.start(1000)  # Update every second
+        self.setActiveExtruder(0)  # Default to extruder 0
+
 
     def updatePrinterStatus(self, status):
         """
@@ -356,165 +357,6 @@ class HomeScreen(QWidget):
 
     # ! Below are the boilerplate functions
 
-    # def update_ui_from_printer_status(self):
-    #     """Update UI based on current printer status"""
-    #     if hasattr(self.main_window, 'octoprint_client'):
-    #         client = self.main_window.octoprint_client
-    #         if client and client.is_connected():
-    #             # Get latest status information
-    #             printer_data = client.get_printer_status()
-    #             job_data = client.get_job_status()
-    #
-    #             # Update our internal data
-    #             self._update_temperature_data(printer_data)
-    #             self._update_job_data(job_data)
-    #
-    #             # Update UI
-    #             self._update_temperature_displays()
-    #             self._update_print_info()
-    #             self._update_printer_status(printer_data.get("state", {}).get("text", "Unknown"))
-    #
-    #             # Update connection status
-    #             self._update_connection_status(True, client.get_ip_address())
-    #         else:
-    #             self._update_connection_status(False)
-
-    # def _update_temperature_data(self, printer_data):
-    #     """Update internal temperature data from printer status"""
-    #     if not printer_data or "temperature" not in printer_data:
-    #         return
-    #
-    #     temp_data = printer_data["temperature"]
-    #
-    #     # Update tool0 temperature
-    #     if "tool0" in temp_data:
-    #         self.temperature_data["tool0"]["actual"] = temp_data["tool0"]["actual"]
-    #         self.temperature_data["tool0"]["target"] = temp_data["tool0"]["target"]
-    #
-    #     # Update tool1 temperature
-    #     if "tool1" in temp_data:
-    #         self.temperature_data["tool1"]["actual"] = temp_data["tool1"]["actual"]
-    #         self.temperature_data["tool1"]["target"] = temp_data["tool1"]["target"]
-    #
-    #     # Update bed temperature
-    #     if "bed" in temp_data:
-    #         self.temperature_data["bed"]["actual"] = temp_data["bed"]["actual"]
-    #         self.temperature_data["bed"]["target"] = temp_data["bed"]["target"]
-
-    # def _update_job_data(self, job_data):
-    #     """Update internal job data from printer status"""
-    #     if not job_data:
-    #         return
-    #
-    #     # Update file name
-    #     if "file" in job_data and "name" in job_data["file"]:
-    #         self.current_file = job_data["file"]["name"]
-    #     else:
-    #         self.current_file = "No file selected"
-    #
-    #     # Update progress
-    #     if "progress" in job_data and "completion" in job_data["progress"]:
-    #         progress = job_data["progress"]["completion"]
-    #         self.print_progress = int(progress) if progress is not None else 0
-    #
-    #     # Update time information
-    #     if "progress" in job_data:
-    #         # Print time
-    #         if "printTime" in job_data["progress"]:
-    #             seconds = job_data["progress"]["printTime"] or 0
-    #             self.print_time = self._format_time(seconds)
-    #
-    #         # Time left
-    #         if "printTimeLeft" in job_data["progress"]:
-    #             seconds = job_data["progress"]["printTimeLeft"] or 0
-    #             self.time_left = self._format_time(seconds)
-
-    # def _format_time(self, seconds):
-    #     """Format seconds to HH:MM:SS"""
-    #     if seconds is None:
-    #         return "00:00:00"
-    #
-    #     hours = int(seconds // 3600)
-    #     minutes = int((seconds % 3600) // 60)
-    #     seconds = int(seconds % 60)
-    #     return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-
-    # def _update_temperature_displays(self):
-    #     """Update all temperature displays"""
-    #     # Tool 0
-    #     if self.tool0ActualTemperature and self.tool0TargetTemperature and self.tool0TempBar:
-    #         actual = self.temperature_data["tool0"]["actual"]
-    #         target = self.temperature_data["tool0"]["target"]
-    #
-    #         self.tool0ActualTemperature.setText(f"{actual:.1f}")
-    #         self.tool0TargetTemperature.setText(f"{target:.1f}")
-    #         self.tool0TempBar.setValue(min(int(actual), self.tool0TempBar.maximum()))
-    #
-    #     # Tool 1
-    #     if self.tool1ActualTemperature and self.tool1TargetTemperature and self.tool1TempBar:
-    #         actual = self.temperature_data["tool1"]["actual"]
-    #         target = self.temperature_data["tool1"]["target"]
-    #
-    #         self.tool1ActualTemperature.setText(f"{actual:.1f}")
-    #         self.tool1TargetTemperature.setText(f"{target:.1f}")
-    #         self.tool1TempBar.setValue(min(int(actual), self.tool1TempBar.maximum()))
-    #
-    #     # Bed
-    #     if self.bedActualTemperatute and self.bedTargetTemperature and self.bedTempBar:
-    #         actual = self.temperature_data["bed"]["actual"]
-    #         target = self.temperature_data["bed"]["target"]
-    #
-    #         self.bedActualTemperatute.setText(f"{actual:.1f}")
-    #         self.bedTargetTemperature.setText(f"{target:.1f}")
-    #         self.bedTempBar.setValue(min(int(actual), self.bedTempBar.maximum()))
-
-    # def _update_print_info(self):
-    #     """Update print job information"""
-    #     if self.fileName:
-    #         self.fileName.setText(self.current_file)
-    #
-    #     if self.printTime:
-    #         self.printTime.setText(self.print_time)
-    #
-    #     if self.timeLeft:
-    #         self.timeLeft.setText(self.time_left)
-    #
-    #     if self.printProgressBar:
-    #         self.printProgressBar.setValue(self.print_progress)
-
-    # def _update_printer_status(self, status_text):
-    #     """Update printer status display and indicator"""
-    #     if not self.printerStatus or not self.printerStatusColour:
-    #         return
-    #
-    #     self.printerStatus.setText(status_text)
-    #
-    #     # Set color based on status
-    #     if status_text.lower() in ["operational", "ready"]:
-    #         self.printerStatusColour.setStyleSheet(printer_status_green)
-    #     elif status_text.lower() in ["printing", "paused"]:
-    #         self.printerStatusColour.setStyleSheet(printer_status_amber)
-    #     else:
-    #         self.printerStatusColour.setStyleSheet(printer_status_red)
-
-    # def _update_connection_status(self, connected, ip_address=None):
-    #     """Update printer connection status"""
-    #     self.printer_connected = connected
-    #
-    #     if self.ipStatus:
-    #         if connected and ip_address:
-    #             self.ipStatus.setText(f"Connected: {ip_address}")
-    #         else:
-    #             self.ipStatus.setText("Not Connected")
-    #
-    #     # Disable controls when not connected
-    #     for button_name in ["doorLockButton", "playPauseButton", "stopButton"]:
-    #         button = self.all_components.get(button_name, {}).get("instance")
-    #         if button:
-    #             button.setEnabled(connected)
-
-    # Event handlers
-
     def toggle_door_lock(self):
         """Toggle printer door lock"""
         # if not self.printer_connected:
@@ -596,15 +438,45 @@ class HomeScreen(QWidget):
         """
         Sets the active extruder, and changes the UI accordingly
         """
-        logger.info("home_screen.setActiveExtruder started")
+        logger.info("home_screen.setActiveExtruder started with activeNozzle: {}".format(activeNozzle))
         try:
+            # Debug: Check if labels exist
+            logger.debug("tool0Label found: {}".format(self.tool0Label is not None))
+            logger.debug("tool1Label found: {}".format(self.tool1Label is not None))
+            
             if activeNozzle == 0:
-                self.tool0Label.setPixmap(QtGui.QPixmap("resources/img/activeNozzle.png"))
-                self.tool1Label.setPixmap(QtGui.QPixmap("resources/img/Nozzle.png"))
+                if self.tool0Label:
+                    pixmap = QtGui.QPixmap(":/img/icons/activeNozzle.png")
+                    if not pixmap.isNull():
+                        self.tool0Label.setPixmap(pixmap)
+                        logger.debug("Set tool0Label to activeNozzle.png")
+                    else:
+                        logger.error("Failed to load activeNozzle.png pixmap")
+                if self.tool1Label:
+                    pixmap = QtGui.QPixmap(":/img/icons/Nozzle.png")
+                    if not pixmap.isNull():
+                        self.tool1Label.setPixmap(pixmap)
+                        logger.debug("Set tool1Label to Nozzle.png")
+                    else:
+                        logger.error("Failed to load Nozzle.png pixmap")
             elif activeNozzle == 1:
-                self.tool0Label.setPixmap(QtGui.QPixmap(("resources/img/Nozzle.png")))
-                self.tool1Label.setPixmap(QtGui.QPixmap(("resources/img/activeNozzle.png")))
-                self.toolToggleChangeFilamentButton.setChecked(True)
+                if self.tool0Label:
+                    pixmap = QtGui.QPixmap(":/img/icons/Nozzle.png")
+                    if not pixmap.isNull():
+                        self.tool0Label.setPixmap(pixmap)
+                        logger.debug("Set tool0Label to Nozzle.png")
+                    else:
+                        logger.error("Failed to load Nozzle.png pixmap")
+                if self.tool1Label:
+                    pixmap = QtGui.QPixmap(":/img/icons/activeNozzle.png")
+                    if not pixmap.isNull():
+                        self.tool1Label.setPixmap(pixmap)
+                        logger.debug("Set tool1Label to activeNozzle.png")
+                    else:
+                        logger.error("Failed to load activeNozzle.png pixmap")
+                # Note: toolToggleChangeFilamentButton is not defined in this screen
+                # if hasattr(self, 'toolToggleChangeFilamentButton'):
+                #     self.toolToggleChangeFilamentButton.setChecked(True)
         except Exception as e:
             logger.error("Error in MainUiClass.setActiveExtruder: {}".format(e))
             dialog.WarningOk(self, "Error in home_screen.setActiveExtruder: {}".format(e), overlay=True)

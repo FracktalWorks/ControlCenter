@@ -51,8 +51,6 @@ class PrinterModel(QObject):
         self.print_time = 0
         self.print_time_left = 0
         self.updateData = {}
-        
-        
         self.filaments = config.filaments
         self.calibrationPosition = config.calibrationPosition
         self.tool0PurgePosition = config.tool0PurgePosition

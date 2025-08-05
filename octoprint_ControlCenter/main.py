@@ -3,6 +3,7 @@ import os
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
 from ui.main_window import MainWindow
+from controller.main_controller import MainController
 from utils.logger import get_logger
 
 def main():
@@ -13,9 +14,8 @@ def main():
     try:
         app = QApplication(sys.argv)
         logger.info("QApplication initialized")
-        window = MainWindow()
-        logger.info("Main window created")
-        window.show()
+        controller = MainController()
+        controller.start()
         logger.info("Main window displayed")
         exit_code = app.exec_()
         logger.info(f"Application exiting with code {exit_code}")
