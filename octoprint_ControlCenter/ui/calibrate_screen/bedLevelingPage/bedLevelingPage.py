@@ -1,3 +1,4 @@
+import os
 from PyQt5 import uic, QtGui
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget
 from utils.helpers import check_ui_elements
@@ -20,9 +21,9 @@ class BedLeveling(QWidget):
         self.logger.info("Initializing Bed Leveling screen")
 
         try:
-            uic.loadUi(
-                '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/calibrate_screen/bedLevelingPage/bedLevelingPage.ui',
-                self)
+            # Use relative path from the current module's directory
+            ui_file_path = os.path.join(os.path.dirname(__file__), "bedLevelingPage.ui")
+            uic.loadUi(ui_file_path, self)
             self.logger.info("BedLeveling UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load BedLeveling UI file: {e}")
@@ -138,7 +139,7 @@ class BedLeveling(QWidget):
             )
             self.main_window.octoprint_client.jog(z=0, absolute=True, speed=1500)
             self.movie1 = QtGui.QMovie(
-                "/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/resources/img/Calibration/CalibrationPoint1.gif"
+                os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "CalibrationPoint1.gif")
             )
             self.CalibrationPoint1.setMovie(self.movie1)
             self.movie1.start()
@@ -166,7 +167,7 @@ class BedLeveling(QWidget):
             self.main_window.octoprint_client.jog(z=0, absolute=True, speed=1500)
             self.movie1.stop()
             self.movie2 = QtGui.QMovie(
-                "/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/resources/img/Calibration/CalibrationPoint2.gif"
+                os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "CalibrationPoint2.gif")
             )
             self.CalibrationPoint2.setMovie(self.movie2)
             self.movie2.start()
@@ -197,7 +198,7 @@ class BedLeveling(QWidget):
             self.main_window.octoprint_client.jog(z=0, absolute=True, speed=1500)
             self.movie2.stop()
             self.movie3 = QtGui.QMovie(
-                "/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/resources/img/Calibration/CalibrationPoint3.gif"
+                os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "CalibrationPoint3.gif")
             )
             self.CalibrationPoint3.setMovie(self.movie3)
             self.movie3.start()

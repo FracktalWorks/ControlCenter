@@ -1,3 +1,4 @@
+import os
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QDoubleSpinBox, QLabel
 from PyQt5.QtGui import QPalette, QColor
@@ -5,7 +6,7 @@ from utils.helpers import check_ui_elements
 from utils.logger import get_logger
 from utils import dialog
 
-
+logger = get_logger(__name__)
 
 
 class NozzleOffsetPage(QWidget):
@@ -25,9 +26,9 @@ class NozzleOffsetPage(QWidget):
 
         # Load the UI
         try:
-            uic.loadUi(
-                '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/calibrate_screen/nozzleOffsetPage/nozzleOffsetPage.ui',
-                self)
+            # Use relative path from the current module's directory
+            ui_file_path = os.path.join(os.path.dirname(__file__), "nozzleOffsetPage.ui")
+            uic.loadUi(ui_file_path, self)
             self.logger.info("NozzleOffsetPage UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load NozzleOffsetPage UI file: {e}", exc_info=True)

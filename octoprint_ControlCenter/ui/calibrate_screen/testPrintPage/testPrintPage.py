@@ -1,3 +1,4 @@
+import os
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QComboBox
 from utils.helpers import check_ui_elements
@@ -6,7 +7,7 @@ from utils import dialog
 
 from octoprint_client.octoprint_threaded_file_upload import ThreadFileUpload
 
-
+logger = get_logger(__name__)
 
 
 class TestPrintPage(QWidget):
@@ -24,9 +25,9 @@ class TestPrintPage(QWidget):
         # Load the UI
         """Load the UI file with proper error handling"""
         try:
-            uic.loadUi(
-                '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/calibrate_screen/testPrintPage/testPrintPage.ui',
-                self)
+            # Use relative path from the current module's directory
+            ui_file_path = os.path.join(os.path.dirname(__file__), "testPrintPage.ui")
+            uic.loadUi(ui_file_path, self)
             self.logger.info("TestPrintPage UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load TestPrintPage UI file: {e}", exc_info=True)
@@ -170,26 +171,24 @@ class TestPrintPage(QWidget):
         """
         logger.info("MainUiClass.testPrint started")
         try:
+            # Base path for gcode files relative to the module
+            gcode_base_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "gcode")
+            
             if gcode is 'bedLevel':
-                self.printFromPath(
-                    '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/gcode/' + tool0Diameter + '_BedLeveling.gcode',
-                    True)
+                gcode_file = os.path.join(gcode_base_path, f'{tool0Diameter}_BedLeveling.gcode')
+                self.printFromPath(gcode_file, True)
             elif gcode is 'dualCalibration':
-                self.printFromPath(
-                    '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/gcode/' + tool0Diameter + '_' + tool1Diameter + '_dual_extruder_calibration_TwinDragon600.gcode',
-                    True)
+                gcode_file = os.path.join(gcode_base_path, f'{tool0Diameter}_{tool1Diameter}_dual_extruder_calibration_TwinDragon600.gcode')
+                self.printFromPath(gcode_file, True)
             elif gcode is 'movementTest':
-                self.printFromPath(
-                    '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/gcode/movementTest.gcode',
-                    True)
+                gcode_file = os.path.join(gcode_base_path, 'movementTest.gcode')
+                self.printFromPath(gcode_file, True)
             elif gcode is 'dualTest':
-                self.printFromPath(
-                    '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/gcode/' + tool0Diameter + '_' + tool1Diameter + '_Fracktal_logo_TwinDragon600.gcode',
-                    True)
+                gcode_file = os.path.join(gcode_base_path, f'{tool0Diameter}_{tool1Diameter}_Fracktal_logo_TwinDragon600.gcode')
+                self.printFromPath(gcode_file, True)
             elif gcode is 'singleTest':
-                self.printFromPath(
-                    '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/gcode/' + tool0Diameter + '_Fracktal_logo_Idex.gcode',
-                    True)
+                gcode_file = os.path.join(gcode_base_path, f'{tool0Diameter}_Fracktal_logo_Idex.gcode')
+                self.printFromPath(gcode_file, True)
 
             else:
                 print("gcode not found")

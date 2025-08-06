@@ -1,3 +1,4 @@
+import os
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QDoubleSpinBox, QStackedWidget
 from PyQt5.QtGui import QPalette, QColor
@@ -22,7 +23,9 @@ class ToolOffset(QWidget):
 
         # Load the UI
         try:
-            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/calibrate_screen/toolOffset/toolOffset.ui', self)
+            # Use relative path from the current module's directory
+            ui_file_path = os.path.join(os.path.dirname(__file__), "toolOffset.ui")
+            uic.loadUi(ui_file_path, self)
             self.logger.info("ToolOffset UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load ToolOffset UI file: {e}")

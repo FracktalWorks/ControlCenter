@@ -1,3 +1,4 @@
+import os
 from PyQt5 import uic, QtGui, QtCore
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QListWidget, QLabel, QToolButton
 from utils.helpers import check_ui_elements
@@ -30,9 +31,9 @@ class PrintFromLocation(QWidget):
 
         # Load the UI file with proper error handling
         try:
-            uic.loadUi(
-                '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/print_from_location/print_from_location.ui',
-                self)
+            # Use relative path from the current module's directory
+            ui_file_path = os.path.join(os.path.dirname(__file__), "print_from_location.ui")
+            uic.loadUi(ui_file_path, self)
             self.logger.info("PrintFromLocation UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load PrintFromLocation UI file: {e}")
@@ -379,7 +380,11 @@ class PrintFromLocation(QWidget):
                 pixmap.loadFromData(img)
                 labelObject.setPixmap(pixmap)
             else:
-                labelObject.setPixmap(QtGui.QPixmap(_fromUtf8("templates/img/thumbnail.png")))
+                # Use relative path for thumbnail image
+                thumbnail_path = os.path.join(os.path.dirname(__file__), "..", "resources", "img", "thumbnail.png")
+                labelObject.setPixmap(QtGui.QPixmap(_fromUtf8(thumbnail_path)))
         except Exception as e:
-            labelObject.setPixmap(QtGui.QPixmap(_fromUtf8("templates/img/thumbnail.png")))
+            # Use relative path for thumbnail image
+            thumbnail_path = os.path.join(os.path.dirname(__file__), "..", "resources", "img", "thumbnail.png")
+            labelObject.setPixmap(QtGui.QPixmap(_fromUtf8(thumbnail_path)))
             self.logger.error("Error in MainUiClass.displayThumbnail: {}".format(e))

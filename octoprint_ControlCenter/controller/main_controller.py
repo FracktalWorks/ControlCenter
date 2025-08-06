@@ -65,7 +65,7 @@ class ThreadConnectionCheck(QtCore.QThread):
                 
                 # Update progress based on time elapsed
                 progress = min(20 + (uptime * 40 / 60), 60)  # Progress from 20% to 60% over 60 seconds
-                self.progress_signal.emit(int(progress), f"Connecting Hardware... )")
+                self.progress_signal.emit(int(progress), f"Connecting Hardware...")
                 # Attempt to connect to OctoPrint
                 octoprint_singleton.initialize(self.ip, self.api_key)
                 

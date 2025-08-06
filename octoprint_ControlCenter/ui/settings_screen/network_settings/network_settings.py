@@ -1,3 +1,4 @@
+import os
 from PyQt5 import QtGui, QtCore
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -39,9 +40,9 @@ class NetworkSettings(QWidget):
 
         # Load the UI
         try:
-            uic.loadUi(
-                '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen/network_settings/network_settings.ui',
-                self)
+            # Use relative path from the current module's directory
+            ui_file_path = os.path.join(os.path.dirname(__file__), "network_settings.ui")
+            uic.loadUi(ui_file_path, self)
             self.logger.info("NetworkSettings UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load NetworkSettings UI file: {e}")

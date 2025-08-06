@@ -1,4 +1,5 @@
 
+import os
 import time
 from PyQt5 import uic, QtCore
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QComboBox, QProgressBar, QLabel
@@ -37,9 +38,9 @@ class ChangeFilament(QWidget):
 
         # Load UI
         try:
-            uic.loadUi(
-                '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/control_screen/changeFilament/changeFilament.ui',
-                self)
+            # Use relative path from the current module's directory
+            ui_file_path = os.path.join(os.path.dirname(__file__), "changeFilament.ui")
+            uic.loadUi(ui_file_path, self)
             self.logger.info("ChangeFilament UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load ChangeFilament UI file: {e}", exc_info=True)

@@ -107,8 +107,8 @@ class MainWindow(QMainWindow):
         self.menu_screen.menuFilamentNozzleButton.setDisabled(True)
 
         # Check for software update related buttons
-        self.settings_screen.softwareUpdateBackButton.setDisabled(True)
-        self.settings_screen.performUpdateButton.setDisabled(True)
+        # self.settings_screen.softwareUpdateBackButton.setDisabled(True)
+        # self.settings_screen.performUpdateButton.setDisabled(True)
 
         # Switch to the home screen initially
         self.switch_to_home_screen()
@@ -162,10 +162,12 @@ class MainWindow(QMainWindow):
         self.menu_screen.menuControlButton.setEnabled(True)
         self.menu_screen.menuPrintButton.setEnabled(True)
         self.menu_screen.menuCalibrateButton.setEnabled(True)
+        self.menu_screen.menuFilamentNozzleButton.setEnabled(True)
+
 
         # Check for software update related buttons
-        self.settings_screen.softwareUpdateBackButton.setEnabled(True)
-        self.settings_screen.performUpdateButton.setEnabled(True)
+        # self.settings_screen.softwareUpdateBackButton.setEnabled(True)
+        # self.settings_screen.performUpdateButton.setEnabled(True)
 
         # Check for filament sensor toggle
         self.control_screen.toggleFilamentSensorButton.setEnabled(True)

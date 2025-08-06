@@ -20,9 +20,9 @@ class SettingsScreen(QWidget):
 
         # Load the UI with proper error handling
         try:
-            uic.loadUi(
-                '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen/settings_screen.ui',
-                self)
+            # Use relative path from the current module's directory
+            ui_file_path = os.path.join(os.path.dirname(__file__), "settings_screen.ui")
+            uic.loadUi(ui_file_path, self)
             self.logger.info("Settings screen UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load settings screen UI file: {e}")
@@ -124,7 +124,8 @@ class SettingsScreen(QWidget):
             self.logger.error("Cannot load settings widgets: stackedWidget or verticalLayout is missing")
             return
 
-        settings_folder = '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen/'
+        # Use relative path from current module directory
+        settings_folder = os.path.dirname(__file__)
         try:
             for subfolder in os.listdir(settings_folder):
                 subfolder_path = os.path.join(settings_folder, subfolder)

@@ -28,7 +28,7 @@ class MenuScreen(QWidget):
         self.menuPrintButton = self.findChild(QToolButton, "menuPrintButton")
         self.menuControlButton = self.findChild(QToolButton, "menuControlButton")
         self.menuCalibrateButton = self.findChild(QToolButton, "menuCalibrateButton")
-        self.menuCartButton = self.findChild(QToolButton, "menuCartButton")
+        self.menuFilamentNozzleButton = self.findChild(QToolButton, "menuFilamentNozzleButton")
         self.menuSettingsButton = self.findChild(QToolButton, "menuSettingsButton")
         
         # Basic navigation buttons
@@ -39,7 +39,7 @@ class MenuScreen(QWidget):
             self.menuPrintButton,
             self.menuControlButton, 
             self.menuCalibrateButton,
-            self.menuCartButton,
+            self.menuFilamentNozzleButton,
             self.menuSettingsButton,
             self.menuBackButton
         ]
@@ -58,9 +58,9 @@ class MenuScreen(QWidget):
             self.menuCalibrateButton.clicked.connect(self.open_calibrate)
             self.logger.debug("Connected menuCalibrateButton to handler")
             
-        if self.menuCartButton:
-            self.menuCartButton.clicked.connect(self.open_cart)
-            self.logger.debug("Connected menuCartButton to handler")
+        if self.menuFilamentNozzleButton:
+            self.menuFilamentNozzleButton.clicked.connect(self.open_menuFilamentNozzle)
+            self.logger.debug("Connected menuFilamentNozzleButton to handler")
             
         if self.menuSettingsButton:
             self.menuSettingsButton.clicked.connect(self.open_settings)
@@ -85,8 +85,8 @@ class MenuScreen(QWidget):
         self.main_window.switch_to_calibrate_screen()
         self.logger.info("Calibrate button clicked")
 
-    def open_cart(self):
-        """Placeholder for open cart logic"""
+    def open_menuFilamentNozzle(self):
+        """Placeholder for open menuFilamentNozzle logic"""
         self.logger.info("Cart button clicked")
 
     def open_settings(self):

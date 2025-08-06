@@ -1,3 +1,4 @@
+import os
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from functools import partial
 
@@ -15,7 +16,9 @@ class Keyboard(QtWidgets.QDialog):
         super(Keyboard, self).__init__(parent)
 
         # Load the UI directly from the .ui file
-        uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/win_keyboard.ui', self)
+        # Use relative path from the current module's directory
+        ui_file_path = os.path.join(os.path.dirname(__file__), "..", "win_keyboard.ui")
+        uic.loadUi(ui_file_path, self)
 
         self.setAlphaUpperState(False)
 

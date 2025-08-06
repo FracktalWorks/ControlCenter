@@ -1,3 +1,4 @@
+import os
 from PyQt5 import uic, QtGui, QtCore
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel
 from utils.helpers import check_ui_elements
@@ -19,7 +20,9 @@ class IdexLevelCalibration(QWidget):
 
         # Load the .ui file
         try:
-            uic.loadUi('/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/calibrate_screen/idexLevelCalibration/idexLevelCalibration.ui', self)
+            # Use relative path from the current module's directory
+            ui_file_path = os.path.join(os.path.dirname(__file__), "idexLevelCalibration.ui")
+            uic.loadUi(ui_file_path, self)
             self.logger.info("IdexLevelCalibration UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load IdexLevelCalibration UI file: {e}")
@@ -149,7 +152,7 @@ class IdexLevelCalibration(QWidget):
             self.main_window.octoprint_client.gcode(command='M420 S0')  # Dissable mesh bed leveling for good measure
             self.stackedWidget.setCurrentWidget(self.idexConfigStep1Page)
             self.movie5 = QtGui.QMovie(
-                "/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/resources/img/Calibration/Nozzlelevel1.gif"
+                os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "Nozzlelevel1.gif")
             )
             self.Nozzlelevel1.setMovie(self.movie5)
             self.movie5.start()
@@ -177,7 +180,7 @@ class IdexLevelCalibration(QWidget):
             self.main_window.octoprint_client.jog(z=0, absolute=True, speed=1500)
             self.movie5.stop()
             self.movie6 = QtGui.QMovie(
-                "/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/resources/img/Calibration/CalibrationPoint1.gif"
+                os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "CalibrationPoint1.gif")
             )
             self.CalibrationPoint1_2.setMovie(self.movie6)
             self.movie6.start()
@@ -206,7 +209,7 @@ class IdexLevelCalibration(QWidget):
             self.main_window.octoprint_client.jog(z=0, absolute=True, speed=1500)
             self.movie6.stop()
             self.movie7 = QtGui.QMovie(
-                "/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/resources/img/Calibration/CalibrationPoint2.gif"
+                os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "CalibrationPoint2.gif")
             )
             self.CalibrationPoint2_2.setMovie(self.movie7)
             self.movie7.start()
@@ -236,7 +239,7 @@ class IdexLevelCalibration(QWidget):
             )
             self.movie7.stop()
             self.movie8 = QtGui.QMovie(
-                "/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/resources/img/Calibration/NozzleLevelNew1.gif"
+                os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "NozzleLevelNew1.gif")
             )
             self.CalibrationPoint3.setMovie(self.movie8)
             self.movie8.start()
@@ -260,7 +263,7 @@ class IdexLevelCalibration(QWidget):
             self.main_window.octoprint_client.jog(z=1, absolute=True, speed=10000)
             self.movie8.stop()
             self.movie9 = QtGui.QMovie(
-                "/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/resources/img/Calibration/NozzlelevelNew2.gif"
+                os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "NozzlelevelNew2.gif")
             )
             self.Nozzlelevel2.setMovie(self.movie9)
             self.movie9.start()

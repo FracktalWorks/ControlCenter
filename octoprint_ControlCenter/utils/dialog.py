@@ -1,3 +1,4 @@
+import textwrap
 from utils import styles
 
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -9,7 +10,32 @@ except AttributeError:
         return s
 
 
-def font(size=14, weight=50, bold=False, underline=False, strikeout=False):
+def format_text_for_dialog(text, max_line_length=60):
+    """
+    Format text for better display in dialog boxes by:
+    - Wrapping long lines
+    - Preserving intentional line breaks
+    - Limiting line length for better readability
+    """
+    if not text:
+        return text
+    
+    # Split by existing line breaks first
+    paragraphs = text.split('\n')
+    formatted_paragraphs = []
+    
+    for paragraph in paragraphs:
+        if paragraph.strip():  # Non-empty paragraph
+            # Wrap the paragraph to max line length
+            wrapped = textwrap.fill(paragraph.strip(), width=max_line_length)
+            formatted_paragraphs.append(wrapped)
+        else:  # Empty line (preserve spacing)
+            formatted_paragraphs.append('')
+    
+    return '\n'.join(formatted_paragraphs)
+
+
+def font(size=12, weight=50, bold=False, underline=False, strikeout=False):  # Reduced default from 14 to 12
     font = QtGui.QFont()
     # QtGui.QInputMethodEvent
     font.setFamily(_fromUtf8("Gotham"))
@@ -67,12 +93,33 @@ class SelfCenteringMessageBox(QtWidgets.QMessageBox):
             objLabel.setStyleSheet(styles.msgbox_label)
             objLabel.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
             objLabel.setMinimumSize(350, 120)
+            objLabel.setMaximumSize(500, 300)  # Set maximum size to prevent overly wide dialogs
+            objLabel.setWordWrap(True)  # Enable word wrapping
+            objLabel.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+            
+            # If text is very long, add scroll area
+            text_length = len(objLabel.text())
+            if text_length > 500:  # Threshold for very long text
+                objLabel.setMaximumSize(500, 250)  # Reduce height for scroll
+                
+        # Set size policy for the message box itself to allow proper resizing
+        self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
 
     def setLocalIcon(self, icon=None):
         if icon:
             self.setIconPixmap(QtGui.QPixmap(_fromUtf8("templates/img/" + icon)).scaled(40, 40))
 
     def show(self):
+        # Apply label settings just before showing, in case the label wasn't found during init
+        objLabel = self.findChild(QtWidgets.QLabel, 'qt_msgbox_label')
+        if objLabel:
+            objLabel.setStyleSheet(styles.msgbox_label)
+            objLabel.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+            objLabel.setMinimumSize(350, 120)
+            objLabel.setMaximumSize(500, 300)
+            objLabel.setWordWrap(True)
+            objLabel.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+        
         if self._showOverlay:
             self.overlay.show()
         super(SelfCenteringMessageBox, self).show()
@@ -92,11 +139,16 @@ class SelfCenteringMessageBox(QtWidgets.QMessageBox):
 
 
 def dialog(parent, text, **kwargs):
-    fontSize = kwargs.get('fontSize', 14)
+    fontSize = kwargs.get('fontSize', 12)  # Reduced default font size from 14 to 12
     icon = kwargs.get('icon', None)
     buttons = kwargs.get('buttons', QtWidgets.QMessageBox.Ok)
     geometry = kwargs.get('geometry', None)
     overlay = kwargs.get('overlay', False)
+    format_text = kwargs.get('format_text', True)  # Option to enable/disable text formatting
+
+    # Format the text for better display if enabled
+    if format_text:
+        text = format_text_for_dialog(text)
 
     choice = SelfCenteringMessageBox(parent)  # QtWidgets.QMessageBox()
     choice.setFont(font(fontSize))

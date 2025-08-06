@@ -71,13 +71,21 @@ bar_heater_heating = _fromUtf8("""
 """)
 
 msgbox = _fromUtf8("""
+    QMessageBox {
+        background-color: rgb(240, 240, 240);
+        border: 2px solid rgb(87, 87, 87);
+        border-radius: 10px;
+        min-width: 350px;
+        max-width: 500px;
+    }
+    
     QPushButton {
         border: 1px solid rgb(87, 87, 87);
         background-color: qlineargradient(spread: pad, x1: 0, y1: 1, x2: 0, y2: 0.188, stop: 0 rgba(180, 180, 180, 255), stop: 1 rgba(255, 255, 255, 255));
         height: 50px;
         width: 100px;
         border-radius: 5px;
-        font: 14pt "Gotham";
+        font: 12pt "Gotham";
     }
 
     QPushButton: pressed {
@@ -104,4 +112,10 @@ msgbox_label = _fromUtf8("""
     margin-top: 5px;
     margin-bottom: 5px;
     margin-right: 10px;
+    font-size: 12pt;
+    font-family: "Gotham";
+    padding: 8px;
+    line-height: 1.4;
+    color: rgb(50, 50, 50);
+    background-color: transparent;
 """)

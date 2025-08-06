@@ -1,3 +1,4 @@
+import os
 from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QStackedWidget
 from PyQt5 import uic
 from utils.helpers import check_ui_elements
@@ -22,9 +23,9 @@ class CalibrateScreen(QWidget):
 
         # Load the UI
         try:
-            uic.loadUi(
-                "/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/calibrate_screen/calibrate_screen.ui",
-                self)
+            # Use relative path from the current module's directory
+            ui_file_path = os.path.join(os.path.dirname(__file__), "calibrate_screen.ui")
+            uic.loadUi(ui_file_path, self)
             self.logger.info("CalibrateScreen UI loaded successfully")
         except Exception as e:
             self.logger.exception(f"Failed to load CalibrateScreen UI file: {e}")

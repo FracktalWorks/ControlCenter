@@ -1,5 +1,7 @@
-from PyQt5 import uic, QtCore
+import os
+from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QListWidget, QTextEdit
+from PyQt5.QtCore import Qt
 from utils.helpers import check_ui_elements
 from utils import dialog
 from utils.logger import get_logger
@@ -22,11 +24,12 @@ class SoftwareUpdate(QWidget):
 
         # Load the UI
         try:
-            uic.loadUi(
-                '/home/pi/OctoPrint/venv/lib/python3.7/site-packages/octoprint_ControlCenter/ui/settings_screen/software_update/software_update.ui',
-                self)
+            # Use relative path from the current module's directory
+            ui_file_path = os.path.join(os.path.dirname(__file__), "software_update.ui")
+            uic.loadUi(ui_file_path, self)
             self.logger.info("SoftwareUpdate UI loaded successfully")
         except Exception as e:
+            self.logger.error(f"Failed to load SoftwareUpdate UI file: {e}")
             self.logger.error(f"Failed to load SoftwareUpdate UI file: {e}")
 
         # Initialize UI components
@@ -120,7 +123,7 @@ class SoftwareUpdate(QWidget):
         self.logger.info("MainUiClass.softwareUpdateProgress started")
         try:
             self.stackedWidget.setCurrentWidget(self.softwareUpdateProgressPage)
-            self.logTextEdit.setTextColor(QtCore.Qt.red)
+            self.logTextEdit.setTextColor(Qt.red)
             self.logTextEdit.append("---------------------------------------------------------------\n"
                                     "Updating " + data["name"] + " to " + data["version"] + "\n"
                                                                                             "---------------------------------------------------------------")
@@ -131,7 +134,7 @@ class SoftwareUpdate(QWidget):
     def softwareUpdateProgressLog(self, data):
         self.logger.info("MainUiClass.softwareUpdateProgressLog started")
         try:
-            self.logTextEdit.setTextColor(QtCore.Qt.white)
+            self.logTextEdit.setTextColor(Qt.white)
             for line in data:
                 self.logTextEdit.append(line["line"])
 

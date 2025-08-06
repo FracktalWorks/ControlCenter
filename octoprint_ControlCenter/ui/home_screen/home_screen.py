@@ -12,6 +12,7 @@ from utils.network_utils import getIP
 
 from utils.helpers import run_async
 import time
+import ui.resources.resource_rc  # Import resources for Qt resource system
 
 
 logger = get_logger(__name__)
@@ -446,14 +447,14 @@ class HomeScreen(QWidget):
             
             if activeNozzle == 0:
                 if self.tool0Label:
-                    pixmap = QtGui.QPixmap(":/img/icons/activeNozzle.png")
+                    pixmap = QtGui.QPixmap(":/Icons/img/icons/activeNozzle.png")
                     if not pixmap.isNull():
                         self.tool0Label.setPixmap(pixmap)
                         logger.debug("Set tool0Label to activeNozzle.png")
                     else:
                         logger.error("Failed to load activeNozzle.png pixmap")
                 if self.tool1Label:
-                    pixmap = QtGui.QPixmap(":/img/icons/Nozzle.png")
+                    pixmap = QtGui.QPixmap(":/Icons/img/icons/Nozzle.png")
                     if not pixmap.isNull():
                         self.tool1Label.setPixmap(pixmap)
                         logger.debug("Set tool1Label to Nozzle.png")
@@ -461,14 +462,14 @@ class HomeScreen(QWidget):
                         logger.error("Failed to load Nozzle.png pixmap")
             elif activeNozzle == 1:
                 if self.tool0Label:
-                    pixmap = QtGui.QPixmap(":/img/icons/Nozzle.png")
+                    pixmap = QtGui.QPixmap(":/Icons/img/icons/Nozzle.png")
                     if not pixmap.isNull():
                         self.tool0Label.setPixmap(pixmap)
                         logger.debug("Set tool0Label to Nozzle.png")
                     else:
                         logger.error("Failed to load Nozzle.png pixmap")
                 if self.tool1Label:
-                    pixmap = QtGui.QPixmap(":/img/icons/activeNozzle.png")
+                    pixmap = QtGui.QPixmap(":/Icons/img/icons/activeNozzle.png")
                     if not pixmap.isNull():
                         self.tool1Label.setPixmap(pixmap)
                         logger.debug("Set tool1Label to activeNozzle.png")
