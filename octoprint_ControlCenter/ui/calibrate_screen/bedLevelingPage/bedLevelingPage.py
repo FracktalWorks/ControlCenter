@@ -106,7 +106,7 @@ class BedLeveling(QWidget):
         goes to position where leveling screws can be opened
         :return:
         """
-        self.logger.info("MainUiClass.quickStep1 started")
+        self.logger.info("BedLeveling.quickStep1 started")
         try:
             self.toolZOffsetCaliberationPageCount = 0
             self.main_window.octoprint_client.gcode(command='M104 S200')
@@ -121,15 +121,15 @@ class BedLeveling(QWidget):
             self.main_window.octoprint_client.gcode(command='T0')
             self.main_window.octoprint_client.jog(x=40, y=40, absolute=True, speed=2000)
         except Exception as e:
-            self.logger.error("Error in MainUiClass.quickStep1: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.quickStep1: {}".format(e), overlay=True)
+            self.logger.error("Error in BedLeveling.quickStep1: {}".format(e))
+            dialog.WarningOk(self, "Error in BedLeveling.quickStep1: {}".format(e), overlay=True)
 
     def quickStep2(self):
         """
         levels first position (RIGHT)
         :return:
         """
-        self.logger.info("MainUiClass.quickStep2 started")
+        self.logger.info("BedLeveling.quickStep2 started")
         try:
             self.stackedWidget.setCurrentWidget(self.quickStep2Page)
             self.main_window.octoprint_client.jog(
@@ -144,8 +144,8 @@ class BedLeveling(QWidget):
             self.CalibrationPoint1.setMovie(self.movie1)
             self.movie1.start()
         except Exception as e:
-            self.logger.error("Error in MainUiClass.quickStep2: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.quickStep2: {}".format(e), overlay=True)
+            self.logger.error("Error in BedLeveling.quickStep2: {}".format(e))
+            dialog.WarningOk(self, "Error in BedLeveling.quickStep2: {}".format(e), overlay=True)
             try:
                 self.movie1.stop()
             except:
@@ -155,7 +155,7 @@ class BedLeveling(QWidget):
         """
         levels second leveling position (LEFT)
         """
-        self.logger.info("MainUiClass.quickStep3 started")
+        self.logger.info("BedLeveling.quickStep3 started")
         try:
             self.stackedWidget.setCurrentWidget(self.quickStep3Page)
             self.main_window.octoprint_client.jog(z=10, absolute=True, speed=1500)
@@ -172,8 +172,8 @@ class BedLeveling(QWidget):
             self.CalibrationPoint2.setMovie(self.movie2)
             self.movie2.start()
         except Exception as e:
-            self.logger.error("Error in MainUiClass.quickStep3: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.quickStep3: {}".format(e), overlay=True)
+            self.logger.error("Error in BedLeveling.quickStep3: {}".format(e))
+            dialog.WarningOk(self, "Error in BedLeveling.quickStep3: {}".format(e), overlay=True)
             try:
                 self.movie1.stop()
                 self.movie2.stop()
@@ -185,7 +185,7 @@ class BedLeveling(QWidget):
         levels third leveling position  (BACK)
         :return:
         """
-        self.logger.info("MainUiClass.quickStep4 started")
+        self.logger.info("BedLeveling.quickStep4 started")
         try:
             # sent twice for some reason
             self.stackedWidget.setCurrentWidget(self.quickStep4Page)
@@ -203,8 +203,8 @@ class BedLeveling(QWidget):
             self.CalibrationPoint3.setMovie(self.movie3)
             self.movie3.start()
         except Exception as e:
-            self.logger.error("Error in MainUiClass.quickStep4: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.quickStep4: {}".format(e), overlay=True)
+            self.logger.error("Error in BedLeveling.quickStep4: {}".format(e))
+            dialog.WarningOk(self, "Error in BedLeveling.quickStep4: {}".format(e), overlay=True)
             try:
                 self.movie2.stop()
                 self.movie3.stop()
@@ -212,7 +212,7 @@ class BedLeveling(QWidget):
                 pass
 
     def nozzleHeightStep1(self):
-        self.logger.info("MainUiClass.nozzleHeightStep1 started")
+        self.logger.info("BedLeveling.nozzleHeightStep1 started")
         try:
             self.movie3.stop()
             if self.toolZOffsetCaliberationPageCount == 0:
@@ -242,8 +242,8 @@ class BedLeveling(QWidget):
             else:
                 self.doneStep()
         except Exception as e:
-            self.logger.error("Error in MainUiClass.nozzleHeightStep1: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.nozzleHeightStep1: {}".format(e), overlay=True)
+            self.logger.error("Error in BedLeveling.nozzleHeightStep1: {}".format(e))
+            dialog.WarningOk(self, "Error in BedLeveling.nozzleHeightStep1: {}".format(e), overlay=True)
             try:
                 self.movie1.stop()
                 self.movie2.stop()
@@ -256,7 +256,7 @@ class BedLeveling(QWidget):
         Exits leveling
         :return:
         """
-        self.logger.info("MainUiClass.doneStep started")
+        self.logger.info("BedLeveling.doneStep started")
         try:
             self.setNewToolZOffsetFromCurrentZBool = True
             self.main_window.octoprint_client.gcode(command='M114') #setZToolOffset ill set the new tool offset once M114 gives the current Z position from the websocket response
@@ -272,8 +272,8 @@ class BedLeveling(QWidget):
             self.main_window.octoprint_client.gcode(
                 command='M500')  # store eeprom settings to get Z home offset, mesh bed leveling back
         except Exception as e:
-            self.logger.error("Error in MainUiClass.doneStep: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.doneStep: {}".format(e), overlay=True)
+            self.logger.error("Error in BedLeveling.doneStep: {}".format(e))
+            dialog.WarningOk(self, "Error in BedLeveling.doneStep: {}".format(e), overlay=True)
             try:
                 self.movie1.stop()
                 self.movie2.stop()
@@ -282,7 +282,7 @@ class BedLeveling(QWidget):
                 pass
 
     def cancelStep(self):
-        self.logger.info("MainUiClass.cancelStep started")
+        self.logger.info("BedLeveling.cancelStep started")
         try:
             self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
                 self.main_window.calibrate_screen.main_calibrate_page)
@@ -298,8 +298,8 @@ class BedLeveling(QWidget):
                 pass
         except Exception as e:
             # self._return_to_main_calibration()
-            self.logger.error("Error in MainUiClass.cancelStep: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.cancelStep: {}".format(e), overlay=True)
+            self.logger.error("Error in BedLeveling.cancelStep: {}".format(e))
+            dialog.WarningOk(self, "Error in BedLeveling.cancelStep: {}".format(e), overlay=True)
             try:
                 self.movie1.stop()
                 self.movie2.stop()
@@ -364,7 +364,7 @@ class BedLeveling(QWidget):
 
         #TODO can make this simpler, asset the offset value to string float to begin with instead of doing confitionals
         """
-        logger.info("MainUiClass.setZToolOffset started")
+        logger.info("BedLeveling.setZToolOffset started")
         self.currentZPosition = offset  # gets the current z position, used to set new tool offsets.
         try:
             if self.setNewToolZOffsetFromCurrentZBool:
@@ -378,5 +378,5 @@ class BedLeveling(QWidget):
                 self.setNewToolZOffsetFromCurrentZBool = False
                 self.main_window.octoprint_client.gcode(command='SAVE_CONFIG')  # store eeprom settings to get Z home offset
         except Exception as e:
-            logger.error("Error in MainUiClass.setZToolOffset: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.setZToolOffset: {}".format(e), overlay=True)
+            logger.error("Error in BedLeveling.setZToolOffset: {}".format(e))
+            dialog.WarningOk(self, "Error in BedLeveling.setZToolOffset: {}".format(e), overlay=True)

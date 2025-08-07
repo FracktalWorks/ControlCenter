@@ -86,13 +86,13 @@ class NozzleOffsetPage(QWidget):
         :param offset:
         :return:
         """
-        logger.info("MainUiClass.updateEEPROMProbeOffset started")
+        logger.info("NozzleOffsetPage.updateEEPROMProbeOffset started")
         try:
             self.currentNozzleOffsetLabel.setText(str(float(offset)))
             self.nozzleOffsetDoubleSpinBox.setValue(0)
         except Exception as e:
-            logger.error("Error in MainUiClass.updateEEPROMProbeOffset: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.updateEEPROMProbeOffset: {}".format(e), overlay=True)
+            logger.error("Error in NozzleOffsetPage.updateEEPROMProbeOffset: {}".format(e))
+            dialog.WarningOk(self, "Error in NozzleOffsetPage.updateEEPROMProbeOffset: {}".format(e), overlay=True)
 
     def setZProbeOffset(self, offset):
         """Sets Z Probe offset from spinbox and updates UI accordingly."""
@@ -109,8 +109,8 @@ class NozzleOffsetPage(QWidget):
             current_offset = float(self.currentNozzleOffsetLabel.text().replace("mm", "").strip()) + rounded_offset
             self.currentNozzleOffsetLabel.setText(f"{current_offset:.2f} mm")
         except Exception as e:
-            logger.error("Error in MainUiClass.setZProbeOffset: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.setZProbeOffset: {}".format(e), overlay=True)
+            logger.error("Error in NozzleOffsetPage.setZProbeOffset: {}".format(e))
+            dialog.WarningOk(self, "Error in NozzleOffsetPage.setZProbeOffset: {}".format(e), overlay=True)
 
     def _configure_spinbox(self, spinbox):
         """Configure the nozzle offset spinbox to be readonly, disabled, and styled."""

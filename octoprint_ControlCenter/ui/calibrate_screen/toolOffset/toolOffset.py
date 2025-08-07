@@ -102,7 +102,7 @@ class ToolOffset(QWidget):
             self.logger.error("Cannot return to main calibration - main_window.calibrate_screen not found")
 
     def setToolOffsetX(self):
-        logger.info("MainUiClass.setToolOffsetX started")
+        logger.info("ToolOffset.setToolOffsetX started")
         try:
             self.main_window.octoprint_client.gcode(
                 command='M218 T1 X{}'.format(round(self.toolOffsetXDoubleSpinBox.value(), 2))
@@ -110,11 +110,11 @@ class ToolOffset(QWidget):
             self.main_window.octoprint_client.gcode(command='M500')
             logger.info("X offset set to: {}".format(round(self.toolOffsetXDoubleSpinBox.value(), 2)))
         except Exception as e:
-            logger.error("Error in MainUiClass.setToolOffsetX: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.setToolOffsetX: {}".format(e), overlay=True)
+            logger.error("Error in ToolOffset.setToolOffsetX: {}".format(e))
+            dialog.WarningOk(self, "Error in ToolOffset.setToolOffsetX: {}".format(e), overlay=True)
 
     def setToolOffsetY(self):
-        logger.info("MainUiClass.setToolOffsetY started")
+        logger.info("ToolOffset.setToolOffsetY started")
         try:
             self.main_window.octoprint_client.gcode(
                 command='M218 T1 Y{}'.format(round(self.toolOffsetYDoubleSpinBox.value(), 2))
@@ -123,11 +123,11 @@ class ToolOffset(QWidget):
             self.main_window.octoprint_client.gcode(command='M500')
             logger.info("Y offset set to: {}".format(round(self.toolOffsetYDoubleSpinBox.value(), 2)))
         except Exception as e:
-            logger.error("Error in MainUiClass.setToolOffsetY: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.setToolOffsetY: {}".format(e), overlay=True)
+            logger.error("Error in ToolOffset.setToolOffsetY: {}".format(e))
+            dialog.WarningOk(self, "Error in ToolOffset.setToolOffsetY: {}".format(e), overlay=True)
 
     def setToolOffsetZ(self):
-        logger.info("MainUiClass.setToolOffsetZ started")
+        logger.info("ToolOffset.setToolOffsetZ started")
         try:
             self.main_window.octoprint_client.gcode(
                 command='M218 T1 Z{}'.format(round(self.toolOffsetZDoubleSpinBox.value(), 2))
@@ -135,11 +135,11 @@ class ToolOffset(QWidget):
             self.main_window.octoprint_client.gcode(command='M500')
             logger.info("Z offset set to: {}".format(round(self.toolOffsetZDoubleSpinBox.value(), 2)))
         except Exception as e:
-            logger.error("Error in MainUiClass.setToolOffsetZ: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.setToolOffsetZ: {}".format(e), overlay=True)
+            logger.error("Error in ToolOffset.setToolOffsetZ: {}".format(e))
+            dialog.WarningOk(self, "Error in ToolOffset.setToolOffsetZ: {}".format(e), overlay=True)
 
     def getToolOffset(self, M218Data):
-        logger.info("MainUiClass.getToolOffset started")
+        logger.info("ToolOffset.getToolOffset started")
         try:
             # if float(M218Data[M218Data.index('X') + 1:].split(' ', 1)[0] ) > 0:
             print("____________________TOOL OFFSET CALLED____________________")
@@ -152,6 +152,6 @@ class ToolOffset(QWidget):
             self.idexToolOffsetRestoreValue = float(self.toolOffsetZ)
             print("____________________TOOL OFFSET CALLED END____________________")
         except Exception as e:
-            logger.error("Error in MainUiClass.getToolOffset: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.getToolOffset: {}".format(e), overlay=True)
+            logger.error("Error in ToolOffset.getToolOffset: {}".format(e))
+            dialog.WarningOk(self, "Error in ToolOffset.getToolOffset: {}".format(e), overlay=True)
 

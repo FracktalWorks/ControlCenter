@@ -335,7 +335,7 @@ class ControlScreen(QWidget):
         """
         Toggles the filament sensor
         """
-        logger.info("MainUiClass.toggleFilamentSensor started")
+        logger.info("ControlScreen.toggleFilamentSensor started")
         icon = 'filamentSensorOn' if self.toggleFilamentSensorButton.isChecked() else 'filamentSensorOff'
         # Use relative path for icon
         icon_path = os.path.join(os.path.dirname(__file__), "..", "resources", "img", "icons", icon)
@@ -347,7 +347,7 @@ class ControlScreen(QWidget):
         """
         Handles the filament sensor
         """
-        logger.info("MainUiClass.filamentSensorHandler started")
+        logger.info("ControlScreen.filamentSensorHandler started")
         change_filament_screen = self.screens.get("change_filament")
         try:
             print(data)
@@ -396,14 +396,14 @@ class ControlScreen(QWidget):
                     pass
 
         except Exception as e:
-            logger.error("Error in MainUiClass.filamentSensorHandler: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.filamentSensorHandler: {}".format(e), overlay=True)
+            logger.error("Error in ControlScreen.filamentSensorHandler: {}".format(e))
+            dialog.WarningOk(self, "Error in ControlScreen.filamentSensorHandler: {}".format(e), overlay=True)
 
     def coolDownAction(self):
         """'
         Turns all heaters and fans off
         """
-        logger.info("MainUiClass.coolDownAction started")
+        logger.info("ControlScreen.coolDownAction started")
         try:
             self.main_window.octoprint_client.gcode(command='M107')
             self.main_window.octoprint_client.setToolTemperature({"tool0": 0, "tool1": 0})
@@ -412,14 +412,14 @@ class ControlScreen(QWidget):
             self.toolTempSpinBox.setProperty("value", 0)
             self.bedTempSpinBox.setProperty("value", 0)
         except Exception as e:
-            logger.error("Error in MainUiClass.coolDownAction: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.coolDownAction: {}".format(e), overlay=True)
+            logger.error("Error in ControlScreen.coolDownAction: {}".format(e))
+            dialog.WarningOk(self, "Error in ControlScreen.coolDownAction: {}".format(e), overlay=True)
 
     def setToolTemp(self):
         """
         Sets the temperature of the tool, depending on the tool selected
         """
-        logger.info("MainUiClass.setToolTemp started")
+        logger.info("ControlScreen.setToolTemp started")
         try:
             if self.toolToggleTemperatureButton.isChecked():
                 self.main_window.octoprint_client.gcode(command='M104 T1 S' + str(self.toolTempSpinBox.value()))
@@ -428,28 +428,28 @@ class ControlScreen(QWidget):
                 self.main_window.octoprint_client.gcode(command='M104 T0 S' + str(self.toolTempSpinBox.value()))
                 # octopiclient.setToolTemperature({"tool0": self.toolTempSpinBox.value()})
         except Exception as e:
-            logger.error("Error in MainUiClass.setToolTemp: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.setToolTemp: {}".format(e), overlay=True)
+            logger.error("Error in ControlScreen.setToolTemp: {}".format(e))
+            dialog.WarningOk(self, "Error in ControlScreen.setToolTemp: {}".format(e), overlay=True)
 
     def preheatBedTemp(self, temp):
         """
         Preheats the bed to the given temperature
         param temp: temperature to preheat to
         """
-        logger.info("MainUiClass.preheatBedTemp started")
+        logger.info("ControlScreen.preheatBedTemp started")
         try:
             self.main_window.octoprint_client.gcode(command='M140 S' + str(temp))
             self.bedTempSpinBox.setProperty("value", temp)
         except Exception as e:
-            logger.error("Error in MainUiClass.preheatBedTemp: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.preheatBedTemp: {}".format(e), overlay=True)
+            logger.error("Error in ControlScreen.preheatBedTemp: {}".format(e))
+            dialog.WarningOk(self, "Error in ControlScreen.preheatBedTemp: {}".format(e), overlay=True)
 
     def preheatToolTemp(self, temp):
         """
         Preheats the tool to the given temperature
         param temp: temperature to preheat to
         """
-        logger.info("MainUiClass.preheatToolTemp started")
+        logger.info("ControlScreen.preheatToolTemp started")
         try:
             if self.toolToggleTemperatureButton.isChecked():
                 self.main_window.octoprint_client.gcode(command='M104 T1 S' + str(temp))
@@ -457,15 +457,15 @@ class ControlScreen(QWidget):
                 self.main_window.octoprint_client.gcode(command='M104 T0 S' + str(temp))
             self.toolTempSpinBox.setProperty("value", temp)
         except Exception as e:
-            logger.error("Error in MainUiClass.preheatToolTemp: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.preheatToolTemp: {}".format(e), overlay=True)
+            logger.error("Error in ControlScreen.preheatToolTemp: {}".format(e))
+            dialog.WarningOk(self, "Error in ControlScreen.preheatToolTemp: {}".format(e), overlay=True)
 
     def selectToolTemperature(self):
         """
         Selects the tool whose temperature needs to be changed.
         It accordingly changes the button text.it also updates the status of the other toggle buttons.
         """
-        logger.info("MainUiClass.selectToolTemperature started")
+        logger.info("ControlScreen.selectToolTemperature started")
         try:
             # self.toolToggleTemperatureButton.setText(
             #     "1") if self.toolToggleTemperatureButton.isChecked() else self.toolToggleTemperatureButton.setText("0")
@@ -476,14 +476,14 @@ class ControlScreen(QWidget):
                 print("extruder 0 Temperature")
                 self.toolTempSpinBox.setProperty("value", float(self.main_window.home_screen.tool0TargetTemperature.text()))
         except Exception as e:
-            logger.error("Error in MainUiClass.selectToolTemperature: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.selectToolTemperature: {}".format(e), overlay=True)
+            logger.error("Error in ControlScreen.selectToolTemperature: {}".format(e))
+            dialog.WarningOk(self, "Error in ControlScreen.selectToolTemperature: {}".format(e), overlay=True)
 
     def selectToolMotion(self):
         """
         Selects the tool whose temperature needs to be changed. It accordingly changes the button text. it also updates the status of the other toggle buttons
         """
-        logger.info("MainUiClass.selectToolMotion started")
+        logger.info("ControlScreen.selectToolMotion started")
         try:
             if self.toolToggleMotionButton.isChecked():
                 self.main_window.octoprint_client.selectTool(1)
@@ -493,8 +493,8 @@ class ControlScreen(QWidget):
                 self.main_window.octoprint_client.selectTool(0)
                 self.setActiveExtruder(0)
         except Exception as e:
-            logger.error("Error in MainUiClass.selectToolMotion: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.selectToolMotion: {}".format(e), overlay=True)
+            logger.error("Error in ControlScreen.selectToolMotion: {}".format(e))
+            dialog.WarningOk(self, "Error in ControlScreen.selectToolMotion: {}".format(e), overlay=True)
 
     def setStep(self, stepRate):
         """
@@ -502,7 +502,7 @@ class ControlScreen(QWidget):
         :param stepRate: step multiplier for movement in the move
         :return: nothing
         """
-        logger.info("MainUiClass.setStep started")
+        logger.info("ControlScreen.setStep started")
         try:
             if stepRate == 100:
                 self.step100mmButton.setFlat(True)
@@ -520,8 +520,8 @@ class ControlScreen(QWidget):
                 self.step10mmButton.setFlat(True)
                 self.step = 10
         except Exception as e:
-            logger.error("Error in MainUiClass.setStep: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.setStep: {}".format(e), overlay=True)
+            logger.error("Error in ControlScreen.setStep: {}".format(e))
+            dialog.WarningOk(self, "Error in ControlScreen.setStep: {}".format(e), overlay=True)
 
     def setActiveExtruder(self, activeNozzle):
         """

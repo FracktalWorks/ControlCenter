@@ -42,7 +42,6 @@ class MainWindow(QMainWindow):
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)
         self.central_widget.setLayout(self.layout)
-        self.octoprint_client = controller.octoprint_client
 
         self.stacked_widget = QStackedWidget()
         self.stacked_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -126,6 +125,7 @@ class MainWindow(QMainWindow):
 
         try:
             # Load all screens
+            self.octoprint_client = self.controller.octoprint_client
             self.load_home_screen()
             self.load_menu_screen()
             self.load_settings_screen()
@@ -349,8 +349,8 @@ class MainWindow(QMainWindow):
                 "value", float(self.printer_model.temperatures.get("bed", 0))
             )
         except Exception as e:
-            logger.error("Error in MainUiClass.control: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.control: {}".format(e), overlay=True)
+            logger.error("Error in MainWaindow.control: {}".format(e))
+            dialog.WarningOk(self, "Error in MainWaindow.control: {}".format(e), overlay=True)
 
     def switch_to_print_location_screen(self):
         logger.debug("Switching to print location screen")

@@ -3,6 +3,13 @@ from utils import styles
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+# Import resources to ensure Qt resource system is initialized
+try:
+    import ui.resources.resource_rc
+except ImportError:
+    # Fallback if resource file is not available
+    pass
+
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:
@@ -10,7 +17,7 @@ except AttributeError:
         return s
 
 
-def format_text_for_dialog(text, max_line_length=60):
+def format_text_for_dialog(text, max_line_length=50):  # Reduced from 60 to 50
     """
     Format text for better display in dialog boxes by:
     - Wrapping long lines
@@ -26,8 +33,13 @@ def format_text_for_dialog(text, max_line_length=60):
     
     for paragraph in paragraphs:
         if paragraph.strip():  # Non-empty paragraph
-            # Wrap the paragraph to max line length
-            wrapped = textwrap.fill(paragraph.strip(), width=max_line_length)
+            # Wrap the paragraph to max line length with break_long_words to prevent overflow
+            wrapped = textwrap.fill(
+                paragraph.strip(), 
+                width=max_line_length,
+                break_long_words=True,
+                break_on_hyphens=True
+            )
             formatted_paragraphs.append(wrapped)
         else:  # Empty line (preserve spacing)
             formatted_paragraphs.append('')
@@ -93,21 +105,33 @@ class SelfCenteringMessageBox(QtWidgets.QMessageBox):
             objLabel.setStyleSheet(styles.msgbox_label)
             objLabel.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
             objLabel.setMinimumSize(350, 120)
-            objLabel.setMaximumSize(500, 300)  # Set maximum size to prevent overly wide dialogs
+            objLabel.setMaximumSize(450, 300)  # Reduced width from 500 to 450
             objLabel.setWordWrap(True)  # Enable word wrapping
             objLabel.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+            
+            # Set text eliding and additional properties to ensure proper wrapping
+            objLabel.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+            objLabel.setScaledContents(False)
             
             # If text is very long, add scroll area
             text_length = len(objLabel.text())
             if text_length > 500:  # Threshold for very long text
-                objLabel.setMaximumSize(500, 250)  # Reduce height for scroll
+                objLabel.setMaximumSize(450, 250)  # Reduce height for scroll and use consistent width
                 
         # Set size policy for the message box itself to allow proper resizing
         self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        
+        # Ensure the dialog doesn't exceed screen bounds
+        self.setMaximumSize(500, 350)
 
     def setLocalIcon(self, icon=None):
         if icon:
-            self.setIconPixmap(QtGui.QPixmap(_fromUtf8("templates/img/" + icon)).scaled(40, 40))
+            # Use Qt resource system for icons
+            pixmap = QtGui.QPixmap(_fromUtf8(icon))
+            if not pixmap.isNull():
+                self.setIconPixmap(pixmap.scaled(40, 40))
+            else:
+                pass
 
     def show(self):
         # Apply label settings just before showing, in case the label wasn't found during init
@@ -116,9 +140,11 @@ class SelfCenteringMessageBox(QtWidgets.QMessageBox):
             objLabel.setStyleSheet(styles.msgbox_label)
             objLabel.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
             objLabel.setMinimumSize(350, 120)
-            objLabel.setMaximumSize(500, 300)
+            objLabel.setMaximumSize(450, 300)  # Consistent with __init__
             objLabel.setWordWrap(True)
             objLabel.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+            objLabel.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+            objLabel.setScaledContents(False)
         
         if self._showOverlay:
             self.overlay.show()
@@ -190,28 +216,44 @@ def YesNo(parent, text, **kwargs):
 
 
 def WarningOk(parent, text, **kwargs):
-    return Ok(parent, text, icon="resources/images/exclamation-mark.png", **kwargs)
+    return Ok(parent, text, icon=":/Icons/img/icons/exclamation-mark.png", **kwargs)
 
 
 def WarningCancel(parent, text, **kwargs):
-    return Cancel(parent, text, icon="resources/images/exclamation-mark.png", **kwargs)
+    return Cancel(parent, text, icon=":/Icons/img/icons/exclamation-mark.png", **kwargs)
 
 
 def WarningOkCancel(parent, text, **kwargs):
-    return OkCancel(parent, text, icon="resources/images/exclamation-mark.png", **kwargs)
+    return OkCancel(parent, text, icon=":/Icons/img/icons/exclamation-mark.png", **kwargs)
 
 
 def WarningYes(parent, text, **kwargs):
-    return Yes(parent, text, icon="resources/images/exclamation-mark.png", **kwargs)
+    return Yes(parent, text, icon=":/Icons/img/icons/exclamation-mark.png", **kwargs)
 
 
 def WarningYesNo(parent, text, **kwargs):
-    return YesNo(parent, text, icon="resources/images/exclamation-mark.png", **kwargs)
+    return YesNo(parent, text, icon=":/Icons/img/icons/exclamation-mark.png", **kwargs)
 
 
 def SuccessOk(parent, text, **kwargs):
-    return Ok(parent, text, icon="resources/images/success.png", **kwargs)
+    return Ok(parent, text, icon=":/Icons/img/icons/success.png", **kwargs)
 
 
 def SuccessYesNo(parent, text, **kwargs):
-    return YesNo(parent, text, icon="resources/images/success.png", **kwargs)
+    return YesNo(parent, text, icon=":/Icons/img/icons/success.png", **kwargs)
+
+
+def ErrorOk(parent, text, **kwargs):
+    return Ok(parent, text, icon=":/Icons/img/icons/error.png", **kwargs)
+
+
+def ErrorOkCancel(parent, text, **kwargs):
+    return OkCancel(parent, text, icon=":/Icons/img/icons/error.png", **kwargs)
+
+
+def InfoOk(parent, text, **kwargs):
+    return Ok(parent, text, icon=":/Icons/img/icons/information.png", **kwargs)
+
+
+def InfoYesNo(parent, text, **kwargs):
+    return YesNo(parent, text, icon=":/Icons/img/icons/information.png", **kwargs)

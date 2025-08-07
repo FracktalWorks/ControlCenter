@@ -268,8 +268,8 @@ class SettingsScreen(QWidget):
                 self.main_window.octoprint_client.gcode(command='FIRMWARE_RESTART')
                 self.main_window.octoprint_client.gcode(command='RESTART')
         except Exception as e:
-            self.logger.error("Error in MainUiClass.restorePrintDefaults: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.restorePrintDefaults: {}".format(e), overlay=True)
+            self.logger.error("Error in SettingsScreen.restorePrintDefaults: {}".format(e))
+            dialog.WarningOk(self, "Error in SettingsScreen.restorePrintDefaults: {}".format(e), overlay=True)
 
     def restore_factory_defaults(self):
         """Restore the system to factory default settings."""
@@ -290,8 +290,8 @@ class SettingsScreen(QWidget):
                 os.system('sudo cp -f config/config.yaml /home/pi/.octoprint/config.yaml')
                 self.tellAndReboot("Settings restored. Rebooting...")
         except Exception as e:
-            self.logger.error("Error in MainUiClass.restoreFactoryDefaults: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.restoreFactoryDefaults: {}".format(e), overlay=True)
+            self.logger.error("Error in SettingsScreen.restoreFactoryDefaults: {}".format(e))
+            dialog.WarningOk(self, "Error in SettingsScreen.restoreFactoryDefaults: {}".format(e), overlay=True)
 
     def restart_system(self):
         """Restart the system."""

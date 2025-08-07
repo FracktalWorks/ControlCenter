@@ -97,7 +97,7 @@ class CalibrateScreen(QWidget):
             self.logger.exception(f"Error initializing sub-screens: {e}")
 
     def inputShaperCalibrate(self):
-        self.logger.info("MainUiClass.inputShaperCalibrate started")
+        self.logger.info("CalibrateScreen.inputShaperCalibrate started")
         try:
             dialog.WarningOk(self, "Wait for all calibration movements to finish before proceeding.", overlay=True)
             self.main_window.octoprint_client.gcode(command='G28')

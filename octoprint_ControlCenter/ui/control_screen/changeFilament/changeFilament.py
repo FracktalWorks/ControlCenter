@@ -127,8 +127,8 @@ class ChangeFilament(QWidget):
                 if index >= 0:
                     self.changeFilamentComboBox.setCurrentIndex(index)
         except Exception as e:
-            logger.error(f"Error in changeFilament.changeFilament: {e}")
-            dialog.WarningOk(self, f"Error in changeFilament.changeFilament: {e}", overlay=True)
+            logger.error(f"Error in ChangeFilament.changeFilament: {e}")
+            dialog.WarningOk(self, f"Error in ChangeFilament.changeFilament: {e}", overlay=True)
 
     def selectToolChangeFilament(self):
         """
@@ -153,7 +153,7 @@ class ChangeFilament(QWidget):
         """
         Cancel the filament change process and reset UI/state.
         """
-        logger.info("changeFilament.changeFilamentCancel started")
+        logger.info("ChangeFilament.changeFilamentCancel started")
         try:
             self._disconnect_temperature_signal()
             if self.model.printer_status not in ["Printing", "Paused"]:
@@ -163,8 +163,8 @@ class ChangeFilament(QWidget):
             self.loadFlag = False
             self.changeFilamentHeatingFlag = False
         except Exception as e:
-            logger.error(f"Error in changeFilament.changeFilamentCancel: {e}")
-            dialog.WarningOk(self, f"Error in changeFilament.changeFilamentCancel: {e}", overlay=True)
+            logger.error(f"Error in ChangeFilament.changeFilamentCancel: {e}")
+            dialog.WarningOk(self, f"Error in ChangeFilament.changeFilamentCancel: {e}", overlay=True)
 
     def loadFilament(self):
         """
@@ -260,7 +260,7 @@ class ChangeFilament(QWidget):
         """
         Called after heating: slowly move extruder to pull filament in.
         """
-        logger.info("changeFilament.changeFilamentLoadFunction started")
+        logger.info("ChangeFilament.changeFilamentLoadFunction started")
         try:
             self.stackedWidget.setCurrentWidget(self.changeFilamentLoadPage)
             while self.stackedWidget.currentWidget() == self.changeFilamentLoadPage:
@@ -269,15 +269,15 @@ class ChangeFilament(QWidget):
                 self.client.gcode("G90")
                 time.sleep(self.calcExtrudeTime(5, 500))
         except Exception as e:
-            logger.error(f"Error in changeFilament.changeFilamentLoadFunction: {e}")
-            dialog.WarningOk(self, f"Error in changeFilament.changeFilamentLoadFunction: {e}", overlay=True)
+            logger.error(f"Error in ChangeFilament.changeFilamentLoadFunction: {e}")
+            dialog.WarningOk(self, f"Error in ChangeFilament.changeFilamentLoadFunction: {e}", overlay=True)
 
     @run_async
     def changeFilamentExtrudePageFunction(self, *args, **kwargs):
         """
         After loading, extrude filament until it reaches the toolhead.
         """
-        logger.info("changeFilament.changeFilamentExtrudePageFunction started")
+        logger.info("ChangeFilament.changeFilamentExtrudePageFunction started")
         try:
             print("______________________________Entered extrusion function____________________________")
             self.stackedWidget.setCurrentWidget(self.changeFilamentExtrudePage)
@@ -301,15 +301,15 @@ class ChangeFilament(QWidget):
                 time.sleep(self.calcExtrudeTime(20, feed))
             print("___________________________Exited the while loop______________________________")
         except Exception as e:
-            logger.error(f"Error in changeFilament.changeFilamentExtrudePageFunction: {e}")
-            dialog.WarningOk(self, f"Error in changeFilament.changeFilamentExtrudePageFunction: {e}", overlay=True)
+            logger.error(f"Error in ChangeFilament.changeFilamentExtrudePageFunction: {e}")
+            dialog.WarningOk(self, f"Error in ChangeFilament.changeFilamentExtrudePageFunction: {e}", overlay=True)
 
     @run_async
     def changeFilamentRetractFunction(self):
         """
         Remove the filament from the toolhead, including tip shaping and full retraction.
         """
-        logger.info("changeFilament.changeFilamentRetractFunction started")
+        logger.info("ChangeFilament.changeFilamentRetractFunction started")
         try:
             print("______________________________Entered retraction function____________________________")
             self.stackedWidget.setCurrentWidget(self.changeFilamentRetractPage)
@@ -342,8 +342,8 @@ class ChangeFilament(QWidget):
                 time.sleep(self.calcExtrudeTime(5, 1000))
             print("___________________________Exited the while loop______________________________")
         except Exception as e:
-            logger.error(f"Error in changeFilament.changeFilamentRetractFunction: {e}")
-            dialog.WarningOk(self, f"Error in changeFilament.changeFilamentRetractFunction: {e}", overlay=True)
+            logger.error(f"Error in ChangeFilament.changeFilamentRetractFunction: {e}")
+            dialog.WarningOk(self, f"Error in ChangeFilament.changeFilamentRetractFunction: {e}", overlay=True)
 
     def calcExtrudeTime(self, length, speed):
         """
@@ -369,12 +369,12 @@ class ChangeFilament(QWidget):
         """
         Complete the filament change process and return to the control screen.
         """
-        logger.info("changeFilament.changeFilamentDone started")
+        logger.info("ChangeFilament.changeFilamentDone started")
         try:
             self._disconnect_temperature_signal()
             self.stackedWidget.setCurrentWidget(self.changeFilamentPage)  # Stops retract and extruding loop as well
             self.main_window.switch_to_control_screen()
             self.changeFilamentHeatingFlag = False
         except Exception as e:
-            logger.error(f"Error in changeFilament.changeFilamentDone: {e}")
-            dialog.WarningOk(self, f"Error in changeFilament.changeFilamentDone: {e}", overlay=True)
+            logger.error(f"Error in ChangeFilament.changeFilamentDone: {e}")
+            dialog.WarningOk(self, f"Error in ChangeFilament.changeFilamentDone: {e}", overlay=True)

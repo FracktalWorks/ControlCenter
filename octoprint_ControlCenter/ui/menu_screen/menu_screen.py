@@ -87,7 +87,7 @@ class MenuScreen(QWidget):
 
     def open_menuFilamentNozzle(self):
         """Placeholder for open menuFilamentNozzle logic"""
-        self.logger.info("Cart button clicked")
+        self.logger.info("FilamentNozzle button clicked")
 
     def open_settings(self):
         """Navigate to the settings screen"""

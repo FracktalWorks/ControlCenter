@@ -269,8 +269,8 @@ class HomeScreen(QWidget):
                     self.current_image = self.current_file
                     self.main_window.print_location_screen.displayThumbnail(self.printPreviewMain, self.current_file, usb=False)
         except Exception as e:
-            logger.error("Error in MainUiClass.updatePrintStatus: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.updatePrintStatus: {}".format(e), overlay=True)
+            logger.error("Error in HomeScreen.updatePrintStatus: {}".format(e))
+            dialog.WarningOk(self, "Error in HomeScreen.updatePrintStatus: {}".format(e), overlay=True)
 
     def updateTemperature(self, temperature):
         """
@@ -354,7 +354,7 @@ class HomeScreen(QWidget):
                     self.ipStatus.setText("Not connected")
                 time.sleep(60)
         except Exception as e:
-            logger.error("Error in MainUiClass.setIPStatus: {}".format(e))
+            logger.error("Error in HomeScreen.setIPStatus: {}".format(e))
 
     # ! Below are the boilerplate functions
 
@@ -378,8 +378,8 @@ class HomeScreen(QWidget):
                     client.gcode(command=command)
                     client.overrideDoorLock()
                 except Exception as e:
-                    logger.error("Error in MainUiClass.doorLock: {}".format(e))
-                    dialog.WarningOk(self, "Error in MainUiClass.doorLock: {}".format(e), overlay=True)
+                    logger.error("Error in HomeScreen.doorLock: {}".format(e))
+                    dialog.WarningOk(self, "Error in HomeScreen.doorLock: {}".format(e), overlay=True)
 
     def open_menu(self):
         """Navigate to menu screen"""
@@ -391,7 +391,7 @@ class HomeScreen(QWidget):
         # if not self.printer_connected:
         #     return
 
-        logger.info("MainUiClass.stopActionMessageBox started")
+        logger.info("HomeScreen.stopActionMessageBox started")
         logger.debug("Stop Print button clicked")
 
         # Send command to OctoPrint if connected
@@ -402,8 +402,8 @@ class HomeScreen(QWidget):
                     if dialog.WarningYesNo(self, "Are you sure you want to stop the print?"):
                         client.cancelPrint()
                 except Exception as e:
-                    logger.error("Error in MainUiClass.stopActionMessageBox: {}".format(e))
-                    dialog.WarningOk(self, "Error in MainUiClass.stopActionMessageBox: {}".format(e), overlay=True)
+                    logger.error("Error in HomeScreen.stopActionMessageBox: {}".format(e))
+                    dialog.WarningOk(self, "Error in HomeScreen.stopActionMessageBox: {}".format(e), overlay=True)
 
     def play_pause_print(self):
         """Play or pause print job based on current state"""
@@ -479,5 +479,5 @@ class HomeScreen(QWidget):
                 # if hasattr(self, 'toolToggleChangeFilamentButton'):
                 #     self.toolToggleChangeFilamentButton.setChecked(True)
         except Exception as e:
-            logger.error("Error in MainUiClass.setActiveExtruder: {}".format(e))
+            logger.error("Error in HomeScreen.setActiveExtruder: {}".format(e))
             dialog.WarningOk(self, "Error in home_screen.setActiveExtruder: {}".format(e), overlay=True)

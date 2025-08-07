@@ -140,7 +140,7 @@ class IdexLevelCalibration(QWidget):
         Welcome Page, Give Info. Unlock nozzle and push down
         :return:
         """
-        logger.info("MainUiClass.idexConfigStep1 started")
+        logger.info("IdexLevelCalibration.idexConfigStep1 started")
         try:
             self.main_window.octoprint_client.gcode(command='M503')  # Gets old tool offset position
             self.main_window.octoprint_client.gcode(command='M218 T1 Z0')  # set nozzle tool offsets to 0
@@ -157,8 +157,8 @@ class IdexLevelCalibration(QWidget):
             self.Nozzlelevel1.setMovie(self.movie5)
             self.movie5.start()
         except Exception as e:
-            logger.error("Error in MainUiClass.idexConfigStep1: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.idexConfigStep1: {}".format(e), overlay=True)
+            logger.error("Error in IdexLevelCalibration.idexConfigStep1: {}".format(e))
+            dialog.WarningOk(self, "Error in IdexLevelCalibration.idexConfigStep1: {}".format(e), overlay=True)
             try:
                 self.movie5.stop()
             except:
@@ -169,7 +169,7 @@ class IdexLevelCalibration(QWidget):
         levels first position (RIGHT)
         :return:
         """
-        logger.info("MainUiClass.idexConfigStep2 started")
+        logger.info("IdexLevelCalibration.idexConfigStep2 started")
         try:
             self.stackedWidget.setCurrentWidget(self.idexConfigStep2Page)
             self.main_window.octoprint_client.jog(
@@ -185,8 +185,8 @@ class IdexLevelCalibration(QWidget):
             self.CalibrationPoint1_2.setMovie(self.movie6)
             self.movie6.start()
         except Exception as e:
-            logger.error("Error in MainUiClass.idexConfigStep2: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.idexConfigStep2: {}".format(e), overlay=True)
+            logger.error("Error in IdexLevelCalibration.idexConfigStep2: {}".format(e))
+            dialog.WarningOk(self, "Error in IdexLevelCalibration.idexConfigStep2: {}".format(e), overlay=True)
             try:
                 self.movie5.stop()
                 self.movie6.stop()
@@ -197,7 +197,7 @@ class IdexLevelCalibration(QWidget):
         """
         levels second leveling position (LEFT)
         """
-        logger.info("MainUiClass.idexConfigStep3 started")
+        logger.info("IdexLevelCalibration.idexConfigStep3 started")
         try:
             self.stackedWidget.setCurrentWidget(self.idexConfigStep3Page)
             self.main_window.octoprint_client.jog(z=10, absolute=True, speed=1500)
@@ -214,8 +214,8 @@ class IdexLevelCalibration(QWidget):
             self.CalibrationPoint2_2.setMovie(self.movie7)
             self.movie7.start()
         except Exception as e:
-            logger.error("Error in MainUiClass.idexConfigStep3: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.idexConfigStep3: {}".format(e), overlay=True)
+            logger.error("Error in IdexLevelCalibration.idexConfigStep3: {}".format(e))
+            dialog.WarningOk(self, "Error in IdexLevelCalibration.idexConfigStep3: {}".format(e), overlay=True)
             try:
                 self.movie6.stop()
                 self.movie7.stop()
@@ -227,7 +227,7 @@ class IdexLevelCalibration(QWidget):
         Set to Mirror mode and asks to loosen the carriage, push both doen to max
         :return:
         """
-        logger.info("MainUiClass.idexConfigStep4 started")
+        logger.info("IdexLevelCalibration.idexConfigStep4 started")
         try:
             self.stackedWidget.setCurrentWidget(self.idexConfigStep4Page)
             self.main_window.octoprint_client.jog(z=10, absolute=True, speed=1500)
@@ -244,8 +244,8 @@ class IdexLevelCalibration(QWidget):
             self.CalibrationPoint3.setMovie(self.movie8)
             self.movie8.start()
         except Exception as e:
-            logger.error("Error in MainUiClass.idexConfigStep4: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.idexConfigStep4: {}".format(e), overlay=True)
+            logger.error("Error in IdexLevelCalibration.idexConfigStep4: {}".format(e))
+            dialog.WarningOk(self, "Error in IdexLevelCalibration.idexConfigStep4: {}".format(e), overlay=True)
             try:
                 self.movie7.stop()
                 self.movie8.stop()
@@ -257,7 +257,7 @@ class IdexLevelCalibration(QWidget):
         take bed up until both nozzles touch the bed. ASk to take nozzle up and down till nozzle just rests on the bed and tighten
         :return:
         """
-        logger.info("MainUiClass.idexConfigStep5 started")
+        logger.info("IdexLevelCalibration.idexConfigStep5 started")
         try:
             self.stackedWidget.setCurrentWidget(self.idexConfigStep5Page)
             self.main_window.octoprint_client.jog(z=1, absolute=True, speed=10000)
@@ -268,8 +268,8 @@ class IdexLevelCalibration(QWidget):
             self.Nozzlelevel2.setMovie(self.movie9)
             self.movie9.start()
         except Exception as e:
-            logger.error("Error in MainUiClass.idexConfigStep5: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.idexConfigStep5: {}".format(e), overlay=True)
+            logger.error("Error in IdexLevelCalibration.idexConfigStep5: {}".format(e))
+            dialog.WarningOk(self, "Error in IdexLevelCalibration.idexConfigStep5: {}".format(e), overlay=True)
             try:
                 self.movie8.stop()
                 self.movie9.stop()
@@ -281,7 +281,7 @@ class IdexLevelCalibration(QWidget):
         Exits leveling
         :return:
         """
-        logger.info("MainUiClass.idexDoneStep started")
+        logger.info("IdexLevelCalibration.idexDoneStep started")
         try:
             self.main_window.octoprint_client.jog(z=4, absolute=True, speed=1500)
             self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
@@ -297,15 +297,15 @@ class IdexLevelCalibration(QWidget):
             self.main_window.octoprint_client.gcode(command='M84')
             self.main_window.octoprint_client.gcode(command='M500')  # store eeprom settings to get Z home offset, mesh bed leveling back
         except Exception as e:
-            logger.error("Error in MainUiClass.idexDoneStep: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.idexDoneStep: {}".format(e), overlay=True)
+            logger.error("Error in IdexLevelCalibration.idexDoneStep: {}".format(e))
+            dialog.WarningOk(self, "Error in IdexLevelCalibration.idexDoneStep: {}".format(e), overlay=True)
             try:
                 self.movie9.stop()
             except:
                 pass
 
     def idexCancelStep(self):
-        logger.info("MainUiClass.idexCancelStep started")
+        logger.info("IdexLevelCalibration.idexCancelStep started")
         try:
             self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
                 self.main_window.calibrate_screen.main_calibrate_page
@@ -331,5 +331,5 @@ class IdexLevelCalibration(QWidget):
             )
             self.main_window.octoprint_client.gcode(command='M84')
         except Exception as e:
-            logger.error("Error in MainUiClass.idexCancelStep: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.idexCancelStep: {}".format(e), overlay=True)
+            logger.error("Error in IdexLevelCalibration.idexCancelStep: {}".format(e))
+            dialog.WarningOk(self, "Error in IdexLevelCalibration.idexCancelStep: {}".format(e), overlay=True)

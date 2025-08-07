@@ -230,7 +230,7 @@ class MainController:
         """
         When the  on Web Socket server is connected, check for filament sensor and previous print failure to complere
         """
-        logger.info("MainUiClass.onServerConnected started")
+        logger.info("MainController.onWebSocketConnected started")
 
         if hasattr(self, 'octoprint_client'):
             client = self.octoprint_client
@@ -248,8 +248,8 @@ class MainController:
                     except:
                         pass
                 except Exception as e:
-                    logger.error("Error in MainController.onServerConnected: {}".format(e))
-                    dialog.WarningOk(self.main_window, "Error in MainController.onServerConnected: {}".format(e), overlay=True)
+                    logger.error("Error in MainController.onWebSocketConnected: {}".format(e))
+                    dialog.WarningOk(self.main_window, "Error in MainController.onWebSocketConnected: {}".format(e), overlay=True)
         
 
     def initalize_websocket(self):

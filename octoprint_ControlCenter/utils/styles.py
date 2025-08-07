@@ -111,11 +111,13 @@ msgbox_icon = _fromUtf8("""
 msgbox_label = _fromUtf8("""
     margin-top: 5px;
     margin-bottom: 5px;
-    margin-right: 10px;
+    margin-right: 15px;
+    margin-left: 5px;
     font-size: 12pt;
     font-family: "Gotham";
-    padding: 8px;
+    padding: 10px;
     line-height: 1.4;
     color: rgb(50, 50, 50);
     background-color: transparent;
+    text-align: left;
 """)

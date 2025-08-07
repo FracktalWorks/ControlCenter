@@ -120,7 +120,7 @@ class SoftwareUpdate(QWidget):
         # 5. Restart system if necessary
 
     def softwareUpdateProgress(self, data):
-        self.logger.info("MainUiClass.softwareUpdateProgress started")
+        self.logger.info("SoftwareUpdate.softwareUpdateProgress started")
         try:
             self.stackedWidget.setCurrentWidget(self.softwareUpdateProgressPage)
             self.logTextEdit.setTextColor(Qt.red)
@@ -128,33 +128,33 @@ class SoftwareUpdate(QWidget):
                                     "Updating " + data["name"] + " to " + data["version"] + "\n"
                                                                                             "---------------------------------------------------------------")
         except Exception as e:
-            self.logger.error("Error in MainUiClass.softwareUpdateProgress: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.softwareUpdateProgress: {}".format(e), overlay=True)
+            self.logger.error("Error in SoftwareUpdate.softwareUpdateProgress: {}".format(e))
+            dialog.WarningOk(self, "Error in SoftwareUpdate.softwareUpdateProgress: {}".format(e), overlay=True)
 
     def softwareUpdateProgressLog(self, data):
-        self.logger.info("MainUiClass.softwareUpdateProgressLog started")
+        self.logger.info("SoftwareUpdate.softwareUpdateProgressLog started")
         try:
             self.logTextEdit.setTextColor(Qt.white)
             for line in data:
                 self.logTextEdit.append(line["line"])
 
         except Exception as e:
-            self.logger.error("Error in MainUiClass.softwareUpdateProgressLog: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.softwareUpdateProgressLog: {}".format(e), overlay=True)
+            self.logger.error("Error in SoftwareUpdate.softwareUpdateProgressLog: {}".format(e))
+            dialog.WarningOk(self, "Error in SoftwareUpdate.softwareUpdateProgressLog: {}".format(e), overlay=True)
 
     def updateFailed(self, data):
-        self.logger.info("MainUiClass.updateFailed started")
+        self.logger.info("SoftwareUpdate.updateFailed started")
         try:
             self.stackedWidget.setCurrentWidget(self.settingsPage)
             messageText = (data["name"] + " failed to update\n")
             if dialog.WarningOkCancel(self, messageText, overlay=True):
                 pass
         except Exception as e:
-            self.logger.error("Error in MainUiClass.updateFailed: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.updateFailed: {}".format(e), overlay=True)
+            self.logger.error("Error in SoftwareUpdate.updateFailed: {}".format(e))
+            dialog.WarningOk(self, "Error in SoftwareUpdate.updateFailed: {}".format(e), overlay=True)
 
     def softwareUpdateResult(self, data):
-        self.logger.info("MainUiClass.softwareUpdateResult started")
+        self.logger.info("SoftwareUpdate.softwareUpdateResult started")
         try:
             messageText = ""
             for item in data:
@@ -162,14 +162,14 @@ class SoftwareUpdate(QWidget):
             messageText += "Restart required"
             self.askAndReboot(messageText)
         except Exception as e:
-            self.logger.error("Error in MainUiClass.softwareUpdateResult: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.softwareUpdateResult: {}".format(e), overlay=True)
+            self.logger.error("Error in SoftwareUpdate.softwareUpdateResult: {}".format(e))
+            dialog.WarningOk(self, "Error in SoftwareUpdate.softwareUpdateResult: {}".format(e), overlay=True)
 
     def displayVersionInfo(self):
         """
         Displays the version information for octoprint plugins
         """
-        self.logger.info("MainUiClass.displayVersionInfo started")
+        self.logger.info("SoftwareUpdate.displayVersionInfo started")
         try:
             self.updateListWidget.clear()
             updateAvailable = False
@@ -211,5 +211,5 @@ class SoftwareUpdate(QWidget):
                 self.performUpdateButton.setDisabled(False)
             self.stackedWidget.setCurrentWidget(self.OTAUpdatePage)
         except Exception as e:
-            self.logger.error("Error in MainUiClass.displayVersionInfo: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.displayVersionInfo: {}".format(e), overlay=True)
+            self.logger.error("Error in SoftwareUpdate.displayVersionInfo: {}".format(e))
+            dialog.WarningOk(self, "Error in SoftwareUpdate.displayVersionInfo: {}".format(e), overlay=True)

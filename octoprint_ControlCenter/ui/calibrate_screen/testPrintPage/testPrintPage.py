@@ -169,7 +169,7 @@ class TestPrintPage(QWidget):
         single and dual. bedLevel, dualCalibration, movementTest, dualTest, singleTest
         :return:
         """
-        logger.info("MainUiClass.testPrint started")
+        logger.info("TestPrintPage.testPrint started")
         try:
             # Base path for gcode files relative to the module
             gcode_base_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "gcode")
@@ -193,23 +193,23 @@ class TestPrintPage(QWidget):
             else:
                 print("gcode not found")
         except Exception as e:
-            logger.error("Error in MainUiClass.testPrint: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.testPrint: {}".format(e), overlay=True)
+            logger.error("Error in TestPrintPage.testPrint: {}".format(e))
+            dialog.WarningOk(self, "Error in TestPrintPage.testPrint: {}".format(e), overlay=True)
 
     def printFromPath(self, path, prnt=True):
         """
         Transfers a file from a specific to octoprint's watched folder so that it gets automatically detected by Octoprint.
         Warning: If the file is read-only, octoprint API for reading the file crashes.
         """
-        logger.info("MainUiClass.printFromPath started")
+        logger.info("TestPrintPage.printFromPath started")
         try:
             self.uploadThread = ThreadFileUpload(path, print_after_upload=prnt)
             self.uploadThread.start()
             if prnt:
                 self.stackedWidget.setCurrentWidget(self.main_window.home_screen)
         except Exception as e:
-            logger.error("Error in MainUiClass.printFromPath: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.printFromPath: {}".format(e), overlay=True)
+            logger.error("Error in TestPrintPage.printFromPath: {}".format(e))
+            dialog.WarningOk(self, "Error in TestPrintPage.printFromPath: {}".format(e), overlay=True)
 
     # # Print action methods
     # def _single_nozzle_test_print(self):

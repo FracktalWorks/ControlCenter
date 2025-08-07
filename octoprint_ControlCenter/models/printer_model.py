@@ -129,8 +129,8 @@ class PrinterModel(QObject):
             # self.tool_offset_updated.emit(self.tool_offsets)
             self.tool_offset_updated.emit(M218Data)
         except Exception as e:
-            logger.error("Error in MainUiClass.getToolOffset: {}".format(e))
-            dialog.WarningOk(self, "Error in MainUiClass.getToolOffset: {}".format(e), overlay=True)
+            logger.error("Error in PrinterModel.getToolOffset: {}".format(e))
+            dialog.WarningOk(self, "Error in PrinterModel.getToolOffset: {}".format(e), overlay=True)
 
     def filamentSensorHandler(self, data):
         """
