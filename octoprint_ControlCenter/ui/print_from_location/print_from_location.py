@@ -24,6 +24,7 @@ class PrintFromLocation(QWidget):
         """Initialize the PrintFromLocation screen with all UI components and connections."""
         super(PrintFromLocation, self).__init__()
         self.main_window = main_window
+        self.octoprint_client = main_window.octoprint_client
 
         # Use centralized logger
         self.logger = get_logger(self.__class__.__name__)
@@ -203,7 +204,7 @@ class PrintFromLocation(QWidget):
         try:
             self.stackedWidget.setCurrentWidget(self.fileListLocalPage)
             files = []
-            for file in self.main_window.octoprint_client.retrieveFileInformation()['files']:
+            for file in self.octoprint_client.retrieveFileInformation()['files']:
                 if file["type"] == "machinecode":
                     files.append(file)
 
@@ -249,7 +250,7 @@ class PrintFromLocation(QWidget):
         try:
             self.fileSelectedLocalName.setText(self.fileListWidgetLocal.currentItem().text())
             self.stackedWidget.setCurrentWidget(self.printSelectedLocalPage)
-            file = self.main_window.octoprint_client.retrieveFileInformation(
+            file = self.octoprint_client.retrieveFileInformation(
                 self.fileListWidgetLocal.currentItem().text())
             try:
                 self.fileSizeSelected.setText(size(file['size']))
@@ -312,8 +313,8 @@ class PrintFromLocation(QWidget):
         """
         self.logger.info("PrintFromLocation.deleteItem started")
         try:
-            self.main_window.octoprint_client.deleteFile(self.fileListWidgetLocal.currentItem().text())
-            self.main_window.octoprint_client.deleteFile(
+            self.octoprint_client.deleteFile(self.fileListWidgetLocal.currentItem().text())
+            self.octoprint_client.deleteFile(
                 self.fileListWidgetLocal.currentItem().text().replace(".gcode", ".png"))
             # delete PNG also
             self.fileListLocal()
@@ -345,8 +346,8 @@ class PrintFromLocation(QWidget):
         """
         self.logger.info("PrintFromLocation.printFile started")
         try:
-            self.main_window.octoprint_client.home(['x', 'y', 'z'])
-            self.main_window.octoprint_client.selectFile(self.fileListWidgetLocal.currentItem().text(), True)
+            self.octoprint_client.home(['x', 'y', 'z'])
+            self.octoprint_client.selectFile(self.fileListWidgetLocal.currentItem().text(), True)
             self.main_window.checkKlipperPrinterCFG()
 
             # Ensure the home_screen is part of the stackedWidget
@@ -375,7 +376,7 @@ class PrintFromLocation(QWidget):
             if usb:
                 img = self.getImageFromGcode(fileLocation)
             else:
-                img = self.main_window.octoprint_client.getImage(fileLocation)
+                img = self.octoprint_client.getImage(fileLocation)
             if img:
                 pixmap.loadFromData(img)
                 labelObject.setPixmap(pixmap)

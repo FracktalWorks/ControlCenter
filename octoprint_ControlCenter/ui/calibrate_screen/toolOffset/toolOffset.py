@@ -17,6 +17,7 @@ class ToolOffset(QWidget):
     def __init__(self, main_window):
         super(ToolOffset, self).__init__()
         self.main_window = main_window
+        self.octoprint_client = main_window.octoprint_client
         # Use centralized logger
         self.logger = get_logger(self.__class__.__name__)
         self.logger.info("Initializing ToolOffset page")
@@ -104,10 +105,10 @@ class ToolOffset(QWidget):
     def setToolOffsetX(self):
         logger.info("ToolOffset.setToolOffsetX started")
         try:
-            self.main_window.octoprint_client.gcode(
+            self.octoprint_client.gcode(
                 command='M218 T1 X{}'.format(round(self.toolOffsetXDoubleSpinBox.value(), 2))
             )  # restore eeprom settings to get Z home offset, mesh bed leveling back
-            self.main_window.octoprint_client.gcode(command='M500')
+            self.octoprint_client.gcode(command='M500')
             logger.info("X offset set to: {}".format(round(self.toolOffsetXDoubleSpinBox.value(), 2)))
         except Exception as e:
             logger.error("Error in ToolOffset.setToolOffsetX: {}".format(e))
@@ -116,11 +117,11 @@ class ToolOffset(QWidget):
     def setToolOffsetY(self):
         logger.info("ToolOffset.setToolOffsetY started")
         try:
-            self.main_window.octoprint_client.gcode(
+            self.octoprint_client.gcode(
                 command='M218 T1 Y{}'.format(round(self.toolOffsetYDoubleSpinBox.value(), 2))
             )  # restore eeprom settings to get Z home offset, mesh bed leveling back
-            self.main_window.octoprint_client.gcode(command='M500')
-            self.main_window.octoprint_client.gcode(command='M500')
+            self.octoprint_client.gcode(command='M500')
+            self.octoprint_client.gcode(command='M500')
             logger.info("Y offset set to: {}".format(round(self.toolOffsetYDoubleSpinBox.value(), 2)))
         except Exception as e:
             logger.error("Error in ToolOffset.setToolOffsetY: {}".format(e))
@@ -129,10 +130,10 @@ class ToolOffset(QWidget):
     def setToolOffsetZ(self):
         logger.info("ToolOffset.setToolOffsetZ started")
         try:
-            self.main_window.octoprint_client.gcode(
+            self.octoprint_client.gcode(
                 command='M218 T1 Z{}'.format(round(self.toolOffsetZDoubleSpinBox.value(), 2))
             )  # restore eeprom settings to get Z home offset, mesh bed leveling back
-            self.main_window.octoprint_client.gcode(command='M500')
+            self.octoprint_client.gcode(command='M500')
             logger.info("Z offset set to: {}".format(round(self.toolOffsetZDoubleSpinBox.value(), 2)))
         except Exception as e:
             logger.error("Error in ToolOffset.setToolOffsetZ: {}".format(e))

@@ -26,7 +26,7 @@ class ChangeFilament(QWidget):
         super().__init__()
         self.main_window = main_window
         self.model = main_window.printer_model
-        self.client = main_window.octoprint_client
+        self.octoprint_client = main_window.octoprint_client
         self.changeFilamentHeatingFlag = False
         self.loadFlag = None
         self.activeExtruder = 0  # Default to extruder 0
@@ -115,7 +115,7 @@ class ChangeFilament(QWidget):
             self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
             time.sleep(1)
             if self.model.printer_status not in ["Printing", "Paused"]:
-                self.client.gcode("G28")
+                self.octoprint_client.gcode("G28")
             self.selectToolChangeFilament()
             self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
             self.changeFilamentComboBox.clear()
@@ -138,12 +138,12 @@ class ChangeFilament(QWidget):
         try:
             if self.toolToggleChangeFilamentButton.isChecked():
                 self.setActiveExtruder(1)
-                self.client.selectTool(1)
-                self.client.jog(self.model.tool1PurgePosition['X'], self.model.tool1PurgePosition["Y"], absolute=True, speed=10000)
+                self.octoprint_client.selectTool(1)
+                self.octoprint_client.jog(self.model.tool1PurgePosition['X'], self.model.tool1PurgePosition["Y"], absolute=True, speed=10000)
             else:
                 self.setActiveExtruder(0)
-                self.client.selectTool(0)
-                self.client.jog(self.model.tool0PurgePosition['X'], self.model.tool0PurgePosition["Y"], absolute=True, speed=10000)
+                self.octoprint_client.selectTool(0)
+                self.octoprint_client.jog(self.model.tool0PurgePosition['X'], self.model.tool0PurgePosition["Y"], absolute=True, speed=10000)
             time.sleep(1)
         except Exception as e:
             logger.error(f"Error in changeFilament.selectToolChangeFilament: {e}")
@@ -175,13 +175,13 @@ class ChangeFilament(QWidget):
             self.loadStopFlag = False
             purge_pos = self.model.tool1PurgePosition if self.activeExtruder == 1 else self.model.tool0PurgePosition
             if self.model.printer_status not in ["Printing", "Paused"]:
-                self.client.jog(purge_pos['X'], purge_pos["Y"], absolute=True, speed=10000)
+                self.octoprint_client.jog(purge_pos['X'], purge_pos["Y"], absolute=True, speed=10000)
             print("Jogging done")
             if self.changeFilamentComboBox.findText("Loaded Filament") == -1:
                 print("reached here")
                 tool_key = f"tool{self.activeExtruder}"
                 temp = self.model.filaments[str(self.changeFilamentComboBox.currentText())]
-                self.client.setToolTemperature({tool_key: temp})
+                self.octoprint_client.setToolTemperature({tool_key: temp})
             self.stackedWidget.setCurrentWidget(self.changeFilamentProgressPage)
             self.model.temperatures_updated.connect(self.updateTemperature)
             self.changeFilamentStatus.setText(f"Heating Tool {self.activeExtruder}, Please Wait...")
@@ -202,11 +202,11 @@ class ChangeFilament(QWidget):
         try:
             purge_pos = self.model.tool1PurgePosition if self.activeExtruder == 1 else self.model.tool0PurgePosition
             if self.model.printer_status not in ["Printing", "Paused"]:
-                self.client.jog(purge_pos['X'], purge_pos["Y"], absolute=True, speed=10000)
+                self.octoprint_client.jog(purge_pos['X'], purge_pos["Y"], absolute=True, speed=10000)
             if self.changeFilamentComboBox.findText("Loaded Filament") == -1:
                 tool_key = f"tool{self.activeExtruder}"
                 temp = self.model.filaments[str(self.changeFilamentComboBox.currentText())]
-                self.client.setToolTemperature({tool_key: temp})
+                self.octoprint_client.setToolTemperature({tool_key: temp})
             self.stackedWidget.setCurrentWidget(self.changeFilamentProgressPage)
             self.model.temperatures_updated.connect(self.updateTemperature)
             self.changeFilamentStatus.setText(f"Heating Tool {self.activeExtruder}, Please Wait...")
@@ -248,7 +248,7 @@ class ChangeFilament(QWidget):
                 if self.loadFlag:
                     self.changeFilamentLoadFunction()
                 else:
-                    self.client.extrude(5)
+                    self.octoprint_client.extrude(5)
                     self.changeFilamentRetractFunction()
             self.changeFilamentProgress.setValue(tool_actual)
         except Exception as e:
@@ -264,9 +264,9 @@ class ChangeFilament(QWidget):
         try:
             self.stackedWidget.setCurrentWidget(self.changeFilamentLoadPage)
             while self.stackedWidget.currentWidget() == self.changeFilamentLoadPage:
-                self.client.gcode("G91")
-                self.client.gcode("G1 E5 F500")
-                self.client.gcode("G90")
+                self.octoprint_client.gcode("G91")
+                self.octoprint_client.gcode("G1 E5 F500")
+                self.octoprint_client.gcode("G90")
                 time.sleep(self.calcExtrudeTime(5, 500))
         except Exception as e:
             logger.error(f"Error in ChangeFilament.changeFilamentLoadFunction: {e}")
@@ -283,9 +283,9 @@ class ChangeFilament(QWidget):
             self.stackedWidget.setCurrentWidget(self.changeFilamentExtrudePage)
             for i in range(int(self.model.ptfeTubeLength / 150)):
                 print("___________________________Entered the for loop______________________________")
-                self.client.gcode("G91")
-                self.client.gcode("G1 E150 F1500")
-                self.client.gcode("G90")
+                self.octoprint_client.gcode("G91")
+                self.octoprint_client.gcode("G1 E150 F1500")
+                self.octoprint_client.gcode("G90")
                 time.sleep(self.calcExtrudeTime(150, 1500))
                 if self.stackedWidget.currentWidget() is not self.changeFilamentExtrudePage:
                     print("___________________________widget not set____________________________")
@@ -295,9 +295,9 @@ class ChangeFilament(QWidget):
                 print("___________________________Still extruding____________________________")
                 is_tpu = self.changeFilamentComboBox.currentText() == "TPU"
                 feed = 300 if is_tpu else 600
-                self.client.gcode("G91")
-                self.client.gcode(f"G1 E20 F{feed}")
-                self.client.gcode("G90")
+                self.octoprint_client.gcode("G91")
+                self.octoprint_client.gcode(f"G1 E20 F{feed}")
+                self.octoprint_client.gcode("G90")
                 time.sleep(self.calcExtrudeTime(20, feed))
             print("___________________________Exited the while loop______________________________")
         except Exception as e:
@@ -315,20 +315,20 @@ class ChangeFilament(QWidget):
             self.stackedWidget.setCurrentWidget(self.changeFilamentRetractPage)
             is_tpu = self.changeFilamentComboBox.currentText() == "TPU"
             feed = 300 if is_tpu else 600
-            self.client.gcode("G91")
-            self.client.gcode(f"G1 E10 F{feed}")
+            self.octoprint_client.gcode("G91")
+            self.octoprint_client.gcode(f"G1 E10 F{feed}")
             time.sleep(self.calcExtrudeTime(10, feed))
-            self.client.gcode("G1 E-25 F6000")
+            self.octoprint_client.gcode("G1 E-25 F6000")
             time.sleep(self.calcExtrudeTime(20, 6000))
             time.sleep(8)  # wait for filament to cool inside the nozzle
-            self.client.gcode("G1 E-150 F5000")
+            self.octoprint_client.gcode("G1 E-150 F5000")
             time.sleep(self.calcExtrudeTime(150, 5000))
-            self.client.gcode("G90")
+            self.octoprint_client.gcode("G90")
             for _ in range(int(self.model.ptfeTubeLength / 150)):
                 print("___________________________Entered the for loop______________________________")
-                self.client.gcode("G91")
-                self.client.gcode("G1 E-150 F2000")
-                self.client.gcode("G90")
+                self.octoprint_client.gcode("G91")
+                self.octoprint_client.gcode("G1 E-150 F2000")
+                self.octoprint_client.gcode("G90")
                 time.sleep(self.calcExtrudeTime(150, 2000))
                 if self.stackedWidget.currentWidget() is not self.changeFilamentRetractPage:
                     print("___________________________widget not set____________________________")
@@ -336,9 +336,9 @@ class ChangeFilament(QWidget):
 
             while self.stackedWidget.currentWidget() == self.changeFilamentRetractPage:
                 print("___________________________Still retracting____________________________")
-                self.client.gcode("G91")
-                self.client.gcode("G1 E-5 F1000")
-                self.client.gcode("G90")
+                self.octoprint_client.gcode("G91")
+                self.octoprint_client.gcode("G1 E-5 F1000")
+                self.octoprint_client.gcode("G90")
                 time.sleep(self.calcExtrudeTime(5, 1000))
             print("___________________________Exited the while loop______________________________")
         except Exception as e:

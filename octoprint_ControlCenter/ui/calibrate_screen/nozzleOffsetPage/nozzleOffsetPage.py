@@ -18,6 +18,7 @@ class NozzleOffsetPage(QWidget):
     def __init__(self, main_window):
         super(NozzleOffsetPage, self).__init__()
         self.main_window = main_window
+        self.octoprint_client = main_window.octoprint_client
         self.current_nozzle_offset = 0.0
 
         # Use centralized logger
@@ -101,8 +102,8 @@ class NozzleOffsetPage(QWidget):
             logger.info(f"Setting Z Probe Offset to: {rounded_offset} mm")
 
             # Send G-code commands
-            self.main_window.octoprint_client.gcode(command=f'M851 Z{rounded_offset}')
-            self.main_window.octoprint_client.gcode(command='M500')
+            self.octoprint_client.gcode(command=f'M851 Z{rounded_offset}')
+            self.octoprint_client.gcode(command='M500')
 
             # Reset spin box and update UI
             self.nozzleOffsetDoubleSpinBox.setValue(0)

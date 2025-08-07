@@ -15,6 +15,7 @@ class IdexLevelCalibration(QWidget):
     def __init__(self, main_window):
         super(IdexLevelCalibration, self).__init__()
         self.main_window = main_window
+        self.octoprint_client = main_window.octoprint_client
         self.logger = get_logger(self.__class__.__name__)
         self.logger.info("Initializing IDEX Level Calibration screen")
 
@@ -86,8 +87,8 @@ class IdexLevelCalibration(QWidget):
         if self.idexConfigStep5CancelButton:
             self.idexConfigStep5CancelButton.clicked.connect(self.idexCancelStep)
 
-        self.moveZMIdexButton.pressed.connect(lambda: self.main_window.octoprint_client.jog(z=-0.1))
-        self.moveZPIdexButton.pressed.connect(lambda: self.main_window.octoprint_client.jog(z=0.1))
+        self.moveZMIdexButton.pressed.connect(lambda: self.octoprint_client.jog(z=-0.1))
+        self.moveZPIdexButton.pressed.connect(lambda: self.octoprint_client.jog(z=0.1))
 
         # Set the default screen
         self.reset_wizard()
@@ -142,14 +143,14 @@ class IdexLevelCalibration(QWidget):
         """
         logger.info("IdexLevelCalibration.idexConfigStep1 started")
         try:
-            self.main_window.octoprint_client.gcode(command='M503')  # Gets old tool offset position
-            self.main_window.octoprint_client.gcode(command='M218 T1 Z0')  # set nozzle tool offsets to 0
-            self.main_window.octoprint_client.gcode(command='M104 S200')
-            self.main_window.octoprint_client.gcode(command='M104 T1 S200')
-            self.main_window.octoprint_client.home(['x', 'y', 'z'])
-            self.main_window.octoprint_client.gcode(command='G1 X10 Y10 Z20 F5000')
-            self.main_window.octoprint_client.gcode(command='T0')  # Set active tool to t0
-            self.main_window.octoprint_client.gcode(command='M420 S0')  # Dissable mesh bed leveling for good measure
+            self.octoprint_client.gcode(command='M503')  # Gets old tool offset position
+            self.octoprint_client.gcode(command='M218 T1 Z0')  # set nozzle tool offsets to 0
+            self.octoprint_client.gcode(command='M104 S200')
+            self.octoprint_client.gcode(command='M104 T1 S200')
+            self.octoprint_client.home(['x', 'y', 'z'])
+            self.octoprint_client.gcode(command='G1 X10 Y10 Z20 F5000')
+            self.octoprint_client.gcode(command='T0')  # Set active tool to t0
+            self.octoprint_client.gcode(command='M420 S0')  # Dissable mesh bed leveling for good measure
             self.stackedWidget.setCurrentWidget(self.idexConfigStep1Page)
             self.movie5 = QtGui.QMovie(
                 os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "Nozzlelevel1.gif")
@@ -172,12 +173,12 @@ class IdexLevelCalibration(QWidget):
         logger.info("IdexLevelCalibration.idexConfigStep2 started")
         try:
             self.stackedWidget.setCurrentWidget(self.idexConfigStep2Page)
-            self.main_window.octoprint_client.jog(
+            self.octoprint_client.jog(
                 x=self.main_window.printer_model.calibrationPosition['X1'],
                 y=self.main_window.printer_model.calibrationPosition['Y1'],
                 absolute=True, speed=10000
             )
-            self.main_window.octoprint_client.jog(z=0, absolute=True, speed=1500)
+            self.octoprint_client.jog(z=0, absolute=True, speed=1500)
             self.movie5.stop()
             self.movie6 = QtGui.QMovie(
                 os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "CalibrationPoint1.gif")
@@ -200,13 +201,13 @@ class IdexLevelCalibration(QWidget):
         logger.info("IdexLevelCalibration.idexConfigStep3 started")
         try:
             self.stackedWidget.setCurrentWidget(self.idexConfigStep3Page)
-            self.main_window.octoprint_client.jog(z=10, absolute=True, speed=1500)
-            self.main_window.octoprint_client.jog(
+            self.octoprint_client.jog(z=10, absolute=True, speed=1500)
+            self.octoprint_client.jog(
                 x=self.main_window.printer_model.calibrationPosition['X2'],
                 y=self.main_window.printer_model.calibrationPosition['Y2'],
                 absolute=True, speed=10000
             )
-            self.main_window.octoprint_client.jog(z=0, absolute=True, speed=1500)
+            self.octoprint_client.jog(z=0, absolute=True, speed=1500)
             self.movie6.stop()
             self.movie7 = QtGui.QMovie(
                 os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "CalibrationPoint2.gif")
@@ -230,9 +231,9 @@ class IdexLevelCalibration(QWidget):
         logger.info("IdexLevelCalibration.idexConfigStep4 started")
         try:
             self.stackedWidget.setCurrentWidget(self.idexConfigStep4Page)
-            self.main_window.octoprint_client.jog(z=10, absolute=True, speed=1500)
-            self.main_window.octoprint_client.gcode(command='M605 S3')
-            self.main_window.octoprint_client.jog(
+            self.octoprint_client.jog(z=10, absolute=True, speed=1500)
+            self.octoprint_client.gcode(command='M605 S3')
+            self.octoprint_client.jog(
                 x=self.main_window.printer_model.calibrationPosition['X1'],
                 y=self.main_window.printer_model.calibrationPosition['Y1'],
                 absolute=True, speed=10000
@@ -260,7 +261,7 @@ class IdexLevelCalibration(QWidget):
         logger.info("IdexLevelCalibration.idexConfigStep5 started")
         try:
             self.stackedWidget.setCurrentWidget(self.idexConfigStep5Page)
-            self.main_window.octoprint_client.jog(z=1, absolute=True, speed=10000)
+            self.octoprint_client.jog(z=1, absolute=True, speed=10000)
             self.movie8.stop()
             self.movie9 = QtGui.QMovie(
                 os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "NozzlelevelNew2.gif")
@@ -283,19 +284,19 @@ class IdexLevelCalibration(QWidget):
         """
         logger.info("IdexLevelCalibration.idexDoneStep started")
         try:
-            self.main_window.octoprint_client.jog(z=4, absolute=True, speed=1500)
+            self.octoprint_client.jog(z=4, absolute=True, speed=1500)
             self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
                 self.main_window.calibrate_screen.main_calibrate_page
             )
             self.movie9.stop()
-            self.main_window.octoprint_client.home(['z'])
-            self.main_window.octoprint_client.home(['x', 'y'])
-            self.main_window.octoprint_client.gcode(command='M104 S0')
-            self.main_window.octoprint_client.gcode(command='M104 T1 S0')
-            self.main_window.octoprint_client.gcode(command='M605 S1')
-            self.main_window.octoprint_client.gcode(command='M218 T1 Z0') #set nozzle offsets to 0
-            self.main_window.octoprint_client.gcode(command='M84')
-            self.main_window.octoprint_client.gcode(command='M500')  # store eeprom settings to get Z home offset, mesh bed leveling back
+            self.octoprint_client.home(['z'])
+            self.octoprint_client.home(['x', 'y'])
+            self.octoprint_client.gcode(command='M104 S0')
+            self.octoprint_client.gcode(command='M104 T1 S0')
+            self.octoprint_client.gcode(command='M605 S1')
+            self.octoprint_client.gcode(command='M218 T1 Z0') #set nozzle offsets to 0
+            self.octoprint_client.gcode(command='M84')
+            self.octoprint_client.gcode(command='M500')  # store eeprom settings to get Z home offset, mesh bed leveling back
         except Exception as e:
             logger.error("Error in IdexLevelCalibration.idexDoneStep: {}".format(e))
             dialog.WarningOk(self, "Error in IdexLevelCalibration.idexDoneStep: {}".format(e), overlay=True)
@@ -318,18 +319,18 @@ class IdexLevelCalibration(QWidget):
                 self.movie9.stop()
             except:
                 pass
-            self.main_window.octoprint_client.gcode(command='M605 S1')
-            self.main_window.octoprint_client.home(['z'])
-            self.main_window.octoprint_client.home(['x', 'y'])
-            self.main_window.octoprint_client.gcode(command='M104 S0')
-            self.main_window.octoprint_client.gcode(command='M104 T1 S0')
+            self.octoprint_client.gcode(command='M605 S1')
+            self.octoprint_client.home(['z'])
+            self.octoprint_client.home(['x', 'y'])
+            self.octoprint_client.gcode(command='M104 S0')
+            self.octoprint_client.gcode(command='M104 T1 S0')
             self.main_window.calibrate_screen.screens.get("tool_offset")
-            self.main_window.octoprint_client.gcode(
+            self.octoprint_client.gcode(
                 command='M218 T1 Z{}'.format(
                     self.main_window.calibrate_screen.screens.get("tool_offset").idexToolOffsetRestoreValue
                 )
             )
-            self.main_window.octoprint_client.gcode(command='M84')
+            self.octoprint_client.gcode(command='M84')
         except Exception as e:
             logger.error("Error in IdexLevelCalibration.idexCancelStep: {}".format(e))
             dialog.WarningOk(self, "Error in IdexLevelCalibration.idexCancelStep: {}".format(e), overlay=True)

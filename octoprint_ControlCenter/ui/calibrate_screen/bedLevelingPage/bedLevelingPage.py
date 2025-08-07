@@ -17,6 +17,7 @@ class BedLeveling(QWidget):
     def __init__(self, main_window):
         super().__init__()
         self.main_window = main_window
+        self.octoprint_client = main_window.octoprint_client
         self.logger = get_logger(self.__class__.__name__)  # Using the centralized logger
         self.logger.info("Initializing Bed Leveling screen")
 
@@ -63,9 +64,9 @@ class BedLeveling(QWidget):
         ], "BedLeveling")
 
         if self.moveZPT1CaliberateButton:
-            self.moveZPT1CaliberateButton.pressed.connect(lambda: self.main_window.octoprint_client.jog(z=0.025))
+            self.moveZPT1CaliberateButton.pressed.connect(lambda: self.octoprint_client.jog(z=0.025))
         if self.moveZMT1CaliberateButton:
-            self.moveZMT1CaliberateButton.pressed.connect(lambda: self.main_window.octoprint_client.jog(z=-0.025))
+            self.moveZMT1CaliberateButton.pressed.connect(lambda: self.octoprint_client.jog(z=-0.025))
         if self.nozzleHeightStep1NextButton:
             self.nozzleHeightStep1NextButton.clicked.connect(self.nozzleHeightStep1)
         if self.nozzleHeightStep1CancelButton:
@@ -109,17 +110,17 @@ class BedLeveling(QWidget):
         self.logger.info("BedLeveling.quickStep1 started")
         try:
             self.toolZOffsetCaliberationPageCount = 0
-            self.main_window.octoprint_client.gcode(command='M104 S200')
-            self.main_window.octoprint_client.gcode(command='M104 T1 S200')
+            self.octoprint_client.gcode(command='M104 S200')
+            self.octoprint_client.gcode(command='M104 T1 S200')
 
-            self.main_window.octoprint_client.gcode(command='T0')  # Set active tool to t0
-            self.main_window.octoprint_client.gcode(
+            self.octoprint_client.gcode(command='T0')  # Set active tool to t0
+            self.octoprint_client.gcode(
                 command='M503')  # makes sure internal value of Z offset and Tool offsets are stored before erasing
-            self.main_window.octoprint_client.gcode(command='M420 S0')  # Disable mesh bed leveling for good measure
+            self.octoprint_client.gcode(command='M420 S0')  # Disable mesh bed leveling for good measure
             self.stackedWidget.setCurrentWidget(self.quickStep1Page)
-            self.main_window.octoprint_client.home(['x', 'y', 'z'])
-            self.main_window.octoprint_client.gcode(command='T0')
-            self.main_window.octoprint_client.jog(x=40, y=40, absolute=True, speed=2000)
+            self.octoprint_client.home(['x', 'y', 'z'])
+            self.octoprint_client.gcode(command='T0')
+            self.octoprint_client.jog(x=40, y=40, absolute=True, speed=2000)
         except Exception as e:
             self.logger.error("Error in BedLeveling.quickStep1: {}".format(e))
             dialog.WarningOk(self, "Error in BedLeveling.quickStep1: {}".format(e), overlay=True)
@@ -132,12 +133,12 @@ class BedLeveling(QWidget):
         self.logger.info("BedLeveling.quickStep2 started")
         try:
             self.stackedWidget.setCurrentWidget(self.quickStep2Page)
-            self.main_window.octoprint_client.jog(
+            self.octoprint_client.jog(
                 x=self.main_window.printer_model.calibrationPosition['X1'],
                 y=self.main_window.printer_model.calibrationPosition['Y1'],
                 absolute=True, speed=10000
             )
-            self.main_window.octoprint_client.jog(z=0, absolute=True, speed=1500)
+            self.octoprint_client.jog(z=0, absolute=True, speed=1500)
             self.movie1 = QtGui.QMovie(
                 os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "CalibrationPoint1.gif")
             )
@@ -158,13 +159,13 @@ class BedLeveling(QWidget):
         self.logger.info("BedLeveling.quickStep3 started")
         try:
             self.stackedWidget.setCurrentWidget(self.quickStep3Page)
-            self.main_window.octoprint_client.jog(z=10, absolute=True, speed=1500)
-            self.main_window.octoprint_client.jog(
+            self.octoprint_client.jog(z=10, absolute=True, speed=1500)
+            self.octoprint_client.jog(
                 x=self.main_window.printer_model.calibrationPosition['X2'],
                 y=self.main_window.printer_model.calibrationPosition['Y2'],
                 absolute=True, speed=10000
             )
-            self.main_window.octoprint_client.jog(z=0, absolute=True, speed=1500)
+            self.octoprint_client.jog(z=0, absolute=True, speed=1500)
             self.movie1.stop()
             self.movie2 = QtGui.QMovie(
                 os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "CalibrationPoint2.gif")
@@ -189,13 +190,13 @@ class BedLeveling(QWidget):
         try:
             # sent twice for some reason
             self.stackedWidget.setCurrentWidget(self.quickStep4Page)
-            self.main_window.octoprint_client.jog(z=10, absolute=True, speed=1500)
-            self.main_window.octoprint_client.jog(
+            self.octoprint_client.jog(z=10, absolute=True, speed=1500)
+            self.octoprint_client.jog(
                 x=self.main_window.printer_model.calibrationPosition['X3'],
                 y=self.main_window.printer_model.calibrationPosition['Y3'],
                 absolute=True, speed=10000
             )
-            self.main_window.octoprint_client.jog(z=0, absolute=True, speed=1500)
+            self.octoprint_client.jog(z=0, absolute=True, speed=1500)
             self.movie2.stop()
             self.movie3 = QtGui.QMovie(
                 os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "CalibrationPoint3.gif")
@@ -219,21 +220,21 @@ class BedLeveling(QWidget):
                 self.toolZOffsetLabel.setText(
                     "Move the bed up or down to the First Nozzle , testing height using paper")
                 self.stackedWidget.setCurrentWidget(self.nozzleHeightStep1Page)
-                self.main_window.octoprint_client.jog(z=10, absolute=True, speed=1500)
-                self.main_window.octoprint_client.jog(
+                self.octoprint_client.jog(z=10, absolute=True, speed=1500)
+                self.octoprint_client.jog(
                     x=self.main_window.printer_model.calibrationPosition['X4'],
                     y=self.main_window.printer_model.calibrationPosition['Y4'],
                     absolute=True, speed=10000
                 )
-                self.main_window.octoprint_client.jog(z=1, absolute=True, speed=1500)
+                self.octoprint_client.jog(z=1, absolute=True, speed=1500)
                 self.toolZOffsetCaliberationPageCount = 1
             elif self.toolZOffsetCaliberationPageCount == 1:
                 self.toolZOffsetLabel.setText(
                     "Move the bed up or down to the Second Nozzle , testing height using paper")
-                self.main_window.octoprint_client.gcode(command='G92 Z0')  # set the current Z position to zero
-                self.main_window.octoprint_client.jog(z=1, absolute=True, speed=1500)
-                self.main_window.octoprint_client.gcode(command='T1')
-                self.main_window.octoprint_client.jog(
+                self.octoprint_client.gcode(command='G92 Z0')  # set the current Z position to zero
+                self.octoprint_client.jog(z=1, absolute=True, speed=1500)
+                self.octoprint_client.gcode(command='T1')
+                self.octoprint_client.jog(
                     x=self.main_window.printer_model.calibrationPosition['X4'],
                     y=self.main_window.printer_model.calibrationPosition['Y4'],
                     absolute=True, speed=10000
@@ -259,17 +260,17 @@ class BedLeveling(QWidget):
         self.logger.info("BedLeveling.doneStep started")
         try:
             self.setNewToolZOffsetFromCurrentZBool = True
-            self.main_window.octoprint_client.gcode(command='M114') #setZToolOffset ill set the new tool offset once M114 gives the current Z position from the websocket response
-            self.main_window.octoprint_client.jog(z=4, absolute=True, speed=1500)
-            self.main_window.octoprint_client.gcode(command='T0')
+            self.octoprint_client.gcode(command='M114') #setZToolOffset ill set the new tool offset once M114 gives the current Z position from the websocket response
+            self.octoprint_client.jog(z=4, absolute=True, speed=1500)
+            self.octoprint_client.gcode(command='T0')
 
             self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
                 self.main_window.calibrate_screen.main_calibrate_page)
-            self.main_window.octoprint_client.home(['x', 'y', 'z'])
-            self.main_window.octoprint_client.gcode(command='M104 S0')
-            self.main_window.octoprint_client.gcode(command='M104 T1 S0')
-            self.main_window.octoprint_client.gcode(command='M84')
-            self.main_window.octoprint_client.gcode(
+            self.octoprint_client.home(['x', 'y', 'z'])
+            self.octoprint_client.gcode(command='M104 S0')
+            self.octoprint_client.gcode(command='M104 T1 S0')
+            self.octoprint_client.gcode(command='M84')
+            self.octoprint_client.gcode(
                 command='M500')  # store eeprom settings to get Z home offset, mesh bed leveling back
         except Exception as e:
             self.logger.error("Error in BedLeveling.doneStep: {}".format(e))
@@ -286,10 +287,10 @@ class BedLeveling(QWidget):
         try:
             self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
                 self.main_window.calibrate_screen.main_calibrate_page)
-            self.main_window.octoprint_client.home(['x', 'y', 'z'])
-            self.main_window.octoprint_client.gcode(command='M104 S0')
-            self.main_window.octoprint_client.gcode(command='M104 T1 S0')
-            self.main_window.octoprint_client.gcode(command='M84')
+            self.octoprint_client.home(['x', 'y', 'z'])
+            self.octoprint_client.gcode(command='M104 S0')
+            self.octoprint_client.gcode(command='M104 T1 S0')
+            self.octoprint_client.gcode(command='M84')
             try:
                 self.movie1.stop()
                 self.movie2.stop()
@@ -371,12 +372,12 @@ class BedLeveling(QWidget):
                 print(self.toolOffsetZ)
                 print(self.currentZPosition)
                 newToolOffsetZ = (float(self.toolOffsetZ) + float(self.currentZPosition))
-                self.main_window.octoprint_client.gcode(
+                self.octoprint_client.gcode(
                     command='M218 T1 Z{}'.format(newToolOffsetZ)
                 )  # restore eeprom settings to get Z home offset, mesh bed leveling back
 
                 self.setNewToolZOffsetFromCurrentZBool = False
-                self.main_window.octoprint_client.gcode(command='SAVE_CONFIG')  # store eeprom settings to get Z home offset
+                self.octoprint_client.gcode(command='SAVE_CONFIG')  # store eeprom settings to get Z home offset
         except Exception as e:
             logger.error("Error in BedLeveling.setZToolOffset: {}".format(e))
             dialog.WarningOk(self, "Error in BedLeveling.setZToolOffset: {}".format(e), overlay=True)

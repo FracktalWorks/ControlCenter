@@ -17,6 +17,7 @@ class SoftwareUpdate(QWidget):
     def __init__(self, parent, settings_screen):
         super(SoftwareUpdate, self).__init__(parent)
         self.mainSettingsWidget = settings_screen  # Reference to the main settings widget
+        self.octoprint_client = settings_screen.octoprint_client
 
         # Set up logger
         self.logger = get_logger(self.__class__.__name__)
@@ -69,7 +70,7 @@ class SoftwareUpdate(QWidget):
 
         if self.performUpdateButton:
             self.performUpdateButton.clicked.connect(
-                lambda: self.mainSettingsWidget.main_window.octoprint_client.performSoftwareUpdate()
+                lambda: self.octoprint_client.performSoftwareUpdate()
             )
         else:
             print("WARNING: Could not connect update button - button not found")
@@ -178,7 +179,7 @@ class SoftwareUpdate(QWidget):
             # Firmware version on the MKS https://github.com/FracktalWorks/OctoPrint-JuliaFirmwareUpdater
             # self.updateListWidget.addItem(self.getFirmwareVersion())
 
-            data = self.mainSettingsWidget.main_window.octoprint_client.getSoftwareUpdateInfo()
+            data = self.octoprint_client.getSoftwareUpdateInfo()
             if data:
                 for item in data["information"]:
                     # print(item)

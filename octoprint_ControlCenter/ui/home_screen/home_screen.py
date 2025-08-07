@@ -21,6 +21,7 @@ class HomeScreen(QWidget):
     def __init__(self, main_window):
         super(HomeScreen, self).__init__()
         self.main_window = main_window
+        self.octoprint_client = main_window.octoprint_client
         self.printer_connected = False
         self.is_printing = False
         self.temperature_data = {"tool0": {"actual": 0, "target": 0},
@@ -361,25 +362,7 @@ class HomeScreen(QWidget):
     def toggle_door_lock(self):
         """Toggle printer door lock"""
         # if not self.printer_connected:
-        #     return
-
-        logger.debug("Toggle Door Lock button clicked")
-        is_locked = self.doorLockButton.isChecked()
-        door_status = "locked" if is_locked else "unlocked"
-        logger.info(f"Door {door_status}")
-
-        # Send command to OctoPrint if connected
-        if hasattr(self.main_window, 'octoprint_client'):
-            client = self.main_window.octoprint_client
-            if client:
-                # Replace with actual command for your printer
-                try:
-                    command = "M280 P0 S10" if is_locked else "M280 P0 S90"
-                    client.gcode(command=command)
-                    client.overrideDoorLock()
-                except Exception as e:
-                    logger.error("Error in HomeScreen.doorLock: {}".format(e))
-                    dialog.WarningOk(self, "Error in HomeScreen.doorLock: {}".format(e), overlay=True)
+        pass
 
     def open_menu(self):
         """Navigate to menu screen"""
@@ -396,7 +379,7 @@ class HomeScreen(QWidget):
 
         # Send command to OctoPrint if connected
         if hasattr(self.main_window, 'octoprint_client'):
-            client = self.main_window.octoprint_client
+            client = self.octoprint_client
             if client:
                 try:
                     if dialog.WarningYesNo(self, "Are you sure you want to stop the print?"):
@@ -415,7 +398,7 @@ class HomeScreen(QWidget):
 
         # Send command to OctoPrint if connected
         if hasattr(self.main_window, 'octoprint_client'):
-            client = self.main_window.octoprint_client
+            client = self.octoprint_client
             if client:
                 try:
                     if self.printerStatusText == "Operational":

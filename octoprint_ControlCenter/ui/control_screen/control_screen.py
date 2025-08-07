@@ -23,6 +23,7 @@ class ControlScreen(QWidget):
     def __init__(self, main_window):
         super(ControlScreen, self).__init__()
         self.main_window = main_window
+        self.octoprint_client = main_window.octoprint_client
 
         # Use centralized logger
         self.logger = get_logger(self.__class__.__name__)
@@ -109,28 +110,28 @@ class ControlScreen(QWidget):
             self.controlBackButton.clicked.connect(self._go_back)
         if self.setFeedRateButton:
             self.setFeedRateButton.clicked.connect(
-                lambda: self.main_window.octoprint_client.feedrate(self.feedRateSpinBox.value())
+                lambda: self.octoprint_client.feedrate(self.feedRateSpinBox.value())
             )
         if self.moveZPBabyStep:
             self.moveZPBabyStep.clicked.connect(
-                lambda: self.main_window.octoprint_client.gcode(command='M290 Z0.025')
+                lambda: self.octoprint_client.gcode(command='M290 Z0.025')
             )
         if self.moveZMBabyStep:
             self.moveZMBabyStep.clicked.connect(
-                lambda: self.main_window.octoprint_client.gcode(command='M290 Z-0.025')
+                lambda: self.octoprint_client.gcode(command='M290 Z-0.025')
             )
 
         # Temperature Buttons Signal Connections
         if self.fanOnButton:
-            self.fanOnButton.clicked.connect(lambda: self.main_window.octoprint_client.gcode(command='M106 S255'))
+            self.fanOnButton.clicked.connect(lambda: self.octoprint_client.gcode(command='M106 S255'))
         if self.fanOffButton:
-            self.fanOffButton.clicked.connect(lambda: self.main_window.octoprint_client.gcode(command='M107'))
+            self.fanOffButton.clicked.connect(lambda: self.octoprint_client.gcode(command='M107'))
         if self.cooldownButton:
             self.cooldownButton.clicked.connect(self.coolDownAction)
         if self.setToolTempButton:
             self.setToolTempButton.clicked.connect(self.setToolTemp)
         if self.setBedTempButton:
-            self.setBedTempButton.clicked.connect(lambda: self.main_window.octoprint_client.setBedTemperature(self.bedTempSpinBox.value()))
+            self.setBedTempButton.clicked.connect(lambda: self.octoprint_client.setBedTemperature(self.bedTempSpinBox.value()))
         if self.bed60PreheatButton:
             self.bed60PreheatButton.pressed.connect(lambda: self.preheatBedTemp(60))
         if self.bed100PreheatButton:
@@ -150,33 +151,33 @@ class ControlScreen(QWidget):
         if self.step100mmButton:
             self.step100mmButton.clicked.connect(lambda: self.setStep(100))
         if self.moveXPButton:
-            self.moveXPButton.clicked.connect(lambda: self.main_window.octoprint_client.jog(x=self.step, speed=2000))
+            self.moveXPButton.clicked.connect(lambda: self.octoprint_client.jog(x=self.step, speed=2000))
         if self.moveXMButton:
-            self.moveXMButton.clicked.connect(lambda: self.main_window.octoprint_client.jog(x=-self.step, speed=2000))
+            self.moveXMButton.clicked.connect(lambda: self.octoprint_client.jog(x=-self.step, speed=2000))
         if self.moveYPButton:
-            self.moveYPButton.clicked.connect(lambda: self.main_window.octoprint_client.jog(y=self.step, speed=2000))
+            self.moveYPButton.clicked.connect(lambda: self.octoprint_client.jog(y=self.step, speed=2000))
         if self.moveYMButton:
-            self.moveYMButton.clicked.connect(lambda: self.main_window.octoprint_client.jog(y=-self.step, speed=2000))
+            self.moveYMButton.clicked.connect(lambda: self.octoprint_client.jog(y=-self.step, speed=2000))
         if self.motorOffButton:
-            self.motorOffButton.clicked.connect(lambda: self.main_window.octoprint_client.gcode(command='M18'))
+            self.motorOffButton.clicked.connect(lambda: self.octoprint_client.gcode(command='M18'))
         if self.homeXYButton:
-            self.homeXYButton.clicked.connect(lambda: self.main_window.octoprint_client.home(['x', 'y']))
+            self.homeXYButton.clicked.connect(lambda: self.octoprint_client.home(['x', 'y']))
         if self.moveZMButton:
-            self.moveZMButton.clicked.connect(lambda: self.main_window.octoprint_client.jog(z=-self.step, speed=2000))
+            self.moveZMButton.clicked.connect(lambda: self.octoprint_client.jog(z=-self.step, speed=2000))
         if self.moveZPButton:
-            self.moveZPButton.clicked.connect(lambda: self.main_window.octoprint_client.jog(z=self.step, speed=2000))
+            self.moveZPButton.clicked.connect(lambda: self.octoprint_client.jog(z=self.step, speed=2000))
         if self.homeZButton:
-            self.homeZButton.clicked.connect(lambda: self.main_window.octoprint_client.home(['z']))
+            self.homeZButton.clicked.connect(lambda: self.octoprint_client.home(['z']))
         if self.toolToggleMotionButton:
             self.toolToggleMotionButton.clicked.connect(self.selectToolMotion)
         if self.extruderButton:
-            self.extruderButton.clicked.connect(lambda: self.main_window.octoprint_client.extrude(self.step))
+            self.extruderButton.clicked.connect(lambda: self.octoprint_client.extrude(self.step))
         if self.retractButton:
-            self.retractButton.clicked.connect(lambda: self.main_window.octoprint_client.extrude(-self.step))
+            self.retractButton.clicked.connect(lambda: self.octoprint_client.extrude(-self.step))
 
         # Filament Buttons Signal Connections
         if self.setFlowRateButton:
-            self.setFlowRateButton.clicked.connect(lambda: self.main_window.octoprint_client.flowrate(self.flowRateSpinBox.value()))
+            self.setFlowRateButton.clicked.connect(lambda: self.octoprint_client.flowrate(self.flowRateSpinBox.value()))
         if self.changeFilamentButton:
             self.changeFilamentButton.clicked.connect(self.open_change_filament_screen)
         if self.toggleFilamentSensorButton:
@@ -340,7 +341,7 @@ class ControlScreen(QWidget):
         # Use relative path for icon
         icon_path = os.path.join(os.path.dirname(__file__), "..", "resources", "img", "icons", icon)
         self.toggleFilamentSensorButton.setIcon(QtGui.QIcon(_fromUtf8(icon_path)))
-        self.main_window.octoprint_client.gcode(
+        self.octoprint_client.gcode(
             command="PRIMARY_SFS_ENABLE{}".format(int(self.toggleFilamentSensorButton.isChecked())))
 
     def filamentSensorHandler(self, data):
@@ -379,7 +380,7 @@ class ControlScreen(QWidget):
                 change_filament_screen.changeFilamentExtrudePage,
                 change_filament_screen.changeFilamentRetractPage,
                 change_filament_screen.changeFilamentLoadPage]:
-                self.main_window.octoprint_client.gcode(command='PAUSE')
+                self.octoprint_client.gcode(command='PAUSE')
                 if dialog.WarningOk(self,
                                     "Filament outage or clog detected in Extruder 0. Please check the external motors. Print paused"):
                     pass
@@ -390,7 +391,7 @@ class ControlScreen(QWidget):
                 change_filament_screen.changeFilamentExtrudePage,
                 change_filament_screen.changeFilamentRetractPage,
                 change_filament_screen.changeFilamentLoadPage]:
-                self.main_window.octoprint_client.gcode(command='PAUSE')
+                self.octoprint_client.gcode(command='PAUSE')
                 if dialog.WarningOk(self,
                                     "Filament outage or clog detected in Extruder 1. Please check the external motors. Print paused"):
                     pass
@@ -405,10 +406,10 @@ class ControlScreen(QWidget):
         """
         logger.info("ControlScreen.coolDownAction started")
         try:
-            self.main_window.octoprint_client.gcode(command='M107')
-            self.main_window.octoprint_client.setToolTemperature({"tool0": 0, "tool1": 0})
+            self.octoprint_client.gcode(command='M107')
+            self.octoprint_client.setToolTemperature({"tool0": 0, "tool1": 0})
             # octopiclient.setToolTemperature({"tool0": 0})
-            self.main_window.octoprint_client.setBedTemperature(0)
+            self.octoprint_client.setBedTemperature(0)
             self.toolTempSpinBox.setProperty("value", 0)
             self.bedTempSpinBox.setProperty("value", 0)
         except Exception as e:
@@ -422,10 +423,10 @@ class ControlScreen(QWidget):
         logger.info("ControlScreen.setToolTemp started")
         try:
             if self.toolToggleTemperatureButton.isChecked():
-                self.main_window.octoprint_client.gcode(command='M104 T1 S' + str(self.toolTempSpinBox.value()))
+                self.octoprint_client.gcode(command='M104 T1 S' + str(self.toolTempSpinBox.value()))
                 # octopiclient.setToolTemperature({"tool1": self.toolTempSpinBox.value()})
             else:
-                self.main_window.octoprint_client.gcode(command='M104 T0 S' + str(self.toolTempSpinBox.value()))
+                self.octoprint_client.gcode(command='M104 T0 S' + str(self.toolTempSpinBox.value()))
                 # octopiclient.setToolTemperature({"tool0": self.toolTempSpinBox.value()})
         except Exception as e:
             logger.error("Error in ControlScreen.setToolTemp: {}".format(e))
@@ -438,7 +439,7 @@ class ControlScreen(QWidget):
         """
         logger.info("ControlScreen.preheatBedTemp started")
         try:
-            self.main_window.octoprint_client.gcode(command='M140 S' + str(temp))
+            self.octoprint_client.gcode(command='M140 S' + str(temp))
             self.bedTempSpinBox.setProperty("value", temp)
         except Exception as e:
             logger.error("Error in ControlScreen.preheatBedTemp: {}".format(e))
@@ -452,9 +453,9 @@ class ControlScreen(QWidget):
         logger.info("ControlScreen.preheatToolTemp started")
         try:
             if self.toolToggleTemperatureButton.isChecked():
-                self.main_window.octoprint_client.gcode(command='M104 T1 S' + str(temp))
+                self.octoprint_client.gcode(command='M104 T1 S' + str(temp))
             else:
-                self.main_window.octoprint_client.gcode(command='M104 T0 S' + str(temp))
+                self.octoprint_client.gcode(command='M104 T0 S' + str(temp))
             self.toolTempSpinBox.setProperty("value", temp)
         except Exception as e:
             logger.error("Error in ControlScreen.preheatToolTemp: {}".format(e))
@@ -486,11 +487,11 @@ class ControlScreen(QWidget):
         logger.info("ControlScreen.selectToolMotion started")
         try:
             if self.toolToggleMotionButton.isChecked():
-                self.main_window.octoprint_client.selectTool(1)
+                self.octoprint_client.selectTool(1)
                 self.setActiveExtruder(1)
 
             else:
-                self.main_window.octoprint_client.selectTool(0)
+                self.octoprint_client.selectTool(0)
                 self.setActiveExtruder(0)
         except Exception as e:
             logger.error("Error in ControlScreen.selectToolMotion: {}".format(e))

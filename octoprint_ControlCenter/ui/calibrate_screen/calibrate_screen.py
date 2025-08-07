@@ -19,6 +19,7 @@ class CalibrateScreen(QWidget):
     def __init__(self, main_window):
         super(CalibrateScreen, self).__init__()
         self.main_window = main_window
+        self.octoprint_client = main_window.octoprint_client
         self.logger = get_logger(self.__class__.__name__)
 
         # Load the UI
@@ -100,9 +101,9 @@ class CalibrateScreen(QWidget):
         self.logger.info("CalibrateScreen.inputShaperCalibrate started")
         try:
             dialog.WarningOk(self, "Wait for all calibration movements to finish before proceeding.", overlay=True)
-            self.main_window.octoprint_client.gcode(command='G28')
-            self.main_window.octoprint_client.gcode(command='SHAPER_CALIBRATE')
-            self.main_window.octoprint_client.gcode(command='SAVE_CONFIG')
+            self.octoprint_client.gcode(command='G28')
+            self.octoprint_client.gcode(command='SHAPER_CALIBRATE')
+            self.octoprint_client.gcode(command='SAVE_CONFIG')
 
         except Exception as e:
             error_message = f"Error in inptuShaperCalibrate: {str(e)}"

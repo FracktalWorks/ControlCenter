@@ -14,6 +14,7 @@ class SettingsScreen(QWidget):
     def __init__(self, main_window):
         super(SettingsScreen, self).__init__()
         self.main_window = main_window
+        self.octoprint_client = main_window.octoprint_client
 
         # Use the centralized logger
         self.logger = get_logger(self.__class__.__name__)
@@ -263,10 +264,10 @@ class SettingsScreen(QWidget):
                 os.system('sudo cp -f firmware/TOOLHEADS_TD-01_TOOLHEAD1.cfg /home/pi/TOOLHEADS_TD-01_TOOLHEAD1.cfg')
                 os.system('sudo cp -f firmware/variables.cfg /home/pi/variables.cfg')
                 # TODO: check printer variant setting and modify printer.cfg accordingly
-                self.main_window.octoprint_client.gcode(command='M502')
-                self.main_window.octoprint_client.gcode(command='M500')
-                self.main_window.octoprint_client.gcode(command='FIRMWARE_RESTART')
-                self.main_window.octoprint_client.gcode(command='RESTART')
+                self.octoprint_client.gcode(command='M502')
+                self.octoprint_client.gcode(command='M500')
+                self.octoprint_client.gcode(command='FIRMWARE_RESTART')
+                self.octoprint_client.gcode(command='RESTART')
         except Exception as e:
             self.logger.error("Error in SettingsScreen.restorePrintDefaults: {}".format(e))
             dialog.WarningOk(self, "Error in SettingsScreen.restorePrintDefaults: {}".format(e), overlay=True)
