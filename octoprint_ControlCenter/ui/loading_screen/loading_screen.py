@@ -8,20 +8,19 @@ from utils.logger import get_logger
 # Add resource import
 import ui.resources.resource_rc
 
-logger = get_logger(__name__)
-
 class LoadingScreen(QWidget):
     def __init__(self, main_window):
         super(LoadingScreen, self).__init__()
+        self.logger = get_logger(self.__class__.__name__)
         self.main_window = main_window
         
         try:
             # Use relative path from the current module's directory
             ui_file_path = os.path.join(os.path.dirname(__file__), "loading_screen.ui")
             uic.loadUi(ui_file_path, self)
-            logger.info("LoadingScreen UI loaded successfully")
+            self.logger.info("LoadingScreen UI loaded successfully")
         except Exception as e:
-            logger.error(f"Failed to load LoadingScreen UI file: {e}")
+            self.logger.error(f"Failed to load LoadingScreen UI file: {e}")
 
         """ ---------- Initialize UI components ---------- """
         
@@ -48,7 +47,7 @@ class LoadingScreen(QWidget):
         if self.loading:
             self.loading.setText("Initializing...")
             
-        logger.info("LoadingScreen components initialized successfully")
+        self.logger.info("LoadingScreen components initialized successfully")
 
     def update_progress(self, value, message="Loading..."):
         """Update the progress bar and loading message"""
@@ -58,4 +57,4 @@ class LoadingScreen(QWidget):
             self.loading.setText(message)
         # Force GUI update
         self.repaint()
-        logger.info(f"Progress updated: {value}% - {message}")
+        self.logger.info(f"Progress updated: {value}% - {message}")

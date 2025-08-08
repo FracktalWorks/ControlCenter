@@ -7,9 +7,10 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 class MenuScreen(QWidget):
-    def __init__(self, main_window):
+    def __init__(self, main_window, minimalUI=False):
         super(MenuScreen, self).__init__()
         self.main_window = main_window
+        self.minimalUI = minimalUI
 
         # Use centralized logger
         self.logger = get_logger(self.__class__.__name__)
@@ -69,6 +70,21 @@ class MenuScreen(QWidget):
         if self.menuBackButton:
             self.menuBackButton.clicked.connect(self.go_back)
             self.logger.debug("Connected menuBackButton to handler")
+        
+        if self.minimalUI:
+             # Disable buttons in Menu Screen
+            self.menuControlButton.setEnabled(False)
+            self.menuPrintButton.setEnabled(False)
+            self.menuCalibrateButton.setEnabled(False)
+            self.menuFilamentNozzleButton.setEnabled(False)
+        else:
+            # Enable buttons in Menu Screen
+            self.menuControlButton.setEnabled(True)
+            self.menuPrintButton.setEnabled(True)
+            self.menuCalibrateButton.setEnabled(True)
+            self.menuFilamentNozzleButton.setEnabled(True)
+
+
 
     def open_print(self):
         """Navigate to the print location screen"""

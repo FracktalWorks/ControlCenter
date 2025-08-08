@@ -9,18 +9,16 @@ from utils.styles import printer_status_green, printer_status_red, printer_statu
 from utils import dialog
 from utils import styles
 from utils.network_utils import getIP
-
 from utils.helpers import run_async
 import time
 import ui.resources.resource_rc  # Import resources for Qt resource system
 
-
-logger = get_logger(__name__)
-
 class HomeScreen(QWidget):
-    def __init__(self, main_window):
+    def __init__(self, main_window, minimalUI=False):
         super(HomeScreen, self).__init__()
+        self.logger = get_logger(self.__class__.__name__)
         self.main_window = main_window
+        self.minimalUI = minimalUI
         self.octoprint_client = main_window.octoprint_client
         self.printer_connected = False
         self.is_printing = False
@@ -37,8 +35,7 @@ class HomeScreen(QWidget):
         self.printerStatusText = ""
         self._last_status = ""
 
-        # Use class-level logger
-        self.logger = get_logger(self.__class__.__name__)
+
         # Load the UI
         try:
             # Use relative path from the current module's directory
@@ -46,8 +43,7 @@ class HomeScreen(QWidget):
             uic.loadUi(ui_file_path, self)
             self.logger.info("HomeScreen UI loaded successfully")
         except Exception as e:
-            self.logger.error(f"Failed to load HomeScreen UI file: {e}")
-            logger.exception(f"Failed to load HomeScreen UI file: {e}")
+            self.logger.exception(f"Failed to load HomeScreen UI file: {e}")
 
         """ ---------- Initialize UI components by group ---------- """
 
@@ -124,20 +120,20 @@ class HomeScreen(QWidget):
         # Initialize UI state
         # Update temperature displays
         if self.tool0ActualTemperature and self.tool0TargetTemperature:
-            self.tool0ActualTemperature.setText("0.0")
-            self.tool0TargetTemperature.setText("0.0")
+            self.tool0ActualTemperature.setText("0°C")
+            self.tool0TargetTemperature.setText("0°C")
             if self.tool0TempBar:
                 self.tool0TempBar.setValue(0)
 
         if self.tool1ActualTemperature and self.tool1TargetTemperature:
-            self.tool1ActualTemperature.setText("0.0")
-            self.tool1TargetTemperature.setText("0.0")
+            self.tool1ActualTemperature.setText("0°C")
+            self.tool1TargetTemperature.setText("0°C")
             if self.tool1TempBar:
                 self.tool1TempBar.setValue(0)
 
         if self.bedActualTemperatute and self.bedTargetTemperature:
-            self.bedActualTemperatute.setText("0.0")
-            self.bedTargetTemperature.setText("0.0")
+            self.bedActualTemperatute.setText("0°C")
+            self.bedTargetTemperature.setText("0°C")
             if self.bedTempBar:
                 self.bedTempBar.setValue(0)
 
@@ -161,6 +157,27 @@ class HomeScreen(QWidget):
 
         self.setActiveExtruder(0)  # Default to extruder 0
 
+        if self.minimalUI:
+            # Disable buttons in Home Screen
+            self.stopButton.setEnabled(False)
+            self.controlButton.setEnabled(False)
+            self.playPauseButton.setEnabled(False)
+            # Show a visual indicator on the home screen that we're in limited mode
+            self.printerStatus.setText("Disconnected - Limited Mode")
+            self.printerStatusColour.setStyleSheet(printer_status_red)
+            self.setIPStatus()
+        else:
+            # Enable buttons in Home Screen
+            self.stopButton.setEnabled(True)
+            self.controlButton.setEnabled(True)
+            self.playPauseButton.setEnabled(True)
+            # Update home screen connection status
+            self.printerStatus.setText("Connected")
+            self.printerStatusColour.setStyleSheet(printer_status_green)
+            self.setIPStatus()
+
+
+
 
     def updatePrinterStatus(self, status):
         """
@@ -169,7 +186,7 @@ class HomeScreen(QWidget):
         :param status: String of the status text
         """
         if getattr(self, "_last_status", None) != status:
-            logger.info("HomeScreen.updatePrinterStatus called with status: {}".format(status))
+            self.logger.info("HomeScreen.updatePrinterStatus called with status: {}".format(status))
             self._last_status = status
         try:
             self.printerStatusText = status
@@ -218,7 +235,7 @@ class HomeScreen(QWidget):
                 self.doorLockButton.setDisabled(True)
 
         except Exception as e:
-            logger.error("Error in HomeScreen.updatePrinterStatus: {}".format(e))
+            self.logger.error("Error in HomeScreen.updatePrinterStatus: {}".format(e))
             dialog.WarningOk(self, "Error in HomeScreen.updatePrinterStatus: {}".format(e), overlay=True)
 
     def updatePrintStatus(self, file):
@@ -270,7 +287,7 @@ class HomeScreen(QWidget):
                     self.current_image = self.current_file
                     self.main_window.print_location_screen.displayThumbnail(self.printPreviewMain, self.current_file, usb=False)
         except Exception as e:
-            logger.error("Error in HomeScreen.updatePrintStatus: {}".format(e))
+            self.logger.error("Error in HomeScreen.updatePrintStatus: {}".format(e))
             dialog.WarningOk(self, "Error in HomeScreen.updatePrintStatus: {}".format(e), overlay=True)
 
     def updateTemperature(self, temperature):
@@ -304,8 +321,8 @@ class HomeScreen(QWidget):
             else:
                 self.tool0TempBar.setMaximum(temperature['tool0Actual'])
             self.tool0TempBar.setValue(temperature['tool0Actual'])
-            self.tool0ActualTemperature.setText(str(int(temperature['tool0Actual'])))  # + unichr(176)
-            self.tool0TargetTemperature.setText(str(int(temperature['tool0Target'])))
+            self.tool0ActualTemperature.setText(str(int(temperature['tool0Actual'])) + "°C")
+            self.tool0TargetTemperature.setText(str(int(temperature['tool0Target'])) + "°C")
 
             # Update extruder 1 temperature
             if temperature['tool1Target'] == 0:
@@ -317,8 +334,8 @@ class HomeScreen(QWidget):
             else:
                 self.tool1TempBar.setMaximum(temperature['tool1Actual'])
             self.tool1TempBar.setValue(temperature['tool1Actual'])
-            self.tool1ActualTemperature.setText(str(int(temperature['tool1Actual'])))  # + unichr(176)
-            self.tool1TargetTemperature.setText(str(int(temperature['tool1Target'])))
+            self.tool1ActualTemperature.setText(str(int(temperature['tool1Actual'])) + "°C")
+            self.tool1TargetTemperature.setText(str(int(temperature['tool1Target'])) + "°C")
 
             # Update bed temperature
             if temperature['bedTarget'] == 0:
@@ -330,8 +347,8 @@ class HomeScreen(QWidget):
             else:
                 self.bedTempBar.setMaximum(temperature['bedActual'])
             self.bedTempBar.setValue(temperature['bedActual'])
-            self.bedActualTemperatute.setText(str(int(temperature['bedActual'])))  # + unichr(176))
-            self.bedTargetTemperature.setText(str(int(temperature['bedTarget'])))  # + unichr(176))
+            self.bedActualTemperatute.setText(str(int(temperature['bedActual'])) + "°C")
+            self.bedTargetTemperature.setText(str(int(temperature['bedTarget'])) + "°C")
 
         except:
             pass
@@ -353,9 +370,9 @@ class HomeScreen(QWidget):
 
                 except:
                     self.ipStatus.setText("Not connected")
-                time.sleep(60)
+                time.sleep(120)
         except Exception as e:
-            logger.error("Error in HomeScreen.setIPStatus: {}".format(e))
+            self.logger.error("Error in HomeScreen.setIPStatus: {}".format(e))
 
     # ! Below are the boilerplate functions
 
@@ -367,15 +384,15 @@ class HomeScreen(QWidget):
     def open_menu(self):
         """Navigate to menu screen"""
         self.main_window.switch_to_menu_screen()
-        logger.debug("Menu button clicked")
+        self.logger.debug("Menu button clicked")
 
     def stop_print(self):
         """Stop current print job"""
         # if not self.printer_connected:
         #     return
 
-        logger.info("HomeScreen.stopActionMessageBox started")
-        logger.debug("Stop Print button clicked")
+        self.logger.info("HomeScreen.stopActionMessageBox started")
+        self.logger.debug("Stop Print button clicked")
 
         # Send command to OctoPrint if connected
         if hasattr(self.main_window, 'octoprint_client'):
@@ -385,7 +402,7 @@ class HomeScreen(QWidget):
                     if dialog.WarningYesNo(self, "Are you sure you want to stop the print?"):
                         client.cancelPrint()
                 except Exception as e:
-                    logger.error("Error in HomeScreen.stopActionMessageBox: {}".format(e))
+                    self.logger.error("Error in HomeScreen.stopActionMessageBox: {}".format(e))
                     dialog.WarningOk(self, "Error in HomeScreen.stopActionMessageBox: {}".format(e), overlay=True)
 
     def play_pause_print(self):
@@ -394,7 +411,7 @@ class HomeScreen(QWidget):
         #     return
 
         is_paused = self.playPauseButton.isChecked()
-        logger.debug(f"Play/Pause button clicked: {'Pausing' if not is_paused else 'Resuming'}")
+        self.logger.debug(f"Play/Pause button clicked: {'Pausing' if not is_paused else 'Resuming'}")
 
         # Send command to OctoPrint if connected
         if hasattr(self.main_window, 'octoprint_client'):
@@ -410,57 +427,57 @@ class HomeScreen(QWidget):
                     elif self.printerStatusText == "Paused":
                         client.pausePrint()
                 except Exception as e:
-                    logger.error("Error in home_screen.playPauseAction: {}".format(e))
+                    self.logger.error("Error in home_screen.playPauseAction: {}".format(e))
                     dialog.WarningOk(self, "Error in home_screen.playPauseAction: {}".format(e), overlay=True)
 
     def open_control_panel(self):
         """Navigate to control panel screen"""
         self.main_window.switch_to_control_screen()
-        logger.debug("Control Panel button clicked")
+        self.logger.debug("Control Panel button clicked")
 
     def setActiveExtruder(self, activeNozzle):
         """
         Sets the active extruder, and changes the UI accordingly
         """
-        logger.info("home_screen.setActiveExtruder started with activeNozzle: {}".format(activeNozzle))
+        self.logger.info("home_screen.setActiveExtruder started with activeNozzle: {}".format(activeNozzle))
         try:
             # Debug: Check if labels exist
-            logger.debug("tool0Label found: {}".format(self.tool0Label is not None))
-            logger.debug("tool1Label found: {}".format(self.tool1Label is not None))
-            
+            self.logger.debug("tool0Label found: {}".format(self.tool0Label is not None))
+            self.logger.debug("tool1Label found: {}".format(self.tool1Label is not None))
+
             if activeNozzle == 0:
                 if self.tool0Label:
                     pixmap = QtGui.QPixmap(":/Icons/img/icons/activeNozzle.png")
                     if not pixmap.isNull():
                         self.tool0Label.setPixmap(pixmap)
-                        logger.debug("Set tool0Label to activeNozzle.png")
+                        self.logger.debug("Set tool0Label to activeNozzle.png")
                     else:
-                        logger.error("Failed to load activeNozzle.png pixmap")
+                        self.logger.error("Failed to load activeNozzle.png pixmap")
                 if self.tool1Label:
                     pixmap = QtGui.QPixmap(":/Icons/img/icons/Nozzle.png")
                     if not pixmap.isNull():
                         self.tool1Label.setPixmap(pixmap)
-                        logger.debug("Set tool1Label to Nozzle.png")
+                        self.logger.debug("Set tool1Label to Nozzle.png")
                     else:
-                        logger.error("Failed to load Nozzle.png pixmap")
+                        self.logger.error("Failed to load Nozzle.png pixmap")
             elif activeNozzle == 1:
                 if self.tool0Label:
                     pixmap = QtGui.QPixmap(":/Icons/img/icons/Nozzle.png")
                     if not pixmap.isNull():
                         self.tool0Label.setPixmap(pixmap)
-                        logger.debug("Set tool0Label to Nozzle.png")
+                        self.logger.debug("Set tool0Label to Nozzle.png")
                     else:
-                        logger.error("Failed to load Nozzle.png pixmap")
+                        self.logger.error("Failed to load Nozzle.png pixmap")
                 if self.tool1Label:
                     pixmap = QtGui.QPixmap(":/Icons/img/icons/activeNozzle.png")
                     if not pixmap.isNull():
                         self.tool1Label.setPixmap(pixmap)
-                        logger.debug("Set tool1Label to activeNozzle.png")
+                        self.logger.debug("Set tool1Label to activeNozzle.png")
                     else:
-                        logger.error("Failed to load activeNozzle.png pixmap")
+                        self.logger.error("Failed to load activeNozzle.png pixmap")
                 # Note: toolToggleChangeFilamentButton is not defined in this screen
                 # if hasattr(self, 'toolToggleChangeFilamentButton'):
                 #     self.toolToggleChangeFilamentButton.setChecked(True)
         except Exception as e:
-            logger.error("Error in HomeScreen.setActiveExtruder: {}".format(e))
+            self.logger.error("Error in HomeScreen.setActiveExtruder: {}".format(e))
             dialog.WarningOk(self, "Error in home_screen.setActiveExtruder: {}".format(e), overlay=True)

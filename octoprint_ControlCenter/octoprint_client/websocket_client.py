@@ -16,12 +16,10 @@ from utils.logger import get_logger
 from utils.helpers import run_async
 from config import IGNORED_PRINTER_ERRORS
 
-logger = get_logger(__name__)
-
 
 class OctoPrintWebSocket(QThread):
     """
-from utils.logger import get_logger
+    WebSocket client for OctoPrint that connects to the WebSocket API
     and emits signals when events occur
     """
     # Define signals for UI updates
@@ -51,6 +49,7 @@ from utils.logger import get_logger
         :param api_key: API key for OctoPrint
         """
         super(OctoPrintWebSocket, self).__init__()
+        self.logger = get_logger(self.__class__.__name__)
         self.ip = ip
         self.api_key = api_key
         self.ws = None
@@ -58,7 +57,6 @@ from utils.logger import get_logger
         self.reconnect_attempts = 0
         self.max_reconnect_attempts = 5
 
-        self.logger = get_logger(self.__class__.__name__)
         self.logger.info(f"OctoPrintWebSocket initializing with IP: {self.ip}, API Key: {'***' + self.api_key[-4:] if self.api_key else 'None'}")
         self._initialize_websocket()
 

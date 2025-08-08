@@ -11,9 +11,10 @@ from utils.dialog import WarningYesNo, WarningOk
 logger = get_logger(__name__)
 
 class SettingsScreen(QWidget):
-    def __init__(self, main_window):
+    def __init__(self, main_window, minimalUI=False):
         super(SettingsScreen, self).__init__()
         self.main_window = main_window
+        self.minimalUI = minimalUI
         self.octoprint_client = main_window.octoprint_client
 
         # Use the centralized logger
@@ -131,6 +132,11 @@ class SettingsScreen(QWidget):
             for subfolder in os.listdir(settings_folder):
                 subfolder_path = os.path.join(settings_folder, subfolder)
                 if os.path.isdir(subfolder_path):
+                    # Skip software update widget if in minimal UI mode
+                    if self.minimalUI and subfolder.lower() in ['software_update', 'softwareupdate', 'software update']:
+                        self.logger.info(f"Skipping widget {subfolder} due to minimal UI mode")
+                        continue
+                        
                     ui_file = os.path.join(subfolder_path, f'{subfolder}.ui')
                     py_file = os.path.join(subfolder_path, f'{subfolder}.py')
                     if os.path.exists(ui_file) and os.path.exists(py_file):

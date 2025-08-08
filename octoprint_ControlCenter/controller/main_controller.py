@@ -4,7 +4,6 @@ from ui.main_window import MainWindow
 from utils.logger import get_logger
 from models.printer_model import PrinterModel
 from octoprint_client.websocket_client import OctoPrintWebSocket
-from config import ip, apiKey, SCREEN_WIDTH, SCREEN_HEIGHT
 from utils import klipper_cfg_utils
 from octoprint_client import octoprint_singleton
 from PyQt5 import QtCore
@@ -19,6 +18,9 @@ import uuid
 import threading
 from utils.helpers import run_async
 from utils import dialog
+from ui.loading_screen.loading_screen import LoadingScreen
+from config import ip, apiKey
+
 
 logger = get_logger(__name__)
 
@@ -125,30 +127,21 @@ class MainController:
         self.logger.info("Initializing MainController")
         self.dialogShown = False
         self.printer_model = PrinterModel()
-        # Don't initialize OctoPrint client here - it might not be available yet
         self.octoprint_client = None
-        # Create the main window without requiring OctoPrint connection
         self.main_window = MainWindow(controller=self, printer_model=self.printer_model)
 
     def start(self):
         """Start the application and begin connection check"""
-        logger.info("Starting application")
+        self.logger.info("Starting application")
         try:
-            # Set a fixed size for the main window before showing it
-            self.main_window.setFixedSize(SCREEN_WIDTH, SCREEN_HEIGHT)  # Use config values for screen resolution
-            self.main_window.show()
-            self.main_window.load_loading_screen()
-            self.main_window.switch_to_loading_screen()
-            self.main_window.loading_screen.update_progress(5, "Initializing application...")
-            
-            # Start the connection check thread
+            self.updateLoadingProgress(5, "Initializing application...")
             self.connection_check = ThreadConnectionCheck(ip=ip, api_key=apiKey, virtual=False)
             self.connection_check.loaded_signal.connect(self.handleStartupSuccess)
             self.connection_check.startup_error_signal.connect(self.handleStartupError)
             self.connection_check.progress_signal.connect(self.updateLoadingProgress)  # Connect progress signal
             self.connection_check.start()
         except Exception as e:
-            logger.error(f"Error during startup: {e}")
+            self.logger.error(f"Error during startup: {e}")
             dialog.WarningOk(self.main_window, f"Error during startup: {e}", overlay=True)
             self.main_window.close()
 
@@ -158,50 +151,48 @@ class MainController:
 
     def handleStartupSuccess(self):
         """Handle successful OctoPrint connection"""
-        logger.info("OctoPrint connection successful")
+        self.logger.info("OctoPrint connection successful")
         
         try:
             # Update progress for different startup phases
-            self.main_window.loading_screen.update_progress(96, "Initializing client...")
+            self.updateLoadingProgress(96, "Initializing client...")
             
             # Now that we know OctoPrint is available, initialize the client
             self.octoprint_client = octoprint_singleton.get_client()
             
-            self.main_window.loading_screen.update_progress(97, "Loading user interface...")
+            self.updateLoadingProgress(97, "Loading user interface...")
             
             # Load the full UI
-            self.main_window.loadFullUI()
+            self.main_window.loadUI(minimalUI=False)
             
-            self.main_window.loading_screen.update_progress(98, "Initializing websocket connection...")
+            self.updateLoadingProgress(98, "Initializing websocket connection...")
             
             # Initialize websocket
             self.initalize_websocket()
             
-            self.main_window.loading_screen.update_progress(99, "Checking Klipper configuration...")
+            self.updateLoadingProgress(99, "Checking Klipper configuration...")
             
             # Check Klipper config
             self.checkKlipperPrinterCFG()
             
-            self.main_window.loading_screen.update_progress(100, "Startup complete!")
+            self.updateLoadingProgress(100, "Startup complete!")
 
             self.main_window.switch_to_home_screen()
             
         except Exception as e:
-            logger.error(f"Error during startup success handling: {e}")
+            self.logger.error(f"Error during startup success handling: {e}")
             self.handleStartupError()
 
     def handleStartupError(self):
         """Handle OctoPrint connection failure"""
-        logger.info("OctoPrint connection failed")
+        self.logger.info("OctoPrint connection failed")
         try:
-            if hasattr(self.main_window, 'loading_screen'):
-                self.main_window.loading_screen.update_progress(0, "Connection failed - showing options...")
+            self.updateLoadingProgress(0, "Connection failed - showing options...")
                 
             if dialog.WarningYesNo(self.main_window, "Server Error, Restore failsafe settings?", overlay=True):
-                logger.info("Restoring Failsafe Settings")
+                self.logger.info("Restoring Failsafe Settings")
                 
-                if hasattr(self.main_window, 'loading_screen'):
-                    self.main_window.loading_screen.update_progress(25, "Restoring failsafe settings...")
+                self.updateLoadingProgress(25, "Restoring failsafe settings...")
                 
                 # Restore failsafe settings
                 os.system('sudo rm -rf /home/pi/.octoprint/users.yaml')
@@ -209,28 +200,26 @@ class MainController:
                 os.system('sudo cp -f config/users.yaml /home/pi/.octoprint/users.yaml')
                 os.system('sudo cp -f config/config.yaml /home/pi/.octoprint/config.yaml')
                 
-                if hasattr(self.main_window, 'loading_screen'):
-                    self.main_window.loading_screen.update_progress(50, "Restarting OctoPrint service...")
+                self.updateLoadingProgress(50, "Restarting OctoPrint service...")
                 
                 subprocess.call(["sudo", "systemctl", "restart", "octoprint"])
                 
-                if hasattr(self.main_window, 'loading_screen'):
-                    self.main_window.loading_screen.update_progress(10, "Retrying connection...")
+                self.updateLoadingProgress(10, "Retrying connection...")
                 
                 # Restart the connection check
                 self.connection_check.start()
             else:
-                logger.info("User chose not to restore failsafe settings")
-                self.main_window.showMinimalUI()
+                self.logger.info("User chose not to restore failsafe settings")
+                self.main_window.loadUI(minimalUI=True)
         except Exception as e:
-            logger.error(f"Error in handleStartupError: {e}")
+            self.logger.error(f"Error in handleStartupError: {e}")
             dialog.WarningOk(self.main_window, f"Error in startup error handling: {e}", overlay=True)
 
     def onWebSocketConnected(self):
         """
         When the  on Web Socket server is connected, check for filament sensor and previous print failure to complere
         """
-        logger.info("MainController.onWebSocketConnected started")
+        self.logger.info("MainController.onWebSocketConnected started")
 
         if hasattr(self, 'octoprint_client'):
             client = self.octoprint_client
@@ -248,7 +237,7 @@ class MainController:
                     except:
                         pass
                 except Exception as e:
-                    logger.error("Error in MainController.onWebSocketConnected: {}".format(e))
+                    self.logger.error("Error in MainController.onWebSocketConnected: {}".format(e))
                     dialog.WarningOk(self.main_window, "Error in MainController.onWebSocketConnected: {}".format(e), overlay=True)
         
 
@@ -280,7 +269,7 @@ class MainController:
         Checks for valid printer.cfg and restores if needed, using utility functions.
         """
 
-        logger.info("MainController.checkKlipperPrinterCFG started")
+        self.logger.info("MainController.checkKlipperPrinterCFG started")
         if not hasattr(self, 'octoprint_client'):
             return
         client = self.octoprint_client
@@ -288,10 +277,10 @@ class MainController:
             return
         try:
             if not klipper_cfg_utils.is_config_valid():
-                logger.error("Printer Config File Corrupted or Not Found, Attempting to restore Backup")
+                self.logger.error("Printer Config File Corrupted or Not Found, Attempting to restore Backup")
                 restored = klipper_cfg_utils.restore_backup_config()
                 if restored:
-                    logger.info("Printer Config File Restored from backup")
+                    self.logger.info("Printer Config File Restored from backup")
                     return
                 # If no valid backups found, show error dialog:
                 dialog.WarningOk(self.main_window,
@@ -302,17 +291,17 @@ class MainController:
                     if hasattr(self.main_window, 'control_screen'):
                         self.main_window.control_screen.coolDownAction()
             else:
-                logger.info("Printer Config File OK")
+                self.logger.info("Printer Config File OK")
                 klipper_cfg_utils.cleanup_old_backups()
         except Exception as e:
-            logger.error(f"Error in MainController.checkKlipperPrinterCFG: {e}")
+            self.logger.error(f"Error in MainController.checkKlipperPrinterCFG: {e}")
             dialog.WarningOk(self.main_window, f"Error in MainController.checkKlipperPrinterCFG: {e}", overlay=True)
 
     def printRestoreMessageBox(self, file):
         """
         Displays a message box alerting the user of a filament error
         """
-        logger.info("MainController.printRestoreMessageBox started")
+        self.logger.info("MainController.printRestoreMessageBox started")
 
         if hasattr(self, 'octoprint_client'):
             client = self.octoprint_client
@@ -325,7 +314,7 @@ class MainController:
                         else:
                             dialog.WarningOk(self.main_window, response["status"])
                 except Exception as e:
-                    logger.error("Error in MainController.printRestoreMessageBox: {}".format(e))
+                    self.logger.error("Error in MainController.printRestoreMessageBox: {}".format(e))
                     dialog.WarningOk(self.main_window, "Error in MainController.printRestoreMessageBox: {}".format(e), overlay=True)
 
 
@@ -334,7 +323,7 @@ class MainController:
         """
         Checks if the filament sensor is installed
         """
-        logger.info("MainController.isFilamentSensorInstalled started")
+        self.logger.info("MainController.isFilamentSensorInstalled started")
 
         if hasattr(self, 'octoprint_client'):
             client = self.octoprint_client
@@ -351,11 +340,11 @@ class MainController:
                     # self.toggleFilamentSensorButton.setEnabled(success)
                     return success
                 except Exception as e:
-                    logger.error("Error in MainController.isFilamentSensorInstalled: {}".format(e))
+                    self.logger.error("Error in MainController.isFilamentSensorInstalled: {}".format(e))
                     dialog.WarningOk(self.main_window, "Error in MainController.isFilamentSensorInstalled: {}".format(e), overlay=True)
 
     def showProbingFailed(self, msg='Probing Failed, Calibrate bed again or check for hardware issue', overlay=True):
-        logger.info("MainController.showProbingFailed started")
+        self.logger.info("MainController.showProbingFailed started")
         if hasattr(self, 'octoprint_client'):
             client = self.octoprint_client
             if client:
@@ -365,11 +354,11 @@ class MainController:
                         return True
                     return False
                 except Exception as e:
-                    logger.error("Error in MainController.showProbingFailed: {}".format(e))
+                    self.logger.error("Error in MainController.showProbingFailed: {}".format(e))
                     dialog.WarningOk(self.main_window, "Error in MainController.showProbingFailed: {}".format(e), overlay=True)
 
     def showPrinterError(self, msg='Printer error, Check Terminal', overlay=False):
-        logger.info("MainController.showPrinterError started")
+        self.logger.info("MainController.showPrinterError started")
         if hasattr(self, 'octoprint_client'):
             client = self.octoprint_client
             if client:
@@ -377,7 +366,7 @@ class MainController:
                     if any(error in msg for error in
                            ["Can not update MCU", "Error loading template", "Must home axis first", "probe",
                             "Error during homing move", "still triggered after retract", "'mcu' must be specified"]):
-                        logger.error("CRITICAL ERROR SHUTDOWN NEEDED")
+                        self.logger.error("CRITICAL ERROR SHUTDOWN NEEDED")
                         # Check printer status through main_window.home_screen if available
                         if hasattr(self.main_window, 'home_screen') and hasattr(self.main_window.home_screen, 'printerStatusText'):
                             if self.main_window.home_screen.printerStatusText in ["Starting", "Printing", "Paused"]:
@@ -393,7 +382,7 @@ class MainController:
                                     self.dialogShown = True
                                     if dialog.WarningOk(self.main_window, msg + ", Cancelling Print.", overlay=overlay):
                                         self.dialogShown = False
-                                logger.error("CRITICAL ERROR SHUTDOWN DONE")
+                                self.logger.error("CRITICAL ERROR SHUTDOWN DONE")
                             else:
                                 if not self.dialogShown:
                                     self.dialogShown = True
@@ -415,5 +404,5 @@ class MainController:
                                 self.dialogShown = False
 
                 except Exception as e:
-                    logger.error("Error in MainController.showPrinterError: {}".format(e))
+                    self.logger.error("Error in MainController.showPrinterError: {}".format(e))
                     dialog.WarningOk(self.main_window, "Error in MainController.showPrinterError: {}".format(e), overlay=True)

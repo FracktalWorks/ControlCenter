@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>767</width>
-    <height>478</height>
+    <width>447</width>
+    <height>316</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -26,13 +26,13 @@
       <number>5</number>
      </property>
      <property name="topMargin">
-      <number>5</number>
+      <number>2</number>
      </property>
      <property name="rightMargin">
       <number>5</number>
      </property>
      <property name="bottomMargin">
-      <number>5</number>
+      <number>2</number>
      </property>
      <item alignment="Qt::AlignVCenter">
       <widget class="QLabel" name="printerStatusColour">
@@ -184,8 +184,8 @@ background-color: rgba(255, 255, 255, 0);</string>
         <property name="styleSheet">
          <string notr="true">QFrame {
     border: none;
-    border-radius: 20px;
-    margin-right: 4px;
+    border-radius: 10px;
+    margin-right: 2px;
 
     background: qlineargradient(
         x1:0, y1:0, x2:1, y2:1,
@@ -207,7 +207,7 @@ background-color: rgba(255, 255, 255, 0);</string>
           <number>0</number>
          </property>
          <property name="leftMargin">
-          <number>5</number>
+          <number>0</number>
          </property>
          <property name="topMargin">
           <number>0</number>
@@ -223,13 +223,22 @@ background-color: rgba(255, 255, 255, 0);</string>
            <property name="spacing">
             <number>0</number>
            </property>
+           <property name="leftMargin">
+            <number>5</number>
+           </property>
            <property name="topMargin">
-            <number>0</number>
+            <number>5</number>
+           </property>
+           <property name="rightMargin">
+            <number>10</number>
            </property>
            <item>
             <layout class="QHBoxLayout" name="tool0Layout">
              <property name="spacing">
               <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>10</number>
              </property>
              <item>
               <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -246,12 +255,30 @@ background-color: rgba(255, 255, 255, 0);</string>
                  </property>
                 </spacer>
                </item>
+               <item alignment="Qt::AlignHCenter|Qt::AlignBottom">
+                <widget class="QLabel" name="label">
+                 <property name="font">
+                  <font>
+                   <family>Montserrat</family>
+                   <pointsize>12</pointsize>
+                  </font>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">
+color: White;
+background-color: rgb(255, 255, 255,0);</string>
+                 </property>
+                 <property name="text">
+                  <string>Tool 0</string>
+                 </property>
+                </widget>
+               </item>
                <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
                 <widget class="QLabel" name="tool0Label">
                  <property name="minimumSize">
                   <size>
-                   <width>30</width>
-                   <height>30</height>
+                   <width>20</width>
+                   <height>20</height>
                   </size>
                  </property>
                  <property name="maximumSize">
@@ -284,12 +311,12 @@ background-color: rgba(255, 255, 255, 0);</string>
                  </property>
                 </widget>
                </item>
-               <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-                <widget class="QLabel" name="label">
+               <item>
+                <widget class="QLabel" name="tool0LoadedNozzle">
                  <property name="font">
                   <font>
                    <family>Montserrat</family>
-                   <pointsize>10</pointsize>
+                   <pointsize>12</pointsize>
                   </font>
                  </property>
                  <property name="styleSheet">
@@ -298,7 +325,25 @@ color: White;
 background-color: rgb(255, 255, 255,0);</string>
                  </property>
                  <property name="text">
-                  <string>Tool 0</string>
+                  <string>0.4 mm</string>
+                 </property>
+                </widget>
+               </item>
+               <item alignment="Qt::AlignHCenter">
+                <widget class="QLabel" name="label_6">
+                 <property name="font">
+                  <font>
+                   <family>Montserrat</family>
+                   <pointsize>12</pointsize>
+                  </font>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">
+color: White;
+background-color: rgb(255, 255, 255,0);</string>
+                 </property>
+                 <property name="text">
+                  <string>PLA</string>
                  </property>
                 </widget>
                </item>
@@ -327,7 +372,7 @@ background-color: rgb(255, 255, 255,0);</string>
                  <property name="font">
                   <font>
                    <family>Montserrat</family>
-                   <pointsize>10</pointsize>
+                   <pointsize>12</pointsize>
                    <weight>50</weight>
                    <bold>false</bold>
                    <underline>false</underline>
@@ -352,7 +397,7 @@ background-color: rgba(255, 255, 255, 0);</string>
                  <property name="minimumSize">
                   <size>
                    <width>15</width>
-                   <height>40</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="maximumSize">
@@ -404,7 +449,7 @@ QProgressBar {
                  <property name="font">
                   <font>
                    <family>Montserrat</family>
-                   <pointsize>10</pointsize>
+                   <pointsize>12</pointsize>
                    <weight>50</weight>
                    <bold>false</bold>
                    <underline>false</underline>
@@ -426,25 +471,38 @@ background-color: rgba(0, 0, 0, 0);</string>
                </item>
               </layout>
              </item>
-             <item alignment="Qt::AlignVCenter">
-              <widget class="QLabel" name="celciusLabel">
-               <property name="font">
-                <font>
-                 <family>Montserrat</family>
-                 <pointsize>10</pointsize>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">
-   color:  white;
-background-color: rgba(255, 255, 255, 0);</string>
-               </property>
-               <property name="text">
-                <string>°C</string>
-               </property>
-              </widget>
-             </item>
             </layout>
+           </item>
+           <item>
+            <widget class="Line" name="line_2">
+             <property name="minimumSize">
+              <size>
+               <width>1</width>
+               <height>20</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>60</height>
+              </size>
+             </property>
+             <property name="contextMenuPolicy">
+              <enum>Qt::NoContextMenu</enum>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">background-color: rgb(40, 40, 40);</string>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Sunken</enum>
+             </property>
+             <property name="lineWidth">
+              <number>1</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
            </item>
            <item>
             <spacer name="horizontalSpacer_5">
@@ -464,6 +522,9 @@ background-color: rgba(255, 255, 255, 0);</string>
              <property name="spacing">
               <number>0</number>
              </property>
+             <property name="rightMargin">
+              <number>10</number>
+             </property>
              <item>
               <layout class="QVBoxLayout" name="verticalLayout_5">
                <item>
@@ -479,12 +540,30 @@ background-color: rgba(255, 255, 255, 0);</string>
                  </property>
                 </spacer>
                </item>
+               <item alignment="Qt::AlignHCenter|Qt::AlignBottom">
+                <widget class="QLabel" name="label_2">
+                 <property name="font">
+                  <font>
+                   <family>Montserrat</family>
+                   <pointsize>12</pointsize>
+                  </font>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">
+color: White;
+background-color: rgb(255, 255, 255,0);</string>
+                 </property>
+                 <property name="text">
+                  <string>Tool 1</string>
+                 </property>
+                </widget>
+               </item>
                <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
                 <widget class="QLabel" name="tool1Label">
                  <property name="minimumSize">
                   <size>
-                   <width>30</width>
-                   <height>30</height>
+                   <width>20</width>
+                   <height>20</height>
                   </size>
                  </property>
                  <property name="maximumSize">
@@ -517,12 +596,12 @@ background-color: rgba(255, 255, 255, 0);</string>
                  </property>
                 </widget>
                </item>
-               <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-                <widget class="QLabel" name="label_2">
+               <item alignment="Qt::AlignHCenter|Qt::AlignTop">
+                <widget class="QLabel" name="tool1LoadedNozzle">
                  <property name="font">
                   <font>
                    <family>Montserrat</family>
-                   <pointsize>10</pointsize>
+                   <pointsize>12</pointsize>
                   </font>
                  </property>
                  <property name="styleSheet">
@@ -531,7 +610,25 @@ color: White;
 background-color: rgb(255, 255, 255,0);</string>
                  </property>
                  <property name="text">
-                  <string>Tool 1</string>
+                  <string>0.4 mm</string>
+                 </property>
+                </widget>
+               </item>
+               <item alignment="Qt::AlignHCenter">
+                <widget class="QLabel" name="label_7">
+                 <property name="font">
+                  <font>
+                   <family>Montserrat</family>
+                   <pointsize>12</pointsize>
+                  </font>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">
+color: White;
+background-color: rgb(255, 255, 255,0);</string>
+                 </property>
+                 <property name="text">
+                  <string>PLA</string>
                  </property>
                 </widget>
                </item>
@@ -560,7 +657,7 @@ background-color: rgb(255, 255, 255,0);</string>
                  <property name="font">
                   <font>
                    <family>Montserrat</family>
-                   <pointsize>10</pointsize>
+                   <pointsize>12</pointsize>
                    <weight>50</weight>
                    <bold>false</bold>
                    <underline>false</underline>
@@ -585,7 +682,7 @@ background-color: rgba(255, 255, 255, 0);</string>
                  <property name="minimumSize">
                   <size>
                    <width>15</width>
-                   <height>40</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="maximumSize">
@@ -637,7 +734,7 @@ QProgressBar {
                  <property name="font">
                   <font>
                    <family>Montserrat</family>
-                   <pointsize>10</pointsize>
+                   <pointsize>12</pointsize>
                    <weight>50</weight>
                    <bold>false</bold>
                    <underline>false</underline>
@@ -659,25 +756,38 @@ background-color: rgba(0, 0, 0, 0);</string>
                </item>
               </layout>
              </item>
-             <item alignment="Qt::AlignVCenter">
-              <widget class="QLabel" name="celciusLabel_2">
-               <property name="font">
-                <font>
-                 <family>Montserrat</family>
-                 <pointsize>10</pointsize>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">
-   color:  white;
-background-color: rgba(255, 255, 255, 0);</string>
-               </property>
-               <property name="text">
-                <string>°C</string>
-               </property>
-              </widget>
-             </item>
             </layout>
+           </item>
+           <item>
+            <widget class="Line" name="line_3">
+             <property name="minimumSize">
+              <size>
+               <width>1</width>
+               <height>20</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>60</height>
+              </size>
+             </property>
+             <property name="contextMenuPolicy">
+              <enum>Qt::NoContextMenu</enum>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">background-color: rgb(40, 40, 40);</string>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Sunken</enum>
+             </property>
+             <property name="lineWidth">
+              <number>1</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
            </item>
            <item>
             <spacer name="horizontalSpacer_2">
@@ -716,8 +826,8 @@ background-color: rgba(255, 255, 255, 0);</string>
                 <widget class="QLabel" name="bedLabel">
                  <property name="minimumSize">
                   <size>
-                   <width>40</width>
-                   <height>40</height>
+                   <width>20</width>
+                   <height>20</height>
                   </size>
                  </property>
                  <property name="maximumSize">
@@ -755,7 +865,7 @@ background-color: rgba(255, 255, 255, 0);</string>
                  <property name="font">
                   <font>
                    <family>Montserrat</family>
-                   <pointsize>10</pointsize>
+                   <pointsize>12</pointsize>
                   </font>
                  </property>
                  <property name="styleSheet">
@@ -793,7 +903,7 @@ background-color: rgb(255, 255, 255,0);</string>
                  <property name="font">
                   <font>
                    <family>Montserrat</family>
-                   <pointsize>10</pointsize>
+                   <pointsize>12</pointsize>
                    <weight>50</weight>
                    <bold>false</bold>
                    <underline>false</underline>
@@ -818,7 +928,7 @@ background-color: rgba(255, 255, 255, 0);</string>
                  <property name="minimumSize">
                   <size>
                    <width>15</width>
-                   <height>40</height>
+                   <height>30</height>
                   </size>
                  </property>
                  <property name="maximumSize">
@@ -870,7 +980,7 @@ QProgressBar {
                  <property name="font">
                   <font>
                    <family>Montserrat</family>
-                   <pointsize>10</pointsize>
+                   <pointsize>12</pointsize>
                    <weight>50</weight>
                    <bold>false</bold>
                    <underline>false</underline>
@@ -892,38 +1002,27 @@ background-color: rgba(0, 0, 0, 0);</string>
                </item>
               </layout>
              </item>
-             <item alignment="Qt::AlignVCenter">
-              <widget class="QLabel" name="celciusLabel_3">
-               <property name="font">
-                <font>
-                 <family>Montserrat</family>
-                 <pointsize>10</pointsize>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">
-   color:  white;
-background-color: rgba(255, 255, 255, 0);</string>
-               </property>
-               <property name="text">
-                <string>°C</string>
-               </property>
-              </widget>
-             </item>
             </layout>
            </item>
           </layout>
          </item>
          <item>
           <layout class="QFormLayout" name="printInfoLayout">
+           <property name="leftMargin">
+            <number>8</number>
+           </property>
+           <property name="bottomMargin">
+            <number>8</number>
+           </property>
            <item row="0" column="0">
             <widget class="QLabel" name="FileNameLabel">
              <property name="font">
               <font>
                <family>Montserrat</family>
                <pointsize>12</pointsize>
-               <weight>50</weight>
-               <bold>false</bold>
+               <weight>75</weight>
+               <bold>true</bold>
+               <kerning>false</kerning>
               </font>
              </property>
              <property name="styleSheet">
@@ -939,7 +1038,7 @@ background-color: rgba(255, 255, 255, 0);</string>
              <property name="font">
               <font>
                <family>Montserrat</family>
-               <pointsize>10</pointsize>
+               <pointsize>12</pointsize>
               </font>
              </property>
              <property name="styleSheet">
@@ -963,8 +1062,9 @@ background-color: rgba(255, 255, 255, 0);</string>
               <font>
                <family>Montserrat</family>
                <pointsize>12</pointsize>
-               <weight>50</weight>
-               <bold>false</bold>
+               <weight>75</weight>
+               <bold>true</bold>
+               <kerning>false</kerning>
               </font>
              </property>
              <property name="styleSheet">
@@ -980,7 +1080,7 @@ background-color: rgba(255, 255, 255, 0);</string>
              <property name="font">
               <font>
                <family>Montserrat</family>
-               <pointsize>10</pointsize>
+               <pointsize>12</pointsize>
               </font>
              </property>
              <property name="styleSheet">
@@ -998,8 +1098,9 @@ background-color: rgba(255, 255, 255, 0);</string>
               <font>
                <family>Montserrat</family>
                <pointsize>12</pointsize>
-               <weight>50</weight>
-               <bold>false</bold>
+               <weight>75</weight>
+               <bold>true</bold>
+               <kerning>false</kerning>
               </font>
              </property>
              <property name="styleSheet">
@@ -1015,7 +1116,7 @@ background-color: rgba(255, 255, 255, 0);</string>
              <property name="font">
               <font>
                <family>Montserrat</family>
-               <pointsize>10</pointsize>
+               <pointsize>12</pointsize>
               </font>
              </property>
              <property name="styleSheet">
@@ -1032,19 +1133,6 @@ background-color: rgba(255, 255, 255, 0);</string>
            </item>
           </layout>
          </item>
-         <item>
-          <spacer name="verticalSpacer_2">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>0</width>
-             <height>0</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
         </layout>
        </widget>
       </item>
@@ -1053,7 +1141,7 @@ background-color: rgba(255, 255, 255, 0);</string>
         <property name="styleSheet">
          <string notr="true">QFrame {
     border: none;
-    border-radius: 20px;
+    border-radius: 10px;
     margin-left : 2px;
 
     background: qlineargradient(
@@ -1092,16 +1180,22 @@ background-color: rgba(255, 255, 255, 0);</string>
            <property name="enabled">
             <bool>true</bool>
            </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="minimumSize">
             <size>
-             <width>20</width>
-             <height>20</height>
+             <width>40</width>
+             <height>40</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
-             <width>400</width>
-             <height>400</height>
+             <width>5000</width>
+             <height>5000</height>
             </size>
            </property>
            <property name="font">
@@ -1135,7 +1229,7 @@ background-color: rgba(255, 255, 255, 0);</string>
      <property name="styleSheet">
       <string notr="true">QFrame {
     border: none;
-    border-radius: 20px;
+    border-radius: 10px;
 
     background: qlineargradient(
         x1:0, y1:0, x2:1, y2:1,
@@ -1154,7 +1248,7 @@ background-color: rgba(255, 255, 255, 0);</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_3">
       <property name="spacing">
-       <number>3</number>
+       <number>0</number>
       </property>
       <property name="leftMargin">
        <number>5</number>
@@ -1169,10 +1263,101 @@ background-color: rgba(255, 255, 255, 0);</string>
        <number>5</number>
       </property>
       <item>
-       <layout class="QHBoxLayout" name="buttonBox" stretch="1,1,0,1,1">
+       <layout class="QHBoxLayout" name="buttonBox" stretch="1,1,1,1,1">
         <property name="spacing">
          <number>0</number>
         </property>
+        <property name="leftMargin">
+         <number>10</number>
+        </property>
+        <property name="topMargin">
+         <number>5</number>
+        </property>
+        <property name="rightMargin">
+         <number>10</number>
+        </property>
+        <property name="bottomMargin">
+         <number>5</number>
+        </property>
+        <item>
+         <widget class="QToolButton" name="doorLockButton">
+          <property name="enabled">
+           <bool>true</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>70</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <family>Montserrat</family>
+            <pointsize>8</pointsize>
+           </font>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QToolButton {
+	padding-top: 15px;
+     border: 1px solid rgb(87, 87, 87);
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+    border-top-left-radius: 10px;
+
+border-bottom-left-radius: 10px;
+/*border-radius: 10px;
+
+
+*/
+
+}
+
+QToolButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QToolButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QToolButton:default {
+    border-color: navy; /* make the default button prominent */
+}</string>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+          <property name="icon">
+           <iconset resource="../resources/resource.qrc">
+            <normaloff>:/Icons/img/icons/doorUnlock.png</normaloff>
+            <normalon>:/Icons/img/icons/doorLock.png</normalon>:/Icons/img/icons/doorUnlock.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>30</width>
+            <height>50</height>
+           </size>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+          <property name="toolButtonStyle">
+           <enum>Qt::ToolButtonTextUnderIcon</enum>
+          </property>
+          <property name="autoRaise">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
         <item>
          <widget class="QPushButton" name="menuButton">
           <property name="sizePolicy">
@@ -1184,7 +1369,7 @@ background-color: rgba(255, 255, 255, 0);</string>
           <property name="minimumSize">
            <size>
             <width>0</width>
-            <height>60</height>
+            <height>70</height>
            </size>
           </property>
           <property name="font">
@@ -1197,9 +1382,7 @@ background-color: rgba(255, 255, 255, 0);</string>
            <string notr="true">QPushButton {
     border: 1px solid rgb(87, 87, 87);
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-    border-top-left-radius: 15px;
 
-border-bottom-left-radius: 15px;
 
 }
 
@@ -1259,7 +1442,7 @@ QPushButton:focus {
           <property name="minimumSize">
            <size>
             <width>0</width>
-            <height>60</height>
+            <height>70</height>
            </size>
           </property>
           <property name="font">
@@ -1320,77 +1503,6 @@ QPushButton:focus {
          </widget>
         </item>
         <item>
-         <widget class="QToolButton" name="doorLockButton">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="font">
-           <font>
-            <family>Montserrat</family>
-            <pointsize>8</pointsize>
-           </font>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">QToolButton {
-	padding-top: 20px;
-     border: 1px solid rgb(87, 87, 87);
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-
-border-radius: 10px;
-
-
-
-
-}
-
-QToolButton:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QToolButton:flat {
-    border: none; /* no border for a flat push button */
-}
-
-QToolButton:default {
-    border-color: navy; /* make the default button prominent */
-}</string>
-          </property>
-          <property name="text">
-           <string>Toggle Door</string>
-          </property>
-          <property name="icon">
-           <iconset resource="../resources/resource.qrc">
-            <normaloff>:/Icons/img/icons/doorUnlock.png</normaloff>
-            <normalon>:/Icons/img/icons/doorLock.png</normalon>:/Icons/img/icons/doorUnlock.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>30</width>
-            <height>50</height>
-           </size>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-          <property name="checked">
-           <bool>false</bool>
-          </property>
-          <property name="toolButtonStyle">
-           <enum>Qt::ToolButtonTextUnderIcon</enum>
-          </property>
-          <property name="autoRaise">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
          <widget class="QPushButton" name="playPauseButton">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -1401,7 +1513,7 @@ QToolButton:default {
           <property name="minimumSize">
            <size>
             <width>0</width>
-            <height>60</height>
+            <height>70</height>
            </size>
           </property>
           <property name="font">
@@ -1477,7 +1589,7 @@ QPushButton:focus {
           <property name="minimumSize">
            <size>
             <width>0</width>
-            <height>60</height>
+            <height>70</height>
            </size>
           </property>
           <property name="font">
@@ -1489,9 +1601,9 @@ QPushButton:focus {
           <property name="styleSheet">
            <string notr="true">QPushButton {
     border: 1px solid rgb(87, 87, 87);
-    border-top-right-radius: 15px;
+    border-top-right-radius: 10px;
 
-border-bottom-right-radius: 15px;
+border-bottom-right-radius: 10px;
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
 }
 
@@ -1534,7 +1646,7 @@ QPushButton:focus {
         <property name="minimumSize">
          <size>
           <width>300</width>
-          <height>0</height>
+          <height>25</height>
          </size>
         </property>
         <property name="maximumSize">
@@ -1557,7 +1669,7 @@ QPushButton:focus {
         <property name="styleSheet">
          <string notr="true">QProgressBar {
     border: none;
-    border-radius: 12px;
+    border-radius: 10px;
     background-color: qlineargradient(
         x1:0, y1:0, x2:0, y2:1,
         stop:0 #3a3a3a,
@@ -1565,11 +1677,13 @@ QPushButton:focus {
     );
     text-align: center;
 margin: 2px;
+margin-right:10px;
+margin-left:10px;
 }
 
 
 QProgressBar::chunk {
-    border-radius: 12px;
+    border-radius: 10px;
     background: qlineargradient(
         x1:0, y1:0, x2:0, y2:1,
         stop:0 #52ff56,
@@ -1608,6 +1722,7 @@ QProgressBar::chunk {
  </widget>
  <resources>
   <include location="../resources/resource.qrc"/>
+  <include location="../../Users/VijayRaghavVarada/Documents/Github/ControlCenter/octoprint_ControlCenter/ui/resources/resource.qrc"/>
  </resources>
  <connections/>
 </ui>
