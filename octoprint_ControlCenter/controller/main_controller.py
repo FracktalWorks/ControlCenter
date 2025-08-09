@@ -1,5 +1,9 @@
-from PyQt5.QtWidgets import QWidget, QLabel
-from PyQt5.QtCore import QTimer 
+"""Main controller module for OctoPrint Control Center.
+
+This module contains the primary application controller that manages
+OctoPrint connections, websocket communications, error handling, and
+application startup/shutdown procedures.
+"""
 from ui.main_window import MainWindow
 from utils.logger import get_logger
 from models.printer_model import PrinterModel
@@ -10,12 +14,6 @@ from PyQt5 import QtCore
 import time
 import subprocess
 import os
-import websocket
-import json
-import requests
-import random
-import uuid
-import threading
 from utils.helpers import run_async
 from utils import dialog
 from ui.loading_screen.loading_screen import LoadingScreen
@@ -25,9 +23,9 @@ from config import ip, apiKey, CRITICAL_PRINTER_ERRORS
 logger = get_logger(__name__)
 
 class ThreadConnectionCheck(QtCore.QThread):
-    """
-    Thread to check if OctoPrint is online and responding.
-    This runs during startup to ensure connectivity before enabling UI features.
+    """Check if OctoPrint is online and responding.
+    
+    This thread runs during startup to ensure connectivity before enabling UI features.
     """
     # Define signals for connection status and progress
     loaded_signal = QtCore.pyqtSignal()
@@ -35,7 +33,13 @@ class ThreadConnectionCheck(QtCore.QThread):
     progress_signal = QtCore.pyqtSignal(int, str)  # Progress percentage and message
 
     def __init__(self, ip=None, api_key=None, virtual=False):
-        """Initialize the sanity check thread"""
+        """Initialize the connection check thread.
+        
+        Args:
+            ip: IP address of the OctoPrint server.
+            api_key: API key for authentication.
+            virtual: Whether to use virtual mode.
+        """
         super(ThreadConnectionCheck, self).__init__()
         self.ip = ip
         self.api_key = api_key
@@ -47,7 +51,11 @@ class ThreadConnectionCheck(QtCore.QThread):
             self.ip, self.api_key, self.virtual))
 
     def run(self):
-        """Run the sanity check to verify OctoPrint connectivity"""        
+        """Run the connectivity check to verify OctoPrint is accessible.
+        
+        Attempts to connect to OctoPrint with a 60-second timeout. If connection
+        fails, emits startup_error_signal. On success, emits loaded_signal.
+        """        
         self.shutdown_flag = False
         uptime = 0
         
@@ -67,7 +75,7 @@ class ThreadConnectionCheck(QtCore.QThread):
                 
                 # Update progress based on time elapsed
                 progress = min(20 + (uptime * 40 / 60), 60)  # Progress from 20% to 60% over 60 seconds
-                self.progress_signal.emit(int(progress), f"Connecting Hardware...")
+                self.progress_signal.emit(int(progress), f"Connecting hardware, attempt {uptime + 1}/60")
                 # Attempt to connect to OctoPrint
                 octoprint_singleton.initialize(self.ip, self.api_key)
                 
@@ -109,19 +117,16 @@ class ThreadConnectionCheck(QtCore.QThread):
             self.loaded_signal.emit()
 
 class MainController:
-    """
-    Main controller for the OctoPrint Control Center application.
-    This class manages the connection to the OctoPrint server and handles startup sanity checks.
+    """Main controller for the OctoPrint Control Center application.
+    
+    Manages the connection to the OctoPrint server and handles startup
+    initialization, error recovery, and websocket communications.
     """
 
     def __init__(self):
-        """
-        Initialize the main controller with the given IP address and API key.
+        """Initialize the main controller.
         
-        :param ip: The IP address of the OctoPrint server.
-        :param apiKey: The API key for authenticating with the OctoPrint server.
-        :param on_loaded: Callback function to call when the sanity check is loaded successfully.
-        :param on_error: Callback function to call if there is an error during the sanity check.
+        Sets up the logger, printer model, and main window components.
         """
         self.logger = get_logger(__name__)
         self.logger.info("Initializing MainController")
@@ -131,7 +136,11 @@ class MainController:
         self.main_window = MainWindow(controller=self, printer_model=self.printer_model)
 
     def start(self):
-        """Start the application and begin connection check"""
+        """Start the application and begin connection check.
+        
+        Initializes the connection check thread and connects signal handlers.
+        Shows error dialog and closes application if startup fails.
+        """
         self.logger.info("Starting application")
         try:
             self.updateLoadingProgress(5, "Initializing application...")
@@ -146,11 +155,20 @@ class MainController:
             self.main_window.close()
 
     def updateLoadingProgress(self, progress, message):
-        """Update the loading screen progress"""
+        """Update the loading screen progress.
+        
+        Args:
+            progress: Progress percentage (0-100).
+            message: Status message to display.
+        """
         self.main_window.loading_screen.update_progress(progress, message)
 
     def handleStartupSuccess(self):
-        """Handle successful OctoPrint connection"""
+        """Handle successful OctoPrint connection.
+        
+        Initializes the OctoPrint client, loads the UI, establishes websocket
+        connection, checks Klipper configuration, and switches to home screen.
+        """
         self.logger.info("OctoPrint connection successful")
         
         try:
@@ -168,7 +186,7 @@ class MainController:
             self.updateLoadingProgress(98, "Initializing websocket connection...")
             
             # Initialize websocket
-            self.initalize_websocket()
+            self.initialize_websocket()
             
             self.updateLoadingProgress(99, "Checking Klipper configuration...")
             
@@ -184,7 +202,12 @@ class MainController:
             self.handleStartupError()
 
     def handleStartupError(self):
-        """Handle OctoPrint connection failure"""
+        """Handle OctoPrint connection failure.
+        
+        Prompts user to restore failsafe settings or load minimal UI.
+        If user chooses to restore, attempts to restore configuration files
+        and restart OctoPrint service.
+        """
         self.logger.info("OctoPrint connection failed")
         try:
             self.updateLoadingProgress(0, "Connection failed - showing options...")
@@ -195,14 +218,23 @@ class MainController:
                 self.updateLoadingProgress(25, "Restoring failsafe settings...")
                 
                 # Restore failsafe settings
-                os.system('sudo rm -rf /home/pi/.octoprint/users.yaml')
-                os.system('sudo rm -rf /home/pi/.octoprint/config.yaml')
-                os.system('sudo cp -f config/users.yaml /home/pi/.octoprint/users.yaml')
-                os.system('sudo cp -f config/config.yaml /home/pi/.octoprint/config.yaml')
+                try:
+                    subprocess.run(["sudo", "rm", "-rf", "/home/pi/.octoprint/users.yaml"], check=True)
+                    subprocess.run(["sudo", "rm", "-rf", "/home/pi/.octoprint/config.yaml"], check=True)
+                    subprocess.run(["sudo", "cp", "-f", "config/users.yaml", "/home/pi/.octoprint/users.yaml"], check=True)
+                    subprocess.run(["sudo", "cp", "-f", "config/config.yaml", "/home/pi/.octoprint/config.yaml"], check=True)
+                except subprocess.CalledProcessError as e:
+                    self.logger.error(f"Failed to restore failsafe settings: {e}")
+                    dialog.WarningOk(self.main_window, f"Failed to restore settings: {e}", overlay=True)
+                    return
                 
                 self.updateLoadingProgress(50, "Restarting OctoPrint service...")
                 
-                subprocess.call(["sudo", "systemctl", "restart", "octoprint"])
+                try:
+                    subprocess.run(["sudo", "systemctl", "restart", "octoprint"], check=True)
+                except subprocess.CalledProcessError as e:
+                    self.logger.error(f"Failed to restart OctoPrint service: {e}")
+                    dialog.WarningOk(self.main_window, f"Failed to restart service: {e}", overlay=True)
                 
                 self.updateLoadingProgress(10, "Retrying connection...")
                 
@@ -216,30 +248,42 @@ class MainController:
             dialog.WarningOk(self.main_window, f"Error in startup error handling: {e}", overlay=True)
 
     def onWebSocketConnected(self):
-        """
-        When the  on Web Socket server is connected, check for filament sensor and previous print failure to complere
+        """Handle websocket connection establishment.
+        
+        Checks printer status, detects previous print failures, and offers
+        print restoration if applicable. Called when websocket connects.
         """
         self.logger.info("MainController.onWebSocketConnected started")
 
         if self.octoprint_client:
             try:
-                self.octoprint_client.gcode(command='status') # Check if needed, unsure about what this does
+                # Send status command to check printer state
+                status_response = self.octoprint_client.gcode(command='status')
+                if status_response:
+                    self.logger.debug(f"Printer status response: {status_response}")
                 try:
                     response = self.octoprint_client.isFailureDetected()
                     if response["canRestore"] is True:
                         self.printRestoreMessageBox(response["file"])
                     else:
-                        #RODO: Check for updates on startup if prefered
+                        #TODO: Check for updates on startup if preferred
                         pass
                     
-                except:
-                    pass
+                except (KeyError, TypeError, AttributeError) as e:
+                    self.logger.warning(f"Failed to check for print failure: {e}")
+                except Exception as e:
+                    self.logger.error(f"Unexpected error checking print failure: {e}")
             except Exception as e:
                 self.logger.error("Error in MainController.onWebSocketConnected: {}".format(e))
                 dialog.WarningOk(self.main_window, "Error in MainController.onWebSocketConnected: {}".format(e), overlay=True)
         
 
-    def initalize_websocket(self):
+    def initialize_websocket(self):
+        """Initialize websocket connection and signal bindings.
+        
+        Creates OctoPrint websocket client and connects all websocket signals
+        to appropriate handlers in the printer model and main controller.
+        """
         self.octoprint_websocket = OctoPrintWebSocket(ip=ip, api_key=apiKey)
         self.octoprint_websocket.start()
 
@@ -263,8 +307,11 @@ class MainController:
 
 
     def checkKlipperPrinterCFG(self):
-        """
-        Checks for valid printer.cfg and restores if needed, using utility functions.
+        """Check for valid printer.cfg and restore if needed.
+        
+        Validates the Klipper printer configuration file and attempts to
+        restore from backup if corrupted. Cancels active print and cools
+        down if configuration is invalid.
         """
         if not self.octoprint_client:
             return
@@ -289,8 +336,10 @@ class MainController:
             dialog.WarningOk(self.main_window, f"Error in MainController.checkKlipperPrinterCFG: {e}", overlay=True)
 
     def coolDownAction(self):
-        """'
-        Turns all heaters and fans off
+        """Turn off all heaters and fans.
+        
+        Sends commands to disable all heating elements and fans, then updates
+        the UI temperature controls to reflect the zero values.
         """
         self.logger.info("MainController.coolDownAction started")
         try:
@@ -305,8 +354,13 @@ class MainController:
             dialog.WarningOk(self.main_window, "Error in MainController.coolDownAction: {}".format(e), overlay=True)
 
     def printRestoreMessageBox(self, file):
-        """
-        Displays a message box alerting the user of a filament error
+        """Display a message box for print restoration options.
+        
+        Args:
+            file: Name of the file that did not finish printing.
+            
+        Shows a dialog asking if the user wants to restore a failed print
+        and handles the restoration process if confirmed.
         """
         self.logger.info("MainController.printRestoreMessageBox started")
         if self.octoprint_client:
@@ -322,6 +376,18 @@ class MainController:
                 dialog.WarningOk(self.main_window, "Error in MainController.printRestoreMessageBox: {}".format(e), overlay=True)
 
     def showProbingFailed(self, msg='Probing Failed, Calibrate bed again or check for hardware issue', overlay=True):
+        """Show probing failure dialog and handle response.
+        
+        Args:
+            msg: Error message to display to the user.
+            overlay: Whether to show dialog as overlay.
+            
+        Returns:
+            bool: True if user acknowledged the error, False otherwise.
+            
+        Displays an error dialog for probing failures and cancels the current
+        print if user confirms.
+        """
         self.logger.info("MainController.showProbingFailed started")
         if self.octoprint_client:
             try:
@@ -334,6 +400,16 @@ class MainController:
                 dialog.WarningOk(self.main_window, "Error in MainController.showProbingFailed: {}".format(e), overlay=True)
 
     def showPrinterError(self, msg='Printer error, Check Terminal', overlay=False):
+        """Show printer error dialog and handle critical errors.
+        
+        Args:
+            msg: Error message to display to the user.
+            overlay: Whether to show dialog as overlay.
+            
+        Displays printer error messages and performs emergency shutdown
+        procedures for critical errors. Handles dialog state to prevent
+        multiple simultaneous error dialogs.
+        """
         self.logger.info("MainController.showPrinterError started")
         if self.octoprint_client:
             try:

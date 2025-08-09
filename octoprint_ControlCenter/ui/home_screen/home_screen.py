@@ -169,6 +169,7 @@ class HomeScreen(QWidget):
             self.stopButton.setEnabled(False)
             self.controlButton.setEnabled(False)
             self.playPauseButton.setEnabled(False)
+            self.doorLockButton.setEnabled(False)
             # Show a visual indicator on the home screen that we're in limited mode
             self.printerStatus.setText("Disconnected - Limited Mode")
             self.printerStatusColour.setStyleSheet(printer_status_red)
@@ -178,6 +179,7 @@ class HomeScreen(QWidget):
             self.stopButton.setEnabled(True)
             self.controlButton.setEnabled(True)
             self.playPauseButton.setEnabled(True)
+            self.doorLockButton.setEnabled(False)
             # Update home screen connection status
             self.printerStatus.setText("Connected")
             self.printerStatusColour.setStyleSheet(printer_status_green)
