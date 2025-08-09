@@ -3,6 +3,19 @@ IGNORED_PRINTER_ERRORS = [
     "!! Move out of range:",
     "!! Shutdown due to M112"
 ]
+# Critical printer errors that require immediate attention, can cancel the print in mainController.showPrinterError
+CRITICAL_PRINTER_ERRORS = [
+    "Can not update MCU", 
+    "Error loading template", 
+    "Must home axis first", 
+    "probe",
+    "Error during homing move", 
+    "still triggered after retract", 
+    "'mcu' must be specified", 
+    "Unable to connect",
+    "Shutdown due to M112 command",
+    "Printer is not ready"
+]
 from collections import OrderedDict
 
 # Configuration settings

@@ -244,7 +244,15 @@ class OctoPrintWebSocket(QThread):
             if "plugin" in data:
                 plugin_name = data["plugin"]["plugin"]
                 self.logger.info(f"Plugin message received from: {plugin_name}")
-                
+
+                if plugin_name == 'klipper':
+                    # Extract the actual error message from the plugin data
+                    plugin_data = data["plugin"]["data"]
+                    if isinstance(plugin_data, dict) and plugin_data.get('subtype') == 'error':
+                        error_message = plugin_data.get('payload', plugin_data.get('title', str(plugin_data)))
+                        self.logger.error(f"Klipper error detected: {error_message}")
+                        self.printer_error_signal.emit(str(error_message).strip()) 
+
                 if plugin_name == 'JuliaFirmwareUpdater':
                     self.logger.info("Emitting firmware_updater_signal")
                     # Note: firmware_updater_signal not defined in this class

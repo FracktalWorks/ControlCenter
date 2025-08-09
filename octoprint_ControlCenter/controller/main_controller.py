@@ -19,7 +19,7 @@ import threading
 from utils.helpers import run_async
 from utils import dialog
 from ui.loading_screen.loading_screen import LoadingScreen
-from config import ip, apiKey
+from config import ip, apiKey, CRITICAL_PRINTER_ERRORS
 
 
 logger = get_logger(__name__)
@@ -221,24 +221,22 @@ class MainController:
         """
         self.logger.info("MainController.onWebSocketConnected started")
 
-        if hasattr(self, 'octoprint_client'):
-            client = self.octoprint_client
-            if client:
+        if self.octoprint_client:
+            try:
+                self.octoprint_client.gcode(command='status') # Check if needed, unsure about what this does
                 try:
-                    client.gcode(command='status')  # get klipper status. hanle in
-                    self.isFilamentSensorInstalled()
-                    try:
-                        response = client.isFailureDetected()
-                        if response["canRestore"] is True:
-                            self.printRestoreMessageBox(response["file"])
-                        else:
-                            # self.firmwareUpdateCheck()
-                            pass  # Firmware update Functionality not needed for Twin Dragon, need to modify this for updating cfg files
-                    except:
+                    response = self.octoprint_client.isFailureDetected()
+                    if response["canRestore"] is True:
+                        self.printRestoreMessageBox(response["file"])
+                    else:
+                        #RODO: Check for updates on startup if prefered
                         pass
-                except Exception as e:
-                    self.logger.error("Error in MainController.onWebSocketConnected: {}".format(e))
-                    dialog.WarningOk(self.main_window, "Error in MainController.onWebSocketConnected: {}".format(e), overlay=True)
+                    
+                except:
+                    pass
+            except Exception as e:
+                self.logger.error("Error in MainController.onWebSocketConnected: {}".format(e))
+                dialog.WarningOk(self.main_window, "Error in MainController.onWebSocketConnected: {}".format(e), overlay=True)
         
 
     def initalize_websocket(self):
@@ -268,12 +266,7 @@ class MainController:
         """
         Checks for valid printer.cfg and restores if needed, using utility functions.
         """
-
-        self.logger.info("MainController.checkKlipperPrinterCFG started")
-        if not hasattr(self, 'octoprint_client'):
-            return
-        client = self.octoprint_client
-        if not client:
+        if not self.octoprint_client:
             return
         try:
             if not klipper_cfg_utils.is_config_valid():
@@ -285,11 +278,9 @@ class MainController:
                 # If no valid backups found, show error dialog:
                 dialog.WarningOk(self.main_window,
                                  "Printer Config File corrupted. Contact Fracktal support or raise a ticket at care.fracktal.in")
-                if getattr(self, 'printerStatus', None) == "Printing":
-                    client.cancelPrint()
-                    # Note: control_screen reference needs to be through main_window
-                    if hasattr(self.main_window, 'control_screen'):
-                        self.main_window.control_screen.coolDownAction()
+                if self.printer_model.printer_status in ["Printing", "Paused"]:
+                    self.octoprint_client.cancelPrint()
+                    self.coolDownAction()
             else:
                 self.logger.info("Printer Config File OK")
                 klipper_cfg_utils.cleanup_old_backups()
@@ -297,112 +288,86 @@ class MainController:
             self.logger.error(f"Error in MainController.checkKlipperPrinterCFG: {e}")
             dialog.WarningOk(self.main_window, f"Error in MainController.checkKlipperPrinterCFG: {e}", overlay=True)
 
+    def coolDownAction(self):
+        """'
+        Turns all heaters and fans off
+        """
+        self.logger.info("MainController.coolDownAction started")
+        try:
+            self.octoprint_client.gcode(command='M107')
+            self.octoprint_client.setToolTemperature({"tool0": 0, "tool1": 0})
+            # octopiclient.setToolTemperature({"tool0": 0})
+            self.octoprint_client.setBedTemperature(0)
+            self.main_window.control_screen.toolTempSpinBox.setProperty("value", 0)
+            self.main_window.control_screen.bedTempSpinBox.setProperty("value", 0)
+        except Exception as e:
+            self.logger.error("Error in MainController.coolDownAction: {}".format(e))
+            dialog.WarningOk(self.main_window, "Error in MainController.coolDownAction: {}".format(e), overlay=True)
+
     def printRestoreMessageBox(self, file):
         """
         Displays a message box alerting the user of a filament error
         """
         self.logger.info("MainController.printRestoreMessageBox started")
-
-        if hasattr(self, 'octoprint_client'):
-            client = self.octoprint_client
-            if client:
-                try:
-                    if dialog.WarningYesNo(self.main_window, file + " Did not finish, would you like to restore?"):
-                        response = client.restore(restore=True)
-                        if response["status"] == "Successfully Restored":
-                            dialog.WarningOk(self.main_window, response["status"])
-                        else:
-                            dialog.WarningOk(self.main_window, response["status"])
-                except Exception as e:
-                    self.logger.error("Error in MainController.printRestoreMessageBox: {}".format(e))
-                    dialog.WarningOk(self.main_window, "Error in MainController.printRestoreMessageBox: {}".format(e), overlay=True)
-
-
-
-    def isFilamentSensorInstalled(self):
-        """
-        Checks if the filament sensor is installed
-        """
-        self.logger.info("MainController.isFilamentSensorInstalled started")
-
-        if hasattr(self, 'octoprint_client'):
-            client = self.octoprint_client
-            if client:
-                try:
-                    success = False
-                    try:
-                        headers = {'X-Api-Key': apiKey}
-                        req = requests.get('http://{}/plugin/Julia2018FilamentSensor/status'.format(ip),
-                                           headers=headers)
-                        success = req.status_code == requests.codes.ok
-                    except:
-                        pass
-                    # self.toggleFilamentSensorButton.setEnabled(success)
-                    return success
-                except Exception as e:
-                    self.logger.error("Error in MainController.isFilamentSensorInstalled: {}".format(e))
-                    dialog.WarningOk(self.main_window, "Error in MainController.isFilamentSensorInstalled: {}".format(e), overlay=True)
+        if self.octoprint_client:
+            try:
+                if dialog.WarningYesNo(self.main_window, file + " Did not finish, would you like to restore?"):
+                    response = self.octoprint_client.restore(restore=True)
+                    if response["status"] == "Successfully Restored":
+                        dialog.WarningOk(self.main_window, response["status"])
+                    else:
+                        dialog.WarningOk(self.main_window, response["status"])
+            except Exception as e:
+                self.logger.error("Error in MainController.printRestoreMessageBox: {}".format(e))
+                dialog.WarningOk(self.main_window, "Error in MainController.printRestoreMessageBox: {}".format(e), overlay=True)
 
     def showProbingFailed(self, msg='Probing Failed, Calibrate bed again or check for hardware issue', overlay=True):
         self.logger.info("MainController.showProbingFailed started")
-        if hasattr(self, 'octoprint_client'):
-            client = self.octoprint_client
-            if client:
-                try:
-                    if dialog.WarningOk(self.main_window, msg, overlay=overlay):
-                        client.cancelPrint()
-                        return True
-                    return False
-                except Exception as e:
-                    self.logger.error("Error in MainController.showProbingFailed: {}".format(e))
-                    dialog.WarningOk(self.main_window, "Error in MainController.showProbingFailed: {}".format(e), overlay=True)
+        if self.octoprint_client:
+            try:
+                if dialog.WarningOk(self.main_window, msg, overlay=overlay):
+                    self.octoprint_client.cancelPrint()
+                    return True
+                return False
+            except Exception as e:
+                self.logger.error("Error in MainController.showProbingFailed: {}".format(e))
+                dialog.WarningOk(self.main_window, "Error in MainController.showProbingFailed: {}".format(e), overlay=True)
 
     def showPrinterError(self, msg='Printer error, Check Terminal', overlay=False):
         self.logger.info("MainController.showPrinterError started")
-        if hasattr(self, 'octoprint_client'):
-            client = self.octoprint_client
-            if client:
-                try:
-                    if any(error in msg for error in
-                           ["Can not update MCU", "Error loading template", "Must home axis first", "probe",
-                            "Error during homing move", "still triggered after retract", "'mcu' must be specified"]):
-                        self.logger.error("CRITICAL ERROR SHUTDOWN NEEDED")
-                        # Check printer status through main_window.home_screen if available
-                        if hasattr(self.main_window, 'home_screen') and hasattr(self.main_window.home_screen, 'printerStatusText'):
-                            if self.main_window.home_screen.printerStatusText in ["Starting", "Printing", "Paused"]:
-                                client.cancelPrint()
-                                client.gcode(command='M112')
-                                try:
-                                    client.connectPrinter(port="/tmp/printer", baudrate=115200)
-                                except Exception as e:
-                                    client.connectPrinter(port="VIRTUAL", baudrate=115200)
-                                client.gcode(command='FIRMWARE_RESTART')
-                                client.gcode(command='RESTART')
-                                if not self.dialogShown:
-                                    self.dialogShown = True
-                                    if dialog.WarningOk(self.main_window, msg + ", Cancelling Print.", overlay=overlay):
-                                        self.dialogShown = False
-                                self.logger.error("CRITICAL ERROR SHUTDOWN DONE")
-                            else:
-                                if not self.dialogShown:
-                                    self.dialogShown = True
-                                    client.gcode(command='FIRMWARE_RESTART')
-                                    client.gcode(command='RESTART')
-                                    if dialog.WarningOk(self.main_window, msg, overlay=overlay):
-                                        self.dialogShown = False
-                        else:
-                            # Fallback if home_screen is not available
-                            if not self.dialogShown:
-                                self.dialogShown = True
-                                if dialog.WarningOk(self.main_window, msg, overlay=overlay):
-                                    self.dialogShown = False
-
+        if self.octoprint_client:
+            try:
+                if any(error in msg for error in CRITICAL_PRINTER_ERRORS):
+                    self.logger.error("CRITICAL ERROR SHUTDOWN NEEDED")
+                    # Check printer status through main_window.home_screen if available
+                    if self.printer_model.printer_status in ["Starting", "Printing", "Paused"]:
+                        self.octoprint_client.cancelPrint()
+                        self.octoprint_client.gcode(command='M112')
+                        try:
+                            self.octoprint_client.connectPrinter(port="/tmp/printer", baudrate=115200)
+                        except Exception as e:
+                            self.octoprint_client.connectPrinter(port="VIRTUAL", baudrate=115200)
+                        self.octoprint_client.gcode(command='FIRMWARE_RESTART')
+                        self.octoprint_client.gcode(command='RESTART')
+                        if not self.dialogShown:
+                            self.dialogShown = True
+                            if dialog.WarningOk(self.main_window, msg + ", Cancelling Print.", overlay=overlay):
+                                self.dialogShown = False
+                        self.logger.error("CRITICAL ERROR SHUTDOWN DONE")
                     else:
                         if not self.dialogShown:
                             self.dialogShown = True
+                            self.octoprint_client.gcode(command='FIRMWARE_RESTART')
+                            self.octoprint_client.gcode(command='RESTART')
                             if dialog.WarningOk(self.main_window, msg, overlay=overlay):
                                 self.dialogShown = False
 
-                except Exception as e:
-                    self.logger.error("Error in MainController.showPrinterError: {}".format(e))
-                    dialog.WarningOk(self.main_window, "Error in MainController.showPrinterError: {}".format(e), overlay=True)
+                else:
+                    if not self.dialogShown:
+                        self.dialogShown = True
+                        if dialog.WarningOk(self.main_window, msg, overlay=overlay):
+                            self.dialogShown = False
+
+            except Exception as e:
+                self.logger.error("Error in MainController.showPrinterError: {}".format(e))
+                dialog.WarningOk(self.main_window, "Error in MainController.showPrinterError: {}".format(e), overlay=True)

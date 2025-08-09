@@ -5,6 +5,8 @@ from utils.helpers import check_ui_elements
 from utils.logger import get_logger
 from utils import dialog
 from octoprint_client.octoprint_threaded_file_upload import ThreadFileUpload
+import base64
+
 
 import subprocess
 from datetime import datetime
@@ -348,7 +350,7 @@ class PrintFromLocation(QWidget):
         try:
             self.octoprint_client.home(['x', 'y', 'z'])
             self.octoprint_client.selectFile(self.fileListWidgetLocal.currentItem().text(), True)
-            self.main_window.checkKlipperPrinterCFG()
+            self.main_window.controller.checkKlipperPrinterCFG()
 
             # Ensure the home_screen is part of the stackedWidget
             # if self.main_window.home_screen not in [self.stackedWidget.widget(i) for i in
@@ -361,6 +363,28 @@ class PrintFromLocation(QWidget):
         except Exception as e:
             self.logger.error("Error in PrintFromLocation.printFile: {}".format(e))
             dialog.WarningOk(self, "Error in PrintFromLocation.printFile: {}".format(e), overlay=True)
+
+    def getImageFromGcode(self,gcodeLocation):
+        """
+        Gets the image from the gcode text file when getting it from USB drive
+        """
+        self.logger.info("PrintFromLocation.getImageFromGcode started")
+        try:
+            with open(gcodeLocation, 'rb') as f:
+                content = f.readlines()[:500]
+                content = b''.join(content)
+            start = content.find(b'; thumbnail begin')
+            end = content.find(b'; thumbnail end')
+            if start != -1 and end != -1:
+                thumbnail = content[start:end]
+                thumbnail = base64.b64decode(thumbnail[thumbnail.find(b'\n') + 1:].replace(b'; ', b'').replace(b'\r\n', b''))
+                return thumbnail
+            else:
+                return False
+        except Exception as e:
+            self.logger.error("Error in PrintFromLocation.getImageFromGcode: {}".format(e))
+            dialog.WarningOk(self, "Error in PrintFromLocation.getImageFromGcode: {}".format(e), overlay=True)
+            return False
 
     @run_async
     def displayThumbnail(self, labelObject, fileLocation, usb=False):
@@ -381,11 +405,9 @@ class PrintFromLocation(QWidget):
                 pixmap.loadFromData(img)
                 labelObject.setPixmap(pixmap)
             else:
-                # Use relative path for thumbnail image
-                thumbnail_path = os.path.join(os.path.dirname(__file__), "..", "resources", "img", "thumbnail.png")
-                labelObject.setPixmap(QtGui.QPixmap(_fromUtf8(thumbnail_path)))
+                # Use resource path for thumbnail image
+                labelObject.setPixmap(QtGui.QPixmap(":/Icons/img/thumbnail.png"))
         except Exception as e:
-            # Use relative path for thumbnail image
-            thumbnail_path = os.path.join(os.path.dirname(__file__), "..", "resources", "img", "thumbnail.png")
-            labelObject.setPixmap(QtGui.QPixmap(_fromUtf8(thumbnail_path)))
+            # Use resource path for thumbnail image
+            labelObject.setPixmap(QtGui.QPixmap(":/Icons/img/thumbnail.png"))
             self.logger.error("Error in PrintFromLocation.displayThumbnail: {}".format(e))

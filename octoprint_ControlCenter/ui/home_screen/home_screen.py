@@ -2,7 +2,7 @@ import os
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QLabel, QProgressBar
 from PyQt5.QtCore import QTimer
-from PyQt5 import QtGui
+from PyQt5 import QtGui, QtCore
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
 from utils.styles import printer_status_green, printer_status_red, printer_status_amber
@@ -12,6 +12,13 @@ from utils.network_utils import getIP
 from utils.helpers import run_async
 import time
 import ui.resources.resource_rc  # Import resources for Qt resource system
+
+try:
+    _fromUtf8 = QtCore.QString.fromUtf8
+except AttributeError:
+    def _fromUtf8(s):
+        return s
+
 
 class HomeScreen(QWidget):
     def __init__(self, main_window, minimalUI=False):
@@ -176,9 +183,6 @@ class HomeScreen(QWidget):
             self.printerStatusColour.setStyleSheet(printer_status_green)
             self.setIPStatus()
 
-
-
-
     def updatePrinterStatus(self, status):
         """
         Updates the status bar, is a slot for the signal emited from the thread that constantly polls for printer status
@@ -285,7 +289,18 @@ class HomeScreen(QWidget):
                 '''
                 if self.current_image != self.current_file:
                     self.current_image = self.current_file
-                    self.main_window.print_location_screen.displayThumbnail(self.printPreviewMain, self.current_file, usb=False)
+                    img = self.octoprint_client.getImage(self.current_file)
+                    if img:
+                        pixmap = QtGui.QPixmap()
+                        pixmap.loadFromData(img)
+                        # Scale image to fit the label size while maintaining square aspect ratio
+                        label_size = self.printPreviewMain.size()
+                        square_size = min(label_size.width(), label_size.height())
+                        scaled_pixmap = pixmap.scaled(square_size, square_size, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+                        self.printPreviewMain.setPixmap(scaled_pixmap)
+                    else:
+                        # Use resource path for thumbnail image
+                        self.printPreviewMain.setPixmap(QtGui.QPixmap(":/Icons/img/thumbnail.png"))
         except Exception as e:
             self.logger.error("Error in HomeScreen.updatePrintStatus: {}".format(e))
             dialog.WarningOk(self, "Error in HomeScreen.updatePrintStatus: {}".format(e), overlay=True)
@@ -377,9 +392,17 @@ class HomeScreen(QWidget):
     # ! Below are the boilerplate functions
 
     def toggle_door_lock(self):
-        """Toggle printer door lock"""
-        # if not self.printer_connected:
-        pass
+        """
+        function that toggles locking and unlocking the front door
+        :return:
+        """
+        self.logger.info("HomeScreen.doorLock started")
+        try:
+            self.octoprint_client.gcode(command='DoorToggle')
+            self.octoprint_client.overrideDoorLock()
+        except Exception as e:
+            self.logger.error("Error in HomeScreen.doorLock: {}".format(e))
+            dialog.WarningOk(self, "Error in HomeScreen.doorLock: {}".format(e), overlay=True)
 
     def open_menu(self):
         """Navigate to menu screen"""
@@ -395,15 +418,13 @@ class HomeScreen(QWidget):
         self.logger.debug("Stop Print button clicked")
 
         # Send command to OctoPrint if connected
-        if hasattr(self.main_window, 'octoprint_client'):
-            client = self.octoprint_client
-            if client:
-                try:
-                    if dialog.WarningYesNo(self, "Are you sure you want to stop the print?"):
-                        client.cancelPrint()
-                except Exception as e:
-                    self.logger.error("Error in HomeScreen.stopActionMessageBox: {}".format(e))
-                    dialog.WarningOk(self, "Error in HomeScreen.stopActionMessageBox: {}".format(e), overlay=True)
+        if self.octoprint_client:
+            try:
+                if dialog.WarningYesNo(self, "Are you sure you want to stop the print?"):
+                    self.octoprint_client.cancelPrint()
+            except Exception as e:
+                self.logger.error("Error in HomeScreen.stopActionMessageBox: {}".format(e))
+                dialog.WarningOk(self, "Error in HomeScreen.stopActionMessageBox: {}".format(e), overlay=True)
 
     def play_pause_print(self):
         """Play or pause print job based on current state"""
@@ -413,22 +434,19 @@ class HomeScreen(QWidget):
         is_paused = self.playPauseButton.isChecked()
         self.logger.debug(f"Play/Pause button clicked: {'Pausing' if not is_paused else 'Resuming'}")
 
-        # Send command to OctoPrint if connected
-        if hasattr(self.main_window, 'octoprint_client'):
-            client = self.octoprint_client
-            if client:
-                try:
-                    if self.printerStatusText == "Operational":
-                        if self.playPauseButton.isChecked:
-                            self.main_window.checkKlipperPrinterCFG()
-                            client.startPrint()
-                    elif self.printerStatusText == "Printing":
-                        client.pausePrint()
-                    elif self.printerStatusText == "Paused":
-                        client.pausePrint()
-                except Exception as e:
-                    self.logger.error("Error in home_screen.playPauseAction: {}".format(e))
-                    dialog.WarningOk(self, "Error in home_screen.playPauseAction: {}".format(e), overlay=True)
+        if self.octoprint_client:
+            try:
+                if self.printerStatusText == "Operational":
+                    if self.playPauseButton.isChecked:
+                        self.main_window.controller.checkKlipperPrinterCFG()
+                        self.octoprint_client.startPrint()
+                elif self.printerStatusText == "Printing":
+                    self.octoprint_client.pausePrint()
+                elif self.printerStatusText == "Paused":
+                    self.octoprint_client.pausePrint()
+            except Exception as e:
+                self.logger.error("Error in home_screen.playPauseAction: {}".format(e))
+                dialog.WarningOk(self, "Error in home_screen.playPauseAction: {}".format(e), overlay=True)
 
     def open_control_panel(self):
         """Navigate to control panel screen"""
