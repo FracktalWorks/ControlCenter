@@ -1,5 +1,5 @@
 IGNORED_PRINTER_ERRORS = [
-    "Move out of range:",
+    "Move out of range:"
 ]
 # Critical printer errors that require immediate attention, can cancel the print using mainController.showPrinterError
 CRITICAL_PRINTER_ERRORS = [

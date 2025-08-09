@@ -412,18 +412,25 @@ class MainController:
         """
         self.logger.info("MainController.showPrinterError started")
         
+        # Strip exclamation marks and leading spaces from the message before processing
+        # Handle common error message prefixes like "!", "!!", "!!!", etc. followed by spaces
+        cleaned_msg = msg.strip()  # First remove leading/trailing whitespace
+        while cleaned_msg.startswith('!'):
+            cleaned_msg = cleaned_msg[1:].lstrip()  # Remove one ! and any following spaces
+        
         # Always log the error, but check if it should be ignored for UI display
         self.logger.error(f"Printer error received: {msg}")
+        self.logger.debug(f"Cleaned message for processing: {cleaned_msg}")
         
-        # Check if this error should be ignored for UI display
+        # Check if this error should be ignored for UI display using cleaned message
         for ignore_item in IGNORED_PRINTER_ERRORS:
-            if ignore_item in msg:
-                self.logger.debug(f"Ignoring error message for UI display: {msg}")
+            if ignore_item in cleaned_msg:
+                self.logger.debug(f"Ignoring error message for UI display: {cleaned_msg}")
                 return  # Don't show dialog for ignored errors
         
         if self.octoprint_client:
             try:
-                if any(error in msg for error in CRITICAL_PRINTER_ERRORS):
+                if any(error in cleaned_msg for error in CRITICAL_PRINTER_ERRORS):
                     self.logger.error("CRITICAL ERROR SHUTDOWN NEEDED")
                     # Check printer status through main_window.home_screen if available
                     if self.printer_model.printer_status in ["Starting", "Printing", "Paused"]:
@@ -437,7 +444,7 @@ class MainController:
                         self.octoprint_client.gcode(command='RESTART')
                         if not self.dialogShown:
                             self.dialogShown = True
-                            if dialog.WarningOk(self.main_window, msg + ", Cancelling Print.", overlay=overlay):
+                            if dialog.WarningOk(self.main_window, cleaned_msg + ", Cancelling Print.", overlay=overlay):
                                 self.dialogShown = False
                         self.logger.error("CRITICAL ERROR SHUTDOWN DONE")
                     else:
@@ -445,13 +452,13 @@ class MainController:
                             self.dialogShown = True
                             self.octoprint_client.gcode(command='FIRMWARE_RESTART')
                             self.octoprint_client.gcode(command='RESTART')
-                            if dialog.WarningOk(self.main_window, msg, overlay=overlay):
+                            if dialog.WarningOk(self.main_window, cleaned_msg, overlay=overlay):
                                 self.dialogShown = False
                 else:
                     # For non-critical errors, only show dialog if not already shown
                     if not self.dialogShown:
                         self.dialogShown = True
-                        if dialog.WarningOk(self.main_window, msg, overlay=overlay):
+                        if dialog.WarningOk(self.main_window, cleaned_msg, overlay=overlay):
                             self.dialogShown = False
 
             except Exception as e:

@@ -1,13 +1,31 @@
+"""Menu screen module for OctoPrint Control Center.
+
+This module provides the main navigation menu interface allowing users to
+access different application screens including print, control, calibrate,
+filament/nozzle management, and settings.
+"""
 import os
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
 
-logger = get_logger(__name__)
 
 class MenuScreen(QWidget):
+    """Main navigation menu screen widget.
+    
+    Provides navigation buttons to access different application screens
+    including print management, control panel, calibration, filament/nozzle
+    settings, and application settings.
+    """
+    
     def __init__(self, main_window, minimalUI=False):
+        """Initialize the menu screen.
+        
+        Args:
+            main_window: Reference to the main application window.
+            minimalUI: Whether to enable minimal UI mode with limited functionality.
+        """
         super(MenuScreen, self).__init__()
         self.main_window = main_window
         self.minimalUI = minimalUI
@@ -22,9 +40,10 @@ class MenuScreen(QWidget):
             uic.loadUi(ui_file_path, self)
             self.logger.info("MenuScreen UI loaded successfully")
         except Exception as e:
-            self.logger.error(f"Failed to load MenuScreen UI file: {e}")
+            self.logger.exception(f"Failed to load MenuScreen UI file: {e}")
+            raise RuntimeError(f"Cannot initialize MenuScreen: UI file loading failed - {e}")
             
-        # Initialize UI components directly
+        # Initialize UI components
         # Navigation tool buttons
         self.menuPrintButton = self.findChild(QToolButton, "menuPrintButton")
         self.menuControlButton = self.findChild(QToolButton, "menuControlButton")
@@ -70,7 +89,7 @@ class MenuScreen(QWidget):
         if self.menuBackButton:
             self.menuBackButton.clicked.connect(self.go_back)
             self.logger.debug("Connected menuBackButton to handler")
-        
+
         if self.minimalUI:
              # Disable buttons in Menu Screen
             self.menuControlButton.setEnabled(False)
@@ -84,33 +103,52 @@ class MenuScreen(QWidget):
             self.menuCalibrateButton.setEnabled(True)
             self.menuFilamentNozzleButton.setEnabled(True)
 
-
-
     def open_print(self):
-        """Navigate to the print location screen"""
-        self.main_window.switch_to_print_location_screen()
-        self.logger.info("Print button clicked")
+        """Navigate to the print location screen."""
+        try:
+            self.main_window.switch_to_print_location_screen()
+            self.logger.info("Print button clicked")
+        except Exception as e:
+            self.logger.error(f"Error navigating to print screen: {e}")
 
     def open_control(self):
-        """Navigate to the control screen"""
-        self.main_window.switch_to_control_screen()
-        self.logger.info("Control button clicked")
+        """Navigate to the control screen."""
+        try:
+            self.main_window.switch_to_control_screen()
+            self.logger.info("Control button clicked")
+        except Exception as e:
+            self.logger.error(f"Error navigating to control screen: {e}")
 
     def open_calibrate(self):
-        """Navigate to the calibrate screen"""
-        self.main_window.switch_to_calibrate_screen()
-        self.logger.info("Calibrate button clicked")
+        """Navigate to the calibrate screen."""
+        try:
+            self.main_window.switch_to_calibrate_screen()
+            self.logger.info("Calibrate button clicked")
+        except Exception as e:
+            self.logger.error(f"Error navigating to calibrate screen: {e}")
 
     def open_menuFilamentNozzle(self):
-        """Placeholder for open menuFilamentNozzle logic"""
+        """Navigate to filament and nozzle management screen.
+        
+        TODO: Implement navigation to filament/nozzle management screen
+        when the corresponding screen module is available.
+        """
         self.logger.info("FilamentNozzle button clicked")
+        # TODO: Add navigation when filament/nozzle screen is implemented
+        # self.main_window.switch_to_filament_nozzle_screen()
 
     def open_settings(self):
-        """Navigate to the settings screen"""
-        self.main_window.switch_to_settings_screen()
-        self.logger.info("Settings button clicked")
+        """Navigate to the settings screen."""
+        try:
+            self.main_window.switch_to_settings_screen()
+            self.logger.info("Settings button clicked")
+        except Exception as e:
+            self.logger.error(f"Error navigating to settings screen: {e}")
 
     def go_back(self):
-        """Go back to the previous screen"""
-        self.main_window.switch_to_home_screen()
-        self.logger.info("Back button clicked")
+        """Go back to the previous screen."""
+        try:
+            self.main_window.switch_to_home_screen()
+            self.logger.info("Back button clicked")
+        except Exception as e:
+            self.logger.error(f"Error navigating to home screen: {e}")

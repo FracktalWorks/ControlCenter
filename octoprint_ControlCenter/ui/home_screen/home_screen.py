@@ -258,7 +258,7 @@ class HomeScreen(QWidget):
                 self.printTime.setText("-")
                 self.playPauseButton.setDisabled(True)  # if file is not available, disable playPauseButton
                 # Reset preview image to default thumbnail when no file is loaded
-                self.printPreviewMain.setPixmap(QtGui.QPixmap(":/Icons/img/thumbnail.png"))
+                self.printPreviewMain.setPixmap(QtGui.QPixmap(":/Logos & Branding/img/Logos/thumbnail.png"))
 
             else:
                 self.playPauseButton.setDisabled(False)  # if file available, make play button visible
@@ -302,7 +302,7 @@ class HomeScreen(QWidget):
                         self.printPreviewMain.setPixmap(scaled_pixmap)
                     else:
                         # Use resource path for thumbnail image
-                        self.printPreviewMain.setPixmap(QtGui.QPixmap(":/Icons/img/thumbnail.png"))
+                        self.printPreviewMain.setPixmap(QtGui.QPixmap(":/Logos & Branding/img/Logos/thumbnail.png"))
         except Exception as e:
             self.logger.error("Error in HomeScreen.updatePrintStatus: {}".format(e))
             dialog.WarningOk(self, "Error in HomeScreen.updatePrintStatus: {}".format(e), overlay=True)
@@ -318,15 +318,15 @@ class HomeScreen(QWidget):
             if temperature['tool0Actual'] is None:
                 temperature['tool0Actual'] = 0
             if temperature['tool0Target'] is None:
-                temperature['tool0Target'] = 180
+                temperature['tool0Target'] = 0
             if temperature['tool1Actual'] is None:
                 temperature['tool1Actual'] = 0
             if temperature['tool1Target'] is None:
-                temperature['tool1Target'] = 180
+                temperature['tool1Target'] = 0
             if temperature['bedActual'] is None:
                 temperature['bedActual'] = 0
             if temperature['bedTarget'] is None:
-                temperature['bedTarget'] = 60
+                temperature['bedTarget'] = 0
 
             # Update extruder 0 temperature
             if temperature['tool0Target'] == 0:

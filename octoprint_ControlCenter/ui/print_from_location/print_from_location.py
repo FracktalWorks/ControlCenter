@@ -406,8 +406,8 @@ class PrintFromLocation(QWidget):
                 labelObject.setPixmap(pixmap)
             else:
                 # Use resource path for thumbnail image
-                labelObject.setPixmap(QtGui.QPixmap(":/Icons/img/thumbnail.png"))
+                labelObject.setPixmap(QtGui.QPixmap(":/Logos & Branding/img/Logos/thumbnail.png"))
         except Exception as e:
             # Use resource path for thumbnail image
-            labelObject.setPixmap(QtGui.QPixmap(":/Icons/img/thumbnail.png"))
+            labelObject.setPixmap(QtGui.QPixmap(":/Logos & Branding/img/Logos/thumbnail.png"))
             self.logger.error("Error in PrintFromLocation.displayThumbnail: {}".format(e))
