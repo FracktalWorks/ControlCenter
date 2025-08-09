@@ -17,7 +17,7 @@ import os
 from utils.helpers import run_async
 from utils import dialog
 from ui.loading_screen.loading_screen import LoadingScreen
-from config import ip, apiKey, CRITICAL_PRINTER_ERRORS
+from config import ip, apiKey, CRITICAL_PRINTER_ERRORS, IGNORED_PRINTER_ERRORS
 
 
 logger = get_logger(__name__)
@@ -411,6 +411,16 @@ class MainController:
         multiple simultaneous error dialogs.
         """
         self.logger.info("MainController.showPrinterError started")
+        
+        # Always log the error, but check if it should be ignored for UI display
+        self.logger.error(f"Printer error received: {msg}")
+        
+        # Check if this error should be ignored for UI display
+        for ignore_item in IGNORED_PRINTER_ERRORS:
+            if ignore_item in msg:
+                self.logger.debug(f"Ignoring error message for UI display: {msg}")
+                return  # Don't show dialog for ignored errors
+        
         if self.octoprint_client:
             try:
                 if any(error in msg for error in CRITICAL_PRINTER_ERRORS):
@@ -437,8 +447,8 @@ class MainController:
                             self.octoprint_client.gcode(command='RESTART')
                             if dialog.WarningOk(self.main_window, msg, overlay=overlay):
                                 self.dialogShown = False
-
                 else:
+                    # For non-critical errors, only show dialog if not already shown
                     if not self.dialogShown:
                         self.dialogShown = True
                         if dialog.WarningOk(self.main_window, msg, overlay=overlay):

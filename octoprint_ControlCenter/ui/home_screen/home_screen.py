@@ -1,7 +1,6 @@
 import os
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QLabel, QProgressBar
-from PyQt5.QtCore import QTimer
 from PyQt5 import QtGui, QtCore
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
@@ -12,12 +11,6 @@ from utils.network_utils import getIP
 from utils.helpers import run_async
 import time
 import ui.resources.resource_rc  # Import resources for Qt resource system
-
-try:
-    _fromUtf8 = QtCore.QString.fromUtf8
-except AttributeError:
-    def _fromUtf8(s):
-        return s
 
 
 class HomeScreen(QWidget):
@@ -75,7 +68,7 @@ class HomeScreen(QWidget):
 
         # Temperature displays - Bed
         self.bedTargetTemperature = self.findChild(QLabel, "bedTargetTemperature")
-        self.bedActualTemperatute = self.findChild(QLabel, "bedActualTemperatute")
+        self.bedActualTemperature = self.findChild(QLabel, "bedActualTemperature")
         self.bedTempBar = self.findChild(QProgressBar, "bedTempBar")
 
         # Status components
@@ -95,7 +88,7 @@ class HomeScreen(QWidget):
             self.doorLockButton, self.menuButton, self.stopButton, self.playPauseButton, self.controlButton,
             self.tool0TargetTemperature, self.tool0ActualTemperature, self.tool0TempBar, self.tool0Label,
             self.tool1TargetTemperature, self.tool1ActualTemperature, self.tool1TempBar, self.tool1Label,
-            self.bedTargetTemperature, self.bedActualTemperatute, self.bedTempBar,
+            self.bedTargetTemperature, self.bedActualTemperature, self.bedTempBar,
             self.printerStatus, self.printerStatusColour, self.ipStatus,
             self.fileName, self.printTime, self.timeLeft, self.printProgressBar, self.printPreviewMain
         ]
@@ -138,8 +131,8 @@ class HomeScreen(QWidget):
             if self.tool1TempBar:
                 self.tool1TempBar.setValue(0)
 
-        if self.bedActualTemperatute and self.bedTargetTemperature:
-            self.bedActualTemperatute.setText("0°C")
+        if self.bedActualTemperature and self.bedTargetTemperature:
+            self.bedActualTemperature.setText("0°C")
             self.bedTargetTemperature.setText("0°C")
             if self.bedTempBar:
                 self.bedTempBar.setValue(0)
@@ -186,10 +179,13 @@ class HomeScreen(QWidget):
             self.setIPStatus()
 
     def updatePrinterStatus(self, status):
-        """
-        Updates the status bar, is a slot for the signal emited from the thread that constantly polls for printer status
-        this function updates the status bar, as well as enables/disables relavent buttons
-        :param status: String of the status text
+        """Update the status bar and enable/disable relevant buttons.
+        
+        This is a slot for the signal emitted from the thread that constantly polls 
+        for printer status. Updates the status display and manages button states.
+        
+        Args:
+            status: String of the status text
         """
         if getattr(self, "_last_status", None) != status:
             self.logger.info("HomeScreen.updatePrinterStatus called with status: {}".format(status))
@@ -245,11 +241,13 @@ class HomeScreen(QWidget):
             dialog.WarningOk(self, "Error in HomeScreen.updatePrinterStatus: {}".format(e), overlay=True)
 
     def updatePrintStatus(self, file):
-        """
-        displays infromation of a particular file on the home page
-        It is a slot for the signal emited from the thread that keeps pooling for printer status
-        runs at 1HZ, so do things that need to be constantly updated only
-        :param file: dict of all the attributes of a particualr file
+        """Display information about a particular file on the home page.
+        
+        This is a slot for the signal emitted from the thread that keeps polling 
+        for printer status. Updates at 1Hz for frequently changing data.
+        
+        Args:
+            file: dict of all the attributes of a particular file
         """
         try:
             if file["job"] is None:
@@ -259,9 +257,11 @@ class HomeScreen(QWidget):
                 self.printProgressBar.setValue(0)
                 self.printTime.setText("-")
                 self.playPauseButton.setDisabled(True)  # if file is not available, disable playPauseButton
+                # Reset preview image to default thumbnail when no file is loaded
+                self.printPreviewMain.setPixmap(QtGui.QPixmap(":/Icons/img/thumbnail.png"))
 
             else:
-                self.playPauseButton.setDisabled(False)  # if file available, make play buttom visible
+                self.playPauseButton.setDisabled(False)  # if file available, make play button visible
                 self.fileName.setText(file['job']['file']['name'])
                 self.current_file = file['job']['file']['name']
                 if file['progress']['printTime'] is None:
@@ -285,10 +285,10 @@ class HomeScreen(QWidget):
                 else:
                     self.printProgressBar.setValue(file['progress']['completion'])
 
-                '''
+                """
                 If image is available from server, set it, otherwise display default image.
-                If the image was already loaded, dont load it again.
-                '''
+                If the image was already loaded, don't load it again.
+                """
                 if self.current_image != self.current_file:
                     self.current_image = self.current_file
                     img = self.octoprint_client.getImage(self.current_file)
@@ -364,11 +364,13 @@ class HomeScreen(QWidget):
             else:
                 self.bedTempBar.setMaximum(temperature['bedActual'])
             self.bedTempBar.setValue(temperature['bedActual'])
-            self.bedActualTemperatute.setText(str(int(temperature['bedActual'])) + "°C")
+            self.bedActualTemperature.setText(str(int(temperature['bedActual'])) + "°C")
             self.bedTargetTemperature.setText(str(int(temperature['bedTarget'])) + "°C")
 
-        except:
-            pass
+        except (KeyError, TypeError, ValueError) as e:
+            self.logger.warning(f"Error updating temperature display: {e}")
+        except Exception as e:
+            self.logger.error(f"Unexpected error in updateTemperature: {e}")
 
     @run_async
     def setIPStatus(self):
@@ -385,7 +387,8 @@ class HomeScreen(QWidget):
                     else:
                         self.ipStatus.setText("Not connected")
 
-                except:
+                except (OSError, AttributeError) as e:
+                    self.logger.warning(f"Error getting IP address: {e}")
                     self.ipStatus.setText("Not connected")
                 time.sleep(120)
         except Exception as e:
@@ -439,7 +442,7 @@ class HomeScreen(QWidget):
         if self.octoprint_client:
             try:
                 if self.printerStatusText == "Operational":
-                    if self.playPauseButton.isChecked:
+                    if self.playPauseButton.isChecked():
                         self.main_window.controller.checkKlipperPrinterCFG()
                         self.octoprint_client.startPrint()
                 elif self.printerStatusText == "Printing":

@@ -317,15 +317,8 @@ class OctoPrintWebSocket(QThread):
                             self.logger.warning("Z probing failed!")
                             self.z_probing_failed_signal.emit()
 
-                        # Check for errors
-                        is_ignored = False
-                        for ignore_item in IGNORED_PRINTER_ERRORS:
-                            if ignore_item in item:
-                                self.logger.debug(f"Ignoring error message: {item}")
-                                is_ignored = True
-                                break
-                        
-                        if not is_ignored and (item.startswith('!!') or item.startswith('Error')):
+                        # Check for errors - emit all errors, let showPrinterError decide what to show
+                        if item.startswith('!!') or item.startswith('Error'):
                             self.logger.error(f"Printer error detected: {item}")
                             self.printer_error_signal.emit(item)
 

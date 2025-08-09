@@ -976,7 +976,7 @@ QProgressBar {
                 </widget>
                </item>
                <item alignment="Qt::AlignHCenter|Qt::AlignTop">
-                <widget class="QLabel" name="bedActualTemperatute">
+                <widget class="QLabel" name="bedActualTemperature">
                  <property name="font">
                   <font>
                    <family>Montserrat</family>
