@@ -90,6 +90,11 @@ class MenuScreen(QWidget):
             self.menuBackButton.clicked.connect(self.go_back)
             self.logger.debug("Connected menuBackButton to handler")
 
+        # Connect to printer model signals for status updates
+        if not self.minimalUI and hasattr(self.main_window, 'printer_model'):
+            self.main_window.printer_model.status_updated.connect(self.update_ui_for_status)
+            self.logger.debug("Connected MenuScreen to printer model status updates")
+
         if self.minimalUI:
              # Disable buttons in Menu Screen
             self.menuControlButton.setEnabled(False)
@@ -152,3 +157,20 @@ class MenuScreen(QWidget):
             self.logger.info("Back button clicked")
         except Exception as e:
             self.logger.error(f"Error navigating to home screen: {e}")
+
+    def update_ui_for_status(self, status):
+        """Update MenuScreen UI elements based on printer status"""
+        try:
+            # Disable certain menu options during printing
+            if status in ["Printing", "Paused"]:
+                if self.menuCalibrateButton:
+                    self.menuCalibrateButton.setDisabled(True)
+                if self.menuPrintButton:
+                    self.menuPrintButton.setDisabled(True)
+            else:  # Offline, Operational, etc.
+                if self.menuCalibrateButton:
+                    self.menuCalibrateButton.setDisabled(False)
+                if self.menuPrintButton:
+                    self.menuPrintButton.setDisabled(False)
+        except Exception as e:
+            self.logger.error(f"Error updating MenuScreen UI for status {status}: {e}")

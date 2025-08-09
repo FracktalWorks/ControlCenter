@@ -41,6 +41,12 @@ class ControlScreen(QWidget):
         self.controlTabWidget = self.findChild(QTabWidget, "controlTabWidget")
         self.controlBackButton = self.findChild(QPushButton, "controlBackButton")
 
+        # Tab widgets
+        self.feedRateTab = self.findChild(QWidget, "feedRateTab")
+        self.temperatureTab = self.findChild(QWidget, "temperatureTab")
+        self.motionTab = self.findChild(QWidget, "motionTab")
+        self.filamentTab = self.findChild(QWidget, "filamentTab")
+
         # Feed rate controls
         self.feedRateSpinBox = self.findChild(QSpinBox, "feedRateSpinBox")
         self.setFeedRateButton = self.findChild(QPushButton, "setFeedRateButton")
@@ -95,7 +101,8 @@ class ControlScreen(QWidget):
             self.setBedTempButton, self.step1mmButton, self.step10mmButton,
             self.step100mmButton, self.moveXPButton, self.moveXMButton,
             self.moveYPButton, self.moveYMButton, self.flowRateSpinBox,
-            self.setFlowRateButton, self.changeFilamentButton, self.toggleFilamentSensorButton
+            self.setFlowRateButton, self.changeFilamentButton, self.toggleFilamentSensorButton,
+            self.feedRateTab, self.temperatureTab, self.motionTab, self.filamentTab
         ], "ControlScreen")
 
         # Initialize sub-screens
@@ -201,6 +208,9 @@ class ControlScreen(QWidget):
 
         # local signal slot connections
         self.main_window.printer_model.filament_sensor_triggered.connect(self.filamentSensorHandler)
+        # Connect to printer model for status updates
+        self.main_window.printer_model.status_updated.connect(self.update_ui_for_status)
+        self.logger.debug("Connected ControlScreen to printer model status updates")
 
     # ! To be commented out later
     def _initialize_sub_screens(self):
@@ -541,3 +551,19 @@ class ControlScreen(QWidget):
         except Exception as e:
             logger.error("Error in control_screen.setActiveExtruder: {}".format(e))
             dialog.WarningOk(self, "Error in control_screen.setActiveExtruder: {}".format(e), overlay=True)
+
+    def update_ui_for_status(self, status):
+        """Update ControlScreen UI elements based on printer status"""
+        try:
+            # Disable motion controls during printing
+            if self.motionTab:
+                if status == "Printing":
+                    self.motionTab.setDisabled(True)
+                else:  # Paused, Offline, Operational, etc.
+                    self.motionTab.setDisabled(False)
+                    
+            # TODO: Add other control-specific UI updates based on status
+            # For example: disable certain temperature controls, etc.
+        except Exception as e:
+            logger.error(f"Error updating ControlScreen UI for status {status}: {e}")
+            dialog.WarningOk(self, f"Error updating ControlScreen UI for status {status}: {e}", overlay=True)

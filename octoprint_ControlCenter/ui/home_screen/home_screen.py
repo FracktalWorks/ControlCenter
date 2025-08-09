@@ -182,7 +182,7 @@ class HomeScreen(QWidget):
         """Update the status bar and enable/disable relevant buttons.
         
         This is a slot for the signal emitted from the thread that constantly polls 
-        for printer status. Updates the status display and manages button states.
+        for printer status. Updates only local HomeScreen UI elements.
         
         Args:
             status: String of the status text
@@ -194,46 +194,28 @@ class HomeScreen(QWidget):
             self.printerStatusText = status
             self.printerStatus.setText(status)
 
+            # Update status color indicator
             if status == "Printing":  # Green
                 self.printerStatusColour.setStyleSheet(styles.printer_status_green)
             elif status == "Offline":  # Red
                 self.printerStatusColour.setStyleSheet(styles.printer_status_red)
             elif status == "Paused":  # Amber
                 self.printerStatusColour.setStyleSheet(styles.printer_status_amber)
-            elif status == "Operational":  # Amber
+            elif status == "Operational":  # Blue
                 self.printerStatusColour.setStyleSheet(styles.printer_status_blue)
 
-            '''
-            Depending on Status, enable and Disable Buttons
-            '''
+            # Update HomeScreen buttons based on status
             if status == "Printing":
                 self.playPauseButton.setChecked(True)
                 self.stopButton.setDisabled(False)
-                # self.motionTab.setDisabled(True)
-                # self.changeFilamentButton.setDisabled(True) in some different file
-                self.main_window.menu_screen.menuCalibrateButton.setDisabled(True)
-                self.main_window.menu_screen.menuPrintButton.setDisabled(True)
                 self.doorLockButton.setDisabled(False)
-                # if not self.__timelapse_enabled:
-                #     octopiclient.cancelPrint()
-                #     self.coolDownAction()
-
             elif status == "Paused":
                 self.playPauseButton.setChecked(False)
                 self.stopButton.setDisabled(False)
-                # self.motionTab.setDisabled(False)
-                # self.changeFilamentButton.setDisabled(False)
-                self.main_window.menu_screen.menuCalibrateButton.setDisabled(True)
-                self.main_window.menu_screen.menuPrintButton.setDisabled(True)
                 self.doorLockButton.setDisabled(False)
-
-            else:
+            else:  # Offline, Operational, etc.
                 self.stopButton.setDisabled(True)
                 self.playPauseButton.setChecked(False)
-                # self.motionTab.setDisabled(False)
-                # self.changeFilamentButton.setDisabled(False)
-                self.main_window.menu_screen.menuCalibrateButton.setDisabled(False)
-                self.main_window.menu_screen.menuPrintButton.setDisabled(False)
                 self.doorLockButton.setDisabled(True)
 
         except Exception as e:
