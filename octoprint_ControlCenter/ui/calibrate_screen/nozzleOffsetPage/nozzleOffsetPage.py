@@ -48,7 +48,7 @@ class NozzleOffsetPage(QWidget):
 
         # Connect buttons to their respective methods
         if self.nozzleOffsetBackButton:
-            self.nozzleOffsetBackButton.clicked.connect(self._return_to_main_calibration)
+            self.nozzleOffsetBackButton.clicked.connect(lambda: self.main_window.switch_to_calibrate_screen())
         if self.nozzleOffsetSetButton:
             self.nozzleOffsetSetButton.clicked.connect(
                 lambda: self.setZProbeOffset(self.nozzleOffsetDoubleSpinBox.value())
@@ -65,20 +65,6 @@ class NozzleOffsetPage(QWidget):
         # ! Local signal slot connection
         self.main_window.printer_model.z_probe_offset_updated.connect(self.updateEEPROMProbeOffset)
 
-    def _return_to_main_calibration(self):
-        """Return to the main calibration page when back button is pressed"""
-        self.logger.info("Returning to main calibration page")
-        if hasattr(self.main_window, 'calibrate_screen'):
-            # Use the standard navigation logic in CalibrateScreen
-            if hasattr(self.main_window.calibrate_screen, 'calibration_stacked_widget') and \
-                    hasattr(self.main_window.calibrate_screen, 'main_calibrate_page'):
-                self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
-                    self.main_window.calibrate_screen.main_calibrate_page)
-                self.logger.debug("Successfully switched to main calibration page")
-            else:
-                self.logger.error("Cannot return to main calibration - required widgets not found")
-        else:
-            self.logger.error("Cannot return to main calibration - main_window.calibrate_screen not found")
 
     def updateEEPROMProbeOffset(self, offset):
         """

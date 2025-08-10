@@ -100,6 +100,16 @@ class BedLeveling(QWidget):
         # self.quickStep1()
         self.logger.info("Bed Leveling initialization complete")
 
+    def showEvent(self, event):
+        """Reset to quickStep1Page whenever this widget is shown."""
+        super().showEvent(event)
+        try:
+            if self.stackedWidget and self.quickStep1Page:
+                self.stackedWidget.setCurrentWidget(self.quickStep1Page)
+                self.logger.debug("Reset stacked widget to quickStep1Page on show")
+        except Exception as e:
+            self.logger.error(f"Error resetting to quickStep1Page: {e}")
+
     def quickStep1(self):
         """
         Shows welcome message.

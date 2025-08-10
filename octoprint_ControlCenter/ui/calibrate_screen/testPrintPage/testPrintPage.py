@@ -118,6 +118,16 @@ class TestPrintPage(QWidget):
         # Set the default screen to second page
         self._navigate_to_page("testPrintPage1")
 
+    def showEvent(self, event):
+        """Reset to testPrintPage1 whenever this widget is shown."""
+        super().showEvent(event)
+        try:
+            if self.stackedWidget and self.testPrintPage1:
+                self.stackedWidget.setCurrentWidget(self.testPrintPage1)
+                self.logger.debug("Reset stacked widget to testPrintPage1 on show")
+        except Exception as e:
+            self.logger.error(f"Error resetting to testPrintPage1: {e}")
+
     def _navigate_to_page(self, page_name):
         """Navigate to a specific page in the stackedWidget"""
         if not self.stackedWidget:

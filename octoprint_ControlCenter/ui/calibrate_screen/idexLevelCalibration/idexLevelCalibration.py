@@ -93,6 +93,15 @@ class IdexLevelCalibration(QWidget):
         # Set the default screen
         self.reset_wizard()
 
+    def showEvent(self, event):
+        """Reset to the first step when the widget is shown."""
+        super().showEvent(event)
+        try:
+            if self.stackedWidget and self.idexConfigStep1Page:
+                self.stackedWidget.setCurrentWidget(self.idexConfigStep1Page)
+                self.logger.info("IdexLevelCalibration showEvent: Reset to idexConfigStep1Page")
+        except Exception as e:
+            self.logger.error(f"Error in IdexLevelCalibration showEvent: {e}")
 
     def _navigate_to_step(self, step_number):
         """Navigate to a specific step in the calibration process"""

@@ -131,69 +131,49 @@ class PrintFromLocation(QWidget):
         self.logger.debug("Connecting button signals")
 
         # ! USB storage navigation
-        if self.USBStorageBackButton:
-            self.USBStorageBackButton.clicked.connect(
-                lambda: self.stackedWidget.setCurrentWidget(self.printLocationPage)
-            )
-        if self.USBStorageScrollDown:
-            self.USBStorageScrollDown.clicked.connect(
-                lambda: self.fileListWidgetUSB.setCurrentRow(self.fileListWidgetUSB.currentRow() + 1)
-            )
-        if self.USBStorageScrollUp:
-            self.USBStorageScrollUp.clicked.connect(
-                lambda: self.fileListWidgetUSB.setCurrentRow(self.fileListWidgetUSB.currentRow() - 1)
-            )
-        if self.USBStorageSelectButton:
-            self.USBStorageSelectButton.clicked.connect(self.printSelectedUSB)
-        if self.USBStorageSaveButton:
-            self.USBStorageSaveButton.clicked.connect(self.transferToLocal)
+        self.USBStorageBackButton.clicked.connect(
+            lambda: self.stackedWidget.setCurrentWidget(self.printLocationPage)
+        )
+        self.USBStorageScrollDown.clicked.connect(
+            lambda: self.fileListWidgetUSB.setCurrentRow(self.fileListWidgetUSB.currentRow() + 1)
+        )
+        self.USBStorageScrollUp.clicked.connect(
+            lambda: self.fileListWidgetUSB.setCurrentRow(self.fileListWidgetUSB.currentRow() - 1)
+        )
+        self.USBStorageSelectButton.clicked.connect(self.printSelectedUSB)
+        self.USBStorageSaveButton.clicked.connect(self.transferToLocal)
 
-        # ! Local storage navigation
-        if self.localStorageBackButton:
-            self.localStorageBackButton.clicked.connect(
-                lambda: self.stackedWidget.setCurrentWidget(self.printLocationPage)
-            )
-        if self.localStorageScrollDown:
-            self.localStorageScrollDown.clicked.connect(
-                lambda: self.fileListWidgetLocal.setCurrentRow(self.fileListWidgetLocal.currentRow() + 1)
-            )
-        if self.localStorageScrollUp:
-            self.localStorageScrollUp.clicked.connect(
-                lambda: self.fileListWidgetLocal.setCurrentRow(self.fileListWidgetLocal.currentRow() - 1)
-            )
-        if self.localStorageSelectButton:
-            self.localStorageSelectButton.clicked.connect(self.printSelectedLocal)
-        if self.localStorageDeleteButton:
-            self.localStorageDeleteButton.clicked.connect(self.deleteItem)
+    # ! Local storage navigation
+        self.localStorageBackButton.clicked.connect(
+            lambda: self.stackedWidget.setCurrentWidget(self.printLocationPage)
+        )
+        self.localStorageScrollDown.clicked.connect(
+            lambda: self.fileListWidgetLocal.setCurrentRow(self.fileListWidgetLocal.currentRow() + 1)
+        )
+        self.localStorageScrollUp.clicked.connect(
+            lambda: self.fileListWidgetLocal.setCurrentRow(self.fileListWidgetLocal.currentRow() - 1)
+        )
+        self.localStorageSelectButton.clicked.connect(self.printSelectedLocal)
+        self.localStorageDeleteButton.clicked.connect(self.deleteItem)
 
-        # ! Location selection buttons
-        if self.fromUsbButton:
-            self.fromUsbButton.clicked.connect(self.fileListUSB)
-        if self.fromLocalButton:
-            self.fromLocalButton.clicked.connect(self.fileListLocal)
-        if self.printLocationScreenBackButton:
-            self.printLocationScreenBackButton.clicked.connect(self.main_window.switch_to_previous_screen)
+    # ! Location selection buttons
+        self.fromUsbButton.clicked.connect(self.fileListUSB)
+        self.fromLocalButton.clicked.connect(self.fileListLocal)
+        self.printLocationScreenBackButton.clicked.connect(self.main_window.switch_to_menu_screen)
 
-        # ! Selected file buttons - USB
-        if self.fileSelectedUSBPrintButton:
-            self.fileSelectedUSBPrintButton.clicked.connect(lambda: self.transferToLocal(prnt=True))
-        if self.fileSelectedUSBTransferButton:
-            self.fileSelectedUSBTransferButton.clicked.connect(lambda: self.transferToLocal(prnt=False))
-        if self.fileSelectedUSBBackButton:
-            self.fileSelectedUSBBackButton.clicked.connect(self.fileListUSB)
+    # ! Selected file buttons - USB
+        self.fileSelectedUSBPrintButton.clicked.connect(lambda: self.transferToLocal(prnt=True))
+        self.fileSelectedUSBTransferButton.clicked.connect(lambda: self.transferToLocal(prnt=False))
+        self.fileSelectedUSBBackButton.clicked.connect(self.fileListUSB)
 
-        # ! Selected file buttons - Local
-        if self.fileSelectedLocalPrintButton:
-            self.fileSelectedLocalPrintButton.clicked.connect(self.printFile)
-        if self.fileSelectedLocalBackButton:
-            self.fileSelectedLocalBackButton.clicked.connect(self.fileListLocal)
+    # ! Selected file buttons - Local
+        self.fileSelectedLocalPrintButton.clicked.connect(self.printFile)
+        self.fileSelectedLocalBackButton.clicked.connect(self.fileListLocal)
 
-        # ! Set the default screen to printLocationPage if it exists
-        if self.stackedWidget and self.printLocationPage:
-            self.stackedWidget.setCurrentWidget(self.printLocationPage)
-            self.logger.info("Set initial page to printLocationPage")
-        else:
-            self.logger.warning("Could not set default page - required widgets missing")
+    # ! Set the default screen to printLocationPage if it exists
+        self.stackedWidget.setCurrentWidget(self.printLocationPage)
+        self.logger.info("Set initial page to printLocationPage")
+
 
     ''' ------------------------ HELPER METHODS -------------------------- '''
 
@@ -336,8 +316,7 @@ class PrintFromLocation(QWidget):
             self.uploadThread = ThreadFileUpload(file, prnt=prnt)
             self.uploadThread.start()
             if prnt:
-                self.stackedWidget.setCurrentWidget(self.printLocationPage)
-                self.stackedWidget.setCurrentWidget(self.main_window.home_screen)
+                self.main_window.switch_to_home_screen()
         except Exception as e:
             self.logger.error("Error in PrintFromLocation.transferToLocal: {}".format(e))
             dialog.WarningOk(self, "Error in PrintFromLocation.transferToLocal: {}".format(e), overlay=True)
@@ -351,15 +330,7 @@ class PrintFromLocation(QWidget):
             self.octoprint_client.home(['x', 'y', 'z'])
             self.octoprint_client.selectFile(self.fileListWidgetLocal.currentItem().text(), True)
             self.main_window.controller.checkKlipperPrinterCFG()
-
-            # Ensure the home_screen is part of the stackedWidget
-            # if self.main_window.home_screen not in [self.stackedWidget.widget(i) for i in
-            #                                         range(self.stackedWidget.count())]:
-            #     self.stackedWidget.addWidget(self.main_window.home_screen)
-            self.stackedWidget.setCurrentWidget(self.printLocationPage)
             self.main_window.switch_to_home_screen()
-
-            # self.stackedWidget.setCurrentWidget(self.main_window.home_screen)
         except Exception as e:
             self.logger.error("Error in PrintFromLocation.printFile: {}".format(e))
             dialog.WarningOk(self, "Error in PrintFromLocation.printFile: {}".format(e), overlay=True)
@@ -411,3 +382,13 @@ class PrintFromLocation(QWidget):
             # Use resource path for thumbnail image
             labelObject.setPixmap(QtGui.QPixmap(":/Logos & Branding/img/Logos/thumbnail.png"))
             self.logger.error("Error in PrintFromLocation.displayThumbnail: {}".format(e))
+
+    def showEvent(self, event):
+        """Reset to printLocationPage whenever this widget is shown from main window navigation."""
+        super().showEvent(event)
+        try:
+            if self.stackedWidget and self.printLocationPage:
+                self.stackedWidget.setCurrentWidget(self.printLocationPage)
+                self.logger.debug("Reset stacked widget to printLocationPage on show")
+        except Exception as e:
+            self.logger.error(f"Error resetting to printLocationPage: {e}")

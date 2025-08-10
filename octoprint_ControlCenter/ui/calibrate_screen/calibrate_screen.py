@@ -73,12 +73,22 @@ class CalibrateScreen(QWidget):
         if self.idexCalibrationWizardButton:
             self.idexCalibrationWizardButton.clicked.connect(self.navigate_to_idex_calibration)
         if self.calibrateBackButton:
-            self.calibrateBackButton.clicked.connect(self._handle_back_button)
+            self.calibrateBackButton.clicked.connect(lambda: self.main_window.switch_to_menu_screen())
 
         # Show the main calibration page initially
         if self.calibration_stacked_widget and self.main_calibrate_page:
             self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
             self.logger.debug("Set current widget to mainCalibratePage")
+
+    def showEvent(self, event):
+        """Reset to main_calibrate_page whenever this widget is shown from main window navigation."""
+        super().showEvent(event)
+        try:
+            if self.calibration_stacked_widget and self.main_calibrate_page:
+                self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
+                self.logger.debug("Reset stacked widget to main_calibrate_page on show")
+        except Exception as e:
+            self.logger.error(f"Error resetting to main_calibrate_page: {e}")
 
     def _initialize_sub_screens(self):
         """Initialize all calibration sub-screens"""
@@ -163,25 +173,6 @@ class CalibrateScreen(QWidget):
         screen = self.screens[target_screen]
         self.calibration_stacked_widget.setCurrentWidget(screen)
         self.logger.info(f"Navigated to {target_screen}")
-
-    def _handle_back_button(self):
-        """Handle back button logic for CalibrateScreen"""
-        if not self.calibration_stacked_widget or not self.main_calibrate_page:
-            logger.error("Cannot handle back button - required widgets missing")
-            return
-
-        current_widget = self.calibration_stacked_widget.currentWidget()
-        self.logger.debug(
-            f"Back button pressed. Current widget: {current_widget.objectName() if hasattr(current_widget, 'objectName') else 'unknown'}")
-
-        if current_widget == self.main_calibrate_page:
-            # If we're on the main calibrate page, use navigation history to go back
-            self.logger.debug("On main page, returning to previous screen")
-            self.main_window.switch_to_previous_screen()
-        else:
-            # If we're on a sub-screen, return to the main calibrate page
-            self.logger.debug("On sub-screen, returning to main calibration page")
-            self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
 
     def navigate_to_bed_leveling(self):
         """Open the Bed Leveling screen and reset the wizard."""

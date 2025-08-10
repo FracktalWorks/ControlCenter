@@ -113,20 +113,16 @@ class ControlScreen(QWidget):
         self.setActiveExtruder(0)  # Default to extruder 0
 
         # Feed Rate Buttons Signal Connections
-        if self.controlBackButton:
-            self.controlBackButton.clicked.connect(self._go_back)
-        if self.setFeedRateButton:
-            self.setFeedRateButton.clicked.connect(
-                lambda: self.octoprint_client.feedrate(self.feedRateSpinBox.value())
-            )
-        if self.moveZPBabyStep:
-            self.moveZPBabyStep.clicked.connect(
-                lambda: self.octoprint_client.gcode(command='M290 Z0.025')
-            )
-        if self.moveZMBabyStep:
-            self.moveZMBabyStep.clicked.connect(
-                lambda: self.octoprint_client.gcode(command='M290 Z-0.025')
-            )
+        self.controlBackButton.clicked.connect(lambda: self.main_window.switch_to_home_screen())
+        self.setFeedRateButton.clicked.connect(
+            lambda: self.octoprint_client.feedrate(self.feedRateSpinBox.value())
+        )
+        self.moveZPBabyStep.clicked.connect(
+            lambda: self.octoprint_client.gcode(command='M290 Z0.025')
+        )
+        self.moveZMBabyStep.clicked.connect(
+            lambda: self.octoprint_client.gcode(command='M290 Z-0.025')
+        )
 
         # Temperature Buttons Signal Connections
         if self.fanOnButton:
@@ -209,7 +205,7 @@ class ControlScreen(QWidget):
         # local signal slot connections
         self.main_window.printer_model.filament_sensor_triggered.connect(self.filamentSensorHandler)
         # Connect to printer model for status updates
-        self.main_window.printer_model.status_updated.connect(self.update_ui_for_status)
+        self.main_window.printer_model.status_updated.connect(self.buttonStatusUpdate)
         self.logger.debug("Connected ControlScreen to printer model status updates")
 
     # ! To be commented out later
@@ -251,38 +247,6 @@ class ControlScreen(QWidget):
         screen = self.screens[target_screen]
         self.main_window.switch_screen(screen)
         self.logger.info(f"Navigated to {target_screen}")
-
-    # Button handler methods
-    def _go_back(self):
-        """Handle back button logic for ControlScreen"""
-        self.logger.info("Control Screen: returning to previous screen")
-
-        # Find the last non-subscreen in history to directly navigate to it
-        non_subscreen_index = -1
-        subscreen_ids = [id(screen) for screen in self.screens.values()]
-
-        for i in range(len(self.main_window.screen_history) - 1, -1, -1):
-            if id(self.main_window.screen_history[i]) not in subscreen_ids:
-                non_subscreen_index = i
-                break
-
-        if non_subscreen_index >= 0:
-            # Get the parent screen and remove all subscreens from history
-            target_screen = self.main_window.screen_history[non_subscreen_index]
-            # Remove all screens up to and including the target from history
-            self.main_window.screen_history = self.main_window.screen_history[:non_subscreen_index]
-            # Navigate directly to the target screen
-            self.main_window.current_screen = target_screen
-            self.main_window.stacked_widget.setCurrentWidget(target_screen)
-            self.logger.debug(f"Returned directly to parent screen: {target_screen.__class__.__name__}")
-        else:
-            # If no parent screen found in history, default to menu screen
-            if hasattr(self.main_window, 'menu_screen'):
-                self.main_window.switch_to_menu_screen()
-                self.logger.debug("No parent screen found in history, defaulting to menu screen")
-            else:
-                self.main_window.switch_to_home_screen()
-                self.logger.debug("No parent screen found in history, defaulting to home screen")
 
     def move_z_positive_baby_step(self):
         self.logger.info("Moving Z up slightly (baby step)")
@@ -552,7 +516,7 @@ class ControlScreen(QWidget):
             logger.error("Error in control_screen.setActiveExtruder: {}".format(e))
             dialog.WarningOk(self, "Error in control_screen.setActiveExtruder: {}".format(e), overlay=True)
 
-    def update_ui_for_status(self, status):
+    def buttonStatusUpdate(self, status):
         """Update ControlScreen UI elements based on printer status"""
         try:
             # Disable motion controls during printing

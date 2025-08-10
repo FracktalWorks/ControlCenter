@@ -8,6 +8,10 @@ from utils.helpers import check_ui_elements
 from utils.logger import get_logger
 from utils.dialog import WarningYesNo, WarningOk
 
+# Import sub-UI classes
+from ui.settings_screen.software_update.software_update import SoftwareUpdate
+from ui.settings_screen.network_settings.network_settings import NetworkSettings
+
 logger = get_logger(__name__)
 
 class SettingsScreen(QWidget):
@@ -38,6 +42,8 @@ class SettingsScreen(QWidget):
 
         # Button widgets for navigation and actions
         self.backButton = self.findChild(QPushButton, "settingsBackButton")
+        self.networkSettingsButton = self.findChild(QPushButton, "networkSettingsButton")
+        self.softwareUpdateButton = self.findChild(QPushButton, "softwareUpdateButton")
         self.restorePrintSettingsButton = self.findChild(QPushButton, "restorePrintSettingsButton")
         self.restoreFactoryDefaultsButton = self.findChild(QPushButton, "restoreFactoryDefaultsButton")
         self.restartButton = self.findChild(QPushButton, "restartButton")
@@ -62,6 +68,8 @@ class SettingsScreen(QWidget):
             self.mainSettingsPage,
             self.scrollArea,
             self.backButton,
+            self.networkSettingsButton,
+            self.softwareUpdateButton,
             self.restorePrintSettingsButton,
             self.restoreFactoryDefaultsButton,
             self.restartButton,
@@ -70,21 +78,16 @@ class SettingsScreen(QWidget):
         ], "Settings Screen")
 
         # Connect buttons to their respective functions directly
-        if self.backButton:
-            self.backButton.clicked.connect(self.go_back)
-            self.logger.debug("Connected settingsBackButton to handler")
+        self.backButton.clicked.connect(lambda: self.main_window.switch_to_menu_screen())
+        self.networkSettingsButton.clicked.connect(self.navigate_to_network_settings)
+        self.softwareUpdateButton.clicked.connect(self.navigate_to_software_update)
+        self.restorePrintSettingsButton.clicked.connect(self.restore_print_settings)
+        self.restoreFactoryDefaultsButton.clicked.connect(self.restore_factory_defaults)
+        self.restartButton.clicked.connect(self.restart_system)
 
-        if self.restorePrintSettingsButton:
-            self.restorePrintSettingsButton.clicked.connect(self.restore_print_settings)
-            self.logger.debug("Connected restorePrintSettingsButton to handler")
-
-        if self.restoreFactoryDefaultsButton:
-            self.restoreFactoryDefaultsButton.clicked.connect(self.restore_factory_defaults)
-            self.logger.debug("Connected restoreFactoryDefaultsButton to handler")
-
-        if self.restartButton:
-            self.restartButton.clicked.connect(self.restart_system)
-            self.logger.debug("Connected restartButton to handler")
+        # Initialize all sub-screens
+        self.screens = {}
+        self._initialize_sub_screens()
 
         # Special layout handling for certain buttons
         if self.verticalLayout:
@@ -105,8 +108,16 @@ class SettingsScreen(QWidget):
         else:
             self.logger.warning("Could not set default page - required widgets missing")
 
-        # Load settings widgets from subfolders
-        self.load_settings_widgets()
+
+    def showEvent(self, event):
+        """Reset to mainSettingsPage whenever this widget is shown from main window navigation."""
+        super().showEvent(event)
+        try:
+            if self.stackedWidget and self.mainSettingsPage:
+                self.stackedWidget.setCurrentWidget(self.mainSettingsPage)
+                self.logger.debug("Reset stacked widget to mainSettingsPage on show")
+        except Exception as e:
+            self.logger.error(f"Error resetting to mainSettingsPage: {e}")
 
     def tellAndReboot(self, msg="Rebooting...", overlay=True):
         if dialog.WarningOk(self, msg, overlay=overlay):
@@ -119,135 +130,6 @@ class SettingsScreen(QWidget):
             os.system('sudo reboot now')
             return True
         return False
-
-    def load_settings_widgets(self):
-        """Load settings widgets from subfolders in the "Settings Screen" folder."""
-        if not (self.stackedWidget and self.verticalLayout):
-            self.logger.error("Cannot load settings widgets: stackedWidget or verticalLayout is missing")
-            return
-
-        # Use relative path from current module directory
-        settings_folder = os.path.dirname(__file__)
-        try:
-            for subfolder in os.listdir(settings_folder):
-                subfolder_path = os.path.join(settings_folder, subfolder)
-                if os.path.isdir(subfolder_path):
-                    # Skip software update widget if in minimal UI mode
-                    if self.minimalUI and subfolder.lower() in ['software_update', 'softwareupdate', 'software update']:
-                        self.logger.info(f"Skipping widget {subfolder} due to minimal UI mode")
-                        continue
-                        
-                    ui_file = os.path.join(subfolder_path, f'{subfolder}.ui')
-                    py_file = os.path.join(subfolder_path, f'{subfolder}.py')
-                    if os.path.exists(ui_file) and os.path.exists(py_file):
-                        self.logger.info(f"Loading widget: {subfolder}")
-                        try:
-                            # Create a button for the subfolder
-                            button = self.create_settings_button(
-                                subfolder.replace('_', ' ').title(),
-                                lambda _, sf=subfolder: self.load_widget(sf)
-                            )
-                            self.verticalLayout.addWidget(button)
-
-                            # Load the widget and add it to the stacked widget
-                            widget_instance = self.create_widget_instance(ui_file, py_file)
-                            page = QWidget()
-                            layout = QVBoxLayout(page)
-                            layout.setContentsMargins(0, 0, 0, 0)
-                            layout.setSpacing(0)
-                            layout.addWidget(widget_instance)
-                            self.stackedWidget.addWidget(page)
-                            self.logger.info(f"Added widget: {widget_instance.objectName()}")
-                        except Exception as e:
-                            self.logger.error(f"Error loading widget {subfolder}: {e}")
-        except Exception as e:
-            self.logger.error(f"Error loading settings widgets: {e}")
-
-    def create_settings_button(self, text, handler):
-        """Create a styled settings button with the given text and handler"""
-        button = QPushButton(text)
-        button.setMinimumHeight(100)
-        button.setFont(QFont("Gotham Light", 16))
-        button.setStyleSheet("""
-            QPushButton {
-                border: 1px solid rgb(87, 87, 87);
-                background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-            }
-            QPushButton:pressed {
-                background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #dadbde, stop: 1 #f6f7fa);
-            }
-            QPushButton:flat {
-                border: none; /* no border for a flat push button */
-            }
-            QPushButton:default {
-                border-color: navy; /* make the default button prominent */
-            }
-        """)
-        button.clicked.connect(handler)
-        return button
-
-    def load_widget(self, widget_name):
-        """
-        Switch to the specified widget in the stacked widget.
-
-        Args:
-            widget_name (str): The name of the widget to switch to.
-        """
-        self.logger.info(f"Switching to widget: {widget_name}")
-        if not self.stackedWidget:
-            self.logger.error("Cannot switch widgets - stacked widget is missing")
-            return
-
-        for i in range(self.stackedWidget.count()):
-            widget = self.stackedWidget.widget(i)
-            if widget.findChild(QWidget, widget_name):
-                self.stackedWidget.setCurrentWidget(widget)
-                self.logger.info(f"Switched to widget: {widget_name}")
-                break
-
-    def create_widget_instance(self, ui_file, py_file):
-        """
-        Create an instance of a widget from the specified .ui and .py files.
-
-        Args:
-            ui_file (str): The path to the .ui file.
-            py_file (str): The path to the .py file.
-
-        Returns:
-            QWidget: An instance of the dynamically loaded widget.
-        """
-
-        class DynamicWidget(QWidget):
-            def __init__(self, parent):
-                super(DynamicWidget, self).__init__(parent)
-                uic.loadUi(ui_file, self)
-                self.setObjectName(os.path.basename(ui_file).split('.')[0])
-                self.load_backend(py_file, parent)
-                print("PARENT NAME: ", parent)
-
-            def load_backend(self, py_file, parent):
-                spec = importlib.util.spec_from_file_location("module.name", py_file)
-                module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
-                # Assuming the class name in the .py file is the same as the subfolder name
-                class_name = os.path.basename(py_file).split('.')[0].title().replace('_', '')
-                print("Class name: ", class_name)
-                print("py_file: ", py_file)
-
-                try:
-                    backend_class = getattr(module, class_name)
-                    backend_instance = backend_class(self, parent)
-                    self.backend = backend_instance
-                except AttributeError as e:
-                    parent.logger.error(f"Error creating widget instance: {e}")
-                    parent.logger.error(f"Expected class name: {class_name}")
-
-        return DynamicWidget(self)
-
-    def go_back(self):
-        """Switch back to the main menu screen."""
-        self.logger.info("Back button clicked, returning to menu screen")
-        self.main_window.switch_screen(self.main_window.menu_screen)
 
     def restore_print_settings(self):
         """Restore the print settings to their default values."""
@@ -314,3 +196,35 @@ class SettingsScreen(QWidget):
         except Exception as e:
             self.logger.error(f"Error during restart: {e}")
             WarningOk(self, f"Error during restart: {e}", overlay=True)
+
+    def _initialize_sub_screens(self):
+        """Initialize all settings sub-screens"""
+        try:
+            # Create instances of each sub-screen
+            self.screens["network_settings"] = NetworkSettings(self, self)
+            self.screens["software_update"] = SoftwareUpdate(self, self)
+
+            # Add each screen to the stacked widget
+            for name, screen in self.screens.items():
+                self.stackedWidget.addWidget(screen)
+                self.logger.info(f"Added {name} screen to settings stacked widget")
+        except Exception as e:
+            self.logger.exception(f"Error initializing sub-screens: {e}")
+
+    def navigate_to_network_settings(self):
+        """Open the Network Settings screen."""
+        self.logger.info("Navigating to Network Settings screen")
+        network_settings_screen = self.screens.get("network_settings")
+        if network_settings_screen:
+            self.stackedWidget.setCurrentWidget(network_settings_screen)
+            self.logger.info("Navigated to network_settings")
+
+    def navigate_to_software_update(self):
+        """Open the Software Update screen and display version info."""
+        self.logger.info("Navigating to Software Update screen")
+        software_update_screen = self.screens.get("software_update")
+        if software_update_screen:
+            if hasattr(software_update_screen, "displayVersionInfo"):
+                software_update_screen.displayVersionInfo()
+            self.stackedWidget.setCurrentWidget(software_update_screen)
+            self.logger.info("Navigated to software_update")

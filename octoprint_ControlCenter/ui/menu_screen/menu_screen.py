@@ -65,35 +65,13 @@ class MenuScreen(QWidget):
         ]
         check_ui_elements(self, all_ui_elements, "MenuScreen")
         
-        # Connect buttons to their respective methods directly
-        if self.menuPrintButton:
-            self.menuPrintButton.clicked.connect(self.open_print)
-            self.logger.debug("Connected menuPrintButton to handler")
-            
-        if self.menuControlButton:
-            self.menuControlButton.clicked.connect(self.open_control)
-            self.logger.debug("Connected menuControlButton to handler")
-            
-        if self.menuCalibrateButton:
-            self.menuCalibrateButton.clicked.connect(self.open_calibrate)
-            self.logger.debug("Connected menuCalibrateButton to handler")
-            
-        if self.menuFilamentNozzleButton:
-            self.menuFilamentNozzleButton.clicked.connect(self.open_menuFilamentNozzle)
-            self.logger.debug("Connected menuFilamentNozzleButton to handler")
-            
-        if self.menuSettingsButton:
-            self.menuSettingsButton.clicked.connect(self.open_settings)
-            self.logger.debug("Connected menuSettingsButton to handler")
-            
-        if self.menuBackButton:
-            self.menuBackButton.clicked.connect(self.go_back)
-            self.logger.debug("Connected menuBackButton to handler")
-
-        # Connect to printer model signals for status updates
-        if not self.minimalUI and hasattr(self.main_window, 'printer_model'):
-            self.main_window.printer_model.status_updated.connect(self.update_ui_for_status)
-            self.logger.debug("Connected MenuScreen to printer model status updates")
+        # Connect buttons to their respective screens using lambda functions
+        self.menuPrintButton.clicked.connect(lambda: self.main_window.switch_to_print_location_screen())
+        self.menuControlButton.clicked.connect(lambda: self.main_window.switch_to_control_screen())
+        self.menuCalibrateButton.clicked.connect(lambda: self.main_window.switch_to_calibrate_screen())
+        self.menuFilamentNozzleButton.clicked.connect(lambda: self.logger.info("FilamentNozzle button clicked"))
+        self.menuSettingsButton.clicked.connect(lambda: self.main_window.switch_to_settings_screen())
+        self.menuBackButton.clicked.connect(lambda: self.main_window.switch_to_home_screen())
 
         if self.minimalUI:
              # Disable buttons in Menu Screen
@@ -107,70 +85,17 @@ class MenuScreen(QWidget):
             self.menuPrintButton.setEnabled(True)
             self.menuCalibrateButton.setEnabled(True)
             self.menuFilamentNozzleButton.setEnabled(True)
+            self.main_window.printer_model.status_updated.connect(self.buttonStatusUpdate)
 
-    def open_print(self):
-        """Navigate to the print location screen."""
-        try:
-            self.main_window.switch_to_print_location_screen()
-            self.logger.info("Print button clicked")
-        except Exception as e:
-            self.logger.error(f"Error navigating to print screen: {e}")
-
-    def open_control(self):
-        """Navigate to the control screen."""
-        try:
-            self.main_window.switch_to_control_screen()
-            self.logger.info("Control button clicked")
-        except Exception as e:
-            self.logger.error(f"Error navigating to control screen: {e}")
-
-    def open_calibrate(self):
-        """Navigate to the calibrate screen."""
-        try:
-            self.main_window.switch_to_calibrate_screen()
-            self.logger.info("Calibrate button clicked")
-        except Exception as e:
-            self.logger.error(f"Error navigating to calibrate screen: {e}")
-
-    def open_menuFilamentNozzle(self):
-        """Navigate to filament and nozzle management screen.
-        
-        TODO: Implement navigation to filament/nozzle management screen
-        when the corresponding screen module is available.
-        """
-        self.logger.info("FilamentNozzle button clicked")
-        # TODO: Add navigation when filament/nozzle screen is implemented
-        # self.main_window.switch_to_filament_nozzle_screen()
-
-    def open_settings(self):
-        """Navigate to the settings screen."""
-        try:
-            self.main_window.switch_to_settings_screen()
-            self.logger.info("Settings button clicked")
-        except Exception as e:
-            self.logger.error(f"Error navigating to settings screen: {e}")
-
-    def go_back(self):
-        """Go back to the previous screen."""
-        try:
-            self.main_window.switch_to_home_screen()
-            self.logger.info("Back button clicked")
-        except Exception as e:
-            self.logger.error(f"Error navigating to home screen: {e}")
-
-    def update_ui_for_status(self, status):
+    def buttonStatusUpdate(self, status):
         """Update MenuScreen UI elements based on printer status"""
         try:
             # Disable certain menu options during printing
             if status in ["Printing", "Paused"]:
-                if self.menuCalibrateButton:
-                    self.menuCalibrateButton.setDisabled(True)
-                if self.menuPrintButton:
-                    self.menuPrintButton.setDisabled(True)
+                self.menuCalibrateButton.setDisabled(True)
+                self.menuPrintButton.setDisabled(True)
             else:  # Offline, Operational, etc.
-                if self.menuCalibrateButton:
-                    self.menuCalibrateButton.setDisabled(False)
-                if self.menuPrintButton:
-                    self.menuPrintButton.setDisabled(False)
+                self.menuCalibrateButton.setDisabled(False)
+                self.menuPrintButton.setDisabled(False)
         except Exception as e:
             self.logger.error(f"Error updating MenuScreen UI for status {status}: {e}")

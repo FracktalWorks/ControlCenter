@@ -75,9 +75,9 @@ class ToolOffset(QWidget):
 
     # Connect buttons to their respective methods
         if self.toolOffsetXYBackButton:
-            self.toolOffsetXYBackButton.clicked.connect(self._return_to_main_calibration)
+            self.toolOffsetXYBackButton.clicked.connect(lambda: self.main_window.switch_to_calibrate_screen())
         if self.toolOffsetZBackButton:
-            self.toolOffsetZBackButton.clicked.connect(self._return_to_main_calibration)
+            self.toolOffsetZBackButton.clicked.connect(lambda: self.main_window.switch_to_calibrate_screen())
         if self.toolOffsetXSetButton:
             self.toolOffsetXSetButton.clicked.connect(self.setToolOffsetX)
         if self.toolOffsetYSetButton:
@@ -88,19 +88,20 @@ class ToolOffset(QWidget):
     # ! Local signal slot connections
         self.main_window.printer_model.tool_offset_updated.connect(self.getToolOffset)
 
-    def _return_to_main_calibration(self):
-        """Return to the main calibration page"""
-        self.logger.info("Returning to main calibration from tool offset page")
-        if hasattr(self.main_window, 'calibrate_screen'):
-            if hasattr(self.main_window.calibrate_screen, 'calibration_stacked_widget') and \
-               hasattr(self.main_window.calibrate_screen, 'main_calibrate_page'):
-                self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
-                    self.main_window.calibrate_screen.main_calibrate_page)
-                self.logger.debug("Successfully returned to main calibration page")
-            else:
-                self.logger.error("Cannot return to main calibration - required widgets not found")
-        else:
-            self.logger.error("Cannot return to main calibration - main_window.calibrate_screen not found")
+        # Set default page
+        if self.stackedWidget and self.toolOffsetZPage:
+            self.stackedWidget.setCurrentWidget(self.toolOffsetZPage)
+            self.logger.debug("Set default page to toolOffsetZPage")
+
+    def showEvent(self, event):
+        """Reset to toolOffsetZPage whenever this widget is shown."""
+        super().showEvent(event)
+        try:
+            if self.stackedWidget and self.toolOffsetZPage:
+                self.stackedWidget.setCurrentWidget(self.toolOffsetZPage)
+                self.logger.debug("Reset stacked widget to toolOffsetZPage on show")
+        except Exception as e:
+            self.logger.error(f"Error resetting to toolOffsetZPage: {e}")
 
     def setToolOffsetX(self):
         logger.info("ToolOffset.setToolOffsetX started")

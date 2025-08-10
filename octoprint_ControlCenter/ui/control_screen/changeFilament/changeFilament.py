@@ -84,6 +84,16 @@ class ChangeFilament(QWidget):
         self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
         self.setActiveExtruder(0)  # Default to extruder 0
 
+    def showEvent(self, event):
+        """Reset to changeFilamentPage whenever this widget is shown."""
+        super().showEvent(event)
+        try:
+            if self.stackedWidget and self.changeFilamentPage:
+                self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
+                self.logger.debug("Reset stacked widget to changeFilamentPage on show")
+        except Exception as e:
+            self.logger.error(f"Error resetting to changeFilamentPage: {e}")
+
     def _connect_signals(self):
         """Connect all UI signals to their respective slots."""
         self.model.active_extruder_changed.connect(self.setActiveExtruder)

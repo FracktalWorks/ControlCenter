@@ -31,7 +31,6 @@ class SoftwareUpdate(QWidget):
             self.logger.info("SoftwareUpdate UI loaded successfully")
         except Exception as e:
             self.logger.error(f"Failed to load SoftwareUpdate UI file: {e}")
-            self.logger.error(f"Failed to load SoftwareUpdate UI file: {e}")
 
         # Initialize UI components
         # Navigation buttons
@@ -64,23 +63,23 @@ class SoftwareUpdate(QWidget):
         # Connect buttons to their respective functions with safety checks
         if self.softwareUpdateBackButton:
             self.softwareUpdateBackButton.clicked.connect(self.go_back_to_settings_screen)
-            print("Connected back button to go_back_to_settings_screen")
+            self.logger.debug("Connected back button to go_back_to_settings_screen")
         else:
-            print("WARNING: Could not connect back button - button not found")
+            self.logger.warning("Could not connect back button - button not found")
 
         if self.performUpdateButton:
             self.performUpdateButton.clicked.connect(
                 lambda: self.octoprint_client.performSoftwareUpdate()
             )
         else:
-            print("WARNING: Could not connect update button - button not found")
+            self.logger.warning("Could not connect update button - button not found")
 
         # Set the default page in stacked widget
         if self.stackedWidget and self.OTAUpdatePage:
             self.stackedWidget.setCurrentWidget(self.OTAUpdatePage)
-            print("Set default page to OTAUpdatePage")
+            self.logger.debug("Set default page to OTAUpdatePage")
         else:
-            print("WARNING: Could not set default page - required widgets missing")
+            self.logger.warning("Could not set default page - required widgets missing")
 
         # ! LOCAL SIGNAL AND SLOT CONNECTIONS:
         self.mainSettingsWidget.main_window.printer_model.update_started_signal.connect(self.softwareUpdateProgress)
@@ -88,30 +87,40 @@ class SoftwareUpdate(QWidget):
         self.mainSettingsWidget.main_window.printer_model.update_log_result_signal.connect(self.softwareUpdateResult)
         self.mainSettingsWidget.main_window.printer_model.update_failed_signal.connect(self.updateFailed)
 
+    def showEvent(self, event):
+        """Reset to OTAUpdatePage whenever this widget is shown."""
+        super().showEvent(event)
+        try:
+            if self.stackedWidget and self.OTAUpdatePage:
+                self.stackedWidget.setCurrentWidget(self.OTAUpdatePage)
+                self.logger.debug("Reset stacked widget to OTAUpdatePage on show")
+        except Exception as e:
+            self.logger.error(f"Error resetting to OTAUpdatePage: {e}")
+
     def go_back_to_settings_screen(self):
         """Return to the settings screen."""
-        print("Back to settings screen button clicked")
+        self.logger.info("Back to settings screen button clicked")
         if hasattr(self.mainSettingsWidget, 'stackedWidget') and hasattr(self.mainSettingsWidget, 'mainSettingsPage'):
             self.mainSettingsWidget.stackedWidget.setCurrentWidget(self.mainSettingsWidget.mainSettingsPage)
-            print("Navigated back to settings screen")
+            self.logger.info("Navigated back to settings screen")
         else:
-            print("ERROR: Cannot navigate back - required widgets not found in mainSettingsWidget")
+            self.logger.error("Cannot navigate back - required widgets not found in mainSettingsWidget")
 
     def update_software(self):
         """Update the software."""
-        print("Updating software...")
+        self.logger.info("Updating software...")
 
         if self.stackedWidget and self.softwareUpdateProgressPage:
             self.stackedWidget.setCurrentWidget(self.softwareUpdateProgressPage)
-            print("Switched to software update progress page")
+            self.logger.debug("Switched to software update progress page")
 
             if self.logTextEdit:
                 self.logTextEdit.append("Software update in progress...")
-                print("Added log message to text edit")
+                self.logger.debug("Added log message to text edit")
             else:
-                print("WARNING: Could not add log message - logTextEdit not found")
+                self.logger.warning("Could not add log message - logTextEdit not found")
         else:
-            print("ERROR: Cannot update software - required widgets missing")
+            self.logger.error("Cannot update software - required widgets missing")
 
         # Actual implementation would include code to:
         # 1. Check for network connectivity
@@ -123,6 +132,16 @@ class SoftwareUpdate(QWidget):
     def softwareUpdateProgress(self, data):
         self.logger.info("SoftwareUpdate.softwareUpdateProgress started")
         try:
+            # First, ensure we're visible in the main application
+            # Navigate to settings screen if not already there
+            if self.mainSettingsWidget.main_window.current_screen != self.mainSettingsWidget:
+                # Switch to settings screen first
+                self.mainSettingsWidget.main_window.switch_screen(self.mainSettingsWidget)
+            
+            # Then ensure software update screen is visible within settings
+            self.mainSettingsWidget.stackedWidget.setCurrentWidget(self)
+            
+            # Finally, show the progress page within software update screen
             self.stackedWidget.setCurrentWidget(self.softwareUpdateProgressPage)
             self.logTextEdit.setTextColor(Qt.red)
             self.logTextEdit.append("---------------------------------------------------------------\n"
@@ -146,7 +165,7 @@ class SoftwareUpdate(QWidget):
     def updateFailed(self, data):
         self.logger.info("SoftwareUpdate.updateFailed started")
         try:
-            self.stackedWidget.setCurrentWidget(self.settingsPage)
+            self.stackedWidget.setCurrentWidget(self.OTAUpdatePage)
             messageText = (data["name"] + " failed to update\n")
             if dialog.WarningOkCancel(self, messageText, overlay=True):
                 pass
@@ -214,3 +233,19 @@ class SoftwareUpdate(QWidget):
         except Exception as e:
             self.logger.error("Error in SoftwareUpdate.displayVersionInfo: {}".format(e))
             dialog.WarningOk(self, "Error in SoftwareUpdate.displayVersionInfo: {}".format(e), overlay=True)
+
+    def askAndReboot(self, msg="Are you sure you want to reboot?", overlay=True):
+        """Ask user for confirmation and reboot the system."""
+        self.logger.info("SoftwareUpdate.askAndReboot started")
+        try:
+            if dialog.WarningYesNo(self, msg, overlay=overlay):
+                self.logger.info("User confirmed reboot after software update")
+                os.system('sudo reboot now')
+                return True
+            else:
+                self.logger.info("User cancelled reboot after software update")
+                return False
+        except Exception as e:
+            self.logger.error(f"Error during askAndReboot: {e}")
+            dialog.WarningOk(self, f"Error during askAndReboot: {e}", overlay=True)
+            return False

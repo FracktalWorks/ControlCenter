@@ -1,8 +1,9 @@
 import os
+import os
 from PyQt5 import QtGui, QtCore
 from PyQt5 import uic
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel, QCheckBox
+from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel, QCheckBox, QComboBox
 from functools import partial  # Add missing import for partial function
 from utils.custom_widgets import ClickableLineEdit
 from utils.helpers import check_ui_elements
@@ -17,12 +18,12 @@ from utils.network_utils import ThreadRestartNetworking
 from utils import dialog
 
 from utils.helpers import run_async
+from utils.qrcode_image import Image
 import time
 import subprocess
 import qrcode
 import io
 import re
-from utils.qrcode_image import Image
 
 logger = get_logger(__name__)
 
@@ -78,6 +79,18 @@ class NetworkSettings(QWidget):
         self.QRCodeLabel = self.findChild(QLabel, "QRCodeLabel")
         self.hiddenCheckBox = self.findChild(QCheckBox, "hiddenCheckBox")
 
+        # Additional UI components for network info display
+        self.hostname = self.findChild(QLabel, "hostname")
+        self.wifiAp = self.findChild(QLabel, "wifiAp") 
+        self.wifiIp = self.findChild(QLabel, "wifiIp")
+        self.lanIp = self.findChild(QLabel, "lanIp")
+        self.wifiMac = self.findChild(QLabel, "wifiMac")
+        self.lanMac = self.findChild(QLabel, "lanMac")
+        
+        # WiFi settings components
+        self.wifiSettingsComboBox = self.findChild(QComboBox, "wifiSettingsComboBox")
+        self.staticIPComboBox = self.findChild(QComboBox, "staticIPComboBox")
+
         # Validate UI components using simplified check_ui_elements
         # Convert all UI components into a single list for validation
         ui_components = [
@@ -89,7 +102,9 @@ class NetworkSettings(QWidget):
             self.staticIPKeyboardButton, self.staticIPGatewayKeyboardButton,
             self.staticIPNameServerKeyboardButton, self.wifiSettingsSSIDKeyboardButton,
             self.stackedWidget, self.networkSettingsPage, self.networkInfoPage,
-            self.staticIPSettingsPage, self.wifiSettingsPage, self.QRCodeLabel
+            self.staticIPSettingsPage, self.wifiSettingsPage, self.QRCodeLabel,
+            self.hostname, self.wifiAp, self.wifiIp, self.lanIp, self.wifiMac, self.lanMac,
+            self.wifiSettingsComboBox, self.staticIPComboBox
         ]
 
         # Validate all components at once
@@ -169,6 +184,16 @@ class NetworkSettings(QWidget):
             self.logger.info("Set default page to networkSettingsPage")
         else:
             self.logger.warning("Could not set default page - required widgets missing")
+
+    def showEvent(self, event):
+        """Reset to networkSettingsPage whenever this widget is shown."""
+        super().showEvent(event)
+        try:
+            if self.stackedWidget and self.networkSettingsPage:
+                self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
+                self.logger.debug("Reset stacked widget to networkSettingsPage on show")
+        except Exception as e:
+            self.logger.error(f"Error resetting to networkSettingsPage: {e}")
 
         # Connect text input fields to keyboard
         # Text Input events
