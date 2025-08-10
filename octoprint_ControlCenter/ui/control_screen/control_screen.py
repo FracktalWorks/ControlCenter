@@ -101,13 +101,9 @@ class ControlScreen(QWidget):
             self.setBedTempButton, self.step1mmButton, self.step10mmButton,
             self.step100mmButton, self.moveXPButton, self.moveXMButton,
             self.moveYPButton, self.moveYMButton, self.flowRateSpinBox,
-            self.setFlowRateButton, self.changeFilamentButton, self.toggleFilamentSensorButton,
+            self.setFlowRateButton, self.toggleFilamentSensorButton,
             self.feedRateTab, self.temperatureTab, self.motionTab, self.filamentTab
         ], "ControlScreen")
-
-        # Initialize sub-screens
-        self.screens = {}
-        self._initialize_sub_screens()
 
         # set the active extruder to 0 initially
         self.setActiveExtruder(0)  # Default to extruder 0
@@ -155,7 +151,6 @@ class ControlScreen(QWidget):
 
         # Filament Buttons Signal Connections
         self.setFlowRateButton.clicked.connect(lambda: self.octoprint_client.flowrate(self.flowRateSpinBox.value()))
-        self.changeFilamentButton.clicked.connect(self.open_change_filament_screen)
         self.toggleFilamentSensorButton.clicked.connect(self.toggleFilamentSensor)
 
         # Configure spinboxes
@@ -179,100 +174,6 @@ class ControlScreen(QWidget):
         self.main_window.printer_model.status_updated.connect(self.buttonStatusUpdate)
         self.logger.debug("Connected ControlScreen to printer model status updates")
 
-    # ! To be commented out later
-    def _initialize_sub_screens(self):
-        """Initialize all control sub-screens"""
-        try:
-            # Create instance of change filament screen
-            self.screens["change_filament"] = ChangeFilament(self.main_window)
-            # Add reference to the parent screen for navigation
-            self.screens["change_filament"].parent_screen = self
-            self.main_window.stacked_widget.addWidget(self.screens["change_filament"])
-            self.logger.info("Added change_filament screen to main stacked widget")
-        except Exception as e:
-            self.logger.exception(f"Error initializing sub-screens: {e}")
-
-    def show_control_subscreen(self, target_screen=None):
-        """Show a specific control subscreen
-
-        Args:
-            target_screen: String identifying which sub-screen to navigate to.
-        """
-        self.logger.debug(f"show_control_subscreen called with target_screen={target_screen}")
-
-        # Only switch to this screen in the main window if we're not already on it
-        if self.main_window.current_screen != self:
-            self.main_window.switch_screen(self)
-
-        # If no specific target is requested, do nothing
-        if not target_screen:
-            self.logger.debug("No target screen specified, staying on current screen")
-            return
-
-        # Check if the requested screen exists
-        if target_screen not in self.screens:
-            self.logger.error(f"Requested screen '{target_screen}' not found in available screens")
-            return
-
-        # Navigate to the requested sub-screen
-        screen = self.screens[target_screen]
-        self.main_window.switch_screen(screen)
-        self.logger.info(f"Navigated to {target_screen}")
-
-    def move_z_positive_baby_step(self):
-        self.logger.info("Moving Z up slightly (baby step)")
-
-    def move_z_negative_baby_step(self):
-        self.logger.info("Moving Z down slightly (baby step)")
-
-    def turn_fan_on(self):
-        self.logger.info("Turning fan ON")
-
-    def turn_fan_off(self):
-        self.logger.info("Turning fan OFF")
-
-    def cooldown(self):
-        self.logger.info("Cooling down all heaters")
-
-    def set_tool_temp(self):
-        value = self.toolTempSpinBox.value()
-        self.logger.info(f"Setting tool temperature to {value}°C")
-
-    def set_bed_temp(self):
-        value = self.bedTempSpinBox.value()
-        self.logger.info(f"Setting bed temperature to {value}°C")
-
-    def set_move_step(self, step):
-        self.logger.info(f"Set movement step size to {step}mm")
-
-    def move_x_positive(self):
-        self.logger.info("Moving X+ axis")
-
-    def move_x_negative(self):
-        self.logger.info("Moving X- axis")
-
-    def move_y_positive(self):
-        self.logger.info("Moving Y+ axis")
-
-    def move_y_negative(self):
-        self.logger.info("Moving Y- axis")
-
-    def set_flow_rate(self):
-        value = self.flowRateSpinBox.value()
-        self.logger.info(f"Setting flow rate to {value}%")
-
-    def open_change_filament_screen(self):
-        """Navigate to the Change Filament screen"""
-        self.logger.info("Opening Change Filament screen")
-
-        # Get the screen and make sure it's reset to initial state
-        change_filament_screen = self.screens.get("change_filament")
-        # if change_filament_screen and hasattr(change_filament_screen, "reset_wizard"):
-        #     change_filament_screen.reset_wizard()
-
-        # Use our consistent navigation method
-        self.show_control_subscreen("change_filament")
-        change_filament_screen.changeFilament()
 
     def toggleFilamentSensor(self):
         """
