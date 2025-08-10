@@ -49,18 +49,9 @@ class SettingsScreen(QWidget):
         self.restartButton = self.findChild(QPushButton, "restartButton")
 
         # Special widget handling for scroll area
-        if self.scrollArea:
-            self.scrollAreaWidgetContents = self.scrollArea.findChild(QWidget, 'scrollAreaWidgetContents')
-            if self.scrollAreaWidgetContents:
-                self.verticalLayout = self.scrollAreaWidgetContents.findChild(QVBoxLayout, 'verticalLayout')
-                self.logger.debug("Found scrollAreaWidgetContents and verticalLayout")
-            else:
-                self.logger.warning("Failed to find scrollAreaWidgetContents")
-                self.scrollAreaWidgetContents = None
-                self.verticalLayout = None
-        else:
-            self.scrollAreaWidgetContents = None
-            self.verticalLayout = None
+        self.scrollAreaWidgetContents = self.scrollArea.findChild(QWidget, 'scrollAreaWidgetContents')
+        self.verticalLayout = self.scrollAreaWidgetContents.findChild(QVBoxLayout, 'verticalLayout')
+        self.logger.debug("Found scrollAreaWidgetContents and verticalLayout")
 
         # Validate UI components using simplified check_ui_elements function
         check_ui_elements(self, [
@@ -89,33 +80,17 @@ class SettingsScreen(QWidget):
         self.screens = {}
         self._initialize_sub_screens()
 
-        # Special layout handling for certain buttons
-        if self.verticalLayout:
-            # Add back button at the top
-            if self.backButton:
-                self.verticalLayout.insertWidget(0, self.backButton)
-                self.logger.debug("Added back button to the top of the vertical layout")
-
-            # Add restart button at the bottom
-            if self.restartButton:
-                self.verticalLayout.addWidget(self.restartButton)
-                self.logger.debug("Added restart button to the bottom of the vertical layout")
-
         # Set the default page in stacked widget
-        if self.stackedWidget and self.mainSettingsPage:
-            self.stackedWidget.setCurrentWidget(self.mainSettingsPage)
-            self.logger.debug("Set default page to mainSettingsPage")
-        else:
-            self.logger.warning("Could not set default page - required widgets missing")
+        self.stackedWidget.setCurrentWidget(self.mainSettingsPage)
+        self.logger.debug("Set default page to mainSettingsPage")
 
 
     def showEvent(self, event):
         """Reset to mainSettingsPage whenever this widget is shown from main window navigation."""
         super().showEvent(event)
         try:
-            if self.stackedWidget and self.mainSettingsPage:
-                self.stackedWidget.setCurrentWidget(self.mainSettingsPage)
-                self.logger.debug("Reset stacked widget to mainSettingsPage on show")
+            self.stackedWidget.setCurrentWidget(self.mainSettingsPage)
+            self.logger.debug("Reset stacked widget to mainSettingsPage on show")
         except Exception as e:
             self.logger.error(f"Error resetting to mainSettingsPage: {e}")
 
@@ -215,16 +190,13 @@ class SettingsScreen(QWidget):
         """Open the Network Settings screen."""
         self.logger.info("Navigating to Network Settings screen")
         network_settings_screen = self.screens.get("network_settings")
-        if network_settings_screen:
-            self.stackedWidget.setCurrentWidget(network_settings_screen)
-            self.logger.info("Navigated to network_settings")
+        self.stackedWidget.setCurrentWidget(network_settings_screen)
+        self.logger.info("Navigated to network_settings")
 
     def navigate_to_software_update(self):
         """Open the Software Update screen and display version info."""
         self.logger.info("Navigating to Software Update screen")
         software_update_screen = self.screens.get("software_update")
-        if software_update_screen:
-            if hasattr(software_update_screen, "displayVersionInfo"):
-                software_update_screen.displayVersionInfo()
-            self.stackedWidget.setCurrentWidget(software_update_screen)
-            self.logger.info("Navigated to software_update")
+        software_update_screen.displayVersionInfo()
+        self.stackedWidget.setCurrentWidget(software_update_screen)
+        self.logger.info("Navigated to software_update")

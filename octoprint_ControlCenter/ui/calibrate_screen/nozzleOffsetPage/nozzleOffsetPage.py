@@ -47,20 +47,16 @@ class NozzleOffsetPage(QWidget):
         ], "Nozzle Offset Page")
 
         # Connect buttons to their respective methods
-        if self.nozzleOffsetBackButton:
-            self.nozzleOffsetBackButton.clicked.connect(lambda: self.main_window.switch_to_calibrate_screen())
-        if self.nozzleOffsetSetButton:
-            self.nozzleOffsetSetButton.clicked.connect(
-                lambda: self.setZProbeOffset(self.nozzleOffsetDoubleSpinBox.value())
-            )
+        self.nozzleOffsetBackButton.clicked.connect(lambda: self.main_window.switch_to_calibrate_screen())
+        self.nozzleOffsetSetButton.clicked.connect(
+            lambda: self.setZProbeOffset(self.nozzleOffsetDoubleSpinBox.value())
+        )
 
         # Initialize the current nozzle offset display
-        if self.currentNozzleOffsetLabel:
-            self.currentNozzleOffsetLabel.setText(f"{self.current_nozzle_offset:.2f} mm")
+        self.currentNozzleOffsetLabel.setText(f"{self.current_nozzle_offset:.2f} mm")
 
-        # Configure spinbox if it exists
-        if self.nozzleOffsetDoubleSpinBox:
-            self._configure_spinbox(self.nozzleOffsetDoubleSpinBox)
+        # Configure spinbox
+        self._configure_spinbox(self.nozzleOffsetDoubleSpinBox)
 
         # ! Local signal slot connection
         self.main_window.printer_model.z_probe_offset_updated.connect(self.updateEEPROMProbeOffset)
@@ -101,12 +97,9 @@ class NozzleOffsetPage(QWidget):
 
     def _configure_spinbox(self, spinbox):
         """Configure the nozzle offset spinbox to be readonly, disabled, and styled."""
-        if spinbox and spinbox.lineEdit():
-            spinbox.lineEdit().setReadOnly(True)
-            spinbox.lineEdit().setDisabled(True)
-            palette = QPalette()
-            palette.setColor(QPalette.Highlight, QColor(40, 40, 40))
-            spinbox.lineEdit().setPalette(palette)
-            self.logger.debug("Spinbox configured with custom styling")
-        else:
-            self.logger.warning("Cannot configure spinbox - invalid reference")
+        spinbox.lineEdit().setReadOnly(True)
+        spinbox.lineEdit().setDisabled(True)
+        palette = QPalette()
+        palette.setColor(QPalette.Highlight, QColor(40, 40, 40))
+        spinbox.lineEdit().setPalette(palette)
+        self.logger.debug("Spinbox configured with custom styling")

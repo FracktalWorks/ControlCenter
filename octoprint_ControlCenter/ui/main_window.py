@@ -180,7 +180,7 @@ class MainWindow(QMainWindow):
             self.switch_to_home_screen()
 
         # Ensure the stacked widget's current page is updated for multi-step wizards
-        if hasattr(self.current_screen, 'stackedWidget') and self.current_screen.stackedWidget:
+        if hasattr(self.current_screen, 'stackedWidget'):
             self.current_screen.stackedWidget.setCurrentIndex(0)
 
     def switch_to_next_screen(self):

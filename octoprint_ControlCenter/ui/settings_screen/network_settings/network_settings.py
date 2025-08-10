@@ -145,53 +145,31 @@ class NetworkSettings(QWidget):
 
         # Connect buttons to their respective functions
         # Navigation buttons
-        if self.networkSettingsBackButton:
-            self.networkSettingsBackButton.clicked.connect(self.go_back_to_settings_screen)
-
-        if self.networkInfoBackButton:
-            self.networkInfoBackButton.clicked.connect(self.go_back)
-
-        if self.staticIPSettingsCancelButton:
-            self.staticIPSettingsCancelButton.clicked.connect(
-                lambda: self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
-            )
-
-        if self.wifiSettingsCancelButton:
-            self.wifiSettingsCancelButton.clicked.connect(self.cancel_network_settings)
+        self.networkSettingsBackButton.clicked.connect(self.go_back_to_settings_screen)
+        self.networkInfoBackButton.clicked.connect(self.go_back)
+        self.staticIPSettingsCancelButton.clicked.connect(
+            lambda: self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
+        )
+        self.wifiSettingsCancelButton.clicked.connect(self.cancel_network_settings)
 
         # Action buttons
-        if self.networkInfoButton:
-            self.networkInfoButton.clicked.connect(self.networkInfo)
-
-        if self.configureStaticIPButton:
-            self.configureStaticIPButton.clicked.connect(self.staticIPSettings)
-
-        if self.configureWifiButton:
-            self.configureWifiButton.clicked.connect(self.wifiSettings)
-
-        if self.staticIPSettingsDoneButton:
-            self.staticIPSettingsDoneButton.clicked.connect(self.staticIPSaveStaticNetworkInfo)
-
-        if self.wifiSettingsDoneButton:
-            self.wifiSettingsDoneButton.clicked.connect(self.acceptWifiSettings)
-
-        if self.hiddenCheckBox:
-            self.hiddenCheckBox.stateChanged.connect(self.togglePasswordVisibility)
+        self.networkInfoButton.clicked.connect(self.networkInfo)
+        self.configureStaticIPButton.clicked.connect(self.staticIPSettings)
+        self.configureWifiButton.clicked.connect(self.wifiSettings)
+        self.staticIPSettingsDoneButton.clicked.connect(self.staticIPSaveStaticNetworkInfo)
+        self.wifiSettingsDoneButton.clicked.connect(self.acceptWifiSettings)
+        self.hiddenCheckBox.stateChanged.connect(self.togglePasswordVisibility)
 
         # Set the default page in stacked widget
-        if self.stackedWidget and self.networkSettingsPage:
-            self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
-            self.logger.info("Set default page to networkSettingsPage")
-        else:
-            self.logger.warning("Could not set default page - required widgets missing")
+        self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
+        self.logger.info("Set default page to networkSettingsPage")
 
     def showEvent(self, event):
         """Reset to networkSettingsPage whenever this widget is shown."""
         super().showEvent(event)
         try:
-            if self.stackedWidget and self.networkSettingsPage:
-                self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
-                self.logger.debug("Reset stacked widget to networkSettingsPage on show")
+            self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
+            self.logger.debug("Reset stacked widget to networkSettingsPage on show")
         except Exception as e:
             self.logger.error(f"Error resetting to networkSettingsPage: {e}")
 
@@ -484,27 +462,17 @@ class NetworkSettings(QWidget):
     def cancel_network_settings(self):
         """Cancel network settings change and return to main network page."""
         self.logger.info("Cancel Network Settings button clicked")
-        if self.stackedWidget and self.networkSettingsPage:
-            self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
-            self.logger.info("Returned to network settings page after cancel")
-        else:
-            self.logger.error("Cannot navigate - required widgets missing")
+        self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
+        self.logger.info("Returned to network settings page after cancel")
 
     def go_back_to_settings_screen(self):
         """Return to the main settings screen."""
         self.logger.info("Back to settings screen button clicked")
-        if hasattr(self.mainSettingsWidget, 'stackedWidget') and hasattr(self.mainSettingsWidget,
-                                                                         'mainSettingsPage'):
-            self.mainSettingsWidget.stackedWidget.setCurrentWidget(self.mainSettingsWidget.mainSettingsPage)
-            self.logger.info("Navigated back to main settings screen")
-        else:
-            self.logger.error("Cannot navigate back - required widgets not found in mainSettingsWidget")
+        self.mainSettingsWidget.stackedWidget.setCurrentWidget(self.mainSettingsWidget.mainSettingsPage)
+        self.logger.info("Navigated back to main settings screen")
 
     def go_back(self):
         """Return to main network settings page from network info page."""
         self.logger.info("Back to network settings page button clicked")
-        if self.stackedWidget and self.networkSettingsPage:
-            self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
-            self.logger.info("Navigated back to network settings page")
-        else:
-            self.logger.error("Cannot navigate - required widgets missing")
+        self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
+        self.logger.info("Navigated back to network settings page")

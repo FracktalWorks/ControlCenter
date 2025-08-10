@@ -74,32 +74,25 @@ class ToolOffset(QWidget):
         ], "ToolOffset Page")
 
     # Connect buttons to their respective methods
-        if self.toolOffsetXYBackButton:
-            self.toolOffsetXYBackButton.clicked.connect(lambda: self.main_window.switch_to_calibrate_screen())
-        if self.toolOffsetZBackButton:
-            self.toolOffsetZBackButton.clicked.connect(lambda: self.main_window.switch_to_calibrate_screen())
-        if self.toolOffsetXSetButton:
-            self.toolOffsetXSetButton.clicked.connect(self.setToolOffsetX)
-        if self.toolOffsetYSetButton:
-            self.toolOffsetYSetButton.clicked.connect(self.setToolOffsetY)
-        if self.toolOffsetZSetButton:
-            self.toolOffsetZSetButton.clicked.connect(self.setToolOffsetZ)
+        self.toolOffsetXYBackButton.clicked.connect(lambda: self.main_window.switch_to_calibrate_screen())
+        self.toolOffsetZBackButton.clicked.connect(lambda: self.main_window.switch_to_calibrate_screen())
+        self.toolOffsetXSetButton.clicked.connect(self.setToolOffsetX)
+        self.toolOffsetYSetButton.clicked.connect(self.setToolOffsetY)
+        self.toolOffsetZSetButton.clicked.connect(self.setToolOffsetZ)
 
     # ! Local signal slot connections
         self.main_window.printer_model.tool_offset_updated.connect(self.getToolOffset)
 
         # Set default page
-        if self.stackedWidget and self.toolOffsetZPage:
-            self.stackedWidget.setCurrentWidget(self.toolOffsetZPage)
-            self.logger.debug("Set default page to toolOffsetZPage")
+        self.stackedWidget.setCurrentWidget(self.toolOffsetZPage)
+        self.logger.debug("Set default page to toolOffsetZPage")
 
     def showEvent(self, event):
         """Reset to toolOffsetZPage whenever this widget is shown."""
         super().showEvent(event)
         try:
-            if self.stackedWidget and self.toolOffsetZPage:
-                self.stackedWidget.setCurrentWidget(self.toolOffsetZPage)
-                self.logger.debug("Reset stacked widget to toolOffsetZPage on show")
+            self.stackedWidget.setCurrentWidget(self.toolOffsetZPage)
+            self.logger.debug("Reset stacked widget to toolOffsetZPage on show")
         except Exception as e:
             self.logger.error(f"Error resetting to toolOffsetZPage: {e}")
 

@@ -39,22 +39,18 @@ class LoadingScreen(QWidget):
         check_ui_elements(self, all_components, "LoadingScreen")
         
         # Initialize component states
-        if self.loadingProgressBar:
-            self.loadingProgressBar.setValue(0)
-            self.loadingProgressBar.setMinimum(0)
-            self.loadingProgressBar.setMaximum(100)
-            
-        if self.loading:
-            self.loading.setText("Initializing...")
-            
+        self.loadingProgressBar.setValue(0)
+        self.loadingProgressBar.setMinimum(0)
+        self.loadingProgressBar.setMaximum(100)
+        
+        self.loading.setText("Initializing...")
+        
         self.logger.info("LoadingScreen components initialized successfully")
 
     def update_progress(self, value, message="Loading..."):
         """Update the progress bar and loading message"""
-        if self.loadingProgressBar:
-            self.loadingProgressBar.setValue(value)
-        if self.loading:
-            self.loading.setText(message)
+        self.loadingProgressBar.setValue(value)
+        self.loading.setText(message)
         # Force GUI update
         self.repaint()
         self.logger.info(f"Progress updated: {value}% - {message}")

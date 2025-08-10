@@ -58,35 +58,25 @@ class CalibrateScreen(QWidget):
         self._initialize_sub_screens()
 
         # Connect buttons to their respective methods
-        if self.calibrationWizardButton:
-            self.calibrationWizardButton.clicked.connect(lambda: self.navigate_to_bed_leveling())
-        if self.testPrintsButton:
-            self.testPrintsButton.clicked.connect(lambda: self.show_calibrate_screen("test_prints"))
-        if self.inputShaperCalibrateButton:
-            self.inputShaperCalibrateButton.clicked.connect(self.inputShaperCalibrate)
-        if self.nozzleOffsetButton:
-            self.nozzleOffsetButton.clicked.connect(lambda: self.show_calibrate_screen("nozzle_offset"))
-        if self.toolOffsetZButton:
-            self.toolOffsetZButton.clicked.connect(self._show_tool_offset_z)
-        if self.toolOffsetXYButton:
-            self.toolOffsetXYButton.clicked.connect(self._show_tool_offset_xy)
-        if self.idexCalibrationWizardButton:
-            self.idexCalibrationWizardButton.clicked.connect(self.navigate_to_idex_calibration)
-        if self.calibrateBackButton:
-            self.calibrateBackButton.clicked.connect(lambda: self.main_window.switch_to_menu_screen())
+        self.calibrationWizardButton.clicked.connect(lambda: self.navigate_to_bed_leveling())
+        self.testPrintsButton.clicked.connect(lambda: self.show_calibrate_screen("test_prints"))
+        self.inputShaperCalibrateButton.clicked.connect(self.inputShaperCalibrate)
+        self.nozzleOffsetButton.clicked.connect(lambda: self.show_calibrate_screen("nozzle_offset"))
+        self.toolOffsetZButton.clicked.connect(self._show_tool_offset_z)
+        self.toolOffsetXYButton.clicked.connect(self._show_tool_offset_xy)
+        self.idexCalibrationWizardButton.clicked.connect(self.navigate_to_idex_calibration)
+        self.calibrateBackButton.clicked.connect(lambda: self.main_window.switch_to_menu_screen())
 
         # Show the main calibration page initially
-        if self.calibration_stacked_widget and self.main_calibrate_page:
-            self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
-            self.logger.debug("Set current widget to mainCalibratePage")
+        self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
+        self.logger.debug("Set current widget to mainCalibratePage")
 
     def showEvent(self, event):
         """Reset to main_calibrate_page whenever this widget is shown from main window navigation."""
         super().showEvent(event)
         try:
-            if self.calibration_stacked_widget and self.main_calibrate_page:
-                self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
-                self.logger.debug("Reset stacked widget to main_calibrate_page on show")
+            self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
+            self.logger.debug("Reset stacked widget to main_calibrate_page on show")
         except Exception as e:
             self.logger.error(f"Error resetting to main_calibrate_page: {e}")
 
@@ -125,24 +115,22 @@ class CalibrateScreen(QWidget):
         self.show_calibrate_screen("tool_offset")
         # Access the tool offset screen and set it to show Z tab
         tool_offset_screen = self.screens.get("tool_offset")
-        if tool_offset_screen and hasattr(tool_offset_screen, "stackedWidget"):
-            if hasattr(tool_offset_screen, "toolOffsetZPage"):
-                tool_offset_screen.stackedWidget.setCurrentWidget(tool_offset_screen.toolOffsetZPage)
-                self.logger.debug("Showing Tool Offset Z tab")
-            else:
-                self.logger.error("Tool Offset Z page not found")
+        if hasattr(tool_offset_screen, "toolOffsetZPage"):
+            tool_offset_screen.stackedWidget.setCurrentWidget(tool_offset_screen.toolOffsetZPage)
+            self.logger.debug("Showing Tool Offset Z tab")
+        else:
+            self.logger.error("Tool Offset Z page not found")
 
     def _show_tool_offset_xy(self):
         """Show the tool offset screen with XY tab selected"""
         self.show_calibrate_screen("tool_offset")
         # Access the tool offset screen and set it to show XY tab
         tool_offset_screen = self.screens.get("tool_offset")
-        if tool_offset_screen and hasattr(tool_offset_screen, "stackedWidget"):
-            if hasattr(tool_offset_screen, "toolOffsetXYPage"):
-                tool_offset_screen.stackedWidget.setCurrentWidget(tool_offset_screen.toolOffsetXYPage)
-                self.logger.debug("Showing Tool Offset XY tab")
-            else:
-                self.logger.error("Tool Offset XY page not found")
+        if hasattr(tool_offset_screen, "toolOffsetXYPage"):
+            tool_offset_screen.stackedWidget.setCurrentWidget(tool_offset_screen.toolOffsetXYPage)
+            self.logger.debug("Showing Tool Offset XY tab")
+        else:
+            self.logger.error("Tool Offset XY page not found")
 
     def show_calibrate_screen(self, target_screen=None):
         """Show a specific calibration screen or the main calibration page
@@ -159,9 +147,8 @@ class CalibrateScreen(QWidget):
 
         # If no specific target is requested, show the main calibration page
         if not target_screen:
-            if self.calibration_stacked_widget and self.main_calibrate_page:
-                self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
-                self.logger.debug("Showing main calibration page")
+            self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
+            self.logger.debug("Showing main calibration page")
             return
 
         # Check if the requested screen exists
@@ -178,8 +165,7 @@ class CalibrateScreen(QWidget):
         """Open the Bed Leveling screen and reset the wizard."""
         self.logger.info("Navigating to Bed Leveling screen")
         bed_leveling_screen = self.screens.get("bed_leveling")
-        if bed_leveling_screen and hasattr(bed_leveling_screen, "reset_wizard"):
-            bed_leveling_screen.reset_wizard()
+        bed_leveling_screen.reset_wizard()
         self.show_calibrate_screen("bed_leveling")
         bed_leveling_screen.quickStep1()
 
@@ -187,7 +173,6 @@ class CalibrateScreen(QWidget):
         """Open the IDEX Level Calibration screen and reset the wizard."""
         self.logger.info("Navigating to IDEX Level Calibration screen")
         idex_calibration_screen = self.screens.get("idex_calibration")
-        if idex_calibration_screen and hasattr(idex_calibration_screen, "reset_wizard"):
-            idex_calibration_screen.reset_wizard()
+        idex_calibration_screen.reset_wizard()
         self.show_calibrate_screen("idex_calibration")
         idex_calibration_screen.idexConfigStep1()

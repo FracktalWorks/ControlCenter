@@ -387,8 +387,7 @@ class PrintFromLocation(QWidget):
         """Reset to printLocationPage whenever this widget is shown from main window navigation."""
         super().showEvent(event)
         try:
-            if self.stackedWidget and self.printLocationPage:
-                self.stackedWidget.setCurrentWidget(self.printLocationPage)
-                self.logger.debug("Reset stacked widget to printLocationPage on show")
+            self.stackedWidget.setCurrentWidget(self.printLocationPage)
+            self.logger.debug("Reset stacked widget to printLocationPage on show")
         except Exception as e:
             self.logger.error(f"Error resetting to printLocationPage: {e}")

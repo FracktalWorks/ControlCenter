@@ -125,66 +125,38 @@ class ControlScreen(QWidget):
         )
 
         # Temperature Buttons Signal Connections
-        if self.fanOnButton:
-            self.fanOnButton.clicked.connect(lambda: self.octoprint_client.gcode(command='M106 S255'))
-        if self.fanOffButton:
-            self.fanOffButton.clicked.connect(lambda: self.octoprint_client.gcode(command='M107'))
-        if self.cooldownButton:
-            self.cooldownButton.clicked.connect(self.coolDownAction)
-        if self.setToolTempButton:
-            self.setToolTempButton.clicked.connect(self.setToolTemp)
-        if self.setBedTempButton:
-            self.setBedTempButton.clicked.connect(lambda: self.octoprint_client.setBedTemperature(self.bedTempSpinBox.value()))
-        if self.bed60PreheatButton:
-            self.bed60PreheatButton.pressed.connect(lambda: self.preheatBedTemp(60))
-        if self.bed100PreheatButton:
-            self.bed100PreheatButton.pressed.connect(lambda: self.preheatBedTemp(100))
-        if self.tool180PreheatButton:
-            self.tool180PreheatButton.pressed.connect(lambda: self.preheatToolTemp(180))
-        if self.tool250PreheatButton:
-            self.tool250PreheatButton.pressed.connect(lambda: self.preheatToolTemp(250))
-        if self.toolToggleTemperatureButton:
-            self.toolToggleTemperatureButton.pressed.connect(self.selectToolTemperature)
+        self.fanOnButton.clicked.connect(lambda: self.octoprint_client.gcode(command='M106 S255'))
+        self.fanOffButton.clicked.connect(lambda: self.octoprint_client.gcode(command='M107'))
+        self.cooldownButton.clicked.connect(self.coolDownAction)
+        self.setToolTempButton.clicked.connect(self.setToolTemp)
+        self.setBedTempButton.clicked.connect(lambda: self.octoprint_client.setBedTemperature(self.bedTempSpinBox.value()))
+        self.bed60PreheatButton.pressed.connect(lambda: self.preheatBedTemp(60))
+        self.bed100PreheatButton.pressed.connect(lambda: self.preheatBedTemp(100))
+        self.tool180PreheatButton.pressed.connect(lambda: self.preheatToolTemp(180))
+        self.tool250PreheatButton.pressed.connect(lambda: self.preheatToolTemp(250))
+        self.toolToggleTemperatureButton.pressed.connect(self.selectToolTemperature)
 
         # Motion Buttons Signal Connections
-        if self.step1mmButton:
-            self.step1mmButton.clicked.connect(lambda: self.setStep(1))
-        if self.step10mmButton:
-            self.step10mmButton.clicked.connect(lambda: self.setStep(10))
-        if self.step100mmButton:
-            self.step100mmButton.clicked.connect(lambda: self.setStep(100))
-        if self.moveXPButton:
-            self.moveXPButton.clicked.connect(lambda: self.octoprint_client.jog(x=self.step, speed=2000))
-        if self.moveXMButton:
-            self.moveXMButton.clicked.connect(lambda: self.octoprint_client.jog(x=-self.step, speed=2000))
-        if self.moveYPButton:
-            self.moveYPButton.clicked.connect(lambda: self.octoprint_client.jog(y=self.step, speed=2000))
-        if self.moveYMButton:
-            self.moveYMButton.clicked.connect(lambda: self.octoprint_client.jog(y=-self.step, speed=2000))
-        if self.motorOffButton:
-            self.motorOffButton.clicked.connect(lambda: self.octoprint_client.gcode(command='M18'))
-        if self.homeXYButton:
-            self.homeXYButton.clicked.connect(lambda: self.octoprint_client.home(['x', 'y']))
-        if self.moveZMButton:
-            self.moveZMButton.clicked.connect(lambda: self.octoprint_client.jog(z=-self.step, speed=2000))
-        if self.moveZPButton:
-            self.moveZPButton.clicked.connect(lambda: self.octoprint_client.jog(z=self.step, speed=2000))
-        if self.homeZButton:
-            self.homeZButton.clicked.connect(lambda: self.octoprint_client.home(['z']))
-        if self.toolToggleMotionButton:
-            self.toolToggleMotionButton.clicked.connect(self.selectToolMotion)
-        if self.extruderButton:
-            self.extruderButton.clicked.connect(lambda: self.octoprint_client.extrude(self.step))
-        if self.retractButton:
-            self.retractButton.clicked.connect(lambda: self.octoprint_client.extrude(-self.step))
+        self.step1mmButton.clicked.connect(lambda: self.setStep(1))
+        self.step10mmButton.clicked.connect(lambda: self.setStep(10))
+        self.step100mmButton.clicked.connect(lambda: self.setStep(100))
+        self.moveXPButton.clicked.connect(lambda: self.octoprint_client.jog(x=self.step, speed=2000))
+        self.moveXMButton.clicked.connect(lambda: self.octoprint_client.jog(x=-self.step, speed=2000))
+        self.moveYPButton.clicked.connect(lambda: self.octoprint_client.jog(y=self.step, speed=2000))
+        self.moveYMButton.clicked.connect(lambda: self.octoprint_client.jog(y=-self.step, speed=2000))
+        self.motorOffButton.clicked.connect(lambda: self.octoprint_client.gcode(command='M18'))
+        self.homeXYButton.clicked.connect(lambda: self.octoprint_client.home(['x', 'y']))
+        self.moveZMButton.clicked.connect(lambda: self.octoprint_client.jog(z=-self.step, speed=2000))
+        self.moveZPButton.clicked.connect(lambda: self.octoprint_client.jog(z=self.step, speed=2000))
+        self.homeZButton.clicked.connect(lambda: self.octoprint_client.home(['z']))
+        self.toolToggleMotionButton.clicked.connect(self.selectToolMotion)
+        self.extruderButton.clicked.connect(lambda: self.octoprint_client.extrude(self.step))
+        self.retractButton.clicked.connect(lambda: self.octoprint_client.extrude(-self.step))
 
         # Filament Buttons Signal Connections
-        if self.setFlowRateButton:
-            self.setFlowRateButton.clicked.connect(lambda: self.octoprint_client.flowrate(self.flowRateSpinBox.value()))
-        if self.changeFilamentButton:
-            self.changeFilamentButton.clicked.connect(self.open_change_filament_screen)
-        if self.toggleFilamentSensorButton:
-            self.toggleFilamentSensorButton.clicked.connect(self.toggleFilamentSensor)
+        self.setFlowRateButton.clicked.connect(lambda: self.octoprint_client.flowrate(self.flowRateSpinBox.value()))
+        self.changeFilamentButton.clicked.connect(self.open_change_filament_screen)
+        self.toggleFilamentSensorButton.clicked.connect(self.toggleFilamentSensor)
 
         # Configure spinboxes
         for spinbox in [self.feedRateSpinBox, self.toolTempSpinBox, self.bedTempSpinBox, self.flowRateSpinBox]:
@@ -196,8 +168,7 @@ class ControlScreen(QWidget):
                 spinbox.lineEdit().setPalette(palette)
 
         # Default to tab 0
-        if self.controlTabWidget:
-            self.controlTabWidget.setCurrentIndex(0)
+        self.controlTabWidget.setCurrentIndex(0)
 
         # Initialize filament sensor state
         self.filament_sensor_enabled = True
@@ -264,14 +235,12 @@ class ControlScreen(QWidget):
         self.logger.info("Cooling down all heaters")
 
     def set_tool_temp(self):
-        if self.toolTempSpinBox:
-            value = self.toolTempSpinBox.value()
-            self.logger.info(f"Setting tool temperature to {value}°C")
+        value = self.toolTempSpinBox.value()
+        self.logger.info(f"Setting tool temperature to {value}°C")
 
     def set_bed_temp(self):
-        if self.bedTempSpinBox:
-            value = self.bedTempSpinBox.value()
-            self.logger.info(f"Setting bed temperature to {value}°C")
+        value = self.bedTempSpinBox.value()
+        self.logger.info(f"Setting bed temperature to {value}°C")
 
     def set_move_step(self, step):
         self.logger.info(f"Set movement step size to {step}mm")
@@ -289,9 +258,8 @@ class ControlScreen(QWidget):
         self.logger.info("Moving Y- axis")
 
     def set_flow_rate(self):
-        if self.flowRateSpinBox:
-            value = self.flowRateSpinBox.value()
-            self.logger.info(f"Setting flow rate to {value}%")
+        value = self.flowRateSpinBox.value()
+        self.logger.info(f"Setting flow rate to {value}%")
 
     def open_change_filament_screen(self):
         """Navigate to the Change Filament screen"""
@@ -520,11 +488,10 @@ class ControlScreen(QWidget):
         """Update ControlScreen UI elements based on printer status"""
         try:
             # Disable motion controls during printing
-            if self.motionTab:
-                if status == "Printing":
-                    self.motionTab.setDisabled(True)
-                else:  # Paused, Offline, Operational, etc.
-                    self.motionTab.setDisabled(False)
+            if status == "Printing":
+                self.motionTab.setDisabled(True)
+            else:  # Paused, Offline, Operational, etc.
+                self.motionTab.setDisabled(False)
                     
             # TODO: Add other control-specific UI updates based on status
             # For example: disable certain temperature controls, etc.

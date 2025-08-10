@@ -102,58 +102,36 @@ class HomeScreen(QWidget):
         self.main_window.printer_model.active_extruder_changed.connect(self.setActiveExtruder)
 
         # Connect button signals to their handlers
-        if self.doorLockButton:
-            self.doorLockButton.clicked.connect(self.toggle_door_lock)
-
-        if self.menuButton:
-            self.menuButton.clicked.connect(self.open_menu)
-
-        if self.stopButton:
-            self.stopButton.clicked.connect(self.stop_print)
-
-        if self.playPauseButton:
-            self.playPauseButton.clicked.connect(self.play_pause_print)
-
-        if self.controlButton:
-            self.controlButton.clicked.connect(self.open_control_panel)
+        self.doorLockButton.clicked.connect(self.toggle_door_lock)
+        self.menuButton.clicked.connect(self.open_menu)
+        self.stopButton.clicked.connect(self.stop_print)
+        self.playPauseButton.clicked.connect(self.play_pause_print)
+        self.controlButton.clicked.connect(self.open_control_panel)
 
         # Initialize UI state
         # Update temperature displays
-        if self.tool0ActualTemperature and self.tool0TargetTemperature:
-            self.tool0ActualTemperature.setText("0°C")
-            self.tool0TargetTemperature.setText("0°C")
-            if self.tool0TempBar:
-                self.tool0TempBar.setValue(0)
+        self.tool0ActualTemperature.setText("0°C")
+        self.tool0TargetTemperature.setText("0°C")
+        self.tool0TempBar.setValue(0)
 
-        if self.tool1ActualTemperature and self.tool1TargetTemperature:
-            self.tool1ActualTemperature.setText("0°C")
-            self.tool1TargetTemperature.setText("0°C")
-            if self.tool1TempBar:
-                self.tool1TempBar.setValue(0)
+        self.tool1ActualTemperature.setText("0°C")
+        self.tool1TargetTemperature.setText("0°C")
+        self.tool1TempBar.setValue(0)
 
-        if self.bedActualTemperature and self.bedTargetTemperature:
-            self.bedActualTemperature.setText("0°C")
-            self.bedTargetTemperature.setText("0°C")
-            if self.bedTempBar:
-                self.bedTempBar.setValue(0)
+        self.bedActualTemperature.setText("0°C")
+        self.bedTargetTemperature.setText("0°C")
+        self.bedTempBar.setValue(0)
 
         # Update print info
-        if self.fileName:
-            self.fileName.setText(self.current_file)
-        if self.printTime:
-            self.printTime.setText(self.print_time)
-        if self.timeLeft:
-            self.timeLeft.setText(self.time_left)
-        if self.printProgressBar:
-            self.printProgressBar.setValue(self.print_progress)
+        self.fileName.setText(self.current_file)
+        self.printTime.setText(self.print_time)
+        self.timeLeft.setText(self.time_left)
+        self.printProgressBar.setValue(self.print_progress)
 
         # Update printer status
-        if self.printerStatus:
-            self.printerStatus.setText("Disconnected")
-        if self.printerStatusColour:
-            self.printerStatusColour.setStyleSheet(printer_status_red)
-        if self.ipStatus:
-            self.ipStatus.setText("Not Connected")
+        self.printerStatus.setText("Disconnected")
+        self.printerStatusColour.setStyleSheet(printer_status_red)
+        self.ipStatus.setText("Not Connected")
 
         self.setActiveExtruder(0)  # Default to extruder 0
 
@@ -451,35 +429,31 @@ class HomeScreen(QWidget):
             self.logger.debug("tool1Label found: {}".format(self.tool1Label is not None))
 
             if activeNozzle == 0:
-                if self.tool0Label:
-                    pixmap = QtGui.QPixmap(":/Icons/img/icons/activeNozzle.png")
-                    if not pixmap.isNull():
-                        self.tool0Label.setPixmap(pixmap)
-                        self.logger.debug("Set tool0Label to activeNozzle.png")
-                    else:
-                        self.logger.error("Failed to load activeNozzle.png pixmap")
-                if self.tool1Label:
-                    pixmap = QtGui.QPixmap(":/Icons/img/icons/Nozzle.png")
-                    if not pixmap.isNull():
-                        self.tool1Label.setPixmap(pixmap)
-                        self.logger.debug("Set tool1Label to Nozzle.png")
-                    else:
-                        self.logger.error("Failed to load Nozzle.png pixmap")
+                pixmap = QtGui.QPixmap(":/Icons/img/icons/activeNozzle.png")
+                if not pixmap.isNull():
+                    self.tool0Label.setPixmap(pixmap)
+                    self.logger.debug("Set tool0Label to activeNozzle.png")
+                else:
+                    self.logger.error("Failed to load activeNozzle.png pixmap")
+                pixmap = QtGui.QPixmap(":/Icons/img/icons/Nozzle.png")
+                if not pixmap.isNull():
+                    self.tool1Label.setPixmap(pixmap)
+                    self.logger.debug("Set tool1Label to Nozzle.png")
+                else:
+                    self.logger.error("Failed to load Nozzle.png pixmap")
             elif activeNozzle == 1:
-                if self.tool0Label:
-                    pixmap = QtGui.QPixmap(":/Icons/img/icons/Nozzle.png")
-                    if not pixmap.isNull():
-                        self.tool0Label.setPixmap(pixmap)
-                        self.logger.debug("Set tool0Label to Nozzle.png")
-                    else:
-                        self.logger.error("Failed to load Nozzle.png pixmap")
-                if self.tool1Label:
-                    pixmap = QtGui.QPixmap(":/Icons/img/icons/activeNozzle.png")
-                    if not pixmap.isNull():
-                        self.tool1Label.setPixmap(pixmap)
-                        self.logger.debug("Set tool1Label to activeNozzle.png")
-                    else:
-                        self.logger.error("Failed to load activeNozzle.png pixmap")
+                pixmap = QtGui.QPixmap(":/Icons/img/icons/Nozzle.png")
+                if not pixmap.isNull():
+                    self.tool0Label.setPixmap(pixmap)
+                    self.logger.debug("Set tool0Label to Nozzle.png")
+                else:
+                    self.logger.error("Failed to load Nozzle.png pixmap")
+                pixmap = QtGui.QPixmap(":/Icons/img/icons/activeNozzle.png")
+                if not pixmap.isNull():
+                    self.tool1Label.setPixmap(pixmap)
+                    self.logger.debug("Set tool1Label to activeNozzle.png")
+                else:
+                    self.logger.error("Failed to load activeNozzle.png pixmap")
                 # Note: toolToggleChangeFilamentButton is not defined in this screen
                 # if hasattr(self, 'toolToggleChangeFilamentButton'):
                 #     self.toolToggleChangeFilamentButton.setChecked(True)

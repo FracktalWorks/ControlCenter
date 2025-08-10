@@ -65,27 +65,17 @@ class IdexLevelCalibration(QWidget):
         ], "IDEX Level Calibration")
 
         # Connect buttons to their respective functions
-        if self.idexConfigStep1NextButton:
-            self.idexConfigStep1NextButton.clicked.connect(self.idexConfigStep2)
-        if self.idexConfigStep2NextButton:
-            self.idexConfigStep2NextButton.clicked.connect(self.idexConfigStep3)
-        if self.idexConfigStep3NextButton:
-            self.idexConfigStep3NextButton.clicked.connect(self.idexConfigStep4)
-        if self.idexConfigStep4NextButton:
-            self.idexConfigStep4NextButton.clicked.connect(self.idexConfigStep5)
-        if self.idexConfigStep5NextButton:
-            self.idexConfigStep5NextButton.clicked.connect(self.idexDoneStep)
+        self.idexConfigStep1NextButton.clicked.connect(self.idexConfigStep2)
+        self.idexConfigStep2NextButton.clicked.connect(self.idexConfigStep3)
+        self.idexConfigStep3NextButton.clicked.connect(self.idexConfigStep4)
+        self.idexConfigStep4NextButton.clicked.connect(self.idexConfigStep5)
+        self.idexConfigStep5NextButton.clicked.connect(self.idexDoneStep)
 
-        if self.idexConfigStep1CancelButton:
-            self.idexConfigStep1CancelButton.clicked.connect(self.idexCancelStep)
-        if self.idexConfigStep2CancelButton:
-            self.idexConfigStep2CancelButton.clicked.connect(self.idexCancelStep)
-        if self.idexConfigStep3CancelButton:
-            self.idexConfigStep3CancelButton.clicked.connect(self.idexCancelStep)
-        if self.idexConfigStep4CancelButton:
-            self.idexConfigStep4CancelButton.clicked.connect(self.idexCancelStep)
-        if self.idexConfigStep5CancelButton:
-            self.idexConfigStep5CancelButton.clicked.connect(self.idexCancelStep)
+        self.idexConfigStep1CancelButton.clicked.connect(self.idexCancelStep)
+        self.idexConfigStep2CancelButton.clicked.connect(self.idexCancelStep)
+        self.idexConfigStep3CancelButton.clicked.connect(self.idexCancelStep)
+        self.idexConfigStep4CancelButton.clicked.connect(self.idexCancelStep)
+        self.idexConfigStep5CancelButton.clicked.connect(self.idexCancelStep)
 
         self.moveZMIdexButton.pressed.connect(lambda: self.octoprint_client.jog(z=-0.1))
         self.moveZPIdexButton.pressed.connect(lambda: self.octoprint_client.jog(z=0.1))
@@ -97,9 +87,8 @@ class IdexLevelCalibration(QWidget):
         """Reset to the first step when the widget is shown."""
         super().showEvent(event)
         try:
-            if self.stackedWidget and self.idexConfigStep1Page:
-                self.stackedWidget.setCurrentWidget(self.idexConfigStep1Page)
-                self.logger.info("IdexLevelCalibration showEvent: Reset to idexConfigStep1Page")
+            self.stackedWidget.setCurrentWidget(self.idexConfigStep1Page)
+            self.logger.info("IdexLevelCalibration showEvent: Reset to idexConfigStep1Page")
         except Exception as e:
             self.logger.error(f"Error in IdexLevelCalibration showEvent: {e}")
 
@@ -107,7 +96,7 @@ class IdexLevelCalibration(QWidget):
         """Navigate to a specific step in the calibration process"""
         target_page = getattr(self, f"page{step_number}", None)
 
-        if self.stacked_widget and target_page:
+        if target_page:
             self.logger.info(f"Navigating to IDEX Calibration Step {step_number}")
             self.stacked_widget.setCurrentWidget(target_page)
         else:
@@ -125,24 +114,14 @@ class IdexLevelCalibration(QWidget):
 
     def _return_to_main_calibration(self):
         """Common method to return to the main calibration screen"""
-        if hasattr(self.main_window, 'calibrate_screen'):
-            if hasattr(self.main_window.calibrate_screen, 'calibration_stacked_widget') and \
-               hasattr(self.main_window.calibrate_screen, 'main_calibrate_page'):
-                self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
-                    self.main_window.calibrate_screen.main_calibrate_page)
-                self.logger.info("Returned to main calibration page")
-            else:
-                self.logger.error("Cannot return to main calibration - required widgets not found")
-        else:
-            self.logger.error("Cannot return to main calibration - calibrate_screen not found")
+        self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
+            self.main_window.calibrate_screen.main_calibrate_page)
+        self.logger.info("Returned to main calibration page")
 
     def reset_wizard(self):
         """Reset the IDEX Level Calibration wizard to its initial state."""
-        if self.stackedWidget and self.idexConfigStep1Page:
-            self.stackedWidget.setCurrentWidget(self.idexConfigStep1Page)
-            self.logger.info("Bed Leveling wizard reset to initial state")
-        else:
-            self.logger.error("Cannot reset wizard - required widgets not found")
+        self.stackedWidget.setCurrentWidget(self.idexConfigStep1Page)
+        self.logger.info("Bed Leveling wizard reset to initial state")
 
     def idexConfigStep1(self):
         """

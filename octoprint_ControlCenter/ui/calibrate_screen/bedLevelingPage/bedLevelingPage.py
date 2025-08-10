@@ -63,32 +63,20 @@ class BedLeveling(QWidget):
             self.quickStep4CancelButton
         ], "BedLeveling")
 
-        if self.moveZPT1CaliberateButton:
-            self.moveZPT1CaliberateButton.pressed.connect(lambda: self.octoprint_client.jog(z=0.025))
-        if self.moveZMT1CaliberateButton:
-            self.moveZMT1CaliberateButton.pressed.connect(lambda: self.octoprint_client.jog(z=-0.025))
-        if self.nozzleHeightStep1NextButton:
-            self.nozzleHeightStep1NextButton.clicked.connect(self.nozzleHeightStep1)
-        if self.nozzleHeightStep1CancelButton:
-            self.nozzleHeightStep1CancelButton.clicked.connect(self.cancelStep)
+        self.moveZPT1CaliberateButton.pressed.connect(lambda: self.octoprint_client.jog(z=0.025))
+        self.moveZMT1CaliberateButton.pressed.connect(lambda: self.octoprint_client.jog(z=-0.025))
+        self.nozzleHeightStep1NextButton.clicked.connect(self.nozzleHeightStep1)
+        self.nozzleHeightStep1CancelButton.clicked.connect(self.cancelStep)
 
-        if self.quickStep1NextButton:
-            self.quickStep1NextButton.clicked.connect(self.quickStep2)
-        if self.quickStep2NextButton:
-            self.quickStep2NextButton.clicked.connect(self.quickStep3)
-        if self.quickStep3NextButton:
-            self.quickStep3NextButton.clicked.connect(self.quickStep4)
-        if self.quickStep4NextButton:
-            self.quickStep4NextButton.clicked.connect(self.nozzleHeightStep1)
+        self.quickStep1NextButton.clicked.connect(self.quickStep2)
+        self.quickStep2NextButton.clicked.connect(self.quickStep3)
+        self.quickStep3NextButton.clicked.connect(self.quickStep4)
+        self.quickStep4NextButton.clicked.connect(self.nozzleHeightStep1)
 
-        if self.quickStep1CancelButton:
-            self.quickStep1CancelButton.clicked.connect(self.cancelStep)
-        if self.quickStep2CancelButton:
-            self.quickStep2CancelButton.clicked.connect(self.cancelStep)
-        if self.quickStep3CancelButton:
-            self.quickStep3CancelButton.clicked.connect(self.cancelStep)
-        if self.quickStep4CancelButton:
-            self.quickStep4CancelButton.clicked.connect(self.cancelStep)
+        self.quickStep1CancelButton.clicked.connect(self.cancelStep)
+        self.quickStep2CancelButton.clicked.connect(self.cancelStep)
+        self.quickStep3CancelButton.clicked.connect(self.cancelStep)
+        self.quickStep4CancelButton.clicked.connect(self.cancelStep)
 
         self.setNewToolZOffsetFromCurrentZBool = False
 
@@ -104,9 +92,8 @@ class BedLeveling(QWidget):
         """Reset to quickStep1Page whenever this widget is shown."""
         super().showEvent(event)
         try:
-            if self.stackedWidget and self.quickStep1Page:
-                self.stackedWidget.setCurrentWidget(self.quickStep1Page)
-                self.logger.debug("Reset stacked widget to quickStep1Page on show")
+            self.stackedWidget.setCurrentWidget(self.quickStep1Page)
+            self.logger.debug("Reset stacked widget to quickStep1Page on show")
         except Exception as e:
             self.logger.error(f"Error resetting to quickStep1Page: {e}")
 
@@ -321,26 +308,16 @@ class BedLeveling(QWidget):
     # ! To be commented out later
     def _navigate_to_page(self, page):
         """Navigate to a specific page within the bed leveling wizard"""
-        if self.stackedWidget and page:
-            self.logger.info(f"Navigating to {page.objectName()}")
-            self.stackedWidget.setCurrentWidget(page)
-        else:
-            self.logger.error(f"Cannot navigate - stackedWidget or page is missing")
+        self.logger.info(f"Navigating to {page.objectName()}")
+        self.stackedWidget.setCurrentWidget(page)
 
     def _return_to_main_calibration(self):
         """Return to the main calibration page"""
         self.logger.info("Bed leveling process canceled by user")
-        if hasattr(self.main_window, 'calibrate_screen'):
-            if hasattr(self.main_window.calibrate_screen, 'calibration_stacked_widget') and \
-                    hasattr(self.main_window.calibrate_screen, 'main_calibrate_page'):
-                self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
-                    self.main_window.calibrate_screen.main_calibrate_page
-                )
-                self.logger.info("Returning to main calibration page")
-            else:
-                self.logger.error("Cannot return to main calibration - required widgets not found")
-        else:
-            self.logger.error("Cannot return to main calibration - calibrate_screen not found")
+        self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
+            self.main_window.calibrate_screen.main_calibrate_page
+        )
+        self.logger.info("Returning to main calibration page")
 
     def _finish_bed_leveling(self):
         """Complete the bed leveling process and return to main calibration"""
@@ -360,11 +337,8 @@ class BedLeveling(QWidget):
         Function is called when the bed levelling class is initialized.
         Sets quickStep1 Page as the first page
         """
-        if self.stackedWidget and self.quickStep1Page:
-            self.stackedWidget.setCurrentWidget(self.quickStep1Page)
-            self.logger.info("Bed Leveling wizard reset to initial state")
-        else:
-            self.logger.error("Cannot reset wizard - required widgets not found")
+        self.stackedWidget.setCurrentWidget(self.quickStep1Page)
+        self.logger.info("Bed Leveling wizard reset to initial state")
 
     def setZToolOffset(self, offset):
         """

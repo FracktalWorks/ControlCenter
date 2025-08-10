@@ -60,26 +60,14 @@ class SoftwareUpdate(QWidget):
             self.logTextEdit
         ], "SoftwareUpdate")
 
-        # Connect buttons to their respective functions with safety checks
-        if self.softwareUpdateBackButton:
-            self.softwareUpdateBackButton.clicked.connect(self.go_back_to_settings_screen)
-            self.logger.debug("Connected back button to go_back_to_settings_screen")
-        else:
-            self.logger.warning("Could not connect back button - button not found")
-
-        if self.performUpdateButton:
-            self.performUpdateButton.clicked.connect(
-                lambda: self.octoprint_client.performSoftwareUpdate()
-            )
-        else:
-            self.logger.warning("Could not connect update button - button not found")
+        # Connect buttons to their respective functions
+        self.softwareUpdateBackButton.clicked.connect(self.go_back_to_settings_screen)
+        self.performUpdateButton.clicked.connect(
+            lambda: self.octoprint_client.performSoftwareUpdate()
+        )
 
         # Set the default page in stacked widget
-        if self.stackedWidget and self.OTAUpdatePage:
-            self.stackedWidget.setCurrentWidget(self.OTAUpdatePage)
-            self.logger.debug("Set default page to OTAUpdatePage")
-        else:
-            self.logger.warning("Could not set default page - required widgets missing")
+        self.stackedWidget.setCurrentWidget(self.OTAUpdatePage)
 
         # ! LOCAL SIGNAL AND SLOT CONNECTIONS:
         self.mainSettingsWidget.main_window.printer_model.update_started_signal.connect(self.softwareUpdateProgress)
@@ -91,36 +79,26 @@ class SoftwareUpdate(QWidget):
         """Reset to OTAUpdatePage whenever this widget is shown."""
         super().showEvent(event)
         try:
-            if self.stackedWidget and self.OTAUpdatePage:
-                self.stackedWidget.setCurrentWidget(self.OTAUpdatePage)
-                self.logger.debug("Reset stacked widget to OTAUpdatePage on show")
+            self.stackedWidget.setCurrentWidget(self.OTAUpdatePage)
+            self.logger.debug("Reset stacked widget to OTAUpdatePage on show")
         except Exception as e:
             self.logger.error(f"Error resetting to OTAUpdatePage: {e}")
 
     def go_back_to_settings_screen(self):
         """Return to the settings screen."""
         self.logger.info("Back to settings screen button clicked")
-        if hasattr(self.mainSettingsWidget, 'stackedWidget') and hasattr(self.mainSettingsWidget, 'mainSettingsPage'):
-            self.mainSettingsWidget.stackedWidget.setCurrentWidget(self.mainSettingsWidget.mainSettingsPage)
-            self.logger.info("Navigated back to settings screen")
-        else:
-            self.logger.error("Cannot navigate back - required widgets not found in mainSettingsWidget")
+        self.mainSettingsWidget.stackedWidget.setCurrentWidget(self.mainSettingsWidget.mainSettingsPage)
+        self.logger.info("Navigated back to settings screen")
 
     def update_software(self):
         """Update the software."""
         self.logger.info("Updating software...")
 
-        if self.stackedWidget and self.softwareUpdateProgressPage:
-            self.stackedWidget.setCurrentWidget(self.softwareUpdateProgressPage)
-            self.logger.debug("Switched to software update progress page")
+        self.stackedWidget.setCurrentWidget(self.softwareUpdateProgressPage)
+        self.logger.debug("Switched to software update progress page")
 
-            if self.logTextEdit:
-                self.logTextEdit.append("Software update in progress...")
-                self.logger.debug("Added log message to text edit")
-            else:
-                self.logger.warning("Could not add log message - logTextEdit not found")
-        else:
-            self.logger.error("Cannot update software - required widgets missing")
+        self.logTextEdit.append("Software update in progress...")
+        self.logger.debug("Added log message to text edit")
 
         # Actual implementation would include code to:
         # 1. Check for network connectivity

@@ -88,9 +88,8 @@ class ChangeFilament(QWidget):
         """Reset to changeFilamentPage whenever this widget is shown."""
         super().showEvent(event)
         try:
-            if self.stackedWidget and self.changeFilamentPage:
-                self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
-                self.logger.debug("Reset stacked widget to changeFilamentPage on show")
+            self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
+            self.logger.debug("Reset stacked widget to changeFilamentPage on show")
         except Exception as e:
             self.logger.error(f"Error resetting to changeFilamentPage: {e}")
 
@@ -110,8 +109,7 @@ class ChangeFilament(QWidget):
             (self.unloadDoneButton, self.changeFilament),
         ]
         for button, slot in button_slot_map:
-            if button:
-                button.clicked.connect(slot)
+            button.clicked.connect(slot)
 
     def changeFilament(self):
         """

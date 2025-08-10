@@ -122,18 +122,13 @@ class TestPrintPage(QWidget):
         """Reset to testPrintPage1 whenever this widget is shown."""
         super().showEvent(event)
         try:
-            if self.stackedWidget and self.testPrintPage1:
-                self.stackedWidget.setCurrentWidget(self.testPrintPage1)
-                self.logger.debug("Reset stacked widget to testPrintPage1 on show")
+            self.stackedWidget.setCurrentWidget(self.testPrintPage1)
+            self.logger.debug("Reset stacked widget to testPrintPage1 on show")
         except Exception as e:
             self.logger.error(f"Error resetting to testPrintPage1: {e}")
 
     def _navigate_to_page(self, page_name):
         """Navigate to a specific page in the stackedWidget"""
-        if not self.stackedWidget:
-            self.logger.error("Cannot navigate - stacked widget is missing")
-            return False
-
         # Use direct attribute access instead of page_widgets dictionary
         if hasattr(self, page_name):
             target_page = getattr(self, page_name)
@@ -146,29 +141,19 @@ class TestPrintPage(QWidget):
 
     def _next_page(self):
         """Navigate to the next page if available, or perform another action"""
-        if self.stackedWidget:
-            current_index = self.stackedWidget.currentIndex()
-            if current_index < self.stackedWidget.count() - 1:
-                self.stackedWidget.setCurrentIndex(current_index + 1)
-                self.logger.debug(f"Moving to next test print page: {current_index + 1}")
-            else:
-                self.logger.debug("Already at last test print page")
+        current_index = self.stackedWidget.currentIndex()
+        if current_index < self.stackedWidget.count() - 1:
+            self.stackedWidget.setCurrentIndex(current_index + 1)
+            self.logger.debug(f"Moving to next test print page: {current_index + 1}")
         else:
-            self.logger.error("Cannot navigate - stackedWidget is missing")
+            self.logger.debug("Already at last test print page")
 
     def _return_to_main_calibration(self):
         """Return to the main calibration page"""
         self.logger.info("Returning to main calibration page from test prints")
-        if hasattr(self.main_window, 'calibrate_screen'):
-            if hasattr(self.main_window.calibrate_screen, 'calibration_stacked_widget') and \
-                    hasattr(self.main_window.calibrate_screen, 'main_calibrate_page'):
-                self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
-                    self.main_window.calibrate_screen.main_calibrate_page)
-                self.logger.debug("Successfully returned to main calibration page")
-            else:
-                self.logger.error("Cannot return to main calibration - required widgets not found")
-        else:
-            self.logger.error("Cannot return to main calibration - main_window.calibrate_screen not found")
+        self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
+            self.main_window.calibrate_screen.main_calibrate_page)
+        self.logger.debug("Successfully returned to main calibration page")
 
     def testPrint(self, tool0Diameter, tool1Diameter, gcode):
         """
