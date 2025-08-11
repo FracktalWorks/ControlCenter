@@ -12,7 +12,7 @@ import subprocess
 from datetime import datetime
 
 from utils.helpers import run_async
-from hurry.filesize.filesize import size
+from utils.hurry.filesize.filesize import size
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8

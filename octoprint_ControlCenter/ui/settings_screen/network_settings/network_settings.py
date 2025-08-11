@@ -9,7 +9,7 @@ from utils.custom_widgets import ClickableLineEdit
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
 from utils import styles  # Import styles module
-from utils import keyboard  # Import keyboard module
+from utils.keyboard import keyboard  # Import keyboard module
 
 # Network utils import
 from utils.network_utils import getIP, getHostname, getWifiAp, getMac

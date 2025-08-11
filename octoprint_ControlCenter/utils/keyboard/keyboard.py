@@ -1,6 +1,8 @@
 import os
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from functools import partial
+import ui.resources.resource_rc
+
 
 
 
@@ -17,7 +19,7 @@ class Keyboard(QtWidgets.QDialog):
 
         # Load the UI directly from the .ui file
         # Use relative path from the current module's directory
-        ui_file_path = os.path.join(os.path.dirname(__file__), "..", "win_keyboard.ui")
+        ui_file_path = os.path.join(os.path.dirname(__file__), "win_keyboard.ui")
         uic.loadUi(ui_file_path, self)
 
         self.setAlphaUpperState(False)
