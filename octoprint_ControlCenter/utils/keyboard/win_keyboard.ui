@@ -1753,8 +1753,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>templates/img/verification-mark.png</normaloff>templates/img/verification-mark.png</iconset>
+      <iconset resource="../../ui/resources/resource.qrc">
+       <normaloff>:/Icons/img/icons/verification-mark.png</normaloff>:/Icons/img/icons/verification-mark.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -6210,8 +6210,8 @@ QPushButton:focus {
       <string/>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>templates/img/backspace-arrow.png</normaloff>templates/img/backspace-arrow.png</iconset>
+      <iconset resource="../../ui/resources/resource.qrc">
+       <normaloff>:/Keyboard/img/Keyboard/backspace-arrow.png</normaloff>:/Keyboard/img/Keyboard/backspace-arrow.png</iconset>
      </property>
      <property name="iconSize">
       <size>
