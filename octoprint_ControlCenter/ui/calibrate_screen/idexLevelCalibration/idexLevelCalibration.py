@@ -92,32 +92,6 @@ class IdexLevelCalibration(QWidget):
         except Exception as e:
             self.logger.error(f"Error in IdexLevelCalibration showEvent: {e}")
 
-    def _navigate_to_step(self, step_number):
-        """Navigate to a specific step in the calibration process"""
-        target_page = getattr(self, f"page{step_number}", None)
-
-        if target_page:
-            self.logger.info(f"Navigating to IDEX Calibration Step {step_number}")
-            self.stacked_widget.setCurrentWidget(target_page)
-        else:
-            self.logger.error(f"Error: Cannot navigate to IDEX Calibration Step {step_number}")
-
-    def _cancel_calibration(self):
-        """Cancel the IDEX calibration process and return to main calibration page"""
-        self.logger.info("IDEX Calibration process canceled")
-        self._return_to_main_calibration()
-
-    def _finish_calibration(self):
-        """Finish the IDEX calibration process and return to main calibration page"""
-        self.logger.info("IDEX Calibration process completed successfully")
-        self._return_to_main_calibration()
-
-    def _return_to_main_calibration(self):
-        """Common method to return to the main calibration screen"""
-        self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
-            self.main_window.calibrate_screen.main_calibrate_page)
-        self.logger.info("Returned to main calibration page")
-
     def reset_wizard(self):
         """Reset the IDEX Level Calibration wizard to its initial state."""
         self.stackedWidget.setCurrentWidget(self.idexConfigStep1Page)

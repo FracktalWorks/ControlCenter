@@ -295,7 +295,6 @@ class BedLeveling(QWidget):
             except:
                 pass
         except Exception as e:
-            # self._return_to_main_calibration()
             self.logger.error("Error in BedLeveling.cancelStep: {}".format(e))
             dialog.WarningOk(self, "Error in BedLeveling.cancelStep: {}".format(e), overlay=True)
             try:
@@ -304,33 +303,6 @@ class BedLeveling(QWidget):
                 self.movie3.stop()
             except:
                 pass
-
-    # ! To be commented out later
-    def _navigate_to_page(self, page):
-        """Navigate to a specific page within the bed leveling wizard"""
-        self.logger.info(f"Navigating to {page.objectName()}")
-        self.stackedWidget.setCurrentWidget(page)
-
-    def _return_to_main_calibration(self):
-        """Return to the main calibration page"""
-        self.logger.info("Bed leveling process canceled by user")
-        self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
-            self.main_window.calibrate_screen.main_calibrate_page
-        )
-        self.logger.info("Returning to main calibration page")
-
-    def _finish_bed_leveling(self):
-        """Complete the bed leveling process and return to main calibration"""
-        self.logger.info("Bed leveling process completed successfully")
-        self._return_to_main_calibration()
-
-    def move_z_pt1(self):
-        """Move Z-axis +0.1mm for calibration"""
-        self.logger.info("Moving Z-axis +0.1mm for calibration")
-
-    def move_z_mt1(self):
-        """Move Z-axis -0.1mm for calibration"""
-        self.logger.info("Moving Z-axis -0.1mm for calibration")
 
     def reset_wizard(self):
         """

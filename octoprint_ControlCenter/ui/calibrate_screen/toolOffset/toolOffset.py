@@ -74,8 +74,8 @@ class ToolOffset(QWidget):
         ], "ToolOffset Page")
 
     # Connect buttons to their respective methods
-        self.toolOffsetXYBackButton.clicked.connect(lambda: self.main_window.switch_to_calibrate_screen())
-        self.toolOffsetZBackButton.clicked.connect(lambda: self.main_window.switch_to_calibrate_screen())
+        self.toolOffsetXYBackButton.clicked.connect(lambda: self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(self.main_window.calibrate_screen.main_calibrate_page))
+        self.toolOffsetZBackButton.clicked.connect(lambda: self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(self.main_window.calibrate_screen.main_calibrate_page))
         self.toolOffsetXSetButton.clicked.connect(self.setToolOffsetX)
         self.toolOffsetYSetButton.clicked.connect(self.setToolOffsetY)
         self.toolOffsetZSetButton.clicked.connect(self.setToolOffsetZ)
