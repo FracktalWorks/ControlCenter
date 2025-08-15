@@ -144,55 +144,8 @@ class MainWindow(QMainWindow):
         self.logger.debug(
             f"Current screen before switch: {self.current_screen.__class__.__name__ if self.current_screen else None}")
 
-        # Check if we're navigating between a main screen and its subscreens
-        is_subscreen_navigation = False
-
-        # Check if current screen has subscreens and the widget is one of those subscreens
-        if self.current_screen and hasattr(self.current_screen, 'screens'):
-            is_subscreen_navigation = any(widget == subscreen for subscreen in self.current_screen.screens.values())
-
-        # Check if widget has subscreens and the current_screen is one of those subscreens
-        if widget and hasattr(widget, 'screens') and self.current_screen:
-            is_subscreen_navigation = is_subscreen_navigation or any(
-                self.current_screen == subscreen for subscreen in widget.screens.values())
-
-        # Only update history if not navigating between a screen and its subscreens
-        if self.current_screen is not None and not is_subscreen_navigation:
-            self.screen_history.append(self.current_screen)
-            self.logger.debug(f"Added {self.current_screen.__class__.__name__} to history")
-
         self.current_screen = widget
         self.stacked_widget.setCurrentWidget(widget)
-
-        self.logger.debug(f"History now contains: {[screen.__class__.__name__ for screen in self.screen_history]}")
-
-    def switch_to_previous_screen(self):
-        """Go back to the previous screen in history."""
-        self.logger.debug("Switching to previous screen")
-        if self.screen_history:
-            previous_screen = self.screen_history.pop()
-            self.current_screen = previous_screen
-            self.stacked_widget.setCurrentWidget(previous_screen)
-            self.logger.debug(f"Switched to previous screen: {previous_screen.__class__.__name__}")
-        else:
-            # Default to home screen if no history exists
-            self.logger.debug("No screen history, defaulting to home screen")
-            self.switch_to_home_screen()
-
-        # Ensure the stacked widget's current page is updated for multi-step wizards
-        if hasattr(self.current_screen, 'stackedWidget'):
-            self.current_screen.stackedWidget.setCurrentIndex(0)
-
-    def switch_to_next_screen(self):
-        """Used in multi-step flows like wizards to go to the next screen."""
-        self.logger.debug("Attempting to switch to next screen")
-        if self.next_screen:
-            self.switch_screen(self.next_screen)
-            self.next_screen = None
-            self.logger.debug("Switched to next screen")
-        else:
-            # If no next screen is defined, do nothing or go to a default
-            self.logger.warning("No next screen defined")
 
     # Direct navigation methods for main screens
     def switch_to_home_screen(self):
@@ -235,5 +188,6 @@ class MainWindow(QMainWindow):
 
     def switch_to_calibrate_screen(self):
         self.logger.debug("Switching to calibration screen")
+        #TBD: Send M502 to get latest values from printer
         self.switch_screen(self.calibrate_screen)
 

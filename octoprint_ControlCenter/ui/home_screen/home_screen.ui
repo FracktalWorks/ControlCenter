@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>447</width>
-    <height>316</height>
+    <width>435</width>
+    <height>315</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,6 +17,21 @@
    <string notr="true">background-color: rgb(40, 40, 40);</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing">
+    <number>2</number>
+   </property>
+   <property name="leftMargin">
+    <number>4</number>
+   </property>
+   <property name="topMargin">
+    <number>4</number>
+   </property>
+   <property name="rightMargin">
+    <number>4</number>
+   </property>
+   <property name="bottomMargin">
+    <number>4</number>
+   </property>
    <item>
     <layout class="QHBoxLayout" name="statusBarLayout">
      <property name="spacing">
@@ -163,9 +178,9 @@ background-color: rgba(255, 255, 255, 0);</string>
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="6,4">
+     <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="4,3">
       <property name="spacing">
-       <number>0</number>
+       <number>2</number>
       </property>
       <property name="leftMargin">
        <number>0</number>
@@ -185,7 +200,6 @@ background-color: rgba(255, 255, 255, 0);</string>
          <string notr="true">QFrame {
     border: none;
     border-radius: 10px;
-    margin-right: 2px;
 
     background: qlineargradient(
         x1:0, y1:0, x2:1, y2:1,
@@ -255,7 +269,7 @@ background-color: rgba(255, 255, 255, 0);</string>
                  </property>
                 </spacer>
                </item>
-               <item alignment="Qt::AlignHCenter|Qt::AlignBottom">
+               <item alignment="Qt::AlignHCenter">
                 <widget class="QLabel" name="label">
                  <property name="font">
                   <font>
@@ -269,7 +283,7 @@ color: White;
 background-color: rgb(255, 255, 255,0);</string>
                  </property>
                  <property name="text">
-                  <string>Tool 0</string>
+                  <string>T0</string>
                  </property>
                 </widget>
                </item>
@@ -298,7 +312,7 @@ background-color: rgb(255, 255, 255,0);</string>
                   </font>
                  </property>
                  <property name="styleSheet">
-                  <string notr="true"/>
+                  <string notr="true">margin : 4px</string>
                  </property>
                  <property name="text">
                   <string/>
@@ -505,6 +519,19 @@ background-color: rgba(0, 0, 0, 0);</string>
             </widget>
            </item>
            <item>
+            <spacer name="horizontalSpacer_3">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
             <spacer name="horizontalSpacer_5">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
@@ -540,7 +567,7 @@ background-color: rgba(0, 0, 0, 0);</string>
                  </property>
                 </spacer>
                </item>
-               <item alignment="Qt::AlignHCenter|Qt::AlignBottom">
+               <item alignment="Qt::AlignHCenter">
                 <widget class="QLabel" name="label_2">
                  <property name="font">
                   <font>
@@ -554,7 +581,7 @@ color: White;
 background-color: rgb(255, 255, 255,0);</string>
                  </property>
                  <property name="text">
-                  <string>Tool 1</string>
+                  <string>T1</string>
                  </property>
                 </widget>
                </item>
@@ -583,7 +610,7 @@ background-color: rgb(255, 255, 255,0);</string>
                   </font>
                  </property>
                  <property name="styleSheet">
-                  <string notr="true"/>
+                  <string notr="true">margin : 4px</string>
                  </property>
                  <property name="text">
                   <string/>
@@ -803,6 +830,19 @@ background-color: rgba(0, 0, 0, 0);</string>
             </spacer>
            </item>
            <item>
+            <spacer name="horizontalSpacer_4">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
             <layout class="QHBoxLayout" name="bedLayout">
              <property name="spacing">
               <number>0</number>
@@ -847,7 +887,7 @@ background-color: rgba(0, 0, 0, 0);</string>
                   </font>
                  </property>
                  <property name="styleSheet">
-                  <string notr="true"/>
+                  <string notr="true">margin : 4px</string>
                  </property>
                  <property name="text">
                   <string/>
@@ -860,7 +900,7 @@ background-color: rgba(0, 0, 0, 0);</string>
                  </property>
                 </widget>
                </item>
-               <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+               <item alignment="Qt::AlignHCenter">
                 <widget class="QLabel" name="label_3">
                  <property name="font">
                   <font>
@@ -1007,6 +1047,309 @@ background-color: rgba(0, 0, 0, 0);</string>
           </layout>
          </item>
          <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <property name="topMargin">
+            <number>4</number>
+           </property>
+           <item>
+            <layout class="QVBoxLayout" name="verticalLayout_11">
+             <item alignment="Qt::AlignHCenter">
+              <widget class="QLabel" name="feedRateIcon">
+               <property name="minimumSize">
+                <size>
+                 <width>20</width>
+                 <height>20</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>40</width>
+                 <height>40</height>
+                </size>
+               </property>
+               <property name="font">
+                <font>
+                 <family>Gotham</family>
+                 <pointsize>16</pointsize>
+                 <weight>50</weight>
+                 <bold>false</bold>
+                 <underline>false</underline>
+                 <strikeout>false</strikeout>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true"/>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="../resources/resource.qrc">:/Icons/img/icons/FeedRate_Selected.png</pixmap>
+               </property>
+               <property name="scaledContents">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item alignment="Qt::AlignHCenter">
+              <widget class="QLabel" name="label_12">
+               <property name="font">
+                <font>
+                 <family>Montserrat</family>
+                 <pointsize>12</pointsize>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">
+color: White;
+background-color: rgb(255, 255, 255,0);</string>
+               </property>
+               <property name="text">
+                <string>Feed Rate</string>
+               </property>
+              </widget>
+             </item>
+             <item alignment="Qt::AlignHCenter">
+              <widget class="QLabel" name="feedRateLabel">
+               <property name="font">
+                <font>
+                 <family>Montserrat</family>
+                 <pointsize>12</pointsize>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">
+color: White;
+background-color: rgb(255, 255, 255,0);</string>
+               </property>
+               <property name="text">
+                <string>100%</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="verticalSpacer">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>20</width>
+                 <height>40</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="Line" name="line_4">
+             <property name="minimumSize">
+              <size>
+               <width>1</width>
+               <height>20</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>60</height>
+              </size>
+             </property>
+             <property name="contextMenuPolicy">
+              <enum>Qt::NoContextMenu</enum>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">background-color: rgb(40, 40, 40);</string>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Sunken</enum>
+             </property>
+             <property name="lineWidth">
+              <number>1</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Vertical</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QVBoxLayout" name="verticalLayout_12">
+             <item alignment="Qt::AlignHCenter">
+              <widget class="QLabel" name="flowRateIcon">
+               <property name="minimumSize">
+                <size>
+                 <width>20</width>
+                 <height>20</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>40</width>
+                 <height>40</height>
+                </size>
+               </property>
+               <property name="font">
+                <font>
+                 <family>Gotham</family>
+                 <pointsize>16</pointsize>
+                 <weight>50</weight>
+                 <bold>false</bold>
+                 <underline>false</underline>
+                 <strikeout>false</strikeout>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true"/>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap resource="../resources/resource.qrc">:/Icons/img/icons/FlowRate.png</pixmap>
+               </property>
+               <property name="scaledContents">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item alignment="Qt::AlignHCenter">
+              <widget class="QLabel" name="label_14">
+               <property name="font">
+                <font>
+                 <family>Montserrat</family>
+                 <pointsize>12</pointsize>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">
+color: White;
+background-color: rgb(255, 255, 255,0);</string>
+               </property>
+               <property name="text">
+                <string>Flow Rate</string>
+               </property>
+              </widget>
+             </item>
+             <item alignment="Qt::AlignHCenter">
+              <widget class="QLabel" name="flowRateLabel">
+               <property name="font">
+                <font>
+                 <family>Montserrat</family>
+                 <pointsize>12</pointsize>
+                </font>
+               </property>
+               <property name="styleSheet">
+                <string notr="true">
+color: White;
+background-color: rgb(255, 255, 255,0);</string>
+               </property>
+               <property name="text">
+                <string>100%</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="verticalSpacer_2">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>20</width>
+                 <height>40</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QFrame" name="PrintPreviewFrame">
+        <property name="styleSheet">
+         <string notr="true">QFrame {
+    border: none;
+    border-radius: 10px;
+    background: qlineargradient(
+        x1:0, y1:0, x2:1, y2:1,
+        stop:0 #1a1a1a,
+        stop:1 #101010
+    );
+
+}
+</string>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_26">
+         <property name="spacing">
+          <number>5</number>
+         </property>
+         <property name="leftMargin">
+          <number>5</number>
+         </property>
+         <property name="topMargin">
+          <number>5</number>
+         </property>
+         <property name="rightMargin">
+          <number>5</number>
+         </property>
+         <property name="bottomMargin">
+          <number>5</number>
+         </property>
+         <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
+          <widget class="QLabel" name="printPreviewMain">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>40</width>
+             <height>40</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>5000</width>
+             <height>5000</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Gotham</family>
+             <pointsize>16</pointsize>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">background-color: rgba(255, 255, 255, 0);</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="pixmap">
+            <pixmap resource="../resources/resource.qrc">:/Logos &amp; Branding/img/Logos/thumbnail.png</pixmap>
+           </property>
+           <property name="scaledContents">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
           <layout class="QFormLayout" name="printInfoLayout">
            <property name="leftMargin">
             <number>8</number>
@@ -1132,91 +1475,6 @@ background-color: rgba(255, 255, 255, 0);</string>
             </widget>
            </item>
           </layout>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item>
-       <widget class="QFrame" name="PrintPreviewFrame">
-        <property name="styleSheet">
-         <string notr="true">QFrame {
-    border: none;
-    border-radius: 10px;
-    margin-left : 2px;
-
-    background: qlineargradient(
-        x1:0, y1:0, x2:1, y2:1,
-        stop:0 #1a1a1a,
-        stop:1 #101010
-    );
-
-}
-</string>
-        </property>
-        <property name="frameShape">
-         <enum>QFrame::StyledPanel</enum>
-        </property>
-        <property name="frameShadow">
-         <enum>QFrame::Raised</enum>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_26">
-         <property name="spacing">
-          <number>0</number>
-         </property>
-         <property name="leftMargin">
-          <number>0</number>
-         </property>
-         <property name="topMargin">
-          <number>0</number>
-         </property>
-         <property name="rightMargin">
-          <number>0</number>
-         </property>
-         <property name="bottomMargin">
-          <number>0</number>
-         </property>
-         <item alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-          <widget class="QLabel" name="printPreviewMain">
-           <property name="enabled">
-            <bool>true</bool>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>40</width>
-             <height>40</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>5000</width>
-             <height>5000</height>
-            </size>
-           </property>
-           <property name="font">
-            <font>
-             <family>Gotham</family>
-             <pointsize>16</pointsize>
-            </font>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">background-color: rgba(255, 255, 255, 0);</string>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-           <property name="pixmap">
-            <pixmap resource="../resources/resource.qrc">:/Logos &amp; Branding/img/Logos/thumbnail.png</pixmap>
-           </property>
-           <property name="scaledContents">
-            <bool>true</bool>
-           </property>
-          </widget>
          </item>
         </layout>
        </widget>
@@ -1722,7 +1980,6 @@ QProgressBar::chunk {
  </widget>
  <resources>
   <include location="../resources/resource.qrc"/>
-  <include location="../../Users/VijayRaghavVarada/Documents/Github/ControlCenter/octoprint_ControlCenter/ui/resources/resource.qrc"/>
  </resources>
  <connections/>
 </ui>
