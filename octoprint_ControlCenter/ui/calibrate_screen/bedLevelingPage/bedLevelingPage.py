@@ -261,9 +261,7 @@ class BedLeveling(QWidget):
             self.octoprint_client.jog(z=4, absolute=True, speed=1500)
             self.octoprint_client.gcode(command='T0')
 
-            self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
-                self.main_window.calibrate_screen.main_calibrate_page)
-            self.octoprint_client.home(['x', 'y', 'z'])
+            self.main_window.calibrate_screen.show_calibrate_screen()
             self.octoprint_client.gcode(command='M104 S0')
             self.octoprint_client.gcode(command='M104 T1 S0')
             self.octoprint_client.gcode(command='M84')
@@ -282,8 +280,7 @@ class BedLeveling(QWidget):
     def cancelStep(self):
         self.logger.info("BedLeveling.cancelStep started")
         try:
-            self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
-                self.main_window.calibrate_screen.main_calibrate_page)
+            self.main_window.calibrate_screen.show_calibrate_screen()
             self.octoprint_client.home(['x', 'y', 'z'])
             self.octoprint_client.gcode(command='M104 S0')
             self.octoprint_client.gcode(command='M104 T1 S0')

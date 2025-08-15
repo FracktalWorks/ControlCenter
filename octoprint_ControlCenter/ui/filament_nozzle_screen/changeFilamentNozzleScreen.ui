@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>542</width>
-    <height>407</height>
+    <width>579</width>
+    <height>426</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -158,8 +158,8 @@ background-color: rgb(40, 40, 40);
                <string notr="true">QPushButton {
     border: none; /* no border for a flat push button */
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-radius: 15px;
-border-radius: 15px;
+border-radius: 12px;
+border-radius: 12px;
 
 
 }
@@ -191,8 +191,8 @@ QPushButton:default {
               </property>
               <property name="iconSize">
                <size>
-                <width>25</width>
-                <height>25</height>
+                <width>20</width>
+                <height>20</height>
                </size>
               </property>
               <property name="checkable">
@@ -215,7 +215,7 @@ QPushButton:default {
         </widget>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="2,2">
+        <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,0">
          <item>
           <widget class="QFrame" name="tool0Frame">
            <property name="styleSheet">
@@ -289,12 +289,212 @@ QPushButton:default {
                    </font>
                   </property>
                   <property name="styleSheet">
-                   <string notr="true">color: rgb(255, 255, 255);</string>
+                   <string notr="true">color: rgb(255, 255, 255);
+margin-right:6px;</string>
                   </property>
                   <property name="text">
                    <string>Material Bay A</string>
                   </property>
+                  <property name="margin">
+                   <number>0</number>
+                  </property>
                  </widget>
+                </item>
+                <item>
+                 <layout class="QFormLayout" name="formLayout">
+                  <item row="0" column="0">
+                   <widget class="QLabel" name="calibrateLabel_3">
+                    <property name="font">
+                     <font>
+                      <family>MS Shell Dlg 2</family>
+                      <pointsize>16</pointsize>
+                      <weight>50</weight>
+                      <bold>false</bold>
+                     </font>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">color: rgb(255, 255, 255);
+margin-right:6px;</string>
+                    </property>
+                    <property name="text">
+                     <string>Material :</string>
+                    </property>
+                    <property name="margin">
+                     <number>0</number>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="0">
+                   <widget class="QLabel" name="calibrateLabel_9">
+                    <property name="font">
+                     <font>
+                      <family>MS Shell Dlg 2</family>
+                      <pointsize>16</pointsize>
+                      <weight>50</weight>
+                      <bold>false</bold>
+                     </font>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">color: rgb(255, 255, 255);
+margin-right:6px;</string>
+                    </property>
+                    <property name="text">
+                     <string>State :</string>
+                    </property>
+                    <property name="margin">
+                     <number>0</number>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="1">
+                   <layout class="QHBoxLayout" name="horizontalLayout_5">
+                    <item>
+                     <widget class="QLabel" name="printerStatusColour">
+                      <property name="minimumSize">
+                       <size>
+                        <width>20</width>
+                        <height>20</height>
+                       </size>
+                      </property>
+                      <property name="maximumSize">
+                       <size>
+                        <width>20</width>
+                        <height>20</height>
+                       </size>
+                      </property>
+                      <property name="font">
+                       <font>
+                        <family>Gotham</family>
+                        <pointsize>16</pointsize>
+                        <weight>50</weight>
+                        <bold>false</bold>
+                        <underline>false</underline>
+                        <strikeout>false</strikeout>
+                       </font>
+                      </property>
+                      <property name="styleSheet">
+                       <string notr="true">     border: 1px solid rgb(87, 87, 87);
+	border-radius: 10px;
+    background: qlineargradient(
+        x1:0, y1:0, x2:0, y2:1,
+        stop:0 #52ff56,
+        stop:0.3 #2ee937,
+        stop:0.6 #1ec12d,
+        stop:1 #179226
+    );</string>
+                      </property>
+                      <property name="text">
+                       <string/>
+                      </property>
+                      <property name="alignment">
+                       <set>Qt::AlignCenter</set>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QLabel" name="tool0MaterialBayAStateLabel">
+                      <property name="font">
+                       <font>
+                        <family>MS Shell Dlg 2</family>
+                        <pointsize>15</pointsize>
+                        <weight>50</weight>
+                        <bold>false</bold>
+                       </font>
+                      </property>
+                      <property name="styleSheet">
+                       <string notr="true">color: rgb(255, 255, 255);
+margin-right:6px;</string>
+                      </property>
+                      <property name="text">
+                       <string>Active</string>
+                      </property>
+                      <property name="margin">
+                       <number>0</number>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </item>
+                  <item row="0" column="1">
+                   <layout class="QHBoxLayout" name="horizontalLayout_9" stretch="5,1">
+                    <item>
+                     <widget class="QLabel" name="tool0MaterialBayALabel">
+                      <property name="font">
+                       <font>
+                        <family>MS Shell Dlg 2</family>
+                        <pointsize>15</pointsize>
+                        <weight>50</weight>
+                        <bold>false</bold>
+                       </font>
+                      </property>
+                      <property name="styleSheet">
+                       <string notr="true">color: rgb(255, 255, 255);
+margin-right:6px;</string>
+                      </property>
+                      <property name="text">
+                       <string>PLA</string>
+                      </property>
+                      <property name="margin">
+                       <number>0</number>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QPushButton" name="editTool0MaterialBayA">
+                      <property name="sizePolicy">
+                       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                        <horstretch>0</horstretch>
+                        <verstretch>0</verstretch>
+                       </sizepolicy>
+                      </property>
+                      <property name="minimumSize">
+                       <size>
+                        <width>30</width>
+                        <height>30</height>
+                       </size>
+                      </property>
+                      <property name="font">
+                       <font>
+                        <family>Gotham</family>
+                        <pointsize>16</pointsize>
+                       </font>
+                      </property>
+                      <property name="layoutDirection">
+                       <enum>Qt::LeftToRight</enum>
+                      </property>
+                      <property name="styleSheet">
+                       <string notr="true">background-color: transparent;</string>
+                      </property>
+                      <property name="text">
+                       <string/>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="../resources/resource.qrc">
+                        <normaloff>:/Icons/img/icons/pencil.png</normaloff>:/Icons/img/icons/pencil.png</iconset>
+                      </property>
+                      <property name="iconSize">
+                       <size>
+                        <width>15</width>
+                        <height>15</height>
+                       </size>
+                      </property>
+                      <property name="checkable">
+                       <bool>false</bool>
+                      </property>
+                      <property name="autoDefault">
+                       <bool>false</bool>
+                      </property>
+                      <property name="default">
+                       <bool>false</bool>
+                      </property>
+                      <property name="flat">
+                       <bool>false</bool>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </item>
+                 </layout>
                 </item>
                 <item>
                  <widget class="QToolButton" name="changeTool0MaterialBayA">
@@ -306,8 +506,14 @@ QPushButton:default {
                   </property>
                   <property name="minimumSize">
                    <size>
-                    <width>0</width>
-                    <height>0</height>
+                    <width>80</width>
+                    <height>80</height>
+                   </size>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>16777215</width>
+                    <height>16777215</height>
                    </size>
                   </property>
                   <property name="font">
@@ -344,7 +550,7 @@ QToolButton:focus {
 }</string>
                   </property>
                   <property name="text">
-                   <string>Material A</string>
+                   <string>Change Material Bay A</string>
                   </property>
                   <property name="icon">
                    <iconset resource="../resources/resource.qrc">
@@ -358,96 +564,6 @@ QToolButton:focus {
                   </property>
                   <property name="toolButtonStyle">
                    <enum>Qt::ToolButtonTextUnderIcon</enum>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QVBoxLayout" name="verticalLayout_2">
-                <item alignment="Qt::AlignHCenter">
-                 <widget class="QLabel" name="calibrateLabel_3">
-                  <property name="font">
-                   <font>
-                    <family>MS Shell Dlg 2</family>
-                    <pointsize>10</pointsize>
-                    <weight>50</weight>
-                    <bold>false</bold>
-                   </font>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">color: rgb(255, 255, 255);</string>
-                  </property>
-                  <property name="text">
-                   <string>Material Bay B</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QToolButton" name="changeTool0MaterialBayB">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <family>Gotham</family>
-                    <pointsize>12</pointsize>
-                   </font>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">QToolButton {
-
-     border: 1px solid rgb(87, 87, 87);
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-radius: 15px;
- padding-top: 10px;
-
-}
-
-QToolButton:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QToolButton:flat {
-    border: none; /* no border for a flat push button */
-}
-
-QToolButton:default {
-    border-color: navy; /* make the default button prominent */
-}
-
-QToolButton:focus {
-	outline: none;
-}</string>
-                  </property>
-                  <property name="text">
-                   <string>Material B</string>
-                  </property>
-                  <property name="icon">
-                   <iconset resource="../resources/resource.qrc">
-                    <normaloff>:/Icons/img/icons/Spool.png</normaloff>:/Icons/img/icons/Spool.png</iconset>
-                  </property>
-                  <property name="iconSize">
-                   <size>
-                    <width>30</width>
-                    <height>30</height>
-                   </size>
-                  </property>
-                  <property name="toolButtonStyle">
-                   <enum>Qt::ToolButtonTextUnderIcon</enum>
-                  </property>
-                  <property name="autoRaise">
-                   <bool>false</bool>
                   </property>
                  </widget>
                 </item>
@@ -487,7 +603,7 @@ margin-right:50px;</string>
                <string/>
               </property>
               <property name="pixmap">
-               <pixmap resource="../resources/resource.qrc">:/Filament Paths/img/Filament Paths/leftLoaded.png</pixmap>
+               <pixmap resource="../resources/resource.qrc">:/Filament Paths/img/Filament Paths/singleLoaded.png</pixmap>
               </property>
               <property name="scaledContents">
                <bool>true</bool>
@@ -504,8 +620,8 @@ margin-right:50px;</string>
              <widget class="QToolButton" name="changeTool0Button">
               <property name="minimumSize">
                <size>
-                <width>80</width>
-                <height>60</height>
+                <width>70</width>
+                <height>70</height>
                </size>
               </property>
               <property name="font">
@@ -639,15 +755,215 @@ QToolButton:focus {
                    </font>
                   </property>
                   <property name="styleSheet">
-                   <string notr="true">color: rgb(255, 255, 255);</string>
+                   <string notr="true">color: rgb(255, 255, 255);
+margin-right:6px;</string>
                   </property>
                   <property name="text">
-                   <string>Material Bay X</string>
+                   <string>Material Bay B</string>
+                  </property>
+                  <property name="margin">
+                   <number>0</number>
                   </property>
                  </widget>
                 </item>
                 <item>
-                 <widget class="QToolButton" name="changeTool1MaterialBayA">
+                 <layout class="QFormLayout" name="formLayout_3">
+                  <item row="0" column="0">
+                   <widget class="QLabel" name="calibrateLabel_5">
+                    <property name="font">
+                     <font>
+                      <family>MS Shell Dlg 2</family>
+                      <pointsize>16</pointsize>
+                      <weight>50</weight>
+                      <bold>false</bold>
+                     </font>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">color: rgb(255, 255, 255);
+margin-right:6px;</string>
+                    </property>
+                    <property name="text">
+                     <string>Material :</string>
+                    </property>
+                    <property name="margin">
+                     <number>0</number>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="0">
+                   <widget class="QLabel" name="calibrateLabel_17">
+                    <property name="font">
+                     <font>
+                      <family>MS Shell Dlg 2</family>
+                      <pointsize>16</pointsize>
+                      <weight>50</weight>
+                      <bold>false</bold>
+                     </font>
+                    </property>
+                    <property name="styleSheet">
+                     <string notr="true">color: rgb(255, 255, 255);
+margin-right:6px;</string>
+                    </property>
+                    <property name="text">
+                     <string>State :</string>
+                    </property>
+                    <property name="margin">
+                     <number>0</number>
+                    </property>
+                   </widget>
+                  </item>
+                  <item row="1" column="1">
+                   <layout class="QHBoxLayout" name="horizontalLayout_8">
+                    <item>
+                     <widget class="QLabel" name="printerStatusColour_3">
+                      <property name="minimumSize">
+                       <size>
+                        <width>20</width>
+                        <height>20</height>
+                       </size>
+                      </property>
+                      <property name="maximumSize">
+                       <size>
+                        <width>20</width>
+                        <height>20</height>
+                       </size>
+                      </property>
+                      <property name="font">
+                       <font>
+                        <family>Gotham</family>
+                        <pointsize>16</pointsize>
+                        <weight>50</weight>
+                        <bold>false</bold>
+                        <underline>false</underline>
+                        <strikeout>false</strikeout>
+                       </font>
+                      </property>
+                      <property name="styleSheet">
+                       <string notr="true">     border: 1px solid rgb(87, 87, 87);
+	border-radius: 10px;
+    background: qlineargradient(
+        x1:0, y1:0, x2:0, y2:1,
+        stop:0 #52ff56,
+        stop:0.3 #2ee937,
+        stop:0.6 #1ec12d,
+        stop:1 #179226
+    );</string>
+                      </property>
+                      <property name="text">
+                       <string/>
+                      </property>
+                      <property name="alignment">
+                       <set>Qt::AlignCenter</set>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QLabel" name="tool1MaterialBayXStateLabel">
+                      <property name="font">
+                       <font>
+                        <family>MS Shell Dlg 2</family>
+                        <pointsize>15</pointsize>
+                        <weight>50</weight>
+                        <bold>false</bold>
+                       </font>
+                      </property>
+                      <property name="styleSheet">
+                       <string notr="true">color: rgb(255, 255, 255);
+margin-right:6px;</string>
+                      </property>
+                      <property name="text">
+                       <string>Active</string>
+                      </property>
+                      <property name="margin">
+                       <number>0</number>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </item>
+                  <item row="0" column="1">
+                   <layout class="QHBoxLayout" name="horizontalLayout_10" stretch="5,1">
+                    <item>
+                     <widget class="QLabel" name="tool1MaterialBayXLabel">
+                      <property name="font">
+                       <font>
+                        <family>MS Shell Dlg 2</family>
+                        <pointsize>15</pointsize>
+                        <weight>50</weight>
+                        <bold>false</bold>
+                       </font>
+                      </property>
+                      <property name="styleSheet">
+                       <string notr="true">color: rgb(255, 255, 255);
+margin-right:6px;</string>
+                      </property>
+                      <property name="text">
+                       <string>PLA</string>
+                      </property>
+                      <property name="margin">
+                       <number>0</number>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QPushButton" name="editTool0MaterialBayX">
+                      <property name="sizePolicy">
+                       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                        <horstretch>0</horstretch>
+                        <verstretch>0</verstretch>
+                       </sizepolicy>
+                      </property>
+                      <property name="minimumSize">
+                       <size>
+                        <width>30</width>
+                        <height>30</height>
+                       </size>
+                      </property>
+                      <property name="font">
+                       <font>
+                        <family>Gotham</family>
+                        <pointsize>16</pointsize>
+                       </font>
+                      </property>
+                      <property name="layoutDirection">
+                       <enum>Qt::LeftToRight</enum>
+                      </property>
+                      <property name="styleSheet">
+                       <string notr="true">background-color: transparent;</string>
+                      </property>
+                      <property name="text">
+                       <string/>
+                      </property>
+                      <property name="icon">
+                       <iconset resource="../resources/resource.qrc">
+                        <normaloff>:/Icons/img/icons/pencil.png</normaloff>:/Icons/img/icons/pencil.png</iconset>
+                      </property>
+                      <property name="iconSize">
+                       <size>
+                        <width>15</width>
+                        <height>15</height>
+                       </size>
+                      </property>
+                      <property name="checkable">
+                       <bool>false</bool>
+                      </property>
+                      <property name="autoDefault">
+                       <bool>false</bool>
+                      </property>
+                      <property name="default">
+                       <bool>false</bool>
+                      </property>
+                      <property name="flat">
+                       <bool>false</bool>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </item>
+                 </layout>
+                </item>
+                <item>
+                 <widget class="QToolButton" name="changeTool1MaterialBayX">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                     <horstretch>0</horstretch>
@@ -656,8 +972,14 @@ QToolButton:focus {
                   </property>
                   <property name="minimumSize">
                    <size>
-                    <width>0</width>
-                    <height>0</height>
+                    <width>80</width>
+                    <height>80</height>
+                   </size>
+                  </property>
+                  <property name="maximumSize">
+                   <size>
+                    <width>16777215</width>
+                    <height>16777215</height>
                    </size>
                   </property>
                   <property name="font">
@@ -694,7 +1016,7 @@ QToolButton:focus {
 }</string>
                   </property>
                   <property name="text">
-                   <string>Material A</string>
+                   <string>Change Material Bay B</string>
                   </property>
                   <property name="icon">
                    <iconset resource="../resources/resource.qrc">
@@ -708,96 +1030,6 @@ QToolButton:focus {
                   </property>
                   <property name="toolButtonStyle">
                    <enum>Qt::ToolButtonTextUnderIcon</enum>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <layout class="QVBoxLayout" name="verticalLayout_4">
-                <item alignment="Qt::AlignHCenter">
-                 <widget class="QLabel" name="calibrateLabel_5">
-                  <property name="font">
-                   <font>
-                    <family>MS Shell Dlg 2</family>
-                    <pointsize>10</pointsize>
-                    <weight>50</weight>
-                    <bold>false</bold>
-                   </font>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">color: rgb(255, 255, 255);</string>
-                  </property>
-                  <property name="text">
-                   <string>Material Bay Y</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QToolButton" name="changeTool1MaterialBayB">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="minimumSize">
-                   <size>
-                    <width>0</width>
-                    <height>0</height>
-                   </size>
-                  </property>
-                  <property name="font">
-                   <font>
-                    <family>Gotham</family>
-                    <pointsize>12</pointsize>
-                   </font>
-                  </property>
-                  <property name="styleSheet">
-                   <string notr="true">QToolButton {
-
-     border: 1px solid rgb(87, 87, 87);
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-radius: 15px;
- padding-top: 10px;
-
-}
-
-QToolButton:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QToolButton:flat {
-    border: none; /* no border for a flat push button */
-}
-
-QToolButton:default {
-    border-color: navy; /* make the default button prominent */
-}
-
-QToolButton:focus {
-	outline: none;
-}</string>
-                  </property>
-                  <property name="text">
-                   <string>Material B</string>
-                  </property>
-                  <property name="icon">
-                   <iconset resource="../resources/resource.qrc">
-                    <normaloff>:/Icons/img/icons/Spool.png</normaloff>:/Icons/img/icons/Spool.png</iconset>
-                  </property>
-                  <property name="iconSize">
-                   <size>
-                    <width>30</width>
-                    <height>30</height>
-                   </size>
-                  </property>
-                  <property name="toolButtonStyle">
-                   <enum>Qt::ToolButtonTextUnderIcon</enum>
-                  </property>
-                  <property name="autoRaise">
-                   <bool>false</bool>
                   </property>
                  </widget>
                 </item>
@@ -837,7 +1069,7 @@ margin-right:50px;</string>
                <string/>
               </property>
               <property name="pixmap">
-               <pixmap resource="../resources/resource.qrc">:/Filament Paths/img/Filament Paths/leftLoaded.png</pixmap>
+               <pixmap resource="../resources/resource.qrc">:/Filament Paths/img/Filament Paths/singleLoaded.png</pixmap>
               </property>
               <property name="scaledContents">
                <bool>true</bool>
@@ -854,8 +1086,8 @@ margin-right:50px;</string>
              <widget class="QToolButton" name="changeTool1Button">
               <property name="minimumSize">
                <size>
-                <width>80</width>
-                <height>60</height>
+                <width>70</width>
+                <height>70</height>
                </size>
               </property>
               <property name="font">
@@ -893,7 +1125,7 @@ QToolButton:focus {
 }</string>
               </property>
               <property name="text">
-               <string>Tool 1</string>
+               <string>Tool 0</string>
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">
@@ -922,7 +1154,6 @@ QToolButton:focus {
   </layout>
  </widget>
  <resources>
-  <include location="../resources/resource.qrc"/>
   <include location="../resources/resource.qrc"/>
  </resources>
  <connections/>

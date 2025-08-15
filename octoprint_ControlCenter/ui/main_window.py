@@ -9,6 +9,7 @@ from ui.settings_screen.settings_screen import SettingsScreen
 from ui.control_screen.control_screen import ControlScreen
 from ui.print_from_location.print_from_location import PrintFromLocation
 from ui.calibrate_screen.calibrate_screen import CalibrateScreen
+from ui.filament_nozzle_screen.changeFilamentNozzleScreen import ChangeFilamentNozzleScreen
 from utils.logger import get_logger
 import os
 import subprocess
@@ -126,6 +127,10 @@ class MainWindow(QMainWindow):
                     self.stacked_widget.addWidget(self.calibrate_screen)
                     self.logger.debug("Calibrate screen loaded successfully")
 
+                    self.filament_nozzle_screen = ChangeFilamentNozzleScreen(self)
+                    self.stacked_widget.addWidget(self.filament_nozzle_screen)
+                    self.logger.debug("Filament/Nozzle screen loaded successfully")
+
                     # Adjust the size of the main window to fit its contents
                     self.adjustSize()
                     self.logger.info("MainWindow initialized successfully")
@@ -190,4 +195,8 @@ class MainWindow(QMainWindow):
         self.logger.debug("Switching to calibration screen")
         #TBD: Send M502 to get latest values from printer
         self.switch_screen(self.calibrate_screen)
+
+    def switch_to_filament_nozzle_screen(self):
+        self.logger.debug("Switching to filament/nozzle screen")
+        self.switch_screen(self.filament_nozzle_screen)
 

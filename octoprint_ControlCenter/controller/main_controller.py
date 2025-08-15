@@ -304,7 +304,53 @@ class MainController:
         self.octoprint_websocket.z_probing_failed_signal.connect(self.showProbingFailed)
         self.octoprint_websocket.printer_error_signal.connect(self.showPrinterError)
 
+        # local signal slot connections
+        self.printer_model.filament_sensor_triggered.connect(self.filamentSensorHandler)
 
+    def filamentSensorHandler(self, data):
+        # """
+        # Handles the filament sensor
+        # """
+        # logger.info("ControlScreen.filamentSensorHandler started")
+        # change_filament_screen = self.main_window.filament_nozzle_screen.change_filament_screen
+        # try:
+        #     print(data)
+
+        #     triggered_extruder0 = False
+        #     triggered_extruder1 = False
+
+        #     if '0' in data:
+        #         triggered_extruder0 = True
+
+        #     if '1' in data:
+        #         triggered_extruder1 = True
+
+        #     if triggered_extruder0 and self.main_window.stacked_widget.currentWidget() not in [
+        #         change_filament_screen.changeFilamentPage,
+        #         change_filament_screen.changeFilamentProgressPage,
+        #         change_filament_screen.changeFilamentExtrudePage,
+        #         change_filament_screen.changeFilamentRetractPage,
+        #         change_filament_screen.changeFilamentLoadPage]:
+        #         self.octoprint_client.gcode(command='PAUSE')
+        #         if dialog.WarningOk(self,
+        #                             "Filament outage or clog detected in Extruder 0. Please check the external motors. Print paused"):
+        #             pass
+
+        #     if triggered_extruder1 and self.main_window.stacked_widget.currentWidget() not in [
+        #         change_filament_screen.changeFilamentPage,
+        #         change_filament_screen.changeFilamentProgressPage,
+        #         change_filament_screen.changeFilamentExtrudePage,
+        #         change_filament_screen.changeFilamentRetractPage,
+        #         change_filament_screen.changeFilamentLoadPage]:
+        #         self.octoprint_client.gcode(command='PAUSE')
+        #         if dialog.WarningOk(self,
+        #                             "Filament outage or clog detected in Extruder 1. Please check the external motors. Print paused"):
+        #             pass
+
+        # except Exception as e:
+        #     logger.error("Error in ControlScreen.filamentSensorHandler: {}".format(e))
+        #     dialog.WarningOk(self, "Error in ControlScreen.filamentSensorHandler: {}".format(e), overlay=True)
+        pass
 
     def checkKlipperPrinterCFG(self):
         """Check for valid printer.cfg and restore if needed.

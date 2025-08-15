@@ -126,7 +126,7 @@ QTabBar:focus {
     <enum>QTabWidget::Rounded</enum>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>3</number>
    </property>
    <property name="iconSize">
     <size>
@@ -309,10 +309,10 @@ QPushButton:focus {
     <widget class="QLabel" name="flowRateLabelControlPage_5">
      <property name="geometry">
       <rect>
-       <x>300</x>
-       <y>190</y>
-       <width>211</width>
-       <height>31</height>
+       <x>130</x>
+       <y>200</y>
+       <width>531</width>
+       <height>21</height>
       </rect>
      </property>
      <property name="font">
@@ -336,11 +336,11 @@ background-color: rgba(255, 255, 255, 0);</string>
       <rect>
        <x>10</x>
        <y>20</y>
-       <width>341</width>
+       <width>371</width>
        <height>131</height>
       </rect>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="0,3,2">
+     <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="0,4,2">
       <property name="spacing">
        <number>0</number>
       </property>
@@ -440,8 +440,7 @@ QSpinBox::up-button {
      border-left: 1px solid rgb(87, 87, 87);
 border-bottom: 1px solid rgb(87, 87, 87);
 
-    min-width: 40px;   /* sets minimal button width */
-    width: 50px;       /* optional: fixed width */
+    min-width: 60px;   /* sets minimal button width */
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
 }
 
@@ -462,8 +461,7 @@ QSpinBox::up-button:pressed {
 QSpinBox::down-button {
      border-left: 1px solid rgb(87, 87, 87);
 border-top: 1px solid rgb(87, 87, 87);
-    min-width: 40px;   /* sets minimal button width */
-    width: 50px;       /* optional: fixed width */
+    min-width: 60px;   /* sets minimal button width */
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
 margin-top: -2px;
 
@@ -572,13 +570,13 @@ QPushButton:focus {
     <widget class="QWidget" name="horizontalLayoutWidget_4">
      <property name="geometry">
       <rect>
-       <x>440</x>
+       <x>410</x>
        <y>20</y>
-       <width>351</width>
+       <width>381</width>
        <height>131</height>
       </rect>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="0,3,2">
+     <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="0,4,2">
       <property name="spacing">
        <number>0</number>
       </property>
@@ -681,8 +679,7 @@ QSpinBox::up-button {
      border-left: 1px solid rgb(87, 87, 87);
 border-bottom: 1px solid rgb(87, 87, 87);
 
-    min-width: 40px;   /* sets minimal button width */
-    width: 50px;       /* optional: fixed width */
+    min-width: 60px;   /* sets minimal button width */
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
 }
 
@@ -703,8 +700,7 @@ QSpinBox::up-button:pressed {
 QSpinBox::down-button {
      border-left: 1px solid rgb(87, 87, 87);
 border-top: 1px solid rgb(87, 87, 87);
-    min-width: 40px;   /* sets minimal button width */
-    width: 50px;       /* optional: fixed width */
+    min-width: 60px;   /* sets minimal button width */
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
 margin-top: -2px;
 
@@ -1024,9 +1020,9 @@ QPushButton:focus {
     <widget class="QWidget" name="horizontalLayoutWidget">
      <property name="geometry">
       <rect>
-       <x>30</x>
+       <x>10</x>
        <y>130</y>
-       <width>321</width>
+       <width>371</width>
        <height>201</height>
       </rect>
      </property>
@@ -1364,8 +1360,8 @@ QSpinBox ::text:selected {
 QSpinBox::up-button {
      border-left: 1px solid rgb(87, 87, 87);
 border-bottom: 1px solid rgb(87, 87, 87);
-    min-width: 40px;   /* sets minimal button width */
-    width: 50px;       /* optional: fixed width */
+
+    min-width: 60px;   /* sets minimal button width */
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
 }
 
@@ -1386,10 +1382,10 @@ QSpinBox::up-button:pressed {
 QSpinBox::down-button {
      border-left: 1px solid rgb(87, 87, 87);
 border-top: 1px solid rgb(87, 87, 87);
-    min-width: 40px;   /* sets minimal button width */
-    width: 50px;       /* optional: fixed width */
+    min-width: 60px;   /* sets minimal button width */
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
 margin-top: -2px;
+
 }
 
 QSpinBox::down-arrow {image: url(:/Navigation/img/Navigation/arrows-5.png);
@@ -1501,9 +1497,9 @@ QPushButton:focus {
     <widget class="QWidget" name="horizontalLayoutWidget_2">
      <property name="geometry">
       <rect>
-       <x>440</x>
+       <x>410</x>
        <y>130</y>
-       <width>321</width>
+       <width>371</width>
        <height>201</height>
       </rect>
      </property>
@@ -1750,8 +1746,7 @@ QSpinBox::up-button {
      border-left: 1px solid rgb(87, 87, 87);
 border-bottom: 1px solid rgb(87, 87, 87);
 
-    min-width: 40px;   /* sets minimal button width */
-    width: 50px;       /* optional: fixed width */
+    min-width: 60px;   /* sets minimal button width */
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
 }
 
@@ -1772,8 +1767,7 @@ QSpinBox::up-button:pressed {
 QSpinBox::down-button {
      border-left: 1px solid rgb(87, 87, 87);
 border-top: 1px solid rgb(87, 87, 87);
-    min-width: 40px;   /* sets minimal button width */
-    width: 50px;       /* optional: fixed width */
+    min-width: 60px;   /* sets minimal button width */
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
 margin-top: -2px;
 

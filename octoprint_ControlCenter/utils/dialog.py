@@ -48,6 +48,18 @@ def format_text_for_dialog(text, max_line_length=50):  # Reduced from 60 to 50
 
 
 def font(size=12, weight=50, bold=False, underline=False, strikeout=False):  # Reduced default from 14 to 12
+    """Create and return a standardized QFont used by dialogs.
+
+    Args:
+        size: Point size.
+        weight: Weight value (50 normal).
+        bold: Whether the font is bold.
+        underline: Whether the font is underlined.
+        strikeout: Whether the font is a strikeout font.
+
+    Returns:
+        QtGui.QFont: Configured font instance.
+    """
     font = QtGui.QFont()
     # QtGui.QInputMethodEvent
     font.setFamily(_fromUtf8("Gotham"))
@@ -60,7 +72,10 @@ def font(size=12, weight=50, bold=False, underline=False, strikeout=False):  # R
 
 
 class Overlay(QtWidgets.QWidget):
+    """A semi-transparent full-screen overlay used to dim the background."""
+
     def __init__(self, parent):
+        """Construct the overlay widget."""
         QtWidgets.QWidget.__init__(self, parent)
 
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
@@ -76,6 +91,7 @@ class Overlay(QtWidgets.QWidget):
         self.setGeometry(geom)
 
     def paintEvent(self, event):
+        """Paint a translucent black overlay over the entire widget area."""
         painter = QtGui.QPainter()
         painter.begin(self)
         painter.setOpacity(0.8)
@@ -85,8 +101,16 @@ class Overlay(QtWidgets.QWidget):
 
 
 class SelfCenteringMessageBox(QtWidgets.QMessageBox):
+    """Customized frameless message box that centers on screen and can show an overlay."""
 
     def __init__(self, timeout=3, parent=None, overlay=False):
+        """Initialize the message box and optional overlay.
+
+        Args:
+            timeout: Unused placeholder for potential auto-close in future.
+            parent: Parent widget.
+            overlay: Whether to show the dimming overlay while visible.
+        """
         self._showOverlay = overlay
         self.overlay = Overlay(None)
 
@@ -125,6 +149,11 @@ class SelfCenteringMessageBox(QtWidgets.QMessageBox):
         self.setMaximumSize(500, 350)
 
     def setLocalIcon(self, icon=None):
+        """Set an icon using a Qt resource path.
+
+        Args:
+            icon: Resource path to the icon (e.g., ':/Icons/img/icons/success.png').
+        """
         if icon:
             # Use Qt resource system for icons
             pixmap = QtGui.QPixmap(_fromUtf8(icon))
@@ -134,6 +163,7 @@ class SelfCenteringMessageBox(QtWidgets.QMessageBox):
                 pass
 
     def show(self):
+        """Show the dialog centered on the active screen and apply styles."""
         # Apply label settings just before showing, in case the label wasn't found during init
         objLabel = self.findChild(QtWidgets.QLabel, 'qt_msgbox_label')
         if objLabel:
@@ -157,14 +187,36 @@ class SelfCenteringMessageBox(QtWidgets.QMessageBox):
         self.move(frameGm.topLeft())
 
     def hide(self):
+        """Hide the dialog and its overlay."""
         super(SelfCenteringMessageBox, self).hide()
         self.overlay.hide()
 
     def showOverlay(self, overlay):
+        """Enable or disable the overlay when the dialog is shown.
+
+        Args:
+            overlay: True to enable overlay, False to disable.
+        """
         self._showOverlay = overlay
 
 
 def dialog(parent, text, **kwargs):
+    """Create and show a styled, optionally overlayed message box.
+
+    Args:
+        parent: Parent widget.
+        text: Message text (optionally wrapped for readability).
+        **kwargs: Optional parameters:
+            - fontSize (int): Font point size.
+            - icon (str): Qt resource path to an icon.
+            - buttons (QMessageBox.StandardButtons): Buttons to show.
+            - geometry (QRect): Optional geometry for the dialog.
+            - overlay (bool): Whether to show background overlay.
+            - format_text (bool): Whether to auto-wrap text.
+
+    Returns:
+        SelfCenteringMessageBox: The shown dialog instance.
+    """
     fontSize = kwargs.get('fontSize', 12)  # Reduced default font size from 14 to 12
     icon = kwargs.get('icon', None)
     buttons = kwargs.get('buttons', QtWidgets.QMessageBox.Ok)
@@ -196,64 +248,80 @@ def dialog(parent, text, **kwargs):
 
 
 def Ok(parent, text, **kwargs):
+    """Show an OK dialog."""
     return dialog(parent, text, **kwargs).exec_() == QtWidgets.QMessageBox.Ok
 
 
 def Cancel(parent, text, **kwargs):
+    """Show a Cancel dialog with a single Cancel button."""
     return dialog(parent, text, buttons=QtWidgets.QMessageBox.Cancel, **kwargs).exec_() == QtWidgets.QMessageBox.Cancel
 
 
 def OkCancel(parent, text, **kwargs):
+    """Show a dialog with Ok and Cancel buttons."""
     return dialog(parent, text, buttons=QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel, **kwargs).exec_() == QtWidgets.QMessageBox.Cancel
 
 
 def Yes(parent, text, **kwargs):
+    """Show a Yes-only dialog."""
     return dialog(parent, text, buttons=QtWidgets.QMessageBox.Yes, **kwargs).exec_() == QtWidgets.QMessageBox.Yes
 
 
 def YesNo(parent, text, **kwargs):
+    """Show a dialog with Yes and No buttons."""
     return dialog(parent, text, buttons=QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, **kwargs).exec_() == QtWidgets.QMessageBox.Yes
 
 
 def WarningOk(parent, text, **kwargs):
+    """Show a warning dialog with OK button."""
     return Ok(parent, text, icon=":/Icons/img/icons/exclamation-mark.png", **kwargs)
 
 
 def WarningCancel(parent, text, **kwargs):
+    """Show a warning dialog with Cancel button."""
     return Cancel(parent, text, icon=":/Icons/img/icons/exclamation-mark.png", **kwargs)
 
 
 def WarningOkCancel(parent, text, **kwargs):
+    """Show a warning dialog with Ok and Cancel buttons."""
     return OkCancel(parent, text, icon=":/Icons/img/icons/exclamation-mark.png", **kwargs)
 
 
 def WarningYes(parent, text, **kwargs):
+    """Show a warning dialog with Yes button."""
     return Yes(parent, text, icon=":/Icons/img/icons/exclamation-mark.png", **kwargs)
 
 
 def WarningYesNo(parent, text, **kwargs):
+    """Show a warning dialog with Yes and No buttons."""
     return YesNo(parent, text, icon=":/Icons/img/icons/exclamation-mark.png", **kwargs)
 
 
 def SuccessOk(parent, text, **kwargs):
+    """Show a success dialog with OK button."""
     return Ok(parent, text, icon=":/Icons/img/icons/success.png", **kwargs)
 
 
 def SuccessYesNo(parent, text, **kwargs):
+    """Show a success dialog with Yes and No buttons."""
     return YesNo(parent, text, icon=":/Icons/img/icons/success.png", **kwargs)
 
 
 def ErrorOk(parent, text, **kwargs):
+    """Show an error dialog with OK button."""
     return Ok(parent, text, icon=":/Icons/img/icons/error.png", **kwargs)
 
 
 def ErrorOkCancel(parent, text, **kwargs):
+    """Show an error dialog with Ok and Cancel buttons."""
     return OkCancel(parent, text, icon=":/Icons/img/icons/error.png", **kwargs)
 
 
 def InfoOk(parent, text, **kwargs):
+    """Show an info dialog with OK button."""
     return Ok(parent, text, icon=":/Icons/img/icons/information.png", **kwargs)
 
 
 def InfoYesNo(parent, text, **kwargs):
+    """Show an info dialog with Yes and No buttons."""
     return YesNo(parent, text, icon=":/Icons/img/icons/information.png", **kwargs)

@@ -47,7 +47,7 @@ class NozzleOffsetPage(QWidget):
         ], "Nozzle Offset Page")
 
         # Connect buttons to their respective methods
-        self.nozzleOffsetBackButton.clicked.connect(lambda: self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(self.main_window.calibrate_screen.main_calibrate_page))
+        self.nozzleOffsetBackButton.clicked.connect(lambda: self.main_window.calibrate_screen.show_calibrate_screen())
         self.nozzleOffsetSetButton.clicked.connect(
             lambda: self.setZProbeOffset(self.nozzleOffsetDoubleSpinBox.value())
         )

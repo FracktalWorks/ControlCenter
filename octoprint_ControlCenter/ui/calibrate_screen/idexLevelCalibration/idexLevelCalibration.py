@@ -247,9 +247,7 @@ class IdexLevelCalibration(QWidget):
         logger.info("IdexLevelCalibration.idexDoneStep started")
         try:
             self.octoprint_client.jog(z=4, absolute=True, speed=1500)
-            self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
-                self.main_window.calibrate_screen.main_calibrate_page
-            )
+            self.main_window.calibrate_screen.show_calibrate_screen()
             self.movie9.stop()
             self.octoprint_client.home(['z'])
             self.octoprint_client.home(['x', 'y'])
@@ -270,9 +268,7 @@ class IdexLevelCalibration(QWidget):
     def idexCancelStep(self):
         logger.info("IdexLevelCalibration.idexCancelStep started")
         try:
-            self.main_window.calibrate_screen.calibration_stacked_widget.setCurrentWidget(
-                self.main_window.calibrate_screen.main_calibrate_page
-            )
+            self.main_window.calibrate_screen.show_calibrate_screen()
             try:
                 self.movie5.stop()
                 self.movie6.stop()

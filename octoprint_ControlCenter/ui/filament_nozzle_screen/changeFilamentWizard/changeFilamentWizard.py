@@ -1,4 +1,3 @@
-
 import os
 import time
 from PyQt5 import uic, QtCore
@@ -17,7 +16,7 @@ except AttributeError:
 logger = get_logger(__name__)
 
 
-class ChangeFilament(QWidget):
+class ChangeFilamentWizard(QWidget):
     """
     Widget for handling the filament change process in the UI.
     Handles UI state, button connections, and printer commands for loading/unloading filament.
@@ -39,11 +38,11 @@ class ChangeFilament(QWidget):
         # Load UI
         try:
             # Use relative path from the current module's directory
-            ui_file_path = os.path.join(os.path.dirname(__file__), "changeFilament.ui")
+            ui_file_path = os.path.join(os.path.dirname(__file__), "changeFilamentWizard.ui")
             uic.loadUi(ui_file_path, self)
-            self.logger.info("ChangeFilament UI loaded successfully")
+            self.logger.info("changeFilamentWizard UI loaded successfully")
         except Exception as e:
-            self.logger.error(f"Failed to load ChangeFilament UI file: {e}", exc_info=True)
+            self.logger.error(f"Failed to load changeFilamentWizard UI file: {e}", exc_info=True)
             return
 
         # Initialize UI components
@@ -58,7 +57,6 @@ class ChangeFilament(QWidget):
         self.changeFilamentBackButton3 = self.findChild(QPushButton, "changeFilamentBackButton3")
         self.changeFilamentLoadButton = self.findChild(QPushButton, "changeFilamentLoadButton")
         self.changeFilamentUnloadButton = self.findChild(QPushButton, "changeFilamentUnloadButton")
-        self.toolToggleChangeFilamentButton = self.findChild(QPushButton, "toolToggleChangeFilamentButton")
         self.loadedTillExtruderButton = self.findChild(QPushButton, "loadedTillExtruderButton")
         self.loadDoneButton = self.findChild(QPushButton, "loadDoneButton")
         self.unloadDoneButton = self.findChild(QPushButton, "unloadDoneButton")
@@ -72,14 +70,25 @@ class ChangeFilament(QWidget):
             self.stackedWidget, self.changeFilamentPage, self.changeFilamentProgressPage,
             self.changeFilamentLoadPage, self.changeFilamentExtrudePage, self.changeFilamentRetractPage,
             self.changeFilamentBackButton, self.changeFilamentBackButton2, self.changeFilamentBackButton3,
-            self.changeFilamentLoadButton, self.changeFilamentUnloadButton, self.toolToggleChangeFilamentButton,
+            self.changeFilamentLoadButton, self.changeFilamentUnloadButton,
             self.loadedTillExtruderButton, self.loadDoneButton, self.unloadDoneButton,
             self.changeFilamentComboBox, self.changeFilamentProgress, self.changeFilamentStatus
         ]
         check_ui_elements(self, components, "ChangeFilament")
 
-        # Connect signals to slots
-        self._connect_signals()
+        # Connect signals directly here (simplified)
+        # model signal
+        self.model.active_extruder_changed.connect(self.setActiveExtruder)
+
+        # UI button connections (fixed mapping; backButton2 uses same slot as backButton)
+        self.changeFilamentBackButton.clicked.connect(self.changeFilamentDone)
+        self.changeFilamentBackButton2.clicked.connect(self.changeFilamentDone)
+        self.changeFilamentBackButton3.clicked.connect(self.changeFilamentCancel)
+        self.changeFilamentLoadButton.clicked.connect(self.loadFilament)
+        self.changeFilamentUnloadButton.clicked.connect(self.unloadFilament)
+        self.loadedTillExtruderButton.clicked.connect(self.changeFilamentExtrudePageFunction)
+        self.loadDoneButton.clicked.connect(self.changeFilamentDone)
+        self.unloadDoneButton.clicked.connect(self.changeFilament)
 
         self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
         self.setActiveExtruder(0)  # Default to extruder 0
@@ -92,24 +101,6 @@ class ChangeFilament(QWidget):
             self.logger.debug("Reset stacked widget to changeFilamentPage on show")
         except Exception as e:
             self.logger.error(f"Error resetting to changeFilamentPage: {e}")
-
-    def _connect_signals(self):
-        """Connect all UI signals to their respective slots."""
-        self.model.active_extruder_changed.connect(self.setActiveExtruder)
-
-        button_slot_map = [
-            (self.changeFilamentBackButton, self.changeFilamentDone),
-            (self.changeFilamentBackButton2, self.changeFilamentCancel),
-            (self.changeFilamentBackButton3, self.changeFilamentCancel),
-            (self.changeFilamentLoadButton, self.loadFilament),
-            (self.changeFilamentUnloadButton, self.unloadFilament),
-            (self.toolToggleChangeFilamentButton, self.selectToolChangeFilament),
-            (self.loadedTillExtruderButton, self.changeFilamentExtrudePageFunction),
-            (self.loadDoneButton, self.changeFilamentDone),
-            (self.unloadDoneButton, self.changeFilament),
-        ]
-        for button, slot in button_slot_map:
-            button.clicked.connect(slot)
 
     def changeFilament(self):
         """
@@ -140,16 +131,15 @@ class ChangeFilament(QWidget):
 
     def selectToolChangeFilament(self):
         """
-        Select the tool whose temperature needs to be changed and update UI/button state.
+        Select the tool based on current activeExtruder (no UI toggle).
         """
         logger.info("changeFilament.selectToolChangeFilament started")
         try:
-            if self.toolToggleChangeFilamentButton.isChecked():
-                self.setActiveExtruder(1)
+            # Use the activeExtruder value (set by setup() or model signal) to select tool and jog
+            if int(self.activeExtruder) == 1:
                 self.octoprint_client.selectTool(1)
                 self.octoprint_client.jog(self.model.tool1PurgePosition['X'], self.model.tool1PurgePosition["Y"], absolute=True, speed=10000)
             else:
-                self.setActiveExtruder(0)
                 self.octoprint_client.selectTool(0)
                 self.octoprint_client.jog(self.model.tool0PurgePosition['X'], self.model.tool0PurgePosition["Y"], absolute=True, speed=10000)
             time.sleep(1)
@@ -166,7 +156,7 @@ class ChangeFilament(QWidget):
             self._disconnect_temperature_signal()
             if self.model.printer_status not in ["Printing", "Paused"]:
                 self.main_window.control_screen.coolDownAction()
-            self.main_window.switch_to_control_screen()
+            self.main_window.filament_nozzle_screen.show_material_nozzle_screen()     
             self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
             self.loadFlag = False
             self.changeFilamentHeatingFlag = False
@@ -361,27 +351,57 @@ class ChangeFilament(QWidget):
 
     def setActiveExtruder(self, activeNozzle):
         """
-        Set the active extruder and update the toggle button state.
-        Slot for the active_extruder_changed signal from the printer model.
+        Set the active extruder (slot for model signal or external caller).
         """
         logger.info("changeFilament.setActiveExtruder started")
         try:
             activeNozzle = int(activeNozzle)
-            self.toolToggleChangeFilamentButton.setChecked(activeNozzle == 1)
+            # UI toggle removed; just store activeExtruder
             self.activeExtruder = activeNozzle
         except Exception as e:
             logger.error(f"Error in changeFilament.setActiveExtruder: {e}")
             dialog.WarningOk(self, f"Error in changeFilament.setActiveExtruder: {e}", overlay=True)
 
+    # New setup API so ChangeFilamentNozzleScreen can pass which tool/bay opened the wizard
+    def setup(self, params=None):
+        """
+        Params can be:
+          - dict with 'tool': e.g. {"tool": "tool0"} or {"tool": "tool1"}
+          - str: e.g. "tool0" (legacy)
+          - None
+        """
+        try:
+            # Normalize params to a dict
+            if isinstance(params, str):
+                params = {'tool': params}
+            elif params is None:
+                params = {}
+            elif not isinstance(params, dict):
+                params = {}
+
+            # If a tool is provided, use it to set active extruder
+            tool = params.get('tool')
+            if isinstance(tool, str) and tool.startswith('tool'):
+                try:
+                    nozzle_index = int(tool.replace('tool', ''))
+                    self.setActiveExtruder(nozzle_index)
+                except Exception:
+                    # ignore malformed tool string
+                    pass
+            self.changeFilament()
+        except Exception as e:
+            logger.error(f"Error in ChangeFilament.setup: {e}", exc_info=True)
+            dialog.WarningOk(self, f"Error in ChangeFilament.setup: {e}", overlay=True)
+
     def changeFilamentDone(self):
         """
-        Complete the filament change process and return to the control screen.
+        Complete the filament change process and return to the main screen.
         """
         logger.info("ChangeFilament.changeFilamentDone started")
         try:
             self._disconnect_temperature_signal()
             self.stackedWidget.setCurrentWidget(self.changeFilamentPage)  # Stops retract and extruding loop as well
-            self.main_window.switch_to_control_screen()
+            self.main_window.filament_nozzle_screen.show_material_nozzle_screen()
             self.changeFilamentHeatingFlag = False
         except Exception as e:
             logger.error(f"Error in ChangeFilament.changeFilamentDone: {e}")

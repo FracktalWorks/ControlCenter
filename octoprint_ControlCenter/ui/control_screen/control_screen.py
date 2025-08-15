@@ -6,7 +6,6 @@ from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import QWidget, QPushButton, QSpinBox, QTabWidget, QToolButton
 from utils.helpers import check_ui_elements
-from ui.control_screen.changeFilament.changeFilament import ChangeFilament
 from utils.logger import get_logger
 from utils import dialog
 
@@ -42,16 +41,26 @@ class ControlScreen(QWidget):
         self.controlBackButton = self.findChild(QPushButton, "controlBackButton")
 
         # Tab widgets
-        self.feedRateTab = self.findChild(QWidget, "feedRateTab")
+        self.tuneTab = self.findChild(QWidget, "tuneTab")
         self.temperatureTab = self.findChild(QWidget, "temperatureTab")
         self.motionTab = self.findChild(QWidget, "motionTab")
-        self.filamentTab = self.findChild(QWidget, "filamentTab")
+        self.preferencesTab = self.findChild(QWidget, "preferencesTab")
 
-        # Feed rate controls
+        # Feed rate controls (now in tuneTab)
         self.feedRateSpinBox = self.findChild(QSpinBox, "feedRateSpinBox")
         self.setFeedRateButton = self.findChild(QPushButton, "setFeedRateButton")
         self.moveZPBabyStep = self.findChild(QPushButton, "moveZPBabyStep")
         self.moveZMBabyStep = self.findChild(QPushButton, "moveZMBabyStep")
+
+        # Flow rate controls (now in tuneTab)
+        self.flowRateSpinBox = self.findChild(QSpinBox, "flowRateSpinBox")
+        self.setFlowRateButton = self.findChild(QPushButton, "setFlowRateButton")
+
+        # Preferences controls
+        self.toggleFilamentOutageButton = self.findChild(QPushButton, "toggleFilamentOutageButton")
+        self.toggleFilamentJamButton = self.findChild(QPushButton, "toggleFilamentJamButton")
+        self.toggleAutoResumeButton = self.findChild(QPushButton, "toggleAutoResumeButton")
+        self.toggleCheckPrintCompatibilityButton = self.findChild(QPushButton, "toggleCheckPrintCompatibilityButton")
 
         # Temperature controls
         self.fanOnButton = self.findChild(QPushButton, "fanOnButton")
@@ -84,13 +93,6 @@ class ControlScreen(QWidget):
         self.extruderButton = self.findChild(QPushButton, "extruderButton")
         self.retractButton = self.findChild(QPushButton, "retractButton")
 
-        # Filament controls
-        self.flowRateSpinBox = self.findChild(QSpinBox, "flowRateSpinBox")
-        self.setFlowRateButton = self.findChild(QPushButton, "setFlowRateButton")
-
-        # Change Filament and Filament Sensor controls
-        self.changeFilamentButton = self.findChild(QToolButton, "changeFilamentButton")
-        self.toggleFilamentSensorButton = self.findChild(QToolButton, "toggleFilamentSensorButton")
 
         # Validate UI components
         check_ui_elements(self, [
@@ -101,8 +103,10 @@ class ControlScreen(QWidget):
             self.setBedTempButton, self.step1mmButton, self.step10mmButton,
             self.step100mmButton, self.moveXPButton, self.moveXMButton,
             self.moveYPButton, self.moveYMButton, self.flowRateSpinBox,
-            self.setFlowRateButton, self.toggleFilamentSensorButton,
-            self.feedRateTab, self.temperatureTab, self.motionTab, self.filamentTab
+            self.setFlowRateButton, 
+            self.tuneTab, self.temperatureTab, self.motionTab, self.preferencesTab,
+            self.toggleFilamentOutageButton, self.toggleFilamentJamButton,
+            self.toggleAutoResumeButton, self.toggleCheckPrintCompatibilityButton
         ], "ControlScreen")
 
         # set the active extruder to 0 initially
@@ -151,15 +155,19 @@ class ControlScreen(QWidget):
 
         # Filament Buttons Signal Connections
         self.setFlowRateButton.clicked.connect(lambda: self.octoprint_client.flowrate(self.flowRateSpinBox.value()))
-        self.toggleFilamentSensorButton.clicked.connect(self.toggleFilamentSensor)
 
         # Configure spinboxes
         for spinbox in [self.feedRateSpinBox, self.toolTempSpinBox, self.bedTempSpinBox, self.flowRateSpinBox]:
             if spinbox:
                 spinbox.lineEdit().setReadOnly(True)
-                spinbox.lineEdit().setDisabled(True)
+                # spinbox.lineEdit().setDisabled(True)
+                # Prevent text selection/highlighting by disabling focus
+                spinbox.setFocusPolicy(QtCore.Qt.NoFocus)
+                spinbox.lineEdit().setFocusPolicy(QtCore.Qt.NoFocus)
+                # Make the highlight color match the background
                 palette = QPalette()
-                palette.setColor(QPalette.Highlight, QColor(40, 40, 40))
+                palette.setColor(QPalette.Highlight, QColor(255, 255, 255))
+                palette.setColor(QPalette.HighlightedText, QColor(0, 0, 0))
                 spinbox.lineEdit().setPalette(palette)
 
         # Default to tab 0
@@ -168,80 +176,12 @@ class ControlScreen(QWidget):
         # Initialize filament sensor state
         self.filament_sensor_enabled = True
 
-        # local signal slot connections
-        self.main_window.printer_model.filament_sensor_triggered.connect(self.filamentSensorHandler)
+
         # Connect to printer model for status updates
         self.main_window.printer_model.status_updated.connect(self.buttonStatusUpdate)
+        self.main_window.printer_model.active_extruder_changed.connect(self.setActiveExtruder)
         self.logger.debug("Connected ControlScreen to printer model status updates")
 
-
-    def toggleFilamentSensor(self):
-        """
-        Toggles the filament sensor
-        """
-        logger.info("ControlScreen.toggleFilamentSensor started")
-        icon = 'filamentSensorOn' if self.toggleFilamentSensorButton.isChecked() else 'filamentSensorOff'
-        # Use relative path for icon
-        icon_path = os.path.join(os.path.dirname(__file__), "..", "resources", "img", "icons", icon)
-        self.toggleFilamentSensorButton.setIcon(QtGui.QIcon(_fromUtf8(icon_path)))
-        self.octoprint_client.gcode(
-            command="PRIMARY_SFS_ENABLE{}".format(int(self.toggleFilamentSensorButton.isChecked())))
-
-    def filamentSensorHandler(self, data):
-        """
-        Handles the filament sensor
-        """
-        logger.info("ControlScreen.filamentSensorHandler started")
-        change_filament_screen = self.screens.get("change_filament")
-        try:
-            print(data)
-
-            icon = 'filamentSensorOn' if self.toggleFilamentSensorButton.isChecked() else 'filamentSensorOff'
-            self.toggleFilamentSensorButton.setIcon(QtGui.QIcon(_fromUtf8("templates/img/" + icon)))
-
-            if not self.toggleFilamentSensorButton.isChecked():
-                return
-
-            triggered_extruder0 = False
-            triggered_extruder1 = False
-
-            if '0' in data:
-                triggered_extruder0 = True
-
-            if '1' in data:
-                triggered_extruder1 = True
-
-            if 'disabled' in data:
-                self.toggleFilamentSensorButton.setIcon(QtGui.QIcon(_fromUtf8("templates/img/filamentSensorOff")))
-
-            if 'enabled' in data:
-                self.toggleFilamentSensorButton.setIcon(QtGui.QIcon(_fromUtf8("templates/img/filamentSensorOn")))
-
-            if triggered_extruder0 and self.main_window.stacked_widget.currentWidget() not in [
-                change_filament_screen.changeFilamentPage,
-                change_filament_screen.changeFilamentProgressPage,
-                change_filament_screen.changeFilamentExtrudePage,
-                change_filament_screen.changeFilamentRetractPage,
-                change_filament_screen.changeFilamentLoadPage]:
-                self.octoprint_client.gcode(command='PAUSE')
-                if dialog.WarningOk(self,
-                                    "Filament outage or clog detected in Extruder 0. Please check the external motors. Print paused"):
-                    pass
-
-            if triggered_extruder1 and self.main_window.stacked_widget.currentWidget() not in [
-                change_filament_screen.changeFilamentPage,
-                change_filament_screen.changeFilamentProgressPage,
-                change_filament_screen.changeFilamentExtrudePage,
-                change_filament_screen.changeFilamentRetractPage,
-                change_filament_screen.changeFilamentLoadPage]:
-                self.octoprint_client.gcode(command='PAUSE')
-                if dialog.WarningOk(self,
-                                    "Filament outage or clog detected in Extruder 1. Please check the external motors. Print paused"):
-                    pass
-
-        except Exception as e:
-            logger.error("Error in ControlScreen.filamentSensorHandler: {}".format(e))
-            dialog.WarningOk(self, "Error in ControlScreen.filamentSensorHandler: {}".format(e), overlay=True)
 
     def coolDownAction(self):
         """'
@@ -399,3 +339,43 @@ class ControlScreen(QWidget):
         except Exception as e:
             logger.error(f"Error updating ControlScreen UI for status {status}: {e}")
             dialog.WarningOk(self, f"Error updating ControlScreen UI for status {status}: {e}", overlay=True)
+
+    def toggleFilamentOutage(self):
+        """Toggle filament outage sensor"""
+        logger.info("ControlScreen.toggleFilamentOutage started")
+        try:
+            # Add your filament outage sensor logic here
+            pass
+        except Exception as e:
+            logger.error(f"Error in ControlScreen.toggleFilamentOutage: {e}")
+            dialog.WarningOk(self, f"Error in ControlScreen.toggleFilamentOutage: {e}", overlay=True)
+
+    def toggleFilamentJam(self):
+        """Toggle filament jam sensor"""
+        logger.info("ControlScreen.toggleFilamentJam started")
+        try:
+            # Add your filament jam sensor logic here
+            pass
+        except Exception as e:
+            logger.error(f"Error in ControlScreen.toggleFilamentJam: {e}")
+            dialog.WarningOk(self, f"Error in ControlScreen.toggleFilamentJam: {e}", overlay=True)
+
+    def toggleAutoResume(self):
+        """Toggle auto-resume on power outage"""
+        logger.info("ControlScreen.toggleAutoResume started")
+        try:
+            # Add your auto-resume logic here
+            pass
+        except Exception as e:
+            logger.error(f"Error in ControlScreen.toggleAutoResume: {e}")
+            dialog.WarningOk(self, f"Error in ControlScreen.toggleAutoResume: {e}", overlay=True)
+
+    def toggleCheckPrintCompatibility(self):
+        """Toggle check print compatibility"""
+        logger.info("ControlScreen.toggleCheckPrintCompatibility started")
+        try:
+            # Add your print compatibility check logic here
+            pass
+        except Exception as e:
+            logger.error(f"Error in ControlScreen.toggleCheckPrintCompatibility: {e}")
+            dialog.WarningOk(self, f"Error in ControlScreen.toggleCheckPrintCompatibility: {e}", overlay=True)

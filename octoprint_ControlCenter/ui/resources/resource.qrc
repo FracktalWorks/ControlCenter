@@ -8,6 +8,7 @@
     <file>img/Logos/thumbnail.png</file>
   </qresource>
   <qresource prefix="Filament Paths">
+    <file>img/Filament Paths/singleLoaded.png</file>
     <file>img/Filament Paths/leftLoaded.png</file>
     <file>img/Filament Paths/noneLoaded.png</file>
     <file>img/Filament Paths/rightLoaded.png</file>
@@ -22,6 +23,7 @@
     <file>img/splash_2.png</file>
   </qresource>
   <qresource prefix="Icons">
+    <file>img/icons/pencil.png</file>
     <file>img/icons/switch-off.png</file>
     <file>img/icons/switch-on.png</file>
     <file>img/icons/tune.png</file>
