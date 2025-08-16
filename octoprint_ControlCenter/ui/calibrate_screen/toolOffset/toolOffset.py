@@ -144,7 +144,6 @@ class ToolOffset(QWidget):
             self.toolOffsetXDoubleSpinBox.setValue(float(self.toolOffsetX))
             self.toolOffsetYDoubleSpinBox.setValue(float(self.toolOffsetY))
             self.toolOffsetZDoubleSpinBox.setValue(float(self.toolOffsetZ))
-            self.idexToolOffsetRestoreValue = float(self.toolOffsetZ)
             print("____________________TOOL OFFSET CALLED END____________________")
         except Exception as e:
             logger.error("Error in ToolOffset.getToolOffset: {}".format(e))

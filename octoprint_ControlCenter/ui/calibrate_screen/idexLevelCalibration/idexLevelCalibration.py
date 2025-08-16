@@ -30,6 +30,8 @@ class IdexLevelCalibration(QWidget):
 
         # Initialize UI elements
         self.stacked_widget = self.findChild(QStackedWidget, "stackedWidget")
+        # Ensure compatibility with methods using self.stackedWidget
+        self.stackedWidget = self.stacked_widget
         self.idexConfigStep1Page = self.findChild(QWidget, "idexConfigStep1Page")
         self.idexConfigStep2Page = self.findChild(QWidget, "idexConfigStep2Page")
         self.idexConfigStep3Page = self.findChild(QWidget, "idexConfigStep3Page")
@@ -48,14 +50,15 @@ class IdexLevelCalibration(QWidget):
         self.idexConfigStep4CancelButton = self.findChild(QPushButton, "idexConfigStep4CancelButton")
         self.idexConfigStep5CancelButton = self.findChild(QPushButton, "idexConfigStep5CancelButton")
 
-        self.CalibrationPoint1_2 = self.findChild(QLabel, "CalibrationPoint1_2")
-        self.CalibrationPoint2_2 = self.findChild(QLabel, "CalibrationPoint2_2")
+        # Renamed UI elements
+        self.CalibrationPoint1 = self.findChild(QLabel, "CalibrationPoint1")
+        self.CalibrationPoint2 = self.findChild(QLabel, "CalibrationPoint2")
         self.CalibrationPoint3 = self.findChild(QLabel, "CalibrationPoint3")
-        self.Nozzlelevel1 = self.findChild(QLabel, "Nozzlelevel1")
-        self.Nozzlelevel2 = self.findChild(QLabel, "Nozzlelevel2")
+        self.NozzleLevel1 = self.findChild(QLabel, "NozzleLevel1")
+        self.NozzleLevel2 = self.findChild(QLabel, "NozzleLevel2")
 
-        self.moveZMIdexButton = self.findChild(QPushButton, "moveZMIdexButton")
-        self.moveZPIdexButton = self.findChild(QPushButton, "moveZPIdexButton")
+        self.moveZMinusButton = self.findChild(QPushButton, "moveZMinusButton")
+        self.moveZPlusButton = self.findChild(QPushButton, "moveZPlusButton")
 
         # Validate UI elements
         check_ui_elements(self, [
@@ -77,25 +80,28 @@ class IdexLevelCalibration(QWidget):
         self.idexConfigStep4CancelButton.clicked.connect(self.idexCancelStep)
         self.idexConfigStep5CancelButton.clicked.connect(self.idexCancelStep)
 
-        self.moveZMIdexButton.pressed.connect(lambda: self.octoprint_client.jog(z=-0.1))
-        self.moveZPIdexButton.pressed.connect(lambda: self.octoprint_client.jog(z=0.1))
+        # Z jog buttons (renamed)
+        self.moveZMinusButton.pressed.connect(lambda: self.octoprint_client.jog(z=-0.1))
+        self.moveZPlusButton.pressed.connect(lambda: self.octoprint_client.jog(z=0.1))
 
-        # Set the default screen
-        self.reset_wizard()
 
     def showEvent(self, event):
-        """Reset to the first step when the widget is shown."""
+        """Reset to the first step when the widget is shown and ensure GIF is loaded."""
         super().showEvent(event)
         try:
             self.stackedWidget.setCurrentWidget(self.idexConfigStep1Page)
+            # Lazily load and start the Step 1 GIF without triggering printer motions
+            if getattr(self, "movie1", None) is None:
+                gif_path = os.path.join(os.path.dirname(__file__), "resources", "Nozzlelevel1.gif")
+                if not os.path.exists(gif_path):
+                    self.logger.error(f"IDEX Calibration GIF missing: {gif_path}")
+                else:
+                    self.movie1 = QtGui.QMovie(gif_path)
+                    self.NozzleLevel1.setMovie(self.movie1)
+                    self.movie1.start()
             self.logger.info("IdexLevelCalibration showEvent: Reset to idexConfigStep1Page")
         except Exception as e:
             self.logger.error(f"Error in IdexLevelCalibration showEvent: {e}")
-
-    def reset_wizard(self):
-        """Reset the IDEX Level Calibration wizard to its initial state."""
-        self.stackedWidget.setCurrentWidget(self.idexConfigStep1Page)
-        self.logger.info("Bed Leveling wizard reset to initial state")
 
     def idexConfigStep1(self):
         """
@@ -114,16 +120,16 @@ class IdexLevelCalibration(QWidget):
             self.octoprint_client.gcode(command='T0')  # Set active tool to t0
             self.octoprint_client.gcode(command='M420 S0')  # Dissable mesh bed leveling for good measure
             self.stackedWidget.setCurrentWidget(self.idexConfigStep1Page)
-            self.movie5 = QtGui.QMovie(
-                os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "Nozzlelevel1.gif")
+            self.movie1 = QtGui.QMovie(
+                os.path.join(os.path.dirname(__file__), "resources", "Nozzlelevel1.gif")
             )
-            self.Nozzlelevel1.setMovie(self.movie5)
-            self.movie5.start()
+            self.NozzleLevel1.setMovie(self.movie1)
+            self.movie1.start()
         except Exception as e:
             logger.error("Error in IdexLevelCalibration.idexConfigStep1: {}".format(e))
             dialog.WarningOk(self, "Error in IdexLevelCalibration.idexConfigStep1: {}".format(e), overlay=True)
             try:
-                self.movie5.stop()
+                self.movie1.stop()
             except:
                 pass
 
@@ -141,18 +147,18 @@ class IdexLevelCalibration(QWidget):
                 absolute=True, speed=10000
             )
             self.octoprint_client.jog(z=0, absolute=True, speed=1500)
-            self.movie5.stop()
-            self.movie6 = QtGui.QMovie(
-                os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "CalibrationPoint1.gif")
+            self.movie1.stop()
+            self.movie2 = QtGui.QMovie(
+                os.path.join(os.path.dirname(__file__), "resources", "CalibrationPoint1.gif")
             )
-            self.CalibrationPoint1_2.setMovie(self.movie6)
-            self.movie6.start()
+            self.CalibrationPoint1.setMovie(self.movie2)
+            self.movie2.start()
         except Exception as e:
             logger.error("Error in IdexLevelCalibration.idexConfigStep2: {}".format(e))
             dialog.WarningOk(self, "Error in IdexLevelCalibration.idexConfigStep2: {}".format(e), overlay=True)
             try:
-                self.movie5.stop()
-                self.movie6.stop()
+                self.movie1.stop()
+                self.movie2.stop()
             except:
                 pass
 
@@ -170,18 +176,18 @@ class IdexLevelCalibration(QWidget):
                 absolute=True, speed=10000
             )
             self.octoprint_client.jog(z=0, absolute=True, speed=1500)
-            self.movie6.stop()
-            self.movie7 = QtGui.QMovie(
-                os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "CalibrationPoint2.gif")
+            self.movie2.stop()
+            self.movie3 = QtGui.QMovie(
+                os.path.join(os.path.dirname(__file__), "resources", "CalibrationPoint2.gif")
             )
-            self.CalibrationPoint2_2.setMovie(self.movie7)
-            self.movie7.start()
+            self.CalibrationPoint2.setMovie(self.movie3)
+            self.movie3.start()
         except Exception as e:
             logger.error("Error in IdexLevelCalibration.idexConfigStep3: {}".format(e))
             dialog.WarningOk(self, "Error in IdexLevelCalibration.idexConfigStep3: {}".format(e), overlay=True)
             try:
-                self.movie6.stop()
-                self.movie7.stop()
+                self.movie2.stop()
+                self.movie3.stop()
             except:
                 pass
 
@@ -200,18 +206,20 @@ class IdexLevelCalibration(QWidget):
                 y=self.main_window.printer_model.calibrationPosition['Y1'],
                 absolute=True, speed=10000
             )
-            self.movie7.stop()
-            self.movie8 = QtGui.QMovie(
-                os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "NozzleLevelNew1.gif")
-            )
-            self.CalibrationPoint3.setMovie(self.movie8)
-            self.movie8.start()
+            self.movie3.stop()
+            gif_path = os.path.join(os.path.dirname(__file__), "resources", "NozzleLevelNew1.gif")
+            if not os.path.exists(gif_path):
+                self.logger.error(f"IDEX Calibration GIF missing: {gif_path}")
+            else:
+                self.movie4 = QtGui.QMovie(gif_path)
+                self.CalibrationPoint3.setMovie(self.movie4)
+                self.movie4.start()
         except Exception as e:
             logger.error("Error in IdexLevelCalibration.idexConfigStep4: {}".format(e))
             dialog.WarningOk(self, "Error in IdexLevelCalibration.idexConfigStep4: {}".format(e), overlay=True)
             try:
-                self.movie7.stop()
-                self.movie8.stop()
+                self.movie3.stop()
+                self.movie4.stop()
             except:
                 pass
 
@@ -224,18 +232,20 @@ class IdexLevelCalibration(QWidget):
         try:
             self.stackedWidget.setCurrentWidget(self.idexConfigStep5Page)
             self.octoprint_client.jog(z=1, absolute=True, speed=10000)
-            self.movie8.stop()
-            self.movie9 = QtGui.QMovie(
-                os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "NozzlelevelNew2.gif")
-            )
-            self.Nozzlelevel2.setMovie(self.movie9)
-            self.movie9.start()
+            self.movie4.stop()
+            gif_path = os.path.join(os.path.dirname(__file__), "resources", "NozzlelevelNew2.gif")
+            if not os.path.exists(gif_path):
+                self.logger.error(f"IDEX Calibration GIF missing: {gif_path}")
+            else:
+                self.movie5 = QtGui.QMovie(gif_path)
+                self.NozzleLevel2.setMovie(self.movie5)
+                self.movie5.start()
         except Exception as e:
             logger.error("Error in IdexLevelCalibration.idexConfigStep5: {}".format(e))
             dialog.WarningOk(self, "Error in IdexLevelCalibration.idexConfigStep5: {}".format(e), overlay=True)
             try:
-                self.movie8.stop()
-                self.movie9.stop()
+                self.movie4.stop()
+                self.movie5.stop()
             except:
                 pass
 
@@ -248,7 +258,7 @@ class IdexLevelCalibration(QWidget):
         try:
             self.octoprint_client.jog(z=4, absolute=True, speed=1500)
             self.main_window.calibrate_screen.show_calibrate_screen()
-            self.movie9.stop()
+            self.movie5.stop()
             self.octoprint_client.home(['z'])
             self.octoprint_client.home(['x', 'y'])
             self.octoprint_client.gcode(command='M104 S0')
@@ -261,7 +271,7 @@ class IdexLevelCalibration(QWidget):
             logger.error("Error in IdexLevelCalibration.idexDoneStep: {}".format(e))
             dialog.WarningOk(self, "Error in IdexLevelCalibration.idexDoneStep: {}".format(e), overlay=True)
             try:
-                self.movie9.stop()
+                self.movie5.stop()
             except:
                 pass
 
@@ -270,11 +280,11 @@ class IdexLevelCalibration(QWidget):
         try:
             self.main_window.calibrate_screen.show_calibrate_screen()
             try:
+                self.movie1.stop()
+                self.movie2.stop()
+                self.movie3.stop()
+                self.movie4.stop()
                 self.movie5.stop()
-                self.movie6.stop()
-                self.movie7.stop()
-                self.movie8.stop()
-                self.movie9.stop()
             except:
                 pass
             self.octoprint_client.gcode(command='M605 S1')
@@ -282,11 +292,9 @@ class IdexLevelCalibration(QWidget):
             self.octoprint_client.home(['x', 'y'])
             self.octoprint_client.gcode(command='M104 S0')
             self.octoprint_client.gcode(command='M104 T1 S0')
-            self.main_window.calibrate_screen.screens.get("tool_offset")
+            # Fix incorrect attribute access to printer_model
             self.octoprint_client.gcode(
-                command='M218 T1 Z{}'.format(
-                    self.main_window.calibrate_screen.screens.get("tool_offset").idexToolOffsetRestoreValue
-                )
+                command='M218 T1 Z{}'.format(self.main_window.printer_model.tool_offsets['Z'])
             )
             self.octoprint_client.gcode(command='M84')
         except Exception as e:

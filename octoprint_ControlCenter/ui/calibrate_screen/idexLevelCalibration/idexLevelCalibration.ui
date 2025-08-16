@@ -160,7 +160,7 @@ QPushButton:focus {
       <bool>true</bool>
      </property>
     </widget>
-    <widget class="QLabel" name="Nozzlelevel1">
+    <widget class="QLabel" name="NozzleLevel1">
      <property name="geometry">
       <rect>
        <x>420</x>
@@ -308,7 +308,7 @@ QPushButton:focus {
       <bool>true</bool>
      </property>
     </widget>
-    <widget class="QLabel" name="CalibrationPoint1_2">
+    <widget class="QLabel" name="CalibrationPoint1">
      <property name="geometry">
       <rect>
        <x>420</x>
@@ -403,7 +403,7 @@ QPushButton:focus {
     </widget>
    </widget>
    <widget class="QWidget" name="idexConfigStep3Page">
-    <widget class="QLabel" name="CalibrationPoint2_2">
+    <widget class="QLabel" name="CalibrationPoint2">
      <property name="geometry">
       <rect>
        <x>420</x>
@@ -720,7 +720,7 @@ QPushButton:focus {
     </widget>
    </widget>
    <widget class="QWidget" name="idexConfigStep5Page">
-    <widget class="QPushButton" name="moveZPIdexButton">
+    <widget class="QPushButton" name="moveZPlusButton">
      <property name="geometry">
       <rect>
        <x>140</x>
@@ -847,7 +847,7 @@ QPushButton:focus {
       <bool>true</bool>
      </property>
     </widget>
-    <widget class="QPushButton" name="moveZMIdexButton">
+    <widget class="QPushButton" name="moveZMinusButton">
      <property name="geometry">
       <rect>
        <x>400</x>
@@ -997,7 +997,7 @@ QPushButton:focus {
       </size>
      </property>
     </widget>
-    <widget class="QLabel" name="Nozzlelevel2">
+    <widget class="QLabel" name="NozzleLevel2">
      <property name="geometry">
       <rect>
        <x>20</x>

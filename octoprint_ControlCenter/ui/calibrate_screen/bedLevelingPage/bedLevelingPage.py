@@ -82,9 +82,9 @@ class BedLeveling(QWidget):
 
         self.main_window.printer_model.z_tool_offset_updated.connect(self.setZToolOffset)
 
+        # Ensure state variables are initialized even if quickStep1 hasn't run yet
+        self.toolZOffsetCaliberationPageCount = 0
 
-        # Initialize to the first page
-        self.reset_wizard()
         # self.quickStep1()
         self.logger.info("Bed Leveling initialization complete")
 
@@ -137,7 +137,7 @@ class BedLeveling(QWidget):
             )
             self.octoprint_client.jog(z=0, absolute=True, speed=1500)
             self.movie1 = QtGui.QMovie(
-                os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "CalibrationPoint1.gif")
+                os.path.join(os.path.dirname(__file__), "resources", "CalibrationPoint1.gif")
             )
             self.CalibrationPoint1.setMovie(self.movie1)
             self.movie1.start()
@@ -165,7 +165,7 @@ class BedLeveling(QWidget):
             self.octoprint_client.jog(z=0, absolute=True, speed=1500)
             self.movie1.stop()
             self.movie2 = QtGui.QMovie(
-                os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "CalibrationPoint2.gif")
+                os.path.join(os.path.dirname(__file__), "resources", "CalibrationPoint2.gif")
             )
             self.CalibrationPoint2.setMovie(self.movie2)
             self.movie2.start()
@@ -196,7 +196,7 @@ class BedLeveling(QWidget):
             self.octoprint_client.jog(z=0, absolute=True, speed=1500)
             self.movie2.stop()
             self.movie3 = QtGui.QMovie(
-                os.path.join(os.path.dirname(__file__), "..", "..", "resources", "img", "Calibration", "CalibrationPoint3.gif")
+                os.path.join(os.path.dirname(__file__), "resources", "CalibrationPoint3.gif")
             )
             self.CalibrationPoint3.setMovie(self.movie3)
             self.movie3.start()
@@ -300,14 +300,6 @@ class BedLeveling(QWidget):
                 self.movie3.stop()
             except:
                 pass
-
-    def reset_wizard(self):
-        """
-        Function is called when the bed levelling class is initialized.
-        Sets quickStep1 Page as the first page
-        """
-        self.stackedWidget.setCurrentWidget(self.quickStep1Page)
-        self.logger.info("Bed Leveling wizard reset to initial state")
 
     def setZToolOffset(self, offset):
         """

@@ -55,12 +55,12 @@ class CalibrateScreen(QWidget):
         self._initialize_sub_screens()
 
         # Connect buttons to their respective methods
-        self.calibrationWizardButton.clicked.connect(lambda: self.navigate_to_bed_leveling())
+        self.calibrationWizardButton.clicked.connect(lambda: self.show_calibrate_screen("bed_leveling"))
         self.inputShaperCalibrateButton.clicked.connect(self.inputShaperCalibrate)
         self.nozzleOffsetButton.clicked.connect(lambda: self.show_calibrate_screen("nozzle_offset"))
-        self.toolOffsetZButton.clicked.connect(self._show_tool_offset_z)
-        self.toolOffsetXYButton.clicked.connect(self._show_tool_offset_xy)
-        self.idexCalibrationWizardButton.clicked.connect(self.navigate_to_idex_calibration)
+        self.toolOffsetZButton.clicked.connect(lambda: self.show_calibrate_screen("tool_offset", tab="Z"))
+        self.toolOffsetXYButton.clicked.connect(lambda: self.show_calibrate_screen("tool_offset", tab="XY"))
+        self.idexCalibrationWizardButton.clicked.connect(lambda: self.show_calibrate_screen("idex_calibration"))
         self.calibrateBackButton.clicked.connect(lambda: self.main_window.switch_to_menu_screen())
 
         # Show the main calibration page initially
@@ -105,36 +105,15 @@ class CalibrateScreen(QWidget):
             self.logger.error(error_message)
             dialog.WarningOk(error_message, overlay=True)
 
-    def _show_tool_offset_z(self):
-        """Show the tool offset screen with Z tab selected"""
-        self.show_calibrate_screen("tool_offset")
-        # Access the tool offset screen and set it to show Z tab
-        tool_offset_screen = self.screens.get("tool_offset")
-        if hasattr(tool_offset_screen, "toolOffsetZPage"):
-            tool_offset_screen.stackedWidget.setCurrentWidget(tool_offset_screen.toolOffsetZPage)
-            self.logger.debug("Showing Tool Offset Z tab")
-        else:
-            self.logger.error("Tool Offset Z page not found")
-
-    def _show_tool_offset_xy(self):
-        """Show the tool offset screen with XY tab selected"""
-        self.show_calibrate_screen("tool_offset")
-        # Access the tool offset screen and set it to show XY tab
-        tool_offset_screen = self.screens.get("tool_offset")
-        if hasattr(tool_offset_screen, "toolOffsetXYPage"):
-            tool_offset_screen.stackedWidget.setCurrentWidget(tool_offset_screen.toolOffsetXYPage)
-            self.logger.debug("Showing Tool Offset XY tab")
-        else:
-            self.logger.error("Tool Offset XY page not found")
-
-    def show_calibrate_screen(self, target_screen=None):
-        """Show a specific calibration screen or the main calibration page
+    def show_calibrate_screen(self, target_screen=None, tab=None):
+        """Show a specific calibration screen or the main calibration page.
 
         Args:
             target_screen: Optional string identifying which sub-screen to navigate to.
                            None means show the main calibration page.
+            tab: Optional sub-view selector. For 'tool_offset', accepts 'Z' or 'XY'.
         """
-        self.logger.debug(f"show_calibrate_screen called with target_screen={target_screen}")
+        self.logger.debug(f"show_calibrate_screen called with target_screen={target_screen}, tab={tab}")
 
         # Only switch to this screen in the main window if we're not already on it
         if self.main_window.current_screen != self:
@@ -146,6 +125,10 @@ class CalibrateScreen(QWidget):
             self.logger.debug("Showing main calibration page")
             return
 
+        # Refresh tool/nozzle offsets when entering related screens
+        self.octoprint_client.gcode(command='M503')
+
+
         # Check if the requested screen exists
         if target_screen not in self.screens:
             self.logger.error(f"Requested screen '{target_screen}' not found in available screens")
@@ -156,18 +139,16 @@ class CalibrateScreen(QWidget):
         self.calibration_stacked_widget.setCurrentWidget(screen)
         self.logger.info(f"Navigated to {target_screen}")
 
-    def navigate_to_bed_leveling(self):
-        """Open the Bed Leveling screen and reset the wizard."""
-        self.logger.info("Navigating to Bed Leveling screen")
-        bed_leveling_screen = self.screens.get("bed_leveling")
-        bed_leveling_screen.reset_wizard()
-        self.show_calibrate_screen("bed_leveling")
-        bed_leveling_screen.quickStep1()
-
-    def navigate_to_idex_calibration(self):
-        """Open the IDEX Level Calibration screen and reset the wizard."""
-        self.logger.info("Navigating to IDEX Level Calibration screen")
-        idex_calibration_screen = self.screens.get("idex_calibration")
-        idex_calibration_screen.reset_wizard()
-        self.show_calibrate_screen("idex_calibration")
-        idex_calibration_screen.idexConfigStep1()
+        # Handle sub-view/tab selection for tool_offset
+        if target_screen == "tool_offset" and tab:
+            try:
+                if tab == "Z" and hasattr(screen, "toolOffsetZPage"):
+                    screen.stackedWidget.setCurrentWidget(screen.toolOffsetZPage)
+                    self.logger.debug("Showing Tool Offset Z tab via show_calibrate_screen")
+                elif tab == "XY" and hasattr(screen, "toolOffsetXYPage"):
+                    screen.stackedWidget.setCurrentWidget(screen.toolOffsetXYPage)
+                    self.logger.debug("Showing Tool Offset XY tab via show_calibrate_screen")
+                else:
+                    self.logger.warning(f"Unrecognized or unavailable tab '{tab}' for tool_offset")
+            except Exception as e:
+                self.logger.error(f"Error setting tool_offset tab '{tab}': {e}")
