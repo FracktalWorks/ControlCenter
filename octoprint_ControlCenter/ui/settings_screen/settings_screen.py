@@ -48,10 +48,6 @@ class SettingsScreen(QWidget):
         self.restoreFactoryDefaultsButton = self.findChild(QPushButton, "restoreFactoryDefaultsButton")
         self.restartButton = self.findChild(QPushButton, "restartButton")
 
-        # Special widget handling for scroll area
-        self.scrollAreaWidgetContents = self.scrollArea.findChild(QWidget, 'scrollAreaWidgetContents')
-        self.verticalLayout = self.scrollAreaWidgetContents.findChild(QVBoxLayout, 'verticalLayout')
-        self.logger.debug("Found scrollAreaWidgetContents and verticalLayout")
 
         # Validate UI components using simplified check_ui_elements function
         check_ui_elements(self, [
@@ -63,10 +59,8 @@ class SettingsScreen(QWidget):
             self.softwareUpdateButton,
             self.restorePrintSettingsButton,
             self.restoreFactoryDefaultsButton,
-            self.restartButton,
-            self.scrollAreaWidgetContents,
-            self.verticalLayout
-        ], "Settings Screen")
+            self.restartButton
+            ], "Settings Screen")
 
         # Connect buttons to their respective functions directly
         self.backButton.clicked.connect(lambda: self.main_window.switch_to_menu_screen())
