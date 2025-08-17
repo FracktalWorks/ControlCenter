@@ -9,6 +9,7 @@ logger = get_logger(__name__)
 from utils import dialog
 # Use configuration from config.py
 import config
+from utils.printer_config_store import PrinterConfigStore
 
 class PrinterModel(QObject):
     """
@@ -33,6 +34,9 @@ class PrinterModel(QObject):
     update_log_result_signal = pyqtSignal(dict)  # ! REMAINING
     update_failed_signal = pyqtSignal(dict)  # ! REMAINING
     connected_signal = pyqtSignal()  # done
+    # Signals for tool-bay state persistence and UI sync
+    tool_bay_states_loaded = pyqtSignal(dict)      # {'tool0': {...}, 'tool1': {...}}
+    tool_bay_state_changed = pyqtSignal(str, str, dict) # tool, bay, bay_state
 
     def __init__(self):
         super(PrinterModel, self).__init__()
@@ -57,6 +61,21 @@ class PrinterModel(QObject):
         self.tool0PurgePosition = config.tool0PurgePosition
         self.tool1PurgePosition = config.tool1PurgePosition
         self.ptfeTubeLength = config.ptfeTubeLength
+        # Tool state persistence
+        # self.status_options = ["Empty", "Unknown", "Loaded", "Staged"]
+        self.status_options = ["Empty", "Loaded"]
+        self.nozzle_options = ["0.25", "0.4", "0.6", "0.8", "1.0"]
+        # Nested per-bay structure per tool; defaults reflect current A/B mapping
+        self.tools = {
+            "tool0": {
+                "material_bay_a": {"filament": None, "status": "Unknown", "nozzle": "Unknown"}
+            },
+            "tool1": {
+                "material_bay_x": {"filament": None, "status": "Unknown", "nozzle": "Unknown"}
+            },
+        }
+        self._config_store = PrinterConfigStore()
+        self._load_persistent_tool_state()
 
     def updateTemperature(self, temp_data):
         """ Updates the temperature data. Is a slot for the temperatures_updated signal. """
@@ -159,3 +178,80 @@ class PrinterModel(QObject):
     def updateFailed(self, update_info):
         self.updateData = update_info
         self.update_failed_signal.emit(update_info)
+
+    # --- Tool state persistence helpers ---
+    def _sanitize_bay_state(self, v: dict) -> dict:
+        filament = v.get("filament")
+        status = v.get("status", "Unknown")
+        nozzle = v.get("nozzle", "Unknown")
+        if status not in self.status_options:
+            status = "Unknown"
+        if nozzle not in self.nozzle_options and nozzle != "Unknown":
+            nozzle = "Unknown"
+        return {"filament": filament, "status": status, "nozzle": nozzle}
+
+    def _load_persistent_tool_state(self):
+        try:
+            state = self._config_store.load() or {}
+            tools = state.get("tools", {})
+            for tool_id in ("tool0", "tool1"):
+                # accept either new nested schema or legacy flat schema
+                raw = tools.get(tool_id, {})
+                if any(k in raw for k in ("filament", "status", "nozzle")):
+                    # legacy flat -> map to default bay
+                    bay = "material_bay_a" if tool_id == "tool0" else "material_bay_x"
+                    self.tools[tool_id][bay] = self._sanitize_bay_state(raw)
+                else:
+                    # new nested
+                    bays = {}
+                    for bay, v in raw.items():
+                        bays[bay] = self._sanitize_bay_state(v)
+                    # ensure at least default bay exists
+                    if not bays:
+                        bays = {("material_bay_a" if tool_id == "tool0" else "material_bay_x"): {"filament": None, "status": "Unknown", "nozzle": "Unknown"}}
+                    self.tools[tool_id] = bays
+            self.tool_bay_states_loaded.emit(self.tools.copy())
+            self.logger.info("Loaded persistent tool state")
+        except Exception as e:
+            self.logger.error(f"Failed loading persistent tool state: {e}")
+            self.tool_bay_states_loaded.emit(self.tools.copy())
+
+    def _persist_tool_state(self):
+        try:
+            payload = {"version": 1, "tools": self.tools}
+            self._config_store.save(payload)
+        except Exception as e:
+            self.logger.error(f"Failed to persist tool state: {e}")
+
+    def update_tool_bay_state(self, tool: str, bay: str = None, filament=None, status=None, nozzle=None, persist=True):
+        if tool not in ("tool0", "tool1"):
+            self.logger.error(f"Invalid tool: {tool}")
+            return
+        # Determine default bay if not provided
+        bay = bay or ("material_bay_a" if tool == "tool0" else "material_bay_x")
+        if tool not in self.tools:
+            self.tools[tool] = {}
+        if bay not in self.tools[tool]:
+            self.tools[tool][bay] = {"filament": None, "status": "Unknown", "nozzle": "Unknown"}
+        cur = dict(self.tools[tool][bay])
+        if filament is not None:
+            cur["filament"] = filament
+        if status is not None:
+            cur["status"] = status if status in self.status_options else "Unknown"
+        if nozzle is not None:
+            cur["nozzle"] = nozzle if (nozzle in self.nozzle_options or nozzle == "Unknown") else "Unknown"
+        self.tools[tool][bay] = cur
+        if persist:
+            self._persist_tool_state()
+        self.tool_bay_state_changed.emit(tool, bay, cur.copy())
+
+    # Backward-compatible wrapper
+    def set_tool_state(self, tool: str, bay: str = None, filament=None, status=None, nozzle=None, persist=True):
+        return self.update_tool_bay_state(tool, bay, filament, status, nozzle, persist)
+
+    # Convenience getters for primary bays used by current UI
+    def get_default_bay(self, tool: str) -> str:
+        return "material_bay_a" if tool == "tool0" else "material_bay_x"
+    def get_bay_state(self, tool: str, bay: str = None) -> dict:
+        bay = bay or self.get_default_bay(tool)
+        return self.tools.get(tool, {}).get(bay, {"filament": None, "status": "Unknown", "nozzle": "Unknown"})

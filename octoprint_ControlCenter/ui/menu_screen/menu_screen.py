@@ -69,7 +69,7 @@ class MenuScreen(QWidget):
         self.menuPrintButton.clicked.connect(lambda: self.main_window.switch_to_print_location_screen())
         self.menuControlButton.clicked.connect(lambda: self.main_window.switch_to_control_screen())
         self.menuCalibrateButton.clicked.connect(lambda: self.main_window.switch_to_calibrate_screen())
-        self.menuFilamentNozzleButton.clicked.connect(lambda: self.main_window.switch_to_filament_nozzle_screen())
+        self.menuFilamentNozzleButton.clicked.connect(lambda: self.main_window.switch_to_filament_management_screen())
         self.menuSettingsButton.clicked.connect(lambda: self.main_window.switch_to_settings_screen())
         self.menuBackButton.clicked.connect(lambda: self.main_window.switch_to_home_screen())
 

@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel
 from PyQt5 import uic
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
+from utils import dialog
 
 logger = get_logger(__name__)
 
@@ -67,9 +68,9 @@ class NozzleChangeWizard(QWidget):
         """Cancel the wizard and return to main screen"""
         self.logger.info("Nozzle change wizard cancelled")
         try:
-            # Get parent screen (ChangeFilamentNozzleScreen)
-            self.main_window.filament_nozzle_screen.material_nozzle_stacked_widget.setCurrentWidget(
-                self.main_window.filament_nozzle_screen.main_material_nozzle_page
+            # Get parent screen (filamentManagementScreen)
+            self.main_window.filament_management_screen.material_nozzle_stacked_widget.setCurrentWidget(
+                self.main_window.filament_management_screen.main_material_nozzle_page
             )  # Go back to main material/nozzle page       
         except Exception as e:
             self.logger.error(f"Error cancelling wizard: {e}")
@@ -87,6 +88,18 @@ class NozzleChangeWizard(QWidget):
                 self.detail_label.setText(f"Nozzle change for {self.current_tool.upper()} has been completed successfully.")
                 self.next_button.setText("Finish")
             elif self.wizard_step == 2:
+                # Ask for nozzle size selection (temporary until full UI step is added)
+                try:
+                    model = self.main_window.printer_model
+                    options = getattr(model, 'nozzle_options', ["0.25", "0.4", "0.6", "0.8", "1.0"])
+                    # Reuse a simple question dialog to inform the user; in real UI we'd present a combobox step
+                    # For now, default to 0.4 if unavailable
+                    chosen = options[1] if len(options) > 1 else options[0]
+                    # Persist nozzle change
+                    bay = model.get_default_bay(self.current_tool)
+                    model.update_tool_bay_state(self.current_tool, bay=bay, nozzle=chosen, persist=True)
+                except Exception as e:
+                    self.logger.warning(f"Failed to persist nozzle size: {e}")
                 self.cancel_wizard()  # Return to main screen
                 
         except Exception as e:

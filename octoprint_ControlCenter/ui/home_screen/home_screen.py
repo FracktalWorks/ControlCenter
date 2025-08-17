@@ -100,6 +100,12 @@ class HomeScreen(QWidget):
         self.main_window.printer_model.print_status_updated.connect(self.updatePrintStatus)
         self.main_window.printer_model.temperatures_updated.connect(self.updateTemperature)
         self.main_window.printer_model.active_extruder_changed.connect(self.setActiveExtruder)
+        # New: reflect loaded filament/nozzle
+        try:
+            self.main_window.printer_model.tool_bay_states_loaded.connect(self.on_tool_states_loaded)
+            self.main_window.printer_model.tool_bay_state_changed.connect(self.on_tool_state_changed)
+        except Exception as e:
+            self.logger.warning(f"Tool state signals not available: {e}")
 
         # Connect button signals to their handlers
         self.doorLockButton.clicked.connect(self.toggle_door_lock)
@@ -155,6 +161,14 @@ class HomeScreen(QWidget):
             self.printerStatus.setText("Connected")
             self.printerStatusColour.setStyleSheet(printer_status_green)
             self.setIPStatus()
+
+        # Initialize tool labels from model if available
+        try:
+            m = self.main_window.printer_model
+            if hasattr(m, 'tools'):
+                self.on_tool_states_loaded(m.tools)
+        except Exception as e:
+            self.logger.debug(f"Unable to init tool labels: {e}")
 
     def updatePrinterStatus(self, status):
         """Update the status bar and enable/disable relevant buttons.
@@ -460,3 +474,30 @@ class HomeScreen(QWidget):
         except Exception as e:
             self.logger.error("Error in HomeScreen.setActiveExtruder: {}".format(e))
             dialog.WarningOk(self, "Error in home_screen.setActiveExtruder: {}".format(e), overlay=True)
+
+    # --- New slots for tool state reflection on HomeScreen ---
+    def on_tool_states_loaded(self, states: dict):
+        m = self.main_window.printer_model
+        self._apply_tool("tool0", m.get_bay_state("tool0"))
+        self._apply_tool("tool1", m.get_bay_state("tool1"))
+
+    def on_tool_state_changed(self, tool: str, bay: str, data: dict):
+        if bay == self.main_window.printer_model.get_default_bay(tool):
+            self._apply_tool(tool, data)
+
+    def _apply_tool(self, tool: str, data: dict):
+        filament_val = data.get("filament")
+        status_val = data.get("status", "Unknown")
+        nozzle_val = data.get("nozzle", "Unknown")
+        if tool == "tool0":
+            lab_f, lab_n = getattr(self, 'tool0LoadedFilament', None), getattr(self, 'tool0LoadedNozzle', None)
+        else:
+            lab_f, lab_n = getattr(self, 'tool1LoadedFilament', None), getattr(self, 'tool1LoadedNozzle', None)
+        try:
+            if lab_f:
+                display_filament = "-" if status_val == "Empty" else (str(filament_val) if filament_val else "-")
+                lab_f.setText(display_filament)
+            if lab_n:
+                lab_n.setText("-" if nozzle_val == "Unknown" or not nozzle_val else f"{nozzle_val} mm")
+        except Exception as e:
+            self.logger.debug(f"Failed applying tool UI: {e}")

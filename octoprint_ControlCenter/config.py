@@ -33,11 +33,10 @@ filaments = [
     ("PVA", 210),
     ("TPU", 230),
     ("Nylon", 220),
-    ("PolyCarbonate", 240),
+    ("PC", 240),
     ("HIPS", 220),
     ("WoodFill", 220),
-    ("CopperFill", 200),
-    ("Breakaway", 220)
+    ("MetalFill", 200)
 ]
 
 filaments = OrderedDict(filaments)
@@ -49,6 +48,9 @@ calibrationPosition = {
     'X3': 303, 'Y3': 567,  # 310, 308
     'X4': 303, 'Y4': 20
 }
+
+machineBuildSize = {'X': 400, 'Y': 400, 'Z': 400}
+
 
 tool0PurgePosition = {'X': -27, 'Y': -112}
 tool1PurgePosition = {'X': 648, 'Y': -112}

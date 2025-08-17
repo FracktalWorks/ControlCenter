@@ -312,7 +312,7 @@ class MainController:
         # Handles the filament sensor
         # """
         # logger.info("ControlScreen.filamentSensorHandler started")
-        # change_filament_screen = self.main_window.filament_nozzle_screen.change_filament_screen
+        # change_filament_screen = self.main_window.filament_management_screen.change_filament_screen
         # try:
         #     print(data)
 
