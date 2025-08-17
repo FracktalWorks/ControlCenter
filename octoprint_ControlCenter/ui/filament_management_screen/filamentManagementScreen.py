@@ -306,7 +306,7 @@ class filamentManagementScreen(QWidget):
         except Exception:
             dialog_widget.setWindowTitle(f"Edit Tool State")
         # Make dialog larger and easier to read
-        dialog_widget.setMinimumSize(400, 250)
+        dialog_widget.setMinimumSize(450, 250)
         # Use shared dialog font (Gotham) for consistency with other dialogs (bumped +1pt)
         base_font = dialog.font(size=15)
         dialog_widget.setFont(base_font)
