@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>435</width>
-    <height>315</height>
+    <width>652</width>
+    <height>419</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -249,7 +249,7 @@ background-color: rgba(255, 255, 255, 0);</string>
            <item>
             <layout class="QHBoxLayout" name="tool0Layout">
              <property name="spacing">
-              <number>0</number>
+              <number>4</number>
              </property>
              <property name="rightMargin">
               <number>10</number>
@@ -492,12 +492,12 @@ background-color: rgba(0, 0, 0, 0);</string>
              <property name="minimumSize">
               <size>
                <width>1</width>
-               <height>20</height>
+               <height>2</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
-               <width>16777215</width>
+               <width>1</width>
                <height>60</height>
               </size>
              </property>
@@ -547,7 +547,7 @@ background-color: rgba(0, 0, 0, 0);</string>
            <item>
             <layout class="QHBoxLayout" name="tool1Layout">
              <property name="spacing">
-              <number>0</number>
+              <number>4</number>
              </property>
              <property name="rightMargin">
               <number>10</number>
@@ -795,7 +795,7 @@ background-color: rgba(0, 0, 0, 0);</string>
              </property>
              <property name="maximumSize">
               <size>
-               <width>16777215</width>
+               <width>1</width>
                <height>60</height>
               </size>
              </property>
@@ -845,7 +845,7 @@ background-color: rgba(0, 0, 0, 0);</string>
            <item>
             <layout class="QHBoxLayout" name="bedLayout">
              <property name="spacing">
-              <number>0</number>
+              <number>4</number>
              </property>
              <item>
               <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -1152,7 +1152,7 @@ background-color: rgb(255, 255, 255,0);</string>
              </property>
              <property name="maximumSize">
               <size>
-               <width>16777215</width>
+               <width>1</width>
                <height>60</height>
               </size>
              </property>

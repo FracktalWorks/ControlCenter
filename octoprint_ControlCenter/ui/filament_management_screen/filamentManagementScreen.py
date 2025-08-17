@@ -69,12 +69,12 @@ class filamentManagementScreen(QWidget):
         self.materialNozzleBackButton = self.findChild(QPushButton, "materialNozzleBackButton")
 
         # Validate UI components
+        # Validate only elements that exist (labels showing loaded filament were removed from the UI)
         check_ui_elements(self, [
             self.material_nozzle_stacked_widget, self.main_material_nozzle_page,
             self.changeTool0MaterialBayA, self.changeTool1MaterialBayX,
             self.changeTool0Button, self.changeTool1Button,
             self.materialNozzleBackButton,
-            self.tool0MaterialBayALabel, self.tool1MaterialBayXLabel,
             self.tool0MaterialBayAStateLabel, self.tool1MaterialBayXStateLabel,
             self.tool10MaterialBayAStateColor, self.tool11MaterialBayXStateColor,
             self.editTool0MaterialBayA, self.editTool1MaterialBayX
@@ -254,8 +254,9 @@ class filamentManagementScreen(QWidget):
         display_filament = "-" if status == "Empty" else str(filament)
         nozzle = data.get("nozzle", "Unknown")
         if tool == "tool0":
-            if self.tool0MaterialBayALabel:
-                self.tool0MaterialBayALabel.setText(display_filament)
+            # Show currently loaded material on the button itself
+            if self.changeTool0MaterialBayA:
+                self.changeTool0MaterialBayA.setText(display_filament)
             if self.tool0MaterialBayAStateLabel:
                 self.tool0MaterialBayAStateLabel.setText(str(status))
             if self.tool10MaterialBayAStateColor:
@@ -263,8 +264,8 @@ class filamentManagementScreen(QWidget):
             if self.changeTool0Button:
                 self.changeTool0Button.setText("Unknown" if nozzle == "Unknown" or not nozzle else f"{nozzle} mm")
         elif tool == "tool1":
-            if self.tool1MaterialBayXLabel:
-                self.tool1MaterialBayXLabel.setText(display_filament)
+            if self.changeTool1MaterialBayX:
+                self.changeTool1MaterialBayX.setText(display_filament)
             if self.tool1MaterialBayXStateLabel:
                 self.tool1MaterialBayXStateLabel.setText(str(status))
             if self.tool11MaterialBayXStateColor:
@@ -461,6 +462,17 @@ class filamentManagementScreen(QWidget):
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dialog_widget)
         try:
             buttons.setFont(base_font)
+            # Set OK/Cancel button fonts to an absolute 14px
+            for btn in buttons.buttons():
+                f = btn.font()
+                try:
+                    f.setPixelSize(14)
+                except Exception:
+                    try:
+                        f.setPointSize(14)
+                    except Exception:
+                        pass
+                btn.setFont(f)
         except Exception:
             pass
         form.addRow(buttons)

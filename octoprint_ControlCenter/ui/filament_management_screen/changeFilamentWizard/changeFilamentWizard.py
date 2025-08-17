@@ -81,14 +81,16 @@ class ChangeFilamentWizard(QWidget):
         self.model.active_extruder_changed.connect(self.setActiveExtruder)
 
         # UI button connections (fixed mapping; backButton2 uses same slot as backButton)
-        self.changeFilamentBackButton.clicked.connect(self.changeFilamentDone)
-        self.changeFilamentBackButton2.clicked.connect(self.changeFilamentDone)
+        # Back buttons should cancel without persisting any state
+        self.changeFilamentBackButton.clicked.connect(self.changeFilamentCancel)
+        self.changeFilamentBackButton2.clicked.connect(self.changeFilamentCancel)
         self.changeFilamentBackButton3.clicked.connect(self.changeFilamentCancel)
         self.changeFilamentLoadButton.clicked.connect(self.loadFilament)
         self.changeFilamentUnloadButton.clicked.connect(self.unloadFilament)
         self.loadedTillExtruderButton.clicked.connect(self.changeFilamentExtrudePageFunction)
         self.loadDoneButton.clicked.connect(self.changeFilamentDone)
-        self.unloadDoneButton.clicked.connect(self.changeFilament)
+        # On unload completion, finalize via changeFilamentDone (persists only if loadFlag was set)
+        self.unloadDoneButton.clicked.connect(self.changeFilamentDone)
 
         self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
         self.setActiveExtruder(0)  # Default to extruder 0
@@ -107,7 +109,8 @@ class ChangeFilamentWizard(QWidget):
         Initialize the change filament screen, populate filament options, and set the current extruder.
         """
         logger.info("ChangeFilament.changeFilament() started")
-        self.loadFlag = False
+        # None means no operation yet; set True on load, False on unload
+        self.loadFlag = None
         self.changeFilamentHeatingFlag = False
         self.loadStopFlag = True
         try:
@@ -158,7 +161,7 @@ class ChangeFilamentWizard(QWidget):
                 self.main_window.control_screen.coolDownAction()
             self.main_window.filament_management_screen.show_material_nozzle_screen()     
             self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
-            self.loadFlag = False
+            self.loadFlag = None
             self.changeFilamentHeatingFlag = False
         except Exception as e:
             logger.error(f"Error in ChangeFilament.changeFilamentCancel: {e}")
@@ -187,7 +190,8 @@ class ChangeFilamentWizard(QWidget):
             self.changeFilamentHeatingFlag = True
             self.loadFlag = True
         except Exception as e:
-            self.loadFlag = False
+            # On error, ensure no persistence happens if user taps Done
+            self.loadFlag = None
             self.changeFilamentHeatingFlag = False
             logger.error(f"Error in changeFilament.loadFilament: {e}")
             dialog.WarningOk(self, f"Error in changeFilament.loadFilament: {e}", overlay=True)
@@ -212,7 +216,8 @@ class ChangeFilamentWizard(QWidget):
             self.changeFilamentHeatingFlag = True
             self.loadFlag = False
         except Exception as e:
-            self.loadFlag = False
+            # On error, ensure no persistence happens if user taps Done
+            self.loadFlag = None
             self.changeFilamentHeatingFlag = False
             logger.error(f"Error in changeFilament.unloadFilament: {e}")
             dialog.WarningOk(self, f"Error in changeFilament.unloadFilament: {e}", overlay=True)
@@ -399,33 +404,36 @@ class ChangeFilamentWizard(QWidget):
         """
         logger.info("ChangeFilament.changeFilamentDone started")
         try:
-            # Persist tool state: set status and filament based on load/unload
-            try:
-                tool_key = f"tool{int(self.activeExtruder)}"
-                bay = self.main_window.printer_model.get_default_bay(tool_key)
-                # Determine selected filament name if any
-                selected = None
+            # Persist tool state only if a load/unload operation was initiated
+            if self.loadFlag is not None:
                 try:
-                    selected_text = self.changeFilamentComboBox.currentText()
-                    if selected_text and selected_text != "Loaded Filament":
-                        selected = selected_text
-                except Exception:
-                    # If combobox is unavailable, keep existing filament on load
+                    tool_key = f"tool{int(self.activeExtruder)}"
+                    bay = self.main_window.printer_model.get_default_bay(tool_key)
+                    # Determine selected filament name if any
                     selected = None
+                    try:
+                        selected_text = self.changeFilamentComboBox.currentText()
+                        if selected_text and selected_text != "Loaded Filament":
+                            selected = selected_text
+                    except Exception:
+                        # If combobox is unavailable, keep existing filament on load
+                        selected = None
 
-                if bool(self.loadFlag):
-                    # Loading: status Loaded; filament to selected (if provided), else unchanged
-                    self.model.update_tool_bay_state(tool_key, bay=bay, filament=selected, status="Loaded", persist=True)
-                else:
-                    # Unloading: status Empty; filament cleared
-                    self.model.update_tool_bay_state(tool_key, bay=bay, filament=None, status="Empty", persist=True)
-            except Exception as e:
-                logger.warning(f"Failed to persist tool state on filament change done: {e}")
+                    if bool(self.loadFlag):
+                        # Loading: status Loaded; filament to selected (if provided), else unchanged
+                        self.model.update_tool_bay_state(tool_key, bay=bay, filament=selected, status="Loaded", persist=True)
+                    else:
+                        # Unloading: status Empty; filament cleared
+                        self.model.update_tool_bay_state(tool_key, bay=bay, filament=None, status="Empty", persist=True)
+                except Exception as e:
+                    logger.warning(f"Failed to persist tool state on filament change done: {e}")
 
             self._disconnect_temperature_signal()
             self.stackedWidget.setCurrentWidget(self.changeFilamentPage)  # Stops retract and extruding loop as well
             self.main_window.filament_management_screen.show_material_nozzle_screen()
             self.changeFilamentHeatingFlag = False
+            # Reset the flag to avoid unintended reuse
+            self.loadFlag = None
         except Exception as e:
             logger.error(f"Error in ChangeFilament.changeFilamentDone: {e}")
             dialog.WarningOk(self, f"Error in ChangeFilament.changeFilamentDone: {e}", overlay=True)
