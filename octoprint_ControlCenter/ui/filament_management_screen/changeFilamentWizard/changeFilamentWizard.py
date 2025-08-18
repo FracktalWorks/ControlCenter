@@ -29,7 +29,12 @@ class ChangeFilamentWizard(QWidget):
         self.changeFilamentHeatingFlag = False
         self.loadFlag = None
         self.activeExtruder = 0  # Default to extruder 0
-        self.loadStopFlag = False
+
+        # Inactivity timer (5 minutes) to auto-cancel during async operations
+        self.INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000
+        self._inactivity_timer = QtCore.QTimer(self)
+        self._inactivity_timer.setSingleShot(True)
+        self._inactivity_timer.timeout.connect(self._on_inactivity_timeout)
 
         # Use centralized logger
         self.logger = get_logger(self.__class__.__name__)
@@ -95,6 +100,9 @@ class ChangeFilamentWizard(QWidget):
         self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
         self.setActiveExtruder(0)  # Default to extruder 0
 
+        # Install event filters on this widget and its children to track user activity
+        self._install_inactivity_event_filters()
+
     def showEvent(self, event):
         """Reset to changeFilamentPage whenever this widget is shown."""
         super().showEvent(event)
@@ -112,7 +120,6 @@ class ChangeFilamentWizard(QWidget):
         # None means no operation yet; set True on load, False on unload
         self.loadFlag = None
         self.changeFilamentHeatingFlag = False
-        self.loadStopFlag = True
         try:
             self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
             time.sleep(1)
@@ -156,6 +163,7 @@ class ChangeFilamentWizard(QWidget):
         """
         logger.info("ChangeFilament.changeFilamentCancel started")
         try:
+            self._stop_inactivity_timer()
             self._disconnect_temperature_signal()
             if self.model.printer_status not in ["Printing", "Paused"]:
                 self.main_window.control_screen.coolDownAction()
@@ -173,7 +181,6 @@ class ChangeFilamentWizard(QWidget):
         """
         logger.info("changeFilament.loadFilament started - Updated one")
         try:
-            self.loadStopFlag = False
             purge_pos = self.model.tool1PurgePosition if self.activeExtruder == 1 else self.model.tool0PurgePosition
             if self.model.printer_status not in ["Printing", "Paused"]:
                 self.octoprint_client.jog(purge_pos['X'], purge_pos["Y"], absolute=True, speed=10000)
@@ -230,6 +237,71 @@ class ChangeFilamentWizard(QWidget):
             # Signal was not connected, which is fine
             pass
 
+    def _install_inactivity_event_filters(self):
+        """Install event filters on this widget and all children to detect user input."""
+        try:
+            # Install on self
+            self.installEventFilter(self)
+            # And on all current children
+            for obj in self.findChildren(QtCore.QObject):
+                obj.installEventFilter(self)
+        except Exception as e:
+            self.logger.warning(f"Failed to install event filters for inactivity tracking: {e}")
+
+    def eventFilter(self, obj, event):
+        """Reset inactivity timer on any user input when timer is active."""
+        try:
+            if self._inactivity_timer.isActive():
+                et = event.type()
+                if et in (
+                    QtCore.QEvent.MouseButtonPress,
+                    QtCore.QEvent.MouseButtonRelease,
+                    QtCore.QEvent.MouseMove,
+                    QtCore.QEvent.Wheel,
+                    QtCore.QEvent.KeyPress,
+                    QtCore.QEvent.KeyRelease,
+                    QtCore.QEvent.TouchBegin,
+                    QtCore.QEvent.TouchUpdate,
+                    QtCore.QEvent.TouchEnd,
+                ):
+                    self._reset_inactivity_timer()
+        except Exception:
+            # Don't let the event filter break normal UI flow
+            pass
+        return super().eventFilter(obj, event)
+
+    def _start_inactivity_timer(self):
+        try:
+            # Ensure this runs on the UI thread
+            QtCore.QTimer.singleShot(0, lambda: self._inactivity_timer.start(self.INACTIVITY_TIMEOUT_MS))
+            self.logger.debug("Inactivity timer start requested")
+        except Exception as e:
+            self.logger.warning(f"Failed to start inactivity timer: {e}")
+
+    def _reset_inactivity_timer(self):
+        try:
+            if self._inactivity_timer.isActive():
+                QtCore.QTimer.singleShot(0, lambda: self._inactivity_timer.start(self.INACTIVITY_TIMEOUT_MS))
+        except Exception:
+            pass
+
+    def _stop_inactivity_timer(self):
+        try:
+            if self._inactivity_timer.isActive():
+                QtCore.QTimer.singleShot(0, lambda: self._inactivity_timer.stop())
+                self.logger.debug("Inactivity timer stop requested")
+        except Exception:
+            pass
+
+    def _on_inactivity_timeout(self):
+        """Auto-cancel the wizard and return to the main filament management screen."""
+        try:
+            self.logger.info("Inactivity timeout reached; auto-cancelling filament change wizard")
+            # This will also switch away from the async pages, causing their loops to exit
+            self.changeFilamentCancel()
+        except Exception as e:
+            self.logger.error(f"Error handling inactivity timeout: {e}")
+
     def updateTemperature(self, temp):
         """
         Update the temperature progress bar and trigger next step when heating is complete.
@@ -266,6 +338,7 @@ class ChangeFilamentWizard(QWidget):
         logger.info("ChangeFilament.changeFilamentLoadFunction started")
         try:
             self.stackedWidget.setCurrentWidget(self.changeFilamentLoadPage)
+            self._start_inactivity_timer()
             while self.stackedWidget.currentWidget() == self.changeFilamentLoadPage:
                 self.octoprint_client.gcode("G91")
                 self.octoprint_client.gcode("G1 E5 F500")
@@ -274,6 +347,8 @@ class ChangeFilamentWizard(QWidget):
         except Exception as e:
             logger.error(f"Error in ChangeFilament.changeFilamentLoadFunction: {e}")
             dialog.WarningOk(self, f"Error in ChangeFilament.changeFilamentLoadFunction: {e}", overlay=True)
+        finally:
+            self._stop_inactivity_timer()
 
     @run_async
     def changeFilamentExtrudePageFunction(self, *args, **kwargs):
@@ -284,6 +359,7 @@ class ChangeFilamentWizard(QWidget):
         try:
             print("______________________________Entered extrusion function____________________________")
             self.stackedWidget.setCurrentWidget(self.changeFilamentExtrudePage)
+            self._start_inactivity_timer()
             for i in range(int(self.model.ptfeTubeLength / 150)):
                 print("___________________________Entered the for loop______________________________")
                 self.octoprint_client.gcode("G91")
@@ -306,6 +382,8 @@ class ChangeFilamentWizard(QWidget):
         except Exception as e:
             logger.error(f"Error in ChangeFilament.changeFilamentExtrudePageFunction: {e}")
             dialog.WarningOk(self, f"Error in ChangeFilament.changeFilamentExtrudePageFunction: {e}", overlay=True)
+        finally:
+            self._stop_inactivity_timer()
 
     @run_async
     def changeFilamentRetractFunction(self):
@@ -316,6 +394,7 @@ class ChangeFilamentWizard(QWidget):
         try:
             print("______________________________Entered retraction function____________________________")
             self.stackedWidget.setCurrentWidget(self.changeFilamentRetractPage)
+            self._start_inactivity_timer()
             is_tpu = self.changeFilamentComboBox.currentText() == "TPU"
             feed = 300 if is_tpu else 600
             self.octoprint_client.gcode("G91")
@@ -347,6 +426,8 @@ class ChangeFilamentWizard(QWidget):
         except Exception as e:
             logger.error(f"Error in ChangeFilament.changeFilamentRetractFunction: {e}")
             dialog.WarningOk(self, f"Error in ChangeFilament.changeFilamentRetractFunction: {e}", overlay=True)
+        finally:
+            self._stop_inactivity_timer()
 
     def calcExtrudeTime(self, length, speed):
         """
@@ -404,6 +485,7 @@ class ChangeFilamentWizard(QWidget):
         """
         logger.info("ChangeFilament.changeFilamentDone started")
         try:
+            self._stop_inactivity_timer()
             # Persist tool state only if a load/unload operation was initiated
             if self.loadFlag is not None:
                 try:
