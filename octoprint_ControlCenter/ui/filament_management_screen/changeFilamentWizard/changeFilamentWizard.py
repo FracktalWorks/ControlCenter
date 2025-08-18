@@ -1,3 +1,48 @@
+"""
+Change Filament Wizard
+======================
+
+Overview
+--------
+This widget orchestrates the user flow for changing filament on the printer.
+It manages UI state transitions, temperature ramping, and printer motion/extrusion
+commands for both loading and unloading operations.
+
+Pages and flow
+--------------
+1. changeFilamentPage (landing)
+    - User chooses Load or Unload and selects a material (or "Loaded Filament").
+
+2. changeFilamentProgressPage (heating)
+    - Shows heating progress for the active tool. When target reached,
+      it automatically transitions to the next phase based on operation:
+         - Load: changeFilamentLoadPage
+         - Unload: changeFilamentRetractPage (after a small priming extrude)
+
+3. changeFilamentLoadPage (load assist)
+    - Continuously extrudes slowly to pull filament into the extruder.
+    - User can proceed to the next page to extrude to the nozzle tip.
+
+4. changeFilamentExtrudePage (advance to nozzle tip)
+    - Extrudes in larger steps until filament reaches the hotend and purges.
+
+5. changeFilamentRetractPage (unload assist)
+    - Performs tip shaping and retracts filament back through Bowden/PTFE.
+
+Inactivity timeout
+------------------
+An inactivity timer cancels the wizard after 5 minutes of no user input
+while on any of the active extrude/retract pages. Any mouse, keyboard, or touch
+activity resets the timer. On timeout, the wizard cancels and returns to the
+main filament management screen.
+
+Notes
+-----
+- Public method names and signal connections are preserved.
+- Async loops exit when the current page changes, so leaving a page
+  or cancelling stops motion commands safely.
+"""
+
 import os
 import time
 from PyQt5 import uic, QtCore
@@ -5,6 +50,10 @@ from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QComboBox, QPr
 from utils.helpers import check_ui_elements, run_async
 from utils.logger import get_logger
 from utils import dialog
+
+# UI/logic constants
+LOADED_FILAMENT_LABEL = "Loaded Filament"
+TPU_MATERIAL_NAME = "TPU"
 
 # Compatibility for PyQt5 string conversion
 try:
@@ -17,9 +66,13 @@ logger = get_logger(__name__)
 
 
 class ChangeFilamentWizard(QWidget):
-    """
-    Widget for handling the filament change process in the UI.
-    Handles UI state, button connections, and printer commands for loading/unloading filament.
+    """Wizard widget to guide the user through loading or unloading filament.
+
+    Responsibilities:
+    - Manage page navigation and wire UI signals.
+    - Coordinate heating and printer G-code commands.
+    - Provide async helper loops for pull-in, extrusion to nozzle, and retraction.
+    - Enforce a 5-minute inactivity timeout on action pages.
     """
     def __init__(self, main_window):
         super().__init__()
@@ -42,7 +95,6 @@ class ChangeFilamentWizard(QWidget):
 
         # Load UI
         try:
-            # Use relative path from the current module's directory
             ui_file_path = os.path.join(os.path.dirname(__file__), "changeFilamentWizard.ui")
             uic.loadUi(ui_file_path, self)
             self.logger.info("changeFilamentWizard UI loaded successfully")
@@ -82,11 +134,9 @@ class ChangeFilamentWizard(QWidget):
         check_ui_elements(self, components, "ChangeFilament")
 
         # Connect signals directly here (simplified)
-        # model signal
         self.model.active_extruder_changed.connect(self.setActiveExtruder)
 
-        # UI button connections (fixed mapping; backButton2 uses same slot as backButton)
-        # Back buttons should cancel without persisting any state
+        # UI button connections
         self.changeFilamentBackButton.clicked.connect(self.changeFilamentCancel)
         self.changeFilamentBackButton2.clicked.connect(self.changeFilamentCancel)
         self.changeFilamentBackButton3.clicked.connect(self.changeFilamentCancel)
@@ -94,17 +144,16 @@ class ChangeFilamentWizard(QWidget):
         self.changeFilamentUnloadButton.clicked.connect(self.unloadFilament)
         self.loadedTillExtruderButton.clicked.connect(self.changeFilamentExtrudePageFunction)
         self.loadDoneButton.clicked.connect(self.changeFilamentDone)
-        # On unload completion, finalize via changeFilamentDone (persists only if loadFlag was set)
         self.unloadDoneButton.clicked.connect(self.changeFilamentDone)
 
         self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
-        self.setActiveExtruder(0)  # Default to extruder 0
+        self.setActiveExtruder(0)
 
         # Install event filters on this widget and its children to track user activity
         self._install_inactivity_event_filters()
 
     def showEvent(self, event):
-        """Reset to changeFilamentPage whenever this widget is shown."""
+        """On show, reset to landing page to ensure a known state."""
         super().showEvent(event)
         try:
             self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
@@ -113,8 +162,10 @@ class ChangeFilamentWizard(QWidget):
             self.logger.error(f"Error resetting to changeFilamentPage: {e}")
 
     def changeFilament(self):
-        """
-        Initialize the change filament screen, populate filament options, and set the current extruder.
+        """Initialize landing page and populate material options.
+
+        Resets operation flags, homes if safe, selects the active tool,
+        and prepares the material selection list.
         """
         logger.info("ChangeFilament.changeFilament() started")
         # None means no operation yet; set True on load, False on unload
@@ -131,8 +182,8 @@ class ChangeFilamentWizard(QWidget):
             self.changeFilamentComboBox.addItems(self.model.filaments.keys())
             tool0TargetTemperature = self.model.temperatures.get('tool0Target', None)
             if tool0TargetTemperature and self.model.printer_status in ["Printing", "Paused"]:
-                self.changeFilamentComboBox.addItem("Loaded Filament")
-                index = self.changeFilamentComboBox.findText("Loaded Filament")
+                self.changeFilamentComboBox.addItem(LOADED_FILAMENT_LABEL)
+                index = self.changeFilamentComboBox.findText(LOADED_FILAMENT_LABEL)
                 if index >= 0:
                     self.changeFilamentComboBox.setCurrentIndex(index)
         except Exception as e:
@@ -140,9 +191,7 @@ class ChangeFilamentWizard(QWidget):
             dialog.WarningOk(self, f"Error in ChangeFilament.changeFilament: {e}", overlay=True)
 
     def selectToolChangeFilament(self):
-        """
-        Select the tool based on current activeExtruder (no UI toggle).
-        """
+        """Select the tool (T0/T1) for the current active extruder and jog to purge position."""
         logger.info("changeFilament.selectToolChangeFilament started")
         try:
             # Use the activeExtruder value (set by setup() or model signal) to select tool and jog
@@ -158,9 +207,7 @@ class ChangeFilamentWizard(QWidget):
             dialog.WarningOk(self, f"Error in changeFilament.selectToolChangeFilament: {e}", overlay=True)
 
     def changeFilamentCancel(self):
-        """
-        Cancel the filament change process and reset UI/state.
-        """
+        """Cancel the wizard, stop timers/signals, cool down (if idle), and return to main screen."""
         logger.info("ChangeFilament.changeFilamentCancel started")
         try:
             self._stop_inactivity_timer()
@@ -176,20 +223,13 @@ class ChangeFilamentWizard(QWidget):
             dialog.WarningOk(self, f"Error in ChangeFilament.changeFilamentCancel: {e}", overlay=True)
 
     def loadFilament(self):
-        """
-        Start the filament loading process: jog to purge position, set temperature, update UI.
-        """
+        """Begin Load flow: jog to purge position, set temp (if material selected), and heat."""
         logger.info("changeFilament.loadFilament started - Updated one")
         try:
-            purge_pos = self.model.tool1PurgePosition if self.activeExtruder == 1 else self.model.tool0PurgePosition
-            if self.model.printer_status not in ["Printing", "Paused"]:
-                self.octoprint_client.jog(purge_pos['X'], purge_pos["Y"], absolute=True, speed=10000)
-            print("Jogging done")
-            if self.changeFilamentComboBox.findText("Loaded Filament") == -1:
-                print("reached here")
-                tool_key = f"tool{self.activeExtruder}"
-                temp = self.model.filaments[str(self.changeFilamentComboBox.currentText())]
-                self.octoprint_client.setToolTemperature({tool_key: temp})
+            self._jog_to_purge_position()
+            self.logger.debug("Jogging to purge position done")
+            if self.changeFilamentComboBox.findText(LOADED_FILAMENT_LABEL) == -1:
+                self._maybe_set_tool_temperature()
             self.stackedWidget.setCurrentWidget(self.changeFilamentProgressPage)
             self.model.temperatures_updated.connect(self.updateTemperature)
             self.changeFilamentStatus.setText(f"Heating Tool {self.activeExtruder}, Please Wait...")
@@ -204,18 +244,12 @@ class ChangeFilamentWizard(QWidget):
             dialog.WarningOk(self, f"Error in changeFilament.loadFilament: {e}", overlay=True)
 
     def unloadFilament(self):
-        """
-        Start the filament unloading process: jog to purge position, set temperature, update UI.
-        """
+        """Begin Unload flow: jog to purge position, set temp (if material selected), and heat."""
         logger.info("changeFilament.unloadFilament started")
         try:
-            purge_pos = self.model.tool1PurgePosition if self.activeExtruder == 1 else self.model.tool0PurgePosition
-            if self.model.printer_status not in ["Printing", "Paused"]:
-                self.octoprint_client.jog(purge_pos['X'], purge_pos["Y"], absolute=True, speed=10000)
-            if self.changeFilamentComboBox.findText("Loaded Filament") == -1:
-                tool_key = f"tool{self.activeExtruder}"
-                temp = self.model.filaments[str(self.changeFilamentComboBox.currentText())]
-                self.octoprint_client.setToolTemperature({tool_key: temp})
+            self._jog_to_purge_position()
+            if self.changeFilamentComboBox.findText(LOADED_FILAMENT_LABEL) == -1:
+                self._maybe_set_tool_temperature()
             self.stackedWidget.setCurrentWidget(self.changeFilamentProgressPage)
             self.model.temperatures_updated.connect(self.updateTemperature)
             self.changeFilamentStatus.setText(f"Heating Tool {self.activeExtruder}, Please Wait...")
@@ -230,7 +264,7 @@ class ChangeFilamentWizard(QWidget):
             dialog.WarningOk(self, f"Error in changeFilament.unloadFilament: {e}", overlay=True)
 
     def _disconnect_temperature_signal(self):
-        """Disconnect the temperature update signal if connected."""
+        """Safely disconnect the temperature update signal if connected."""
         try:
             self.model.temperatures_updated.disconnect(self.updateTemperature)
         except TypeError:
@@ -238,7 +272,11 @@ class ChangeFilamentWizard(QWidget):
             pass
 
     def _install_inactivity_event_filters(self):
-        """Install event filters on this widget and all children to detect user input."""
+        """Install event filters on this widget and all children to detect user input.
+
+        Any relevant user interaction (mouse/keyboard/touch) resets the inactivity timer
+        while it's active.
+        """
         try:
             # Install on self
             self.installEventFilter(self)
@@ -249,7 +287,7 @@ class ChangeFilamentWizard(QWidget):
             self.logger.warning(f"Failed to install event filters for inactivity tracking: {e}")
 
     def eventFilter(self, obj, event):
-        """Reset inactivity timer on any user input when timer is active."""
+        """Reset inactivity timer when active and user interacts with the wizard."""
         try:
             if self._inactivity_timer.isActive():
                 et = event.type()
@@ -271,6 +309,7 @@ class ChangeFilamentWizard(QWidget):
         return super().eventFilter(obj, event)
 
     def _start_inactivity_timer(self):
+        """Start the inactivity timer (runs on UI thread)."""
         try:
             # Ensure this runs on the UI thread
             QtCore.QTimer.singleShot(0, lambda: self._inactivity_timer.start(self.INACTIVITY_TIMEOUT_MS))
@@ -279,6 +318,7 @@ class ChangeFilamentWizard(QWidget):
             self.logger.warning(f"Failed to start inactivity timer: {e}")
 
     def _reset_inactivity_timer(self):
+        """Reset the inactivity timer if it is currently running."""
         try:
             if self._inactivity_timer.isActive():
                 QtCore.QTimer.singleShot(0, lambda: self._inactivity_timer.start(self.INACTIVITY_TIMEOUT_MS))
@@ -286,6 +326,7 @@ class ChangeFilamentWizard(QWidget):
             pass
 
     def _stop_inactivity_timer(self):
+        """Stop the inactivity timer if it is running (thread-safe)."""
         try:
             if self._inactivity_timer.isActive():
                 QtCore.QTimer.singleShot(0, lambda: self._inactivity_timer.stop())
@@ -303,9 +344,7 @@ class ChangeFilamentWizard(QWidget):
             self.logger.error(f"Error handling inactivity timeout: {e}")
 
     def updateTemperature(self, temp):
-        """
-        Update the temperature progress bar and trigger next step when heating is complete.
-        """
+        """Update heating progress and advance to load/retract stage when ready."""
         try:
             if not self.changeFilamentHeatingFlag:
                 return
@@ -332,9 +371,7 @@ class ChangeFilamentWizard(QWidget):
 
     @run_async
     def changeFilamentLoadFunction(self):
-        """
-        Called after heating: slowly move extruder to pull filament in.
-        """
+        """After heating (Load): gently pull filament into the extruder in short steps."""
         logger.info("ChangeFilament.changeFilamentLoadFunction started")
         try:
             self.stackedWidget.setCurrentWidget(self.changeFilamentLoadPage)
@@ -352,33 +389,28 @@ class ChangeFilamentWizard(QWidget):
 
     @run_async
     def changeFilamentExtrudePageFunction(self, *args, **kwargs):
-        """
-        After loading, extrude filament until it reaches the toolhead.
-        """
+        """After loading, extrude until filament reaches nozzle and purges reliably."""
         logger.info("ChangeFilament.changeFilamentExtrudePageFunction started")
         try:
-            print("______________________________Entered extrusion function____________________________")
+            self.logger.debug("Entered extrusion loop to reach nozzle")
             self.stackedWidget.setCurrentWidget(self.changeFilamentExtrudePage)
             self._start_inactivity_timer()
             for i in range(int(self.model.ptfeTubeLength / 150)):
-                print("___________________________Entered the for loop______________________________")
                 self.octoprint_client.gcode("G91")
                 self.octoprint_client.gcode("G1 E150 F1500")
                 self.octoprint_client.gcode("G90")
                 time.sleep(self.calcExtrudeTime(150, 1500))
                 if self.stackedWidget.currentWidget() is not self.changeFilamentExtrudePage:
-                    print("___________________________widget not set____________________________")
+                    self.logger.debug("Extrude page left; stopping initial extrusion steps")
                     break
-            print("___________________________Exited the for loop______________________________")
+            self.logger.debug("Initial extrusion steps done; entering continuous purge loop")
             while self.stackedWidget.currentWidget() == self.changeFilamentExtrudePage:
-                print("___________________________Still extruding____________________________")
-                is_tpu = self.changeFilamentComboBox.currentText() == "TPU"
-                feed = 300 if is_tpu else 600
+                feed = 300 if self.changeFilamentComboBox.currentText() == TPU_MATERIAL_NAME else 600
                 self.octoprint_client.gcode("G91")
                 self.octoprint_client.gcode(f"G1 E20 F{feed}")
                 self.octoprint_client.gcode("G90")
                 time.sleep(self.calcExtrudeTime(20, feed))
-            print("___________________________Exited the while loop______________________________")
+            self.logger.debug("Extrude page loop exited")
         except Exception as e:
             logger.error(f"Error in ChangeFilament.changeFilamentExtrudePageFunction: {e}")
             dialog.WarningOk(self, f"Error in ChangeFilament.changeFilamentExtrudePageFunction: {e}", overlay=True)
@@ -387,16 +419,13 @@ class ChangeFilamentWizard(QWidget):
 
     @run_async
     def changeFilamentRetractFunction(self):
-        """
-        Remove the filament from the toolhead, including tip shaping and full retraction.
-        """
+        """After heating (Unload): tip-shape and retract filament through the tube."""
         logger.info("ChangeFilament.changeFilamentRetractFunction started")
         try:
-            print("______________________________Entered retraction function____________________________")
+            self.logger.debug("Entered retraction loop")
             self.stackedWidget.setCurrentWidget(self.changeFilamentRetractPage)
             self._start_inactivity_timer()
-            is_tpu = self.changeFilamentComboBox.currentText() == "TPU"
-            feed = 300 if is_tpu else 600
+            feed = 300 if self.changeFilamentComboBox.currentText() == TPU_MATERIAL_NAME else 600
             self.octoprint_client.gcode("G91")
             self.octoprint_client.gcode(f"G1 E10 F{feed}")
             time.sleep(self.calcExtrudeTime(10, feed))
@@ -407,22 +436,19 @@ class ChangeFilamentWizard(QWidget):
             time.sleep(self.calcExtrudeTime(150, 5000))
             self.octoprint_client.gcode("G90")
             for _ in range(int(self.model.ptfeTubeLength / 150)):
-                print("___________________________Entered the for loop______________________________")
                 self.octoprint_client.gcode("G91")
                 self.octoprint_client.gcode("G1 E-150 F2000")
                 self.octoprint_client.gcode("G90")
                 time.sleep(self.calcExtrudeTime(150, 2000))
                 if self.stackedWidget.currentWidget() is not self.changeFilamentRetractPage:
-                    print("___________________________widget not set____________________________")
+                    self.logger.debug("Retract page left; stopping tube retraction steps")
                     break
-
             while self.stackedWidget.currentWidget() == self.changeFilamentRetractPage:
-                print("___________________________Still retracting____________________________")
                 self.octoprint_client.gcode("G91")
                 self.octoprint_client.gcode("G1 E-5 F1000")
                 self.octoprint_client.gcode("G90")
                 time.sleep(self.calcExtrudeTime(5, 1000))
-            print("___________________________Exited the while loop______________________________")
+            self.logger.debug("Retract page loop exited")
         except Exception as e:
             logger.error(f"Error in ChangeFilament.changeFilamentRetractFunction: {e}")
             dialog.WarningOk(self, f"Error in ChangeFilament.changeFilamentRetractFunction: {e}", overlay=True)
@@ -430,15 +456,11 @@ class ChangeFilamentWizard(QWidget):
             self._stop_inactivity_timer()
 
     def calcExtrudeTime(self, length, speed):
-        """
-        Calculate the time in seconds to extrude a given length at a given speed (mm/min).
-        """
+        """Compute seconds required to extrude 'length' mm at 'speed' mm/min."""
         return length / (speed / 60)
 
     def setActiveExtruder(self, activeNozzle):
-        """
-        Set the active extruder (slot for model signal or external caller).
-        """
+        """Update current active extruder index (slot hooked to model signal)."""
         logger.info("changeFilament.setActiveExtruder started")
         try:
             activeNozzle = int(activeNozzle)
@@ -450,11 +472,12 @@ class ChangeFilamentWizard(QWidget):
 
     # New setup API so filamentManagementScreen can pass which tool/bay opened the wizard
     def setup(self, params=None):
-        """
+        """Prepare and open the wizard for a specific tool if provided.
+
         Params can be:
-          - dict with 'tool': e.g. {"tool": "tool0"} or {"tool": "tool1"}
-          - str: e.g. "tool0" (legacy)
-          - None
+            - dict with 'tool': e.g. {"tool": "tool0"} or {"tool": "tool1"}
+            - str: e.g. "tool0" (legacy)
+            - None
         """
         try:
             # Normalize params to a dict
@@ -480,9 +503,7 @@ class ChangeFilamentWizard(QWidget):
             dialog.WarningOk(self, f"Error in ChangeFilament.setup: {e}", overlay=True)
 
     def changeFilamentDone(self):
-        """
-        Complete the filament change process and return to the main screen.
-        """
+        """Finalize the operation, persist tool state, and return to main screen."""
         logger.info("ChangeFilament.changeFilamentDone started")
         try:
             self._stop_inactivity_timer()
@@ -519,3 +540,26 @@ class ChangeFilamentWizard(QWidget):
         except Exception as e:
             logger.error(f"Error in ChangeFilament.changeFilamentDone: {e}")
             dialog.WarningOk(self, f"Error in ChangeFilament.changeFilamentDone: {e}", overlay=True)
+
+    # ---------------------
+    # Internal helper utils
+    # ---------------------
+    def _jog_to_purge_position(self):
+        """Jog the printer to the purge position for the active extruder, if safe to move."""
+        try:
+            if self.model.printer_status not in ["Printing", "Paused"]:
+                purge_pos = self.model.tool1PurgePosition if self.activeExtruder == 1 else self.model.tool0PurgePosition
+                self.octoprint_client.jog(purge_pos['X'], purge_pos['Y'], absolute=True, speed=10000)
+        except Exception as e:
+            logger.error(f"Error jogging to purge position: {e}")
+
+    def _maybe_set_tool_temperature(self):
+        """If a material is selected (not the 'Loaded' placeholder), set the tool temperature."""
+        try:
+            selected = str(self.changeFilamentComboBox.currentText())
+            tool_key = f"tool{self.activeExtruder}"
+            temp = self.model.filaments.get(selected)
+            if temp is not None:
+                self.octoprint_client.setToolTemperature({tool_key: temp})
+        except Exception as e:
+            logger.error(f"Error setting tool temperature: {e}")
