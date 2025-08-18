@@ -37,7 +37,7 @@ class filamentManagementScreen(QWidget):
             uic.loadUi(ui_file_path, self)
             self.logger.info("filamentManagementScreen UI loaded successfully")
         except Exception as e:
-            self.logger.exception(f"Failed to load filamentManagementScreen UI file: {e}")
+            self.logger.error(f"Failed to load filamentManagementScreen UI file: {e}")
 
         # Initialize UI components
         self.material_nozzle_stacked_widget = self.findChild(QStackedWidget, "mainMaterialNozzleStackedWidget")
