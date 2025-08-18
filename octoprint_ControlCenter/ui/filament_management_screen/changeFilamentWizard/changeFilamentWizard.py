@@ -229,7 +229,7 @@ class ChangeFilamentWizard(QWidget):
             self._jog_to_purge_position()
             self.logger.debug("Jogging to purge position done")
             if self.changeFilamentComboBox.findText(LOADED_FILAMENT_LABEL) == -1:
-                self._maybe_set_tool_temperature()
+                self._set_tool_temperature()
             self.stackedWidget.setCurrentWidget(self.changeFilamentProgressPage)
             self.model.temperatures_updated.connect(self.updateTemperature)
             self.changeFilamentStatus.setText(f"Heating Tool {self.activeExtruder}, Please Wait...")
@@ -249,7 +249,7 @@ class ChangeFilamentWizard(QWidget):
         try:
             self._jog_to_purge_position()
             if self.changeFilamentComboBox.findText(LOADED_FILAMENT_LABEL) == -1:
-                self._maybe_set_tool_temperature()
+                self._set_tool_temperature()
             self.stackedWidget.setCurrentWidget(self.changeFilamentProgressPage)
             self.model.temperatures_updated.connect(self.updateTemperature)
             self.changeFilamentStatus.setText(f"Heating Tool {self.activeExtruder}, Please Wait...")
@@ -553,7 +553,7 @@ class ChangeFilamentWizard(QWidget):
         except Exception as e:
             logger.error(f"Error jogging to purge position: {e}")
 
-    def _maybe_set_tool_temperature(self):
+    def _set_tool_temperature(self):
         """If a material is selected (not the 'Loaded' placeholder), set the tool temperature."""
         try:
             selected = str(self.changeFilamentComboBox.currentText())
