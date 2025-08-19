@@ -520,8 +520,8 @@ class NozzleChangeWizard(QWidget):
 				self._awaiting_reconnect_validation = False
 				QtCore.QTimer.singleShot(200, lambda: self.goto_step(5))
 				return
-			# Allow up to 20 attempts total before failing
-			if self._temp_check_attempts >= 20 and self._temp_check_valid < 3:
+			# Allow up to 50 attempts total before failing
+			if self._temp_check_attempts >= 50 and self._temp_check_valid < 3:
 				self._temp_check_timer.stop()
 				try:
 					dialog.WarningOk(self, "There was a connection issue. Please recheck the connections.", overlay=True)
