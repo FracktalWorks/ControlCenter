@@ -34,6 +34,8 @@ class PrinterModel(QObject):
     update_log_result_signal = pyqtSignal(dict)  # ! REMAINING
     update_failed_signal = pyqtSignal(dict)  # ! REMAINING
     connected_signal = pyqtSignal()  # done
+    # Klipper state propagated from websocket via controller
+    klipper_state_changed = pyqtSignal(str)
     # Signals for tool-bay state persistence and UI sync
     tool_bay_states_loaded = pyqtSignal(dict)      # {'tool0': {...}, 'tool1': {...}}
     tool_bay_state_changed = pyqtSignal(str, str, dict) # tool, bay, bay_state
@@ -62,6 +64,8 @@ class PrinterModel(QObject):
         self.tool1PurgePosition = config.tool1PurgePosition
         self.ptfeTubeLength = config.ptfeTubeLength
         self.machineBuildSize = config.machineBuildSize
+        # Klipper state cache
+        self.klipper_state = "unknown"
         # Tool state persistence
         # self.status_options = ["Empty", "Unknown", "Loaded", "Staged"]
         self.status_options = ["Empty", "Loaded"]
@@ -256,3 +260,16 @@ class PrinterModel(QObject):
     def get_bay_state(self, tool: str, bay: str = None) -> dict:
         bay = bay or self.get_default_bay(tool)
         return self.tools.get(tool, {}).get(bay, {"filament": None, "status": "Unknown", "nozzle": "Unknown"})
+
+    # --- Klipper state updater ---
+    def update_klipper_state(self, state: str):
+        try:
+            norm = str(state).strip().lower() if state is not None else "unknown"
+            # Only emit if changed to avoid UI churn
+            if getattr(self, 'klipper_state', None) != norm:
+                self.klipper_state = norm
+                self.klipper_state_changed.emit(norm)
+        except Exception:
+            # Ensure we don't crash signal flow
+            self.klipper_state = str(state)
+            self.klipper_state_changed.emit(self.klipper_state)

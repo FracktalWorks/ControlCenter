@@ -21,10 +21,11 @@ What we will add next (placeholders exist)
 """
 
 import os
+import time
 from PyQt5 import uic, QtCore, QtGui
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel, QProgressBar, QComboBox
 
-from utils.helpers import check_ui_elements
+from utils.helpers import check_ui_elements, run_async
 from utils.logger import get_logger
 from utils import dialog
 # Use machineBuildSize from the printer model instead of importing config here
@@ -43,6 +44,13 @@ class NozzleChangeWizard(QWidget):
 	- Load instructional GIFs.
 	"""
 
+	# Step indices (0-based) for clarity
+	STEP_INTRO = 0
+	STEP_DISCONNECT = 1
+	STEP_REMOVE_NOZZLE = 2
+	STEP_SELECT_NOZZLE = 3
+	STEP_CHECK_CONNECTION = 4
+	STEP_DONE = 5
 	TOTAL_STEPS = 6
 
 	def __init__(self, main_window):
@@ -113,12 +121,33 @@ class NozzleChangeWizard(QWidget):
 		self._progress_timer.setInterval(50)  # ms
 		self._progress_timer.timeout.connect(self._advance_nozzle_check_progress)
 
+		# Connection handling flags (disconnect REST during step 2; keep WS running)
+		self._rest_was_disconnected = False
+		self._rest_reconnected = False
+		self._awaiting_reconnect_validation = False
+		self._reconnect_timeout_timer = QtCore.QTimer(self)
+		self._reconnect_timeout_timer.setSingleShot(True)
+		# Temp checking state for step 5
+		self._temp_check_timer = QtCore.QTimer(self)
+		self._temp_check_timer.setInterval(500)
+		self._temp_check_timer.timeout.connect(self._temp_check_tick)
+		self._temp_check_attempts = 0
+		self._temp_check_valid = 0
+
 		# Wire signals
 		self.nextButton.clicked.connect(self.on_next_clicked)
 		self.cancelButton.clicked.connect(self.on_cancel_clicked)
+		# Listen to Klipper state via the printer model (controller wires websocket -> model)
+		self._klipper_ready = False
+		self.model.klipper_state_changed.connect(self._on_klipper_state)
+		try:
+			ks = getattr(self.model, 'klipper_state', None)
+			self._on_klipper_state(ks)
+		except Exception:
+			pass
 
 		# Start at step 1
-		self.goto_step(0)
+		self.goto_step(self.STEP_INTRO)
 
 		# Preload GIFs from resources and hook page-change playback
 		self._resource_dir = os.path.join(os.path.dirname(__file__), "resources")
@@ -141,7 +170,7 @@ class NozzleChangeWizard(QWidget):
 		super().showEvent(event)
 		# Match ChangeFilamentWizard: keep showEvent light and only reset the UI
 		try:
-			self.goto_step(0)
+			self.goto_step(self.STEP_INTRO)
 			self.logger.debug("Reset stacked widget to step 1 on show")
 		except Exception as e:
 			self.logger.warning(f"Error resetting wizard on show: {e}")
@@ -152,53 +181,15 @@ class NozzleChangeWizard(QWidget):
 		# Reset movement gate so each entry can perform the initial move if safe
 		self._did_initial_move = False
 		try:
-			self.goto_step(0)
-			model = self.model
+			self.goto_step(self.STEP_INTRO)
 			tool_str = self.active_tool or "tool0"
-			# Preflight: filament must be unloaded
-			try:
-				state = model.get_bay_state(tool_str) or {}
-				if str(state.get('status')) == 'Loaded':
-					dialog.WarningOk(self, "Filament is loaded. Please unload filament before changing the nozzle.", overlay=True)
-					fms = getattr(self.main_window, "filament_management_screen", None)
-					if fms and hasattr(fms, "show_material_nozzle_screen"):
-						QtCore.QTimer.singleShot(0, lambda: fms.show_material_nozzle_screen())
-					return
-			except Exception:
-				pass
-			# Preflight: tool should be cool to touch
-			try:
-				temps = model.temperatures or {}
-				tool_idx = int(tool_str.replace('tool', '') or 0)
-				t = temps.get(f'tool{tool_idx}') or temps.get(f'tool{tool_idx}Actual')
-				if t is not None and float(t) > 50:
-					dialog.WarningOk(self, "Tool temperature is too high to touch (> 50°C). Please initiate cooling and wait for it to be cool enough to touch", overlay=True)
-					fms = getattr(self.main_window, "filament_management_screen", None)
-					if fms and hasattr(fms, "show_material_nozzle_screen"):
-						QtCore.QTimer.singleShot(0, lambda: fms.show_material_nozzle_screen())
-					return
-			except Exception:
-				pass
-			# Motion: if safe and idle, home and move to front-center (X/2, Y=0) and lower Z slightly
-			try:
-				status = (str(getattr(model, 'printer_status', '')) or '').lower()
-				if not self._did_initial_move and status not in ('printing', 'paused'):
-					size = model.machineBuildSize
-					x = int((size.get('X') or 0) / 2)
-					y = 0.0
-					if self.octoprint_client:
-						self.octoprint_client.gcode("G90")
-						self.octoprint_client.gcode("G28")
-						try:
-							tool_idx = int((self.active_tool or "tool0").replace("tool", "") or 0)
-							self.octoprint_client.selectTool(tool_idx)
-						except Exception:
-							pass
-						self.octoprint_client.jog(z=-10, absolute=False, speed=1800)
-						self.octoprint_client.jog(x=x, y=y, absolute=True, speed=6000)
-					self._did_initial_move = True
-			except Exception as move_err:
-				self.logger.warning(f"Initial move skipped: {move_err}")
+			# Preflight: filament unloaded and tool cool
+			if not self._check_filament_unloaded(tool_str):
+				return
+			if not self._check_tool_cool(tool_str):
+				return
+			# Motion: if safe and idle, home and move
+			self._perform_initial_move_if_safe()
 		except Exception as e:
 			self.logger.error(f"Error initializing nozzle change: {e}")
 
@@ -211,14 +202,21 @@ class NozzleChangeWizard(QWidget):
 			self.stackedWidget.setCurrentIndex(index)
 		self._update_step_label()
 
-		# Enter-step hooks
-		if index == 4:  # Step 5 page (0-based index)
-			self._start_nozzle_check()
+		# Step-specific connection handling
+		# Step 2 (index 1): disconnect printer via REST while keeping websocket running
+		if index == self.STEP_DISCONNECT:
+			self._disconnect_printer_soft()
+		# Step 5 handled in _begin_reconnect_validation
+
+		# Enter/leave step-specific hooks
+		if index == self.STEP_CHECK_CONNECTION:  # Step 5 page (0-based index)
+			self._begin_reconnect_validation()
 		else:
+			self._teardown_step5_connections()
 			self._stop_nozzle_check()
 
 		# Step 4 setup/teardown
-		if index == 3:
+		if index == self.STEP_SELECT_NOZZLE:
 			self._prepare_step4()
 		else:
 			self._teardown_step4()
@@ -226,38 +224,32 @@ class NozzleChangeWizard(QWidget):
 
 		# Enable/disable Next based on step and update label
 		if self.nextButton:
-			if index == 4:
-				self.nextButton.setEnabled(False)
-			elif index == 3:
-				enabled = bool(self.changeNozzleComboBox and self.changeNozzleComboBox.currentIndex() > 0)
-				self.nextButton.setEnabled(enabled)
+			if index == self.STEP_CHECK_CONNECTION:
+				self._enable_next(False)
+			elif index == self.STEP_SELECT_NOZZLE:
+				self._enable_next(bool(self.changeNozzleComboBox and self.changeNozzleComboBox.currentIndex() > 0))
 			else:
-				self.nextButton.setEnabled(True)
-			self.nextButton.setText("Done" if index == self.TOTAL_STEPS - 1 else "Next")
+				self._enable_next(True)
+			self.nextButton.setText("Done" if index == self.STEP_DONE else "Next")
 
 	def on_next_clicked(self):
 		try:
 			# If we are on the last step, treat Next as Done
-			if self._current_step >= self.TOTAL_STEPS - 1:
+			if self._current_step >= self.STEP_DONE:
 				self.on_finish_clicked()
 				return
 			# Enforce selection and persist nozzle (step 4)
-			if self._current_step == 3:
+			if self._current_step == self.STEP_SELECT_NOZZLE:
 				if not self.changeNozzleComboBox or self.changeNozzleComboBox.currentIndex() <= 0:
-					try:
-						dialog.WarningOk(self, "Please select a nozzle size to continue.", overlay=True)
-					except Exception:
-						pass
+					dialog.WarningOk(self, "Please select a nozzle size to continue.", overlay=True)
 					return
 				nozzle = self.changeNozzleComboBox.currentText()
 				try:
-					model = getattr(self.main_window, 'printer_model', self.model)
-					if model and hasattr(model, 'update_tool_bay_state'):
-						model.update_tool_bay_state(self.active_tool, nozzle=nozzle, persist=True)
-						self.logger.info(f"Persisted nozzle '{nozzle}' for {self.active_tool}")
+					self.model.update_tool_bay_state(self.active_tool, nozzle=nozzle, persist=True)
+					self.logger.info(f"Persisted nozzle '{nozzle}' for {self.active_tool}")
 				except Exception as e:
 					self.logger.warning(f"Unable to persist nozzle selection: {e}")
-			# If we are on step 5 (index 4), Next is disabled until progress completes.
+			# If we are on step 5, Next is disabled until progress completes.
 			self.goto_step(self._current_step + 1)
 		except Exception as e:
 			self.logger.error(f"Error advancing to next step: {e}")
@@ -265,6 +257,9 @@ class NozzleChangeWizard(QWidget):
 	def on_cancel_clicked(self):
 		try:
 			self._stop_nozzle_check()
+			# If we previously disconnected in step 2 and haven't reconnected, reconnect now
+			if self._rest_was_disconnected and not self._rest_reconnected:
+				self._connect_printer_soft()
 			# Return to the filament management screen if available
 			fms = getattr(self.main_window, "filament_management_screen", None)
 			if fms and hasattr(fms, "show_material_nozzle_screen"):
@@ -285,13 +280,9 @@ class NozzleChangeWizard(QWidget):
 	# ----- Step 5: Nozzle connection check (simulated) -------------------
 	def _start_nozzle_check(self):
 		try:
-			if self.step5Label:
-				self.step5Label.setText("Checking Nozzle Connection ...")
-			if self.nozzleCheckProgressBar:
-				self.nozzleCheckProgressBar.setValue(0)
+			self._set_step5_status("Checking Nozzle Connection ...", 0)
 			self._progress_timer.start()
-			if self.nextButton:
-				self.nextButton.setEnabled(False)
+			self._enable_next(False)
 		except Exception as e:
 			self.logger.warning(f"Failed to start nozzle check simulation: {e}")
 
@@ -317,9 +308,9 @@ class NozzleChangeWizard(QWidget):
 		try:
 			if self._progress_timer.isActive():
 				self._progress_timer.stop()
-			if self.nextButton and self._current_step != 4:
-				# Re-enable Next outside of step 5
-				self.nextButton.setEnabled(True)
+			# Re-enable Next outside of step 5
+			if self._current_step != self.STEP_CHECK_CONNECTION:
+				self._enable_next(True)
 		except Exception:
 			pass
 
@@ -327,6 +318,9 @@ class NozzleChangeWizard(QWidget):
 		"""Finish the wizard and return to the main Material/Nozzle page."""
 		try:
 			self._stop_nozzle_check()
+			# Ensure we reconnect if we had disconnected earlier
+			if self._rest_was_disconnected and not self._rest_reconnected:
+				self._connect_printer_soft()
 			fms = getattr(self.main_window, "filament_management_screen", None)
 			if fms and hasattr(fms, "show_material_nozzle_screen"):
 				fms.show_material_nozzle_screen()
@@ -383,6 +377,183 @@ class NozzleChangeWizard(QWidget):
 			self._play_gif_for_page(idx, restart=True)
 		except Exception:
 			pass
+
+	def _on_klipper_state(self, state: str):
+		self._klipper_ready = (str(state).strip().lower() == 'ready')
+
+	# ----- Step 5: reconnect and validate temperature ---------------------
+	def _begin_reconnect_validation(self):
+		"""On step 5, reconnect to printer, wait for Operational, reselect tool, validate temp, then advance or go back."""
+		try:
+			# Update UI for connection phase
+			self._set_step5_status("Connecting to printer ...", 10)
+			# Guard against multiple connections
+			self._awaiting_reconnect_validation = True
+			self._temp_check_attempts = 0
+			self._temp_check_valid = 0
+			# Fire the (soft) reconnect sequence
+			self._connect_printer_soft()
+			# Start async waiter for Operational + Klipper ready before any printer ops
+			self._wait_for_ready_async()
+		except Exception as e:
+			self.logger.warning(f"Failed to begin reconnect validation: {e}")
+
+	def _teardown_step5_connections(self):
+		try:
+			if self._reconnect_timeout_timer.isActive():
+				self._reconnect_timeout_timer.stop()
+			if self._temp_check_timer.isActive():
+				self._temp_check_timer.stop()
+			self._awaiting_reconnect_validation = False
+		except Exception:
+			pass
+
+	@run_async
+	def _wait_for_ready_async(self):
+		"""Background wait until printer is Operational and Klipper is ready, or timeout."""
+		deadline = time.time() + 60.0
+		ready = False
+		while time.time() < deadline and self._awaiting_reconnect_validation:
+			try:
+				status = str(getattr(self.model, 'printer_status', '')).strip().lower()
+				if status == 'operational' and self._klipper_ready:
+					ready = True
+					break
+			except Exception:
+				pass
+			time.sleep(1)
+		if not self._awaiting_reconnect_validation:
+			return
+		if not ready:
+			QtCore.QTimer.singleShot(0, lambda: self._handle_reconnect_failure("Unable to reconnect to the printer. Please check connections and try again."))
+			return
+		# Ready: proceed on main thread
+		QtCore.QTimer.singleShot(0, self._on_ready_then_check)
+
+	def _on_ready_then_check(self):
+		if not self._awaiting_reconnect_validation:
+			return
+		# Update UI and progress
+		self._set_step5_status("Connected. Checking nozzle temperature ...", 70)
+		# Select the correct tool now that Klipper is ready
+		try:
+			tool_idx = int((self.active_tool or "tool0").replace("tool", "") or 0)
+			self.octoprint_client.selectTool(tool_idx)
+		except Exception:
+			pass
+		# Start temperature validation shortly
+		QtCore.QTimer.singleShot(500, self._validate_reconnect_temperature)
+
+	def _handle_reconnect_failure(self, message: str):
+		self._awaiting_reconnect_validation = False
+		try:
+			dialog.WarningOk(self, message, overlay=True)
+			QtCore.QTimer.singleShot(0, lambda: self.goto_step(3))
+		except Exception:
+			pass
+
+	def _validate_reconnect_temperature(self):
+		"""Start periodic temperature sampling to avoid junk readings and reflect progress."""
+		if not self._awaiting_reconnect_validation:
+			return
+		try:
+			# Initialize sampling counters
+			self._temp_check_attempts = 0
+			self._temp_check_valid = 0
+			self._set_step5_status(None, 75)
+			self._temp_check_timer.start()
+		except Exception as e:
+			self.logger.warning(f"Failed to start temperature sampling: {e}")
+
+	def _temp_check_tick(self):
+		if not self._awaiting_reconnect_validation:
+			self._temp_check_timer.stop()
+			return
+		try:
+			self._temp_check_attempts += 1
+			tool_idx = int((self.active_tool or "tool0").replace("tool", "") or 0)
+			temps = getattr(self.model, 'temperatures', {}) or {}
+			actual = temps.get(f'tool{tool_idx}Actual')
+			try:
+				actual_val = float(actual) if actual is not None else None
+			except Exception:
+				actual_val = None
+			if actual_val is not None and 15 <= actual_val <= 50:
+				self._temp_check_valid += 1
+				# Increase progress for valid samples towards 100
+				if self.nozzleCheckProgressBar:
+					base = 75
+					inc = min(self._temp_check_valid, 3) * 8  # 75 -> 99 over 3 valid samples
+					self.nozzleCheckProgressBar.setValue(min(base + inc, 99))
+			# Decide outcome
+			if self._temp_check_valid >= 3:
+				self._temp_check_timer.stop()
+				self._set_step5_status("Nozzle connection OK", 100)
+				self._awaiting_reconnect_validation = False
+				QtCore.QTimer.singleShot(200, lambda: self.goto_step(5))
+				return
+			# Allow up to 6 attempts total before failing
+			if self._temp_check_attempts >= 6 and self._temp_check_valid < 3:
+				self._temp_check_timer.stop()
+				try:
+					dialog.WarningOk(self, "There was a connection issue. Please recheck the connections.", overlay=True)
+					QtCore.QTimer.singleShot(0, lambda: self.goto_step(3))
+				finally:
+					self._awaiting_reconnect_validation = False
+		except Exception as e:
+			self._temp_check_timer.stop()
+			self._awaiting_reconnect_validation = False
+			self.logger.warning(f"Temperature sampling failed: {e}")
+
+	def _on_reconnect_timeout(self):
+		# Could not reach Operational in time
+		self._reconnect_timeout_timer.stop()
+		if not self._awaiting_reconnect_validation:
+			return
+		try:
+			dialog.WarningOk(self, "Unable to reconnect to the printer. Please check connections and try again.", overlay=True)
+			QtCore.QTimer.singleShot(0, lambda: self.goto_step(3))
+		finally:
+			self._awaiting_reconnect_validation = False
+
+	# ----- Connection helpers --------------------------------------------
+	def _disconnect_printer_soft(self):
+		"""Disconnect the printer via REST, keeping our websocket client running."""
+		if not self.octoprint_client:
+			return
+		try:
+			self.octoprint_client.disconnect()
+			self._rest_was_disconnected = True
+			self._rest_reconnected = False
+			self.logger.info("OctoPrint REST: disconnect command sent (websocket remains connected)")
+		except Exception as e:
+			self.logger.warning(f"Failed to disconnect printer (soft): {e}")
+
+	def _connect_printer_soft(self):
+		"""Reconnect the printer via REST using saved settings."""
+		if not self.octoprint_client:
+			return
+		try:
+			# Connect to Klipper's virtual serial at the expected port and baudrate
+			self.octoprint_client.connectPrinter(port="/tmp/printer", baudrate=115200)
+			if self.nozzleCheckProgressBar:
+				self.nozzleCheckProgressBar.setValue(30)
+			# Issue Klipper restarts after a short delay to allow the serial link to be ready
+			if self.step5Label:
+				self.step5Label.setText("Restarting Klipper ...")
+			self.octoprint_client.gcode(command='FIRMWARE_RESTART')
+			if self.nozzleCheckProgressBar:
+				self.nozzleCheckProgressBar.setValue(40)
+			self.octoprint_client.gcode(command='RESTART')
+			if self.nozzleCheckProgressBar:
+				self.nozzleCheckProgressBar.setValue(50)
+			# Give Klipper a moment to restart; websocket will signal ready later
+			QtCore.QTimer.singleShot(500, lambda: None)
+			self._rest_reconnected = True
+			self.logger.info("OctoPrint REST: connect command sent")
+		except Exception as e:
+			self.logger.warning(f"Failed to reconnect printer (soft): {e}")
+
 
 	# ----- Step 4: Nozzle selection ---------------------------------------
 	def _prepare_step4(self):
@@ -462,4 +633,77 @@ class NozzleChangeWizard(QWidget):
 			self.changeNozzle()
 		except Exception as e:
 			self.logger.error(f"Error in NozzleChangeWizard.setup: {e}")
+
+	# ----- Helpers: readability and reuse ---------------------------------
+	def _enable_next(self, enabled: bool):
+		try:
+			if self.nextButton:
+				self.nextButton.setEnabled(bool(enabled))
+		except Exception:
+			pass
+
+	def _set_step5_status(self, text: str = None, progress: int = None):
+		if text is not None and self.step5Label:
+			self.step5Label.setText(text)
+		if progress is not None and self.nozzleCheckProgressBar:
+			self.nozzleCheckProgressBar.setValue(int(progress))
+
+	def _show_material_nozzle_screen_and_return(self):
+		fms = getattr(self.main_window, "filament_management_screen", None)
+		if fms and hasattr(fms, "show_material_nozzle_screen"):
+			QtCore.QTimer.singleShot(0, lambda: fms.show_material_nozzle_screen())
+		return False
+
+	def _get_tool_index(self, tool: str) -> int:
+		try:
+			return int((tool or "tool0").replace('tool', '') or 0)
+		except Exception:
+			return 0
+
+	def _is_printer_idle(self) -> bool:
+		status = (str(getattr(self.model, 'printer_status', '')) or '').lower()
+		return status not in ('printing', 'paused')
+
+	def _check_filament_unloaded(self, tool: str) -> bool:
+		try:
+			state = self.model.get_bay_state(tool) or {}
+			if str(state.get('status')) == 'Loaded':
+				dialog.WarningOk(self, "Filament is loaded. Please unload filament before changing the nozzle.", overlay=True)
+				return self._show_material_nozzle_screen_and_return()
+			return True
+		except Exception:
+			return True
+
+	def _check_tool_cool(self, tool: str) -> bool:
+		try:
+			temps = self.model.temperatures or {}
+			tool_idx = self._get_tool_index(tool)
+			t = temps.get(f'tool{tool_idx}') or temps.get(f'tool{tool_idx}Actual')
+			if t is not None and float(t) > 50:
+				dialog.WarningOk(self, "Tool temperature is too high to touch (> 50°C). Please initiate cooling and wait for it to be cool enough to touch", overlay=True)
+				return self._show_material_nozzle_screen_and_return()
+			return True
+		except Exception:
+			return True
+
+	def _perform_initial_move_if_safe(self):
+		try:
+			if self._did_initial_move or not self._is_printer_idle():
+				return
+			size = self.model.machineBuildSize
+			x = int((size.get('X') or 0) / 2)
+			y = 0.0
+			if self.octoprint_client:
+				self.octoprint_client.gcode("G90")
+				self.octoprint_client.gcode("G28")
+				try:
+					tool_idx = self._get_tool_index(self.active_tool)
+					self.octoprint_client.selectTool(tool_idx)
+				except Exception:
+					pass
+				self.octoprint_client.jog(z=-10, absolute=False, speed=1800)
+				self.octoprint_client.jog(x=x, y=y, absolute=True, speed=6000)
+			self._did_initial_move = True
+		except Exception as move_err:
+			self.logger.warning(f"Initial move skipped: {move_err}")
 

@@ -4,6 +4,7 @@ WebSocket Client for OctoPrint
 This module handles real-time communication with OctoPrint via WebSockets
 """
 import json
+import re
 import random
 import threading
 import time
@@ -41,6 +42,8 @@ class OctoPrintWebSocket(QThread):
     z_probe_offset_signal = pyqtSignal(str) # done
     z_probing_failed_signal = pyqtSignal() # done
     printer_error_signal = pyqtSignal(str) # done
+    # New: Klipper state updates (e.g., 'ready', 'shutdown')
+    klipper_state_signal = pyqtSignal(str)
 
     def __init__(self, ip="0.0.0.0:5000", api_key=None):
         """
@@ -246,12 +249,32 @@ class OctoPrintWebSocket(QThread):
                 self.logger.info(f"Plugin message received from: {plugin_name}")
 
                 if plugin_name == 'klipper':
-                    # Extract the actual error message from the plugin data
-                    plugin_data = data["plugin"]["data"]
-                    if isinstance(plugin_data, dict) and plugin_data.get('subtype') == 'error':
-                        error_message = plugin_data.get('payload', plugin_data.get('title', str(plugin_data)))
-                        self.logger.error(f"Klipper error detected: {error_message}")
-                        self.printer_error_signal.emit(str(error_message).strip()) 
+                    # Extract plugin data; emit error and state events
+                    plugin_data = data["plugin"].get("data")
+                    if isinstance(plugin_data, dict):
+                        # Error messages from Klipper
+                        if plugin_data.get('subtype') == 'error':
+                            error_message = plugin_data.get('payload', plugin_data.get('title', str(plugin_data)))
+                            self.logger.error(f"Klipper error detected: {error_message}")
+                            self.printer_error_signal.emit(str(error_message).strip())
+
+                        # State messages look like: ' Klipper state: Ready\n' in title/payload
+                        for key in ('title', 'payload'):
+                            text = plugin_data.get(key)
+                            if not isinstance(text, str):
+                                continue
+                            m = re.search(r"klipper\s*state:\s*([^\n\r]+)", text, flags=re.IGNORECASE)
+                            if not m:
+                                continue
+                            state = m.group(1).strip()
+                            norm = state.lower()
+                            self.logger.info(f"Klipper state parsed from {key}: {norm}")
+                            try:
+                                self.klipper_state_signal.emit(norm)
+                                print(f"Klipper state emitted: {norm}")
+                            except Exception:
+                                pass
+                            break
 
                 if plugin_name == 'JuliaFirmwareUpdater':
                     self.logger.info("Emitting firmware_updater_signal")

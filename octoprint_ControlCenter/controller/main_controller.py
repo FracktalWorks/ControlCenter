@@ -303,6 +303,9 @@ class MainController:
         self.octoprint_websocket.z_probe_offset_signal.connect(self.printer_model.updateEEPROMProbeOffset)
         self.octoprint_websocket.z_probing_failed_signal.connect(self.showProbingFailed)
         self.octoprint_websocket.printer_error_signal.connect(self.showPrinterError)
+        # New: propagate klipper state to the model
+        if hasattr(self.octoprint_websocket, 'klipper_state_signal'):
+            self.octoprint_websocket.klipper_state_signal.connect(self.printer_model.update_klipper_state)
 
         # local signal slot connections
         self.printer_model.filament_sensor_triggered.connect(self.filamentSensorHandler)
