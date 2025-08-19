@@ -2,22 +2,38 @@
 Nozzle Change Wizard
 ====================
 
-Initial scaffold for the nozzle change flow driven by the UI file
-`nozzleChangeWizard.ui`.
+User-guided UI flow for replacing the nozzle, driven by `nozzleChangeWizard.ui`.
+
+Wizard steps (0-based indices → user-visible 1..6)
+-------------------------------------------------
+1. Step 1 (Intro):
+	- Gate the Next button for ~10 seconds to avoid skipping before initial movements.
+	- Run preflight checks (filament unloaded, tool cool) and safe initial moves if printer is idle.
+2. Step 2 (Disconnect):
+	- Disconnect via OctoPrint REST while keeping the websocket connected.
+3. Step 3 (Remove Nozzle):
+	- Show instructions and media for nozzle removal.
+4. Step 4 (Select Nozzle):
+	- Let the user pick a nozzle size; persist selection into the model.
+5. Step 5 (Check Connection):
+	- Reconnect REST, restart Klipper, wait for Operational + Klipper Ready.
+	- Sample tool temperature (several valid readings) to validate connection.
+	- Use the progress bar to reflect stages; advance to Done when validated.
+6. Step 6 (Done):
+	- Show success instructions/media and allow returning to the material/nozzle screen.
 
 What’s implemented now
 ----------------------
-- Load the .ui and wire up core widgets.
-- Basic Next/Cancel navigation across 6 steps.
-- Step label updates ("Step X/6").
-- Simulated "Checking Nozzle Connection" on step 5 with a progress bar
-  and automatic transition to step 6 when complete.
+- UI loading and core widget wiring.
+- Basic Next/Cancel navigation, step label updates.
+- Step 5 progress bar reflecting reconnection and temperature sampling.
+- Media (GIF) loading and per-page playback.
+- Model-driven status (printer and Klipper state) gating logic.
 
-What we will add next (placeholders exist)
------------------------------------------
-- Motion, heating, and safety checks.
-- Loading of step GIFs from resources.
-- Hooks to printer model signals, as needed.
+Future hooks (extend as needed)
+-------------------------------
+- Additional safety checks and motion commands.
+- More granular error handling and user guidance.
 """
 
 import os
@@ -173,6 +189,11 @@ class NozzleChangeWizard(QWidget):
 
 	# ----- Qt events -----------------------------------------------------
 	def showEvent(self, event):  # noqa: N802 (Qt naming)
+		"""Reset the wizard UI to Step 1 each time the widget is shown.
+
+		Keep this method light (avoid doing work here); initialization runs in
+		`setup()`/`changeNozzle()` and movement helpers.
+		"""
 		super().showEvent(event)
 		# Match ChangeFilamentWizard: keep showEvent light and only reset the UI
 		try:
@@ -182,7 +203,10 @@ class NozzleChangeWizard(QWidget):
 			self.logger.warning(f"Error resetting wizard on show: {e}")
 
 	def changeNozzle(self):
-		"""Initialize and prepare the nozzle change flow (called from setup)."""
+		"""Initialize and prepare the nozzle change flow (called from `setup`).
+
+		Performs preflight checks and a safe initial move (home and position) if idle.
+		"""
 		self.logger.info("NozzleChange.changeNozzle() started")
 		# Reset movement gate so each entry can perform the initial move if safe
 		self._did_initial_move = False
@@ -199,9 +223,29 @@ class NozzleChangeWizard(QWidget):
 		except Exception as e:
 			self.logger.error(f"Error initializing nozzle change: {e}")
 
+	# ----- Public API for parent screen -----------------------------------
+	def setup(self, params=None):
+		"""Prepare wizard with optional parameters.
+
+		Params may be a dict like {"tool": "tool0"} or a str "tool0".
+		"""
+		try:
+			tool = None
+			if isinstance(params, dict):
+				tool = params.get("tool")
+			elif isinstance(params, str):
+				tool = params
+			if tool in ("tool0", "tool1"):
+				self.active_tool = tool
+			self.logger.info(f"NozzleChangeWizard.setup: active_tool={self.active_tool}")
+			# Kick off the nozzle change flow like ChangeFilamentWizard.changeFilament()
+			self.changeNozzle()
+		except Exception as e:
+			self.logger.error(f"Error in NozzleChangeWizard.setup: {e}")
+
 	# ----- Navigation -----------------------------------------------------
 	def goto_step(self, index: int):
-		"""Switch to the given step index (0-based)."""
+		"""Switch to the given step index (0-based) and run step-entry hooks."""
 		index = max(0, min(index, self.TOTAL_STEPS - 1))
 		self._current_step = index
 		if self.stackedWidget:
@@ -259,6 +303,10 @@ class NozzleChangeWizard(QWidget):
 			self.nextButton.setText("Done" if index == self.STEP_DONE else "Next")
 
 	def on_next_clicked(self):
+		"""Handle Next button clicks, including Done semantics on final step.
+
+		Also persists the nozzle selection on Step 4.
+		"""
 		try:
 			# If we are on the last step, treat Next as Done
 			if self._current_step >= self.STEP_DONE:
@@ -281,22 +329,40 @@ class NozzleChangeWizard(QWidget):
 			self.logger.error(f"Error advancing to next step: {e}")
 
 	def on_cancel_clicked(self):
+		"""Cancel the wizard and return to the Material/Nozzle screen.
+
+		If REST was disconnected earlier, attempt a soft reconnect first.
+		"""
 		try:
 			self._stop_nozzle_check()
 			# If we previously disconnected in step 2 and haven't reconnected, reconnect now
 			if self._rest_was_disconnected and not self._rest_reconnected:
 				self._connect_printer_soft()
 			# Return to the filament management screen if available
-			fms = getattr(self.main_window, "filament_management_screen", None)
-			if fms and hasattr(fms, "show_material_nozzle_screen"):
-				fms.show_material_nozzle_screen()
+			self.main_window.filament_management_screen.show_material_nozzle_screen()
 			# Reset to step 1 for the next open
 			self.goto_step(0)
+			self._stop_all_gifs()
 		except Exception as e:
 			self.logger.error(f"Error cancelling nozzle change wizard: {e}")
 			dialog.WarningOk(self, f"Error cancelling Nozzle Change Wizard: {e}", overlay=True)
 
+	def on_finish_clicked(self):
+		"""Finish the wizard and return to the main Material/Nozzle page."""
+		try:
+			self._stop_nozzle_check()
+			# Ensure we reconnect if we had disconnected earlier
+			if self._rest_was_disconnected and not self._rest_reconnected:
+				self._connect_printer_soft()
+			self.main_window.filament_management_screen.show_material_nozzle_screen()
+			# Reset to step 1 ready for next open
+			self.goto_step(0)
+			self._stop_all_gifs()
+		except Exception as e:
+			self.logger.error(f"Error finishing nozzle change wizard: {e}")
+
 	def _update_step_label(self):
+		"""Update the "Step X/Y" label to match the current index."""
 		try:
 			if self.stepLabel:
 				self.stepLabel.setText(f"Step {self._current_step + 1}/{self.TOTAL_STEPS}")
@@ -307,6 +373,11 @@ class NozzleChangeWizard(QWidget):
 
 	# ----- Step 5: Nozzle connection check (simulated) -------------------
 	def _start_nozzle_check(self):
+		"""Start the simulated nozzle connection check (progress bar).
+
+		This is a UI helper for step visuals; the real validation happens during
+		reconnection and temperature sampling.
+		"""
 		try:
 			self._set_step5_status("Checking Nozzle Connection ...", 0)
 			self._progress_timer.start()
@@ -315,6 +386,7 @@ class NozzleChangeWizard(QWidget):
 			self.logger.warning(f"Failed to start nozzle check simulation: {e}")
 
 	def _advance_nozzle_check_progress(self):
+		"""Increment progress bar and auto-advance on completion (simulated)."""
 		try:
 			if not self.nozzleCheckProgressBar:
 				return
@@ -333,6 +405,7 @@ class NozzleChangeWizard(QWidget):
 			pass
 
 	def _stop_nozzle_check(self):
+		"""Stop the simulated nozzle check and restore Next if not on Step 5."""
 		try:
 			if self._progress_timer.isActive():
 				self._progress_timer.stop()
@@ -341,21 +414,6 @@ class NozzleChangeWizard(QWidget):
 				self._enable_next(True)
 		except Exception:
 			pass
-
-	def on_finish_clicked(self):
-		"""Finish the wizard and return to the main Material/Nozzle page."""
-		try:
-			self._stop_nozzle_check()
-			# Ensure we reconnect if we had disconnected earlier
-			if self._rest_was_disconnected and not self._rest_reconnected:
-				self._connect_printer_soft()
-			fms = getattr(self.main_window, "filament_management_screen", None)
-			if fms and hasattr(fms, "show_material_nozzle_screen"):
-				fms.show_material_nozzle_screen()
-			# Reset to step 1 ready for next open
-			self.goto_step(0)
-		except Exception as e:
-			self.logger.error(f"Error finishing nozzle change wizard: {e}")
 
 	# (preflight and motion handled via changeNozzle() called from setup)
 
@@ -407,6 +465,7 @@ class NozzleChangeWizard(QWidget):
 			pass
 
 	def _on_klipper_state(self, state: str):
+		"""Track whether Klipper is Ready (normalized lower-case check)."""
 		self._klipper_ready = (str(state).strip().lower() == 'ready')
 
 	# ----- Step 5: reconnect and validate temperature ---------------------
@@ -427,6 +486,7 @@ class NozzleChangeWizard(QWidget):
 			self.logger.warning(f"Failed to begin reconnect validation: {e}")
 
 	def _teardown_step5_connections(self):
+		"""Stop timers and clear flags when leaving Step 5 validation."""
 		try:
 			if self._reconnect_timeout_timer.isActive():
 				self._reconnect_timeout_timer.stop()
@@ -459,6 +519,7 @@ class NozzleChangeWizard(QWidget):
 		QtCore.QTimer.singleShot(0, self._on_ready_then_check)
 
 	def _on_ready_then_check(self):
+		"""On main thread: after printer is ready, select tool and begin temp check."""
 		if not self._awaiting_reconnect_validation:
 			return
 		# Update UI and progress
@@ -473,6 +534,7 @@ class NozzleChangeWizard(QWidget):
 		QtCore.QTimer.singleShot(500, self._validate_reconnect_temperature)
 
 	def _handle_reconnect_failure(self, message: str):
+		"""Show a warning and route the user back to Step 4 on failure."""
 		self._awaiting_reconnect_validation = False
 		try:
 			dialog.WarningOk(self, message, overlay=True)
@@ -494,6 +556,7 @@ class NozzleChangeWizard(QWidget):
 			self.logger.warning(f"Failed to start temperature sampling: {e}")
 
 	def _temp_check_tick(self):
+		"""Sample tool temperature and accumulate valid readings to pass validation."""
 		if not self._awaiting_reconnect_validation:
 			self._temp_check_timer.stop()
 			return
@@ -534,6 +597,7 @@ class NozzleChangeWizard(QWidget):
 			self.logger.warning(f"Temperature sampling failed: {e}")
 
 	def _on_reconnect_timeout(self):
+		"""Fallback timeout handler if Operational state isn't reached in time."""
 		# Could not reach Operational in time
 		self._reconnect_timeout_timer.stop()
 		if not self._awaiting_reconnect_validation:
@@ -616,6 +680,7 @@ class NozzleChangeWizard(QWidget):
 			self.logger.warning(f"Failed to prepare step 4: {e}")
 
 	def _teardown_step4(self):
+		"""Disconnect Step 4 combo change signals to avoid duplicate handlers."""
 		try:
 			if self.changeNozzleComboBox:
 				try:
@@ -626,6 +691,7 @@ class NozzleChangeWizard(QWidget):
 			pass
 
 	def _on_nozzle_choice_changed(self, idx: int):
+		"""Enable Next only when a valid nozzle size is selected (index > 0)."""
 		try:
 			if self.nextButton:
 				self.nextButton.setEnabled(idx > 0)
@@ -633,28 +699,10 @@ class NozzleChangeWizard(QWidget):
 			pass
 
 
-	# ----- Public API for parent screen -----------------------------------
-	def setup(self, params=None):
-		"""Prepare wizard with optional parameters.
-
-		Params may be a dict like {"tool": "tool0"} or a str "tool0".
-		"""
-		try:
-			tool = None
-			if isinstance(params, dict):
-				tool = params.get("tool")
-			elif isinstance(params, str):
-				tool = params
-			if tool in ("tool0", "tool1"):
-				self.active_tool = tool
-			self.logger.info(f"NozzleChangeWizard.setup: active_tool={self.active_tool}")
-			# Kick off the nozzle change flow like ChangeFilamentWizard.changeFilament()
-			self.changeNozzle()
-		except Exception as e:
-			self.logger.error(f"Error in NozzleChangeWizard.setup: {e}")
 
 	# ----- Helpers: readability and reuse ---------------------------------
 	def _enable_next(self, enabled: bool):
+		"""Safely enable/disable the Next button."""
 		try:
 			if self.nextButton:
 				self.nextButton.setEnabled(bool(enabled))
@@ -662,28 +710,33 @@ class NozzleChangeWizard(QWidget):
 			pass
 
 	def _set_step5_status(self, text: str = None, progress: int = None):
+		"""Helper to update Step 5 status label and/or progress bar value."""
 		if text is not None and self.step5Label:
 			self.step5Label.setText(text)
 		if progress is not None and self.nozzleCheckProgressBar:
 			self.nozzleCheckProgressBar.setValue(int(progress))
 
 	def _show_material_nozzle_screen_and_return(self):
+		"""Return to the parent Material/Nozzle screen and signal caller to stop."""
 		fms = getattr(self.main_window, "filament_management_screen", None)
 		if fms and hasattr(fms, "show_material_nozzle_screen"):
 			QtCore.QTimer.singleShot(0, lambda: fms.show_material_nozzle_screen())
 		return False
 
 	def _get_tool_index(self, tool: str) -> int:
+		"""Extract numeric index from a tool name like 'tool0' or 'tool1'."""
 		try:
 			return int((tool or "tool0").replace('tool', '') or 0)
 		except Exception:
 			return 0
 
 	def _is_printer_idle(self) -> bool:
+		"""Return True if not printing or paused, based on model.printer_status."""
 		status = (str(getattr(self.model, 'printer_status', '')) or '').lower()
 		return status not in ('printing', 'paused')
 
 	def _check_filament_unloaded(self, tool: str) -> bool:
+		"""Warn and exit if the bay status indicates filament is still loaded."""
 		try:
 			state = self.model.get_bay_state(tool) or {}
 			if str(state.get('status')) == 'Loaded':
@@ -694,6 +747,7 @@ class NozzleChangeWizard(QWidget):
 			return True
 
 	def _check_tool_cool(self, tool: str) -> bool:
+		"""Warn and exit if the selected tool is above a safe touch temperature."""
 		try:
 			temps = self.model.temperatures or {}
 			tool_idx = self._get_tool_index(tool)
@@ -706,6 +760,7 @@ class NozzleChangeWizard(QWidget):
 			return True
 
 	def _perform_initial_move_if_safe(self):
+		"""Home, select tool, and move to a safe position if the printer is idle."""
 		try:
 			if self._did_initial_move or not self._is_printer_idle():
 				return
