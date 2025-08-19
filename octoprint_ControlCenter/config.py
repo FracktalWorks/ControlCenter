@@ -42,17 +42,16 @@ filaments = [
 filaments = OrderedDict(filaments)
 
 # Values before 2020 changes
-calibrationPosition = {
-    'X1': 63, 'Y1': 67,  # 110, 18
-    'X2': 542, 'Y2': 67,  # 510, 18
-    'X3': 303, 'Y3': 567,  # 310, 308
-    'X4': 303, 'Y4': 20
-}
+calibrationPosition = {'X1': 110, 'Y1': 18,
+                       'X2': 510, 'Y2': 18,
+                       'X3': 310, 'Y3': 308,
+                       'X4': 310, 'Y4': 178
+                       }
 
-machineBuildSize = {'X': 400, 'Y': 400, 'Z': 400}
+machineBuildSize = {'X': 600, 'Y': 300, 'Z': 400}
 
 
-tool0PurgePosition = {'X': -27, 'Y': -112}
-tool1PurgePosition = {'X': 648, 'Y': -112}
+tool0PurgePosition = {'X': -30, 'Y': -77}
+tool1PurgePosition = {'X': 655, 'Y': -77}
 
 ptfeTubeLength = 1500  # 2400 for 600x600, 1500 for 600x300 keep as multiples of 300 only
