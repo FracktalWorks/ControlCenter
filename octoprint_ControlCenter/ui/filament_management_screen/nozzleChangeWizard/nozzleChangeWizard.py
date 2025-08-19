@@ -134,6 +134,12 @@ class NozzleChangeWizard(QWidget):
 		self._temp_check_attempts = 0
 		self._temp_check_valid = 0
 
+		# Step 1 guard: disable Next for at least 10 seconds on intro
+		self._step1_guard_timer = QtCore.QTimer(self)
+		self._step1_guard_timer.setSingleShot(True)
+		# Inline handler: when guard elapses and we're still on Step 1, enable Next
+		self._step1_guard_timer.timeout.connect(lambda: self._enable_next(True) if self._current_step == self.STEP_INTRO else None)
+
 		# Wire signals
 		self.nextButton.clicked.connect(self.on_next_clicked)
 		self.cancelButton.clicked.connect(self.on_cancel_clicked)
@@ -221,6 +227,23 @@ class NozzleChangeWizard(QWidget):
 		else:
 			self._teardown_step4()
 
+		# Step 1 guard handling: start when entering intro; stop when leaving
+		if index == self.STEP_INTRO:
+			try:
+				if self._step1_guard_timer.isActive():
+					self._step1_guard_timer.stop()
+				# Always enforce a fresh 10s guard when showing step 1
+				self._enable_next(False)
+				self._step1_guard_timer.start(10000)
+			except Exception:
+				pass
+		else:
+			try:
+				if self._step1_guard_timer.isActive():
+					self._step1_guard_timer.stop()
+			except Exception:
+				pass
+
 
 		# Enable/disable Next based on step and update label
 		if self.nextButton:
@@ -228,6 +251,9 @@ class NozzleChangeWizard(QWidget):
 				self._enable_next(False)
 			elif index == self.STEP_SELECT_NOZZLE:
 				self._enable_next(bool(self.changeNozzleComboBox and self.changeNozzleComboBox.currentIndex() > 0))
+			elif index == self.STEP_INTRO:
+				# Keep disabled during the intro guard; will be enabled on timer elapsed
+				self._enable_next(False)
 			else:
 				self._enable_next(True)
 			self.nextButton.setText("Done" if index == self.STEP_DONE else "Next")
@@ -276,6 +302,8 @@ class NozzleChangeWizard(QWidget):
 				self.stepLabel.setText(f"Step {self._current_step + 1}/{self.TOTAL_STEPS}")
 		except Exception:
 			pass
+
+
 
 	# ----- Step 5: Nozzle connection check (simulated) -------------------
 	def _start_nozzle_check(self):
@@ -492,8 +520,8 @@ class NozzleChangeWizard(QWidget):
 				self._awaiting_reconnect_validation = False
 				QtCore.QTimer.singleShot(200, lambda: self.goto_step(5))
 				return
-			# Allow up to 6 attempts total before failing
-			if self._temp_check_attempts >= 6 and self._temp_check_valid < 3:
+			# Allow up to 20 attempts total before failing
+			if self._temp_check_attempts >= 20 and self._temp_check_valid < 3:
 				self._temp_check_timer.stop()
 				try:
 					dialog.WarningOk(self, "There was a connection issue. Please recheck the connections.", overlay=True)
@@ -536,19 +564,10 @@ class NozzleChangeWizard(QWidget):
 		try:
 			# Connect to Klipper's virtual serial at the expected port and baudrate
 			self.octoprint_client.connectPrinter(port="/tmp/printer", baudrate=115200)
-			if self.nozzleCheckProgressBar:
-				self.nozzleCheckProgressBar.setValue(30)
+			self.nozzleCheckProgressBar.setValue(30)
 			# Issue Klipper restarts after a short delay to allow the serial link to be ready
-			if self.step5Label:
-				self.step5Label.setText("Restarting Klipper ...")
-			self.octoprint_client.gcode(command='FIRMWARE_RESTART')
-			if self.nozzleCheckProgressBar:
-				self.nozzleCheckProgressBar.setValue(40)
-			self.octoprint_client.gcode(command='RESTART')
-			if self.nozzleCheckProgressBar:
-				self.nozzleCheckProgressBar.setValue(50)
-			# Give Klipper a moment to restart; websocket will signal ready later
-			QtCore.QTimer.singleShot(500, lambda: None)
+			self.step5Label.setText("Restarting Klipper ...")
+			self.nozzleCheckProgressBar.setValue(50)
 			self._rest_reconnected = True
 			self.logger.info("OctoPrint REST: connect command sent")
 		except Exception as e:
