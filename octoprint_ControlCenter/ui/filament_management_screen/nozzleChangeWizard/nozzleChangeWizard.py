@@ -27,6 +27,7 @@ from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel, QProgr
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
 from utils import dialog
+# Use machineBuildSize from the printer model instead of importing config here
 
 
 class NozzleChangeWizard(QWidget):
@@ -48,9 +49,10 @@ class NozzleChangeWizard(QWidget):
 		super().__init__()
 		self.main_window = main_window
 		# These are commonly present throughout the app; guard if missing.
-		self.model = getattr(main_window, "printer_model", None)
+		self.model = main_window.printer_model
 		self.octoprint_client = getattr(main_window, "octoprint_client", None)
 		self.active_tool = "tool0"  # default; updated in setup()
+		self._did_initial_move = False  # run movement once per open
 
 		self.logger = get_logger(self.__class__.__name__)
 		self.logger.info("Initializing NozzleChangeWizard")
@@ -118,60 +120,87 @@ class NozzleChangeWizard(QWidget):
 		# Start at step 1
 		self.goto_step(0)
 
-		# Optional: preload GIFs if/when resources are available
+		# Preload GIFs from resources and hook page-change playback
+		self._resource_dir = os.path.join(os.path.dirname(__file__), "resources")
+		# (page_index, target_label, file_name)
+		self._gif_specs = [
+			(1, self.step2Gif, "1_Cover Removal .gif"),
+			(2, self.step3Gif, "2_Nozzle Removal.gif"),
+			(3, self.step4Gif, "3_Nozzle Install.gif"),
+			(5, self.step6Gif, "4_Cover Install.gif"),
+		]
+		self._gif_movies = {}  # page_index -> QMovie
 		self._load_step_gifs_safe()
+		if self.stackedWidget:
+			self.stackedWidget.currentChanged.connect(self._on_page_changed)
+			# Initialize playback for current page
+			self._on_page_changed(self.stackedWidget.currentIndex())
 
 	# ----- Qt events -----------------------------------------------------
 	def showEvent(self, event):  # noqa: N802 (Qt naming)
 		super().showEvent(event)
+		# Match ChangeFilamentWizard: keep showEvent light and only reset the UI
 		try:
-			# Preflight: block wizard if filament is loaded or tool is hot
-			model = getattr(self.main_window, 'printer_model', self.model)
-			tool_str = self.active_tool if isinstance(self.active_tool, str) else f"tool{int(self.active_tool) or 0}"
-			# Check filament status
-			is_loaded = False
-			try:
-				if model and hasattr(model, 'get_bay_state'):
-					state = model.get_bay_state(tool_str) or {}
-					is_loaded = str(state.get('status')) == 'Loaded'
-			except Exception:
-				is_loaded = False
-			if is_loaded:
-				try:
-					dialog.WarningOk(self, "Filament is loaded. Please unload filament before changing the nozzle.", overlay=True)
-				except Exception:
-					pass
-				fms = getattr(self.main_window, "filament_management_screen", None)
-				if fms and hasattr(fms, "show_material_nozzle_screen"):
-					QtCore.QTimer.singleShot(0, lambda: fms.show_material_nozzle_screen())
-				return
-			# Check temperature > 50C
-			too_hot = False
-			try:
-				temps = getattr(model, 'temperatures', {}) or {}
-				tool_idx = 0
-				try:
-					tool_idx = int(tool_str.replace('tool', ''))
-				except Exception:
-					tool_idx = 0
-				t = temps.get(f'tool{tool_idx}')
-				if t is None:
-					t = temps.get(f'tool{tool_idx}Actual')
-				too_hot = (t is not None and float(t) > 50)
-			except Exception:
-				too_hot = False
-			if too_hot:
-				try:
-					dialog.WarningOk(self, "Tool temperature is too high to touch (> 50°C). Please initiate cooling and wait for it to be cool enough to touch", overlay=True)
-				except Exception:
-					pass
-				fms = getattr(self.main_window, "filament_management_screen", None)
-				if fms and hasattr(fms, "show_material_nozzle_screen"):
-					QtCore.QTimer.singleShot(0, lambda: fms.show_material_nozzle_screen())
-				return
 			self.goto_step(0)
+			self.logger.debug("Reset stacked widget to step 1 on show")
 		except Exception as e:
 			self.logger.warning(f"Error resetting wizard on show: {e}")
+
+	def changeNozzle(self):
+		"""Initialize and prepare the nozzle change flow (called from setup)."""
+		self.logger.info("NozzleChange.changeNozzle() started")
+		# Reset movement gate so each entry can perform the initial move if safe
+		self._did_initial_move = False
+		try:
+			self.goto_step(0)
+			model = self.model
+			tool_str = self.active_tool or "tool0"
+			# Preflight: filament must be unloaded
+			try:
+				state = model.get_bay_state(tool_str) or {}
+				if str(state.get('status')) == 'Loaded':
+					dialog.WarningOk(self, "Filament is loaded. Please unload filament before changing the nozzle.", overlay=True)
+					fms = getattr(self.main_window, "filament_management_screen", None)
+					if fms and hasattr(fms, "show_material_nozzle_screen"):
+						QtCore.QTimer.singleShot(0, lambda: fms.show_material_nozzle_screen())
+					return
+			except Exception:
+				pass
+			# Preflight: tool should be cool to touch
+			try:
+				temps = model.temperatures or {}
+				tool_idx = int(tool_str.replace('tool', '') or 0)
+				t = temps.get(f'tool{tool_idx}') or temps.get(f'tool{tool_idx}Actual')
+				if t is not None and float(t) > 50:
+					dialog.WarningOk(self, "Tool temperature is too high to touch (> 50°C). Please initiate cooling and wait for it to be cool enough to touch", overlay=True)
+					fms = getattr(self.main_window, "filament_management_screen", None)
+					if fms and hasattr(fms, "show_material_nozzle_screen"):
+						QtCore.QTimer.singleShot(0, lambda: fms.show_material_nozzle_screen())
+					return
+			except Exception:
+				pass
+			# Motion: if safe and idle, home and move to front-center (X/2, Y=0) and lower Z slightly
+			try:
+				status = (str(getattr(model, 'printer_status', '')) or '').lower()
+				if not self._did_initial_move and status not in ('printing', 'paused'):
+					size = model.machineBuildSize
+					x = int((size.get('X') or 0) / 2)
+					y = 0.0
+					if self.octoprint_client:
+						self.octoprint_client.gcode("G90")
+						self.octoprint_client.gcode("G28")
+						try:
+							tool_idx = int((self.active_tool or "tool0").replace("tool", "") or 0)
+							self.octoprint_client.selectTool(tool_idx)
+						except Exception:
+							pass
+						self.octoprint_client.jog(z=-10, absolute=False, speed=1800)
+						self.octoprint_client.jog(x=x, y=y, absolute=True, speed=6000)
+					self._did_initial_move = True
+			except Exception as move_err:
+				self.logger.warning(f"Initial move skipped: {move_err}")
+		except Exception as e:
+			self.logger.error(f"Error initializing nozzle change: {e}")
 
 	# ----- Navigation -----------------------------------------------------
 	def goto_step(self, index: int):
@@ -306,51 +335,66 @@ class NozzleChangeWizard(QWidget):
 		except Exception as e:
 			self.logger.error(f"Error finishing nozzle change wizard: {e}")
 
-	# (simplified: preflight checks are inlined in showEvent for readability)
+	# (preflight and motion handled via changeNozzle() called from setup)
 
 	# ----- Media helpers --------------------------------------------------
 	def _load_step_gifs_safe(self):
-		"""Attempt to load GIFs for steps 2/3/4/6 from resources.
-
-		The actual resource paths are TBD. This is a safe no-op if resources
-		are absent to avoid raising during early development.
-		"""
+		"""Create QMovies for each step GIF and attach to their labels."""
 		try:
-			# Example placeholders; replace with actual resource paths later.
-			# self._assign_movie(self.step2Gif, ":/media/nozzle_step2.gif")
-			# self._assign_movie(self.step3Gif, ":/media/nozzle_step3.gif")
-			# self._assign_movie(self.step4Gif, ":/media/nozzle_step4.gif")
-			# self._assign_movie(self.step6Gif, ":/media/nozzle_step6.gif")
-			pass
+			self._gif_movies.clear()
+			for page_idx, label, fname in self._gif_specs:
+				if not label or not fname:
+					continue
+				path = os.path.join(self._resource_dir, fname)
+				movie = QtGui.QMovie(path)
+				if not movie.isValid():
+					self.logger.debug(f"GIF not valid or missing: {path}")
+					continue
+				movie.setCacheMode(QtGui.QMovie.CacheAll)
+				label.setMovie(movie)
+				self._gif_movies[page_idx] = movie
 		except Exception as e:
-			self.logger.debug(f"GIFs not loaded (expected during scaffold): {e}")
+			self.logger.debug(f"GIFs not loaded: {e}")
 
-	def _assign_movie(self, label: QLabel, resource_path: str):
-		if not label:
+	def _stop_all_gifs(self):
+		"""Stop all loaded GIF movies."""
+		for movie in list(self._gif_movies.values()):
+			try:
+				movie.stop()
+			except Exception:
+				pass
+
+	def _play_gif_for_page(self, page_idx: int, restart: bool = True):
+		"""Start the GIF for a given page index; optionally restart from frame 0."""
+		movie = self._gif_movies.get(page_idx)
+		if not movie:
 			return
 		try:
-			movie = QtGui.QMovie(resource_path)
-			if movie.isValid():
-				label.setMovie(movie)
-				movie.start()
+			if restart:
+				movie.stop()
+			movie.start()
 		except Exception:
-			# Ignore if resource isn't present yet
+			pass
+
+	def _on_page_changed(self, idx: int):
+		"""Keep only the current page's GIF playing for clarity and performance."""
+		try:
+			self._stop_all_gifs()
+			self._play_gif_for_page(idx, restart=True)
+		except Exception:
 			pass
 
 	# ----- Step 4: Nozzle selection ---------------------------------------
 	def _prepare_step4(self):
 		"""Populate nozzle options and enforce selection before proceeding."""
 		try:
-			if not self.changeNozzleComboBox:
-				return
-			# Avoid signal duplication
 			try:
 				self.changeNozzleComboBox.currentIndexChanged.disconnect(self._on_nozzle_choice_changed)
 			except Exception:
 				pass
 
 			self.changeNozzleComboBox.clear()
-			self.changeNozzleComboBox.addItem("(Select nozzle size)")
+			self.changeNozzleComboBox.addItem("Select nozzle size")
 			options = []
 			if self.model is not None and hasattr(self.model, 'nozzle_options'):
 				options = list(getattr(self.model, 'nozzle_options') or [])
@@ -398,17 +442,6 @@ class NozzleChangeWizard(QWidget):
 		except Exception:
 			pass
 
-	def _persist_nozzle_selection(self):
-		"""Persist selected nozzle in the printer model, similar to filament persistence."""
-		try:
-			if not self.changeNozzleComboBox or self.changeNozzleComboBox.currentIndex() <= 0:
-				return
-			nozzle = self.changeNozzleComboBox.currentText()
-			if self.model and hasattr(self.model, 'update_tool_bay_state') and self.active_tool:
-				self.model.update_tool_bay_state(self.active_tool, nozzle=nozzle, persist=True)
-				self.logger.info(f"Persisted nozzle '{nozzle}' for {self.active_tool}")
-		except Exception as e:
-			self.logger.error(f"Failed to persist nozzle selection: {e}")
 
 	# ----- Public API for parent screen -----------------------------------
 	def setup(self, params=None):
@@ -425,8 +458,8 @@ class NozzleChangeWizard(QWidget):
 			if tool in ("tool0", "tool1"):
 				self.active_tool = tool
 			self.logger.info(f"NozzleChangeWizard.setup: active_tool={self.active_tool}")
-			# Reset UI state on open
-			self.goto_step(0)
+			# Kick off the nozzle change flow like ChangeFilamentWizard.changeFilament()
+			self.changeNozzle()
 		except Exception as e:
 			self.logger.error(f"Error in NozzleChangeWizard.setup: {e}")
 

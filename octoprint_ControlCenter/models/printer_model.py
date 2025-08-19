@@ -61,6 +61,7 @@ class PrinterModel(QObject):
         self.tool0PurgePosition = config.tool0PurgePosition
         self.tool1PurgePosition = config.tool1PurgePosition
         self.ptfeTubeLength = config.ptfeTubeLength
+        self.machineBuildSize = config.machineBuildSize
         # Tool state persistence
         # self.status_options = ["Empty", "Unknown", "Loaded", "Staged"]
         self.status_options = ["Empty", "Loaded"]

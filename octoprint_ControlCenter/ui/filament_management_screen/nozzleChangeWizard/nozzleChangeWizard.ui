@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>808</width>
-    <height>483</height>
+    <width>600</width>
+    <height>387</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -95,7 +95,7 @@
     );</string>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>3</number>
         </property>
         <widget class="QWidget" name="step1Page">
          <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -104,7 +104,7 @@
             <property name="font">
              <font>
               <family>Gotham</family>
-              <pointsize>16</pointsize>
+              <pointsize>14</pointsize>
               <weight>50</weight>
               <bold>false</bold>
              </font>
@@ -129,7 +129,7 @@
             <property name="font">
              <font>
               <family>Gotham</family>
-              <pointsize>16</pointsize>
+              <pointsize>14</pointsize>
               <weight>50</weight>
               <bold>false</bold>
              </font>
@@ -164,7 +164,7 @@
             <property name="font">
              <font>
               <family>Gotham</family>
-              <pointsize>16</pointsize>
+              <pointsize>14</pointsize>
               <weight>50</weight>
               <bold>false</bold>
              </font>
@@ -201,7 +201,7 @@
               <property name="font">
                <font>
                 <family>Gotham</family>
-                <pointsize>16</pointsize>
+                <pointsize>14</pointsize>
                 <weight>50</weight>
                 <bold>false</bold>
                </font>
@@ -210,10 +210,7 @@
                <string notr="true">color: rgb(255, 255, 255);</string>
               </property>
               <property name="text">
-               <string>Replace new nozzle, plug the nozzle connecter back, and while pushing the nozzle into the carriage, tighten the nozzle screw. 
-
-
-Select new nozzle below:</string>
+               <string>Replace new nozzle, plug the nozzle connecter back, and while pushing the nozzle into the carriage, tighten the nozzle screw.</string>
               </property>
               <property name="wordWrap">
                <bool>true</bool>
@@ -224,68 +221,21 @@ Select new nozzle below:</string>
              <widget class="QComboBox" name="changeNozzleComboBox">
               <property name="minimumSize">
                <size>
-                <width>83</width>
+                <width>203</width>
                 <height>52</height>
                </size>
               </property>
               <property name="font">
                <font>
-                <family>Gotham</family>
-                <pointsize>16</pointsize>
+                <pointsize>-1</pointsize>
                </font>
               </property>
               <property name="styleSheet">
-               <string notr="true"> QScrollBar:vertical {
-     border: 1px solid black;
-border-radius: 5px;
-	background-color: rgb(40,40,40);
-     width: 80px;
-     margin: 70px 0 70px 0;
- }
- QScrollBar::handle:vertical {
-border-radius: 5px;
-background: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-min-height: 20px;
- }
- QScrollBar::add-line:vertical {
-     border: 1px solid black;
-background: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-     height:65px;
-border-radius: 5px;
-     subcontrol-position: bottom;
-     subcontrol-origin: margin;
- }
-
- QScrollBar::sub-line:vertical {
-     border: 1px solid black;
-background: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-     height: 65px;
-border-radius: 5px;
-     subcontrol-position: top;
-     subcontrol-origin: margin;
- }
-
-QScrollBar::up-arrow:vertical {
- image: url(:/Navigation/img/Navigation/arrows.png);
-    width: 40px;
-    height: 40px;
- padding: 5px;
- }
-QScrollBar::down-arrow:vertical {
- image: url(:/Navigation/img/Navigation/arrows-5.png);
-    width: 40px;
-    height: 40px;
- padding: 5px;
- }
-
- QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-     background: none;
- }
-
-QComboBox {
+               <string notr="true">QComboBox {
 border: 1px solid black;
     padding: 0px 18px 0px 3px;
     min-width: 6em;
+font-size: 25px;        /* bigger current text */
 
 }
 
@@ -326,7 +276,10 @@ height: 30px;
 </string>
               </property>
               <property name="editable">
-               <bool>true</bool>
+               <bool>false</bool>
+              </property>
+              <property name="currentText">
+               <string/>
               </property>
               <property name="maxVisibleItems">
                <number>8</number>
@@ -338,7 +291,7 @@ height: 30px;
                </size>
               </property>
               <property name="frame">
-               <bool>false</bool>
+               <bool>true</bool>
               </property>
              </widget>
             </item>
@@ -462,7 +415,7 @@ QProgressBar::chunk {
             <property name="font">
              <font>
               <family>Gotham</family>
-              <pointsize>16</pointsize>
+              <pointsize>14</pointsize>
               <weight>50</weight>
               <bold>false</bold>
              </font>

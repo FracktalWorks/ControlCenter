@@ -497,7 +497,7 @@ margin-right:6px;</string>
                    <property name="font">
                     <font>
                      <family>Gotham</family>
-                     <pointsize>12</pointsize>
+                     <pointsize>14</pointsize>
                     </font>
                    </property>
                    <property name="styleSheet">
@@ -528,7 +528,7 @@ QToolButton:focus {
 }</string>
                    </property>
                    <property name="text">
-                    <string>Change Material Bay A</string>
+                    <string>Change Material</string>
                    </property>
                    <property name="icon">
                     <iconset resource="../resources/resource.qrc">
@@ -599,14 +599,14 @@ margin-right:50px;</string>
              <widget class="QToolButton" name="changeTool0Button">
               <property name="minimumSize">
                <size>
-                <width>70</width>
-                <height>70</height>
+                <width>90</width>
+                <height>90</height>
                </size>
               </property>
               <property name="font">
                <font>
                 <family>Gotham</family>
-                <pointsize>12</pointsize>
+                <pointsize>14</pointsize>
                </font>
               </property>
               <property name="styleSheet">
@@ -942,7 +942,7 @@ margin-right:6px;</string>
                    <property name="font">
                     <font>
                      <family>Gotham</family>
-                     <pointsize>12</pointsize>
+                     <pointsize>14</pointsize>
                     </font>
                    </property>
                    <property name="styleSheet">
@@ -973,7 +973,7 @@ QToolButton:focus {
 }</string>
                    </property>
                    <property name="text">
-                    <string>Change Material Bay A</string>
+                    <string>Change Material</string>
                    </property>
                    <property name="icon">
                     <iconset resource="../resources/resource.qrc">
@@ -1044,14 +1044,14 @@ margin-right:50px;</string>
              <widget class="QToolButton" name="changeTool1Button">
               <property name="minimumSize">
                <size>
-                <width>70</width>
-                <height>70</height>
+                <width>90</width>
+                <height>90</height>
                </size>
               </property>
               <property name="font">
                <font>
                 <family>Gotham</family>
-                <pointsize>12</pointsize>
+                <pointsize>14</pointsize>
                </font>
               </property>
               <property name="styleSheet">

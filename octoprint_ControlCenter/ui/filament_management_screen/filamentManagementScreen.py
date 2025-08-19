@@ -115,6 +115,8 @@ class filamentManagementScreen(QWidget):
         try:
             self.main_window.printer_model.tool_bay_states_loaded.connect(self._on_tool_states_loaded)
             self.main_window.printer_model.tool_bay_state_changed.connect(self._on_tool_state_changed)
+            # Also react to printer status to enable/disable change buttons
+            self.main_window.printer_model.status_updated.connect(self._on_status_updated)
         except Exception as e:
             self.logger.error(f"Failed connecting tool state signals: {e}")
         # Apply current state immediately in case the signal fired before this screen connected
@@ -123,6 +125,25 @@ class filamentManagementScreen(QWidget):
                 self._on_tool_states_loaded(self.main_window.printer_model.tools)
         except Exception as e:
             self.logger.debug(f"Unable to apply initial tool state: {e}")
+        # Apply current printer status to buttons immediately
+        try:
+            self._on_status_updated(self.main_window.printer_model.printer_status)
+        except Exception as e:
+            self.logger.debug(f"Unable to apply initial status to buttons: {e}")
+
+    def _on_status_updated(self, status: str):
+        """Enable/disable change buttons based on printer status.
+
+        Printing/Paused: disable only nozzle change; keep material change enabled.
+        Offline: disable both types. Operational: enable all.
+        """
+        nozzle_disabled = status in ("Printing", "Paused", "Offline")
+        material_disabled = status == "Offline"
+
+        self.changeTool0Button.setDisabled(nozzle_disabled)
+        self.changeTool1Button.setDisabled(nozzle_disabled)
+        self.changeTool0MaterialBayA.setDisabled(material_disabled)
+        self.changeTool1MaterialBayX.setDisabled(material_disabled)
 
     def showEvent(self, event):
         """Reset to main_material_nozzle_page whenever this widget is shown from main window navigation."""
@@ -202,38 +223,25 @@ class filamentManagementScreen(QWidget):
             self._close_loading_dialog()
 
     def show_material_nozzle_screen(self, target_screen=None, params=None):
-        """Show a specific material/nozzle screen or the main page
-
-        Args:
-            target_screen: Optional string identifying which sub-screen to navigate to.
-                           None means show the main page.
-            params: Optional dictionary of parameters to pass to the screen.
-        """
+        """Show the main page or navigate to a specific sub-screen."""
         self.logger.debug(f"show_material_nozzle_screen called with target_screen={target_screen}, params={params}")
 
-        # Only switch to this screen in the main window if we're not already on it
         if self.main_window.current_screen != self:
             self.main_window.switch_screen(self)
 
-        # If no specific target is requested, show the main page
         if not target_screen:
             self.material_nozzle_stacked_widget.setCurrentWidget(self.main_material_nozzle_page)
             self.logger.debug("Showing main material/nozzle page")
             return
 
-        # Check if the requested screen exists
-        if target_screen not in self.screens:
+        screen = self.screens.get(target_screen)
+        if not screen:
             self.logger.error(f"Requested screen '{target_screen}' not found in available screens")
             return
 
-        # Navigate to the requested sub-screen
-        screen = self.screens[target_screen]
-        
-        # Show loading dialog, yield to event loop, then finish navigation asynchronously
         self._open_loading_dialog("Please wait, loading...")
         QtWidgets.QApplication.processEvents(QtCore.QEventLoop.AllEvents)
         QtCore.QTimer.singleShot(0, lambda: self._navigate_to_screen(screen, params, target_screen))
-        return
 
     # --- New: UI state updates from model ---
     def _status_to_style(self, status: str) -> str:
