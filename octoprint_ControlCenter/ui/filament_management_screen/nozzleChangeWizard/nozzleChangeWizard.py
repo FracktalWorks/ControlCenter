@@ -125,6 +125,50 @@ class NozzleChangeWizard(QWidget):
 	def showEvent(self, event):  # noqa: N802 (Qt naming)
 		super().showEvent(event)
 		try:
+			# Preflight: block wizard if filament is loaded or tool is hot
+			model = getattr(self.main_window, 'printer_model', self.model)
+			tool_str = self.active_tool if isinstance(self.active_tool, str) else f"tool{int(self.active_tool) or 0}"
+			# Check filament status
+			is_loaded = False
+			try:
+				if model and hasattr(model, 'get_bay_state'):
+					state = model.get_bay_state(tool_str) or {}
+					is_loaded = str(state.get('status')) == 'Loaded'
+			except Exception:
+				is_loaded = False
+			if is_loaded:
+				try:
+					dialog.WarningOk(self, "Filament is loaded. Please unload filament before changing the nozzle.", overlay=True)
+				except Exception:
+					pass
+				fms = getattr(self.main_window, "filament_management_screen", None)
+				if fms and hasattr(fms, "show_material_nozzle_screen"):
+					QtCore.QTimer.singleShot(0, lambda: fms.show_material_nozzle_screen())
+				return
+			# Check temperature > 50C
+			too_hot = False
+			try:
+				temps = getattr(model, 'temperatures', {}) or {}
+				tool_idx = 0
+				try:
+					tool_idx = int(tool_str.replace('tool', ''))
+				except Exception:
+					tool_idx = 0
+				t = temps.get(f'tool{tool_idx}')
+				if t is None:
+					t = temps.get(f'tool{tool_idx}Actual')
+				too_hot = (t is not None and float(t) > 50)
+			except Exception:
+				too_hot = False
+			if too_hot:
+				try:
+					dialog.WarningOk(self, "Tool temperature is too high to touch (> 50°C). Please initiate cooling and wait for it to be cool enough to touch", overlay=True)
+				except Exception:
+					pass
+				fms = getattr(self.main_window, "filament_management_screen", None)
+				if fms and hasattr(fms, "show_material_nozzle_screen"):
+					QtCore.QTimer.singleShot(0, lambda: fms.show_material_nozzle_screen())
+				return
 			self.goto_step(0)
 		except Exception as e:
 			self.logger.warning(f"Error resetting wizard on show: {e}")
@@ -153,8 +197,13 @@ class NozzleChangeWizard(QWidget):
 
 		# Enable/disable Next based on step and update label
 		if self.nextButton:
-			# During step 5, disable Next until check completes
-			self.nextButton.setEnabled(index != 4)
+			if index == 4:
+				self.nextButton.setEnabled(False)
+			elif index == 3:
+				enabled = bool(self.changeNozzleComboBox and self.changeNozzleComboBox.currentIndex() > 0)
+				self.nextButton.setEnabled(enabled)
+			else:
+				self.nextButton.setEnabled(True)
 			self.nextButton.setText("Done" if index == self.TOTAL_STEPS - 1 else "Next")
 
 	def on_next_clicked(self):
@@ -163,9 +212,22 @@ class NozzleChangeWizard(QWidget):
 			if self._current_step >= self.TOTAL_STEPS - 1:
 				self.on_finish_clicked()
 				return
-			# If we are leaving step 4, persist selected nozzle (if any)
+			# Enforce selection and persist nozzle (step 4)
 			if self._current_step == 3:
-				self._persist_nozzle_selection()
+				if not self.changeNozzleComboBox or self.changeNozzleComboBox.currentIndex() <= 0:
+					try:
+						dialog.WarningOk(self, "Please select a nozzle size to continue.", overlay=True)
+					except Exception:
+						pass
+					return
+				nozzle = self.changeNozzleComboBox.currentText()
+				try:
+					model = getattr(self.main_window, 'printer_model', self.model)
+					if model and hasattr(model, 'update_tool_bay_state'):
+						model.update_tool_bay_state(self.active_tool, nozzle=nozzle, persist=True)
+						self.logger.info(f"Persisted nozzle '{nozzle}' for {self.active_tool}")
+				except Exception as e:
+					self.logger.warning(f"Unable to persist nozzle selection: {e}")
 			# If we are on step 5 (index 4), Next is disabled until progress completes.
 			self.goto_step(self._current_step + 1)
 		except Exception as e:
@@ -243,6 +305,8 @@ class NozzleChangeWizard(QWidget):
 			self.goto_step(0)
 		except Exception as e:
 			self.logger.error(f"Error finishing nozzle change wizard: {e}")
+
+	# (simplified: preflight checks are inlined in showEvent for readability)
 
 	# ----- Media helpers --------------------------------------------------
 	def _load_step_gifs_safe(self):

@@ -326,7 +326,7 @@ height: 30px;
 </string>
               </property>
               <property name="editable">
-               <bool>false</bool>
+               <bool>true</bool>
               </property>
               <property name="maxVisibleItems">
                <number>8</number>
@@ -336,6 +336,9 @@ height: 30px;
                 <width>30</width>
                 <height>30</height>
                </size>
+              </property>
+              <property name="frame">
+               <bool>false</bool>
               </property>
              </widget>
             </item>
