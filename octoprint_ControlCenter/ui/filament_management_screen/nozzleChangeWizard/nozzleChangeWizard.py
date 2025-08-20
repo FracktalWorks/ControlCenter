@@ -10,13 +10,13 @@ Wizard steps (0-based indices → user-visible 1..6)
 	- Gate the Next button for ~10 seconds to avoid skipping before initial movements.
 	- Run preflight checks (filament unloaded, tool cool) and safe initial moves if printer is idle.
 2. Step 2 (Disconnect):
-	- Disconnect via OctoPrint REST while keeping the websocket connected.
+	- Disconnect OctoPrint while keeping the websocket connected.
 3. Step 3 (Remove Nozzle):
 	- Show instructions and media for nozzle removal.
 4. Step 4 (Select Nozzle):
 	- Let the user pick a nozzle size; persist selection into the model.
 5. Step 5 (Check Connection):
-	- Reconnect REST, restart Klipper, wait for Operational + Klipper Ready.
+	- Reconnect OctoPrint, restart Klipper, wait for Operational + Klipper Ready.
 	- Sample tool temperature (several valid readings) to validate connection.
 	- Use the progress bar to reflect stages; advance to Done when validated.
 6. Step 6 (Done):
@@ -138,8 +138,8 @@ class NozzleChangeWizard(QWidget):
 		self._progress_timer.timeout.connect(self._advance_nozzle_check_progress)
 
 		# Connection handling flags (disconnect REST during step 2; keep WS running)
-		self._rest_was_disconnected = False
-		self._rest_reconnected = False
+		self._octoprint_was_disconnected = False
+		self._octoprint_reconnected = False
 		self._awaiting_reconnect_validation = False
 		self._reconnect_timeout_timer = QtCore.QTimer(self)
 		self._reconnect_timeout_timer.setSingleShot(True)
@@ -336,7 +336,7 @@ class NozzleChangeWizard(QWidget):
 		try:
 			self._stop_nozzle_check()
 			# If we previously disconnected in step 2 and haven't reconnected, reconnect now
-			if self._rest_was_disconnected and not self._rest_reconnected:
+			if self._octoprint_was_disconnected and not self._octoprint_reconnected:
 				self._connect_printer_soft()
 			# Return to the filament management screen if available
 			self.main_window.filament_management_screen.show_material_nozzle_screen()
@@ -352,7 +352,7 @@ class NozzleChangeWizard(QWidget):
 		try:
 			self._stop_nozzle_check()
 			# Ensure we reconnect if we had disconnected earlier
-			if self._rest_was_disconnected and not self._rest_reconnected:
+			if self._octoprint_was_disconnected and not self._octoprint_reconnected:
 				self._connect_printer_soft()
 			self.main_window.filament_management_screen.show_material_nozzle_screen()
 			# Reset to step 1 ready for next open
@@ -615,8 +615,8 @@ class NozzleChangeWizard(QWidget):
 			return
 		try:
 			self.octoprint_client.disconnect()
-			self._rest_was_disconnected = True
-			self._rest_reconnected = False
+			self._octoprint_was_disconnected = True
+			self._octoprint_reconnected = False
 			self.logger.info("OctoPrint REST: disconnect command sent (websocket remains connected)")
 		except Exception as e:
 			self.logger.warning(f"Failed to disconnect printer (soft): {e}")
@@ -632,7 +632,7 @@ class NozzleChangeWizard(QWidget):
 			# Issue Klipper restarts after a short delay to allow the serial link to be ready
 			self.step5Label.setText("Restarting Klipper ...")
 			self.nozzleCheckProgressBar.setValue(50)
-			self._rest_reconnected = True
+			self._octoprint_reconnected = True
 			self.logger.info("OctoPrint REST: connect command sent")
 		except Exception as e:
 			self.logger.warning(f"Failed to reconnect printer (soft): {e}")
