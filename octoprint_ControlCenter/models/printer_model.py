@@ -27,6 +27,11 @@ class PrinterModel(QObject):
     tool_offset_updated = pyqtSignal(str)  # done
     printer_error_signal = pyqtSignal(str)  # done
     filament_sensor_triggered = pyqtSignal(str)  # done
+    filament_presence_sensor_triggered = pyqtSignal(str)
+    filament_jam_sensor_triggered = pyqtSignal(str)
+    filament_presence_sensor_persistent_state = pyqtSignal(str)
+    filament_jam_sensor_persistent_state = pyqtSignal(str)
+    filament_presence_state = pyqtSignal(str, bool)
     z_probing_failed = pyqtSignal()  # done
     z_tool_offset_updated = pyqtSignal(str)  # done
     update_started_signal = pyqtSignal(dict)
@@ -79,8 +84,12 @@ class PrinterModel(QObject):
                 "material_bay_x": {"filament": None, "status": "Unknown", "nozzle": "Unknown"}
             },
         }
-        self._config_store = PrinterConfigStore()
-        self._load_persistent_tool_state()
+    self._config_store = PrinterConfigStore()
+    self._load_persistent_tool_state()
+    # Filament sensor states for UI access
+    self.filament_presence_sensor_persistent_state = False
+    self.filament_jam_sensor_persistent_state = False
+    self.filament_presence_state_map = {}  # {sensor: bool}
 
     def updateTemperature(self, temp_data):
         """ Updates the temperature data. Is a slot for the temperatures_updated signal. """
@@ -157,10 +166,57 @@ class PrinterModel(QObject):
 
     def filamentSensorHandler(self, data):
         """
-        Handles filament sensor trigger events.
+        Handles legacy filament sensor trigger events.
         :param data: Data from the filament sensor.
         """
         self.filament_sensor_triggered.emit(data)
+
+    def filamentPresenceSensorTriggered(self, tool):
+        """
+        Handles filament presence sensor triggered events.
+        :param tool: Tool identifier.
+        """
+        self.filament_presence_sensor_triggered.emit(tool)
+
+    def filamentJamSensorTriggered(self, tool):
+        """
+        Handles filament jam sensor triggered events.
+        :param tool: Tool identifier.
+        """
+        self.filament_jam_sensor_triggered.emit(tool)
+
+    def filamentPresenceSensorPersistentState(self, state):
+        """
+        Handles filament presence sensor persistent state events.
+        :param state: Persistent state value (should be '1' or '0' or boolean).
+        """
+        # Store as boolean for UI access
+        try:
+            self.filament_presence_sensor_persistent_state = bool(int(state))
+        except Exception:
+            self.filament_presence_sensor_persistent_state = bool(state)
+        self.filament_presence_sensor_persistent_state.emit(state)
+
+    def filamentJamSensorPersistentState(self, state):
+        """
+        Handles filament jam sensor persistent state events.
+        :param state: Persistent state value (should be '1' or '0' or boolean).
+        """
+        try:
+            self.filament_jam_sensor_persistent_state = bool(int(state))
+        except Exception:
+            self.filament_jam_sensor_persistent_state = bool(state)
+        self.filament_jam_sensor_persistent_state.emit(state)
+
+    def filamentPresenceState(self, sensor, present):
+        """
+        Handles filament presence state events.
+        :param sensor: Sensor identifier.
+        :param present: Boolean indicating filament presence.
+        """
+        # Store in map for UI access
+        self.filament_presence_state_map[sensor] = bool(present)
+        self.filament_presence_state.emit(sensor, present)
 
     def setZToolOffset(self, offset):
         # self.tool_offsets['Z'] = offset

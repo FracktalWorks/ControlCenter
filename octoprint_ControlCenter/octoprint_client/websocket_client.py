@@ -34,7 +34,6 @@ class OctoPrintWebSocket(QThread):
     update_log_result_signal = pyqtSignal(dict) #! done
     update_failed_signal = pyqtSignal(dict) #! done
     connected_signal = pyqtSignal() #! done
-    filament_sensor_triggered_signal = pyqtSignal(str) #! done
     # firmware_updater_signal = pyqtSignal(dict) ... likely not to be used, but can be added later
     set_z_tool_offset_signal = pyqtSignal(str, bool) #! done
     tool_offset_signal = pyqtSignal(str) # done
@@ -44,6 +43,13 @@ class OctoPrintWebSocket(QThread):
     printer_error_signal = pyqtSignal(str) # done
     # New: Klipper state updates (e.g., 'ready', 'shutdown')
     klipper_state_signal = pyqtSignal(str)
+
+    # Filament sensor related signals
+    filament_presence_sensor_triggered_signal = pyqtSignal(str) #! done
+    filament_jam_sensor_triggered_signal = pyqtSignal(str) #! done
+    filament_presence_sensor_persistent_state_signal = pyqtSignal(str) #! done
+    filament_jam_sensor_persistent_state_signal = pyqtSignal(str) #! done
+    filament_presence_state_signal = pyqtSignal(str, bool) #! done
 
     def __init__(self, ip="0.0.0.0:5000", api_key=None):
         """
@@ -307,15 +313,36 @@ class OctoPrintWebSocket(QThread):
                     for item in data["current"]["messages"]:
                         self.logger.debug(f"Processing message: {item}")
                         
-                        if 'Filament Runout or clogged' in item:  # "Filament Runout on T0/T1"
+                        if 'Filament Runout' in item:  # "Filament Runout on T0/T1"
                             tool = item[item.index('T') + 1:].split(' ', 1)[0]
-                            self.logger.info(f"Filament sensor triggered for tool {tool}")
-                            self.filament_sensor_triggered_signal.emit(tool)
+                            self.logger.info(f"Filament runout triggered on tool {tool}")
+                            self.filament_presence_sensor_triggered_signal.emit(tool)
 
-                        if 'Primary FS Status' in item:
-                            self.logger.info(f"Primary filament sensor status: {item}")
-                            self.filament_sensor_triggered_signal.emit(item)
-                            
+                        if 'Filament Jam' in item:  # "Filament Jam on T0/T1"
+                            tool = item[item.index('T') + 1:].split(' ', 1)[0]
+                            self.logger.info(f"Filament jam triggered on tool {tool}")
+                            self.filament_jam_sensor_triggered_signal.emit(tool)
+
+                        if 'Filament Presence Sensor Persistent State' in item:
+                            tool = item[item.index('is ') + 1:].split(' ', 1)[0]
+                            self.logger.info(f"Filament Presence Sensor Persistent State is {tool}")
+                            self.filament_presence_sensor_persistent_state_signal.emit(tool)
+
+                        if 'Filament Jam Sensor Persistent State' in item:
+                            tool = item[item.index('is ') + 1:].split(' ', 1)[0]
+                            self.logger.info(f"Filament Jam Sensor Persistent State is {tool}")
+                            self.filament_jam_sensor_persistent_state_signal.emit(tool)
+                        
+                        if 'filament detected' in item:
+                            sensor = item[item.index('Filament Sensor ') + 1:].split(' ', 1)[0]
+                            self.logger.info(f"Filament Jam Sensor Persistent State is {sensor}")
+                            self.filament_presence_state_signal.emit(sensor, True)
+                        
+                        if 'filament not detected' in item:
+                            sensor = item[item.index('Filament Sensor ') + 1:].split(' ', 1)[0]
+                            self.logger.info(f"Filament not Detected in {sensor}")
+                            self.filament_presence_state_signal.emit(sensor, False)
+
                         if 'Count' in item:  # can get through the positionUpdate event
                             z_offset = item[item.index('z') + 2:].split(',', 1)[0]
                             self.logger.debug(f"Z tool offset update: {z_offset}")

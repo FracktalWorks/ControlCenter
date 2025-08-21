@@ -117,6 +117,7 @@ class ThreadConnectionCheck(QtCore.QThread):
             self.loaded_signal.emit()
 
 class MainController:
+
     """Main controller for the OctoPrint Control Center application.
     
     Manages the connection to the OctoPrint server and handles startup
@@ -297,7 +298,11 @@ class MainController:
         self.octoprint_websocket.update_log_result_signal.connect(self.printer_model.softwareUpdateResult)
         self.octoprint_websocket.update_failed_signal.connect(self.printer_model.updateFailed)
         self.octoprint_websocket.connected_signal.connect(self.onWebSocketConnected)  # function is defined in main only
-        self.octoprint_websocket.filament_sensor_triggered_signal.connect(self.printer_model.filamentSensorHandler)
+        self.octoprint_websocket.filament_presence_sensor_triggered_signal.connect(self.filamentPresenceSensorTriggered)
+        self.octoprint_websocket.filament_jam_sensor_triggered_signal.connect(self.filamentJamSensorTriggered)
+        self.octoprint_websocket.filament_presence_sensor_persistent_state_signal.connect(self.printer_model.filamentPresenceSensorPersistentState)
+        self.octoprint_websocket.filament_jam_sensor_persistent_state_signal.connect(self.printer_model.filamentJamSensorPersistentState)
+        self.octoprint_websocket.filament_presence_state_signal.connect(self.printer_model.filamentPresenceState)
         self.octoprint_websocket.tool_offset_signal.connect(self.printer_model.getToolOffset)
         self.octoprint_websocket.active_extruder_signal.connect(self.printer_model.setActiveExtruder)
         self.octoprint_websocket.z_probe_offset_signal.connect(self.printer_model.updateEEPROMProbeOffset)
@@ -310,49 +315,22 @@ class MainController:
         # local signal slot connections
         self.printer_model.filament_sensor_triggered.connect(self.filamentSensorHandler)
 
-    def filamentSensorHandler(self, data):
-        # """
-        # Handles the filament sensor
-        # """
-        # logger.info("ControlScreen.filamentSensorHandler started")
-        # change_filament_screen = self.main_window.filament_management_screen.change_filament_screen
-        # try:
-        #     print(data)
+    def filamentPresenceSensorTriggered(self, tool):
+        """
+        Slot for filament presence sensor triggered signal.
+        :param tool: Tool identifier (str)
+        """
+        self.logger.info(f"Filament presence sensor triggered for tool: {tool}")
+        # TODO: Add UI or print handling logic here
+        pass
 
-        #     triggered_extruder0 = False
-        #     triggered_extruder1 = False
-
-        #     if '0' in data:
-        #         triggered_extruder0 = True
-
-        #     if '1' in data:
-        #         triggered_extruder1 = True
-
-        #     if triggered_extruder0 and self.main_window.stacked_widget.currentWidget() not in [
-        #         change_filament_screen.changeFilamentPage,
-        #         change_filament_screen.changeFilamentProgressPage,
-        #         change_filament_screen.changeFilamentExtrudePage,
-        #         change_filament_screen.changeFilamentRetractPage,
-        #         change_filament_screen.changeFilamentLoadPage]:
-        #         self.octoprint_client.gcode(command='PAUSE')
-        #         if dialog.WarningOk(self,
-        #                             "Filament outage or clog detected in Extruder 0. Please check the external motors. Print paused"):
-        #             pass
-
-        #     if triggered_extruder1 and self.main_window.stacked_widget.currentWidget() not in [
-        #         change_filament_screen.changeFilamentPage,
-        #         change_filament_screen.changeFilamentProgressPage,
-        #         change_filament_screen.changeFilamentExtrudePage,
-        #         change_filament_screen.changeFilamentRetractPage,
-        #         change_filament_screen.changeFilamentLoadPage]:
-        #         self.octoprint_client.gcode(command='PAUSE')
-        #         if dialog.WarningOk(self,
-        #                             "Filament outage or clog detected in Extruder 1. Please check the external motors. Print paused"):
-        #             pass
-
-        # except Exception as e:
-        #     logger.error("Error in ControlScreen.filamentSensorHandler: {}".format(e))
-        #     dialog.WarningOk(self, "Error in ControlScreen.filamentSensorHandler: {}".format(e), overlay=True)
+    def filamentJamSensorTriggered(self, tool):
+        """
+        Slot for filament jam sensor triggered signal.
+        :param tool: Tool identifier (str)
+        """
+        self.logger.info(f"Filament jam sensor triggered for tool: {tool}")
+        # TODO: Add UI or print handling logic here
         pass
 
     def checkKlipperPrinterCFG(self):
