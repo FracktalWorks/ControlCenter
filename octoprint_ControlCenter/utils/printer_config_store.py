@@ -48,7 +48,12 @@ class PrinterConfigStore:
                 self.fallback_path = fallback_path
                 self._cache = None          # in-memory state dict
                 self._dirty = False          # pending changes flag
-                self._lock = threading.Lock()
+                # NOTE: Use RLock because several public setters acquire the lock
+                # and then call load_full(), which itself acquires the same lock.
+                # A regular Lock caused a self-deadlock (UI hang) when toggling
+                # preferences (e.g., filament runout button) because
+                # set_preference -> with _lock -> load_full() -> with _lock.
+                self._lock = threading.RLock()
                 self._batch_depth = 0        # nested batch tracking
 
         def _read_json(self, path: str):

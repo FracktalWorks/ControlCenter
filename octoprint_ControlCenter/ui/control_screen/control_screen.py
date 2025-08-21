@@ -155,12 +155,10 @@ class ControlScreen(QWidget):
 
         # Filament Buttons Signal Connections
         self.setFlowRateButton.clicked.connect(lambda: self.octoprint_client.flowrate(self.flowRateSpinBox.value()))
-        if self.toggleFilamentRunoutButton:
-            self.toggleFilamentRunoutButton.setCheckable(True)
-            self.toggleFilamentRunoutButton.clicked.connect(self.toggleFilamentRunout)
-        if self.toggleFilamentJamButton:
-            self.toggleFilamentJamButton.setCheckable(True)
-            self.toggleFilamentJamButton.clicked.connect(self.toggleFilamentJam)
+
+        self.toggleFilamentRunoutButton.clicked.connect(self.toggleFilamentRunout)
+
+        self.toggleFilamentJamButton.clicked.connect(self.toggleFilamentJam)
 
         # Configure spinboxes
         for spinbox in [self.feedRateSpinBox, self.toolTempSpinBox, self.bedTempSpinBox, self.flowRateSpinBox]:
@@ -180,14 +178,10 @@ class ControlScreen(QWidget):
 
         # Reflect persistent filament sensor preferences in toggle buttons
         try:
-            if self.toggleFilamentRunoutButton:
-                runout_enabled = bool(self.main_window.printer_model.filament_runout_sensor_persistent_state)
-                self.toggleFilamentRunoutButton.setChecked(runout_enabled)
-                self.toggleFilamentRunoutButton.setText("Runout: ON" if runout_enabled else "Runout: OFF")
-            if self.toggleFilamentJamButton:
-                jam_enabled = bool(self.main_window.printer_model.filament_jam_sensor_persistent_state)
-                self.toggleFilamentJamButton.setChecked(jam_enabled)
-                self.toggleFilamentJamButton.setText("Jam: ON" if jam_enabled else "Jam: OFF")
+            runout_enabled = bool(self.main_window.printer_model.filament_runout_sensor_persistent_state)
+            self.toggleFilamentRunoutButton.setChecked(runout_enabled)
+            jam_enabled = bool(self.main_window.printer_model.filament_jam_sensor_persistent_state)
+            self.toggleFilamentJamButton.setChecked(jam_enabled)
         except Exception as e:
             self.logger.warning(f"Failed initializing filament toggle buttons: {e}")
 
