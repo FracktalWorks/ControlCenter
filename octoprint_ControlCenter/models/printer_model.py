@@ -29,8 +29,6 @@ class PrinterModel(QObject):
     filament_sensor_triggered = pyqtSignal(str)  # done
     filament_runout_sensor_triggered = pyqtSignal(str)
     filament_jam_sensor_triggered = pyqtSignal(str)
-    filament_runout_sensor_persistent_state = pyqtSignal(str)
-    filament_jam_sensor_persistent_state = pyqtSignal(str)
     filament_runout_state = pyqtSignal(str, bool)
     z_probing_failed = pyqtSignal()  # done
     z_tool_offset_updated = pyqtSignal(str)  # done
@@ -85,11 +83,40 @@ class PrinterModel(QObject):
             },
         }
         self._config_store = PrinterConfigStore()
-        self._load_persistent_tool_state()
-        # Filament sensor states for UI access
-        self.filament_runout_sensor_persistent_state = False
-        self.filament_jam_sensor_persistent_state = False
+        # Load full cached state once
+        try:
+            state = self._config_store.load_full()
+        except Exception as e:
+            self.logger.error(f"Failed to load printer config store: {e}")
+            state = {"tools": {}, "preferences": {}}
+        # Initialize tools from cached state
+        self._init_tools_from_store(state.get("tools", {}))
+        # Filament sensor states & preferences
+        prefs = state.get("preferences", {})
+        self.filament_runout_sensor_persistent_state = bool(prefs.get("filament_runout_enabled", False))
+        self.filament_jam_sensor_persistent_state = bool(prefs.get("filament_jam_enabled", False))
         self.filament_runout_state_map = {}  # {sensor: bool}
+
+    # --- Filament sensor preference setters (called by controller/UI) -------
+    def set_filament_runout_pref(self, enabled: bool, persist: bool = True):
+        prev = self.filament_runout_sensor_persistent_state
+        self.filament_runout_sensor_persistent_state = bool(enabled)
+        try:
+            self.filament_runout_sensor_persistent_state.emit('1' if enabled else '0')  # type: ignore
+        except Exception:
+            pass
+        if persist and prev != enabled:
+            self._config_store.set_preference('filament_runout_enabled', bool(enabled))
+
+    def set_filament_jam_pref(self, enabled: bool, persist: bool = True):
+        prev = self.filament_jam_sensor_persistent_state
+        self.filament_jam_sensor_persistent_state = bool(enabled)
+        try:
+            self.filament_jam_sensor_persistent_state.emit('1' if enabled else '0')  # type: ignore
+        except Exception:
+            pass
+        if persist and prev != enabled:
+            self._config_store.set_preference('filament_jam_enabled', bool(enabled))
 
     def updateTemperature(self, temp_data):
         """ Updates the temperature data. Is a slot for the temperatures_updated signal. """
@@ -185,29 +212,6 @@ class PrinterModel(QObject):
         """
         self.filament_jam_sensor_triggered.emit(tool)
 
-    def filamentRunoutSensorPersistentState(self, state):
-        """
-        Handles filament runout sensor persistent state events.
-        :param state: Persistent state value (should be '1' or '0' or boolean).
-        """
-        # Store as boolean for UI access
-        try:
-            self.filament_runout_sensor_persistent_state = bool(int(state))
-        except Exception:
-            self.filament_runout_sensor_persistent_state = bool(state)
-        self.filament_runout_sensor_persistent_state.emit(state)
-
-    def filamentJamSensorPersistentState(self, state):
-        """
-        Handles filament jam sensor persistent state events.
-        :param state: Persistent state value (should be '1' or '0' or boolean).
-        """
-        try:
-            self.filament_jam_sensor_persistent_state = bool(int(state))
-        except Exception:
-            self.filament_jam_sensor_persistent_state = bool(state)
-        self.filament_jam_sensor_persistent_state.emit(state)
-
     def filamentRunoutState(self, sensor, present):
         """
         Handles filament runout state events.
@@ -251,59 +255,39 @@ class PrinterModel(QObject):
             nozzle = "Unknown"
         return {"filament": filament, "status": status, "nozzle": nozzle}
 
-    def _load_persistent_tool_state(self):
+    def _init_tools_from_store(self, tools_state: dict):
         try:
-            state = self._config_store.load() or {}
-            tools = state.get("tools", {})
             for tool_id in ("tool0", "tool1"):
-                # accept either new nested schema or legacy flat schema
-                raw = tools.get(tool_id, {})
-                if any(k in raw for k in ("filament", "status", "nozzle")):
-                    # legacy flat -> map to default bay
-                    bay = "material_bay_a" if tool_id == "tool0" else "material_bay_x"
-                    self.tools[tool_id][bay] = self._sanitize_bay_state(raw)
-                else:
-                    # new nested
-                    bays = {}
-                    for bay, v in raw.items():
-                        bays[bay] = self._sanitize_bay_state(v)
-                    # ensure at least default bay exists
-                    if not bays:
-                        bays = {("material_bay_a" if tool_id == "tool0" else "material_bay_x"): {"filament": None, "status": "Unknown", "nozzle": "Unknown"}}
-                    self.tools[tool_id] = bays
+                raw = tools_state.get(tool_id, {})
+                # Already upgraded by store; just validate & copy
+                cleaned = {}
+                for bay, v in raw.items():
+                    cleaned[bay] = self._sanitize_bay_state(v)
+                if not cleaned:
+                    cleaned = {("material_bay_a" if tool_id == "tool0" else "material_bay_x"): {"filament": None, "status": "Unknown", "nozzle": "Unknown"}}
+                self.tools[tool_id] = cleaned
             self.tool_bay_states_loaded.emit(self.tools.copy())
-            self.logger.info("Loaded persistent tool state")
         except Exception as e:
-            self.logger.error(f"Failed loading persistent tool state: {e}")
+            self.logger.error(f"Failed initializing tool state: {e}")
             self.tool_bay_states_loaded.emit(self.tools.copy())
-
-    def _persist_tool_state(self):
-        try:
-            payload = {"version": 1, "tools": self.tools}
-            self._config_store.save(payload)
-        except Exception as e:
-            self.logger.error(f"Failed to persist tool state: {e}")
 
     def update_tool_bay_state(self, tool: str, bay: str = None, filament=None, status=None, nozzle=None, persist=True):
         if tool not in ("tool0", "tool1"):
             self.logger.error(f"Invalid tool: {tool}")
             return
-        # Determine default bay if not provided
         bay = bay or ("material_bay_a" if tool == "tool0" else "material_bay_x")
+        # Validate inputs
+        if status is not None and status not in self.status_options:
+            status = "Unknown"
+        if nozzle is not None and (nozzle not in self.nozzle_options and nozzle != "Unknown"):
+            nozzle = "Unknown"
+        cur = self._config_store.set_tool_state(tool, bay=bay, filament=filament if filament is not None else None,
+                                                status=status if status is not None else None,
+                                                nozzle=nozzle if nozzle is not None else None)
+        # Mirror into in-memory tools dict
         if tool not in self.tools:
             self.tools[tool] = {}
-        if bay not in self.tools[tool]:
-            self.tools[tool][bay] = {"filament": None, "status": "Unknown", "nozzle": "Unknown"}
-        cur = dict(self.tools[tool][bay])
-        if filament is not None:
-            cur["filament"] = filament
-        if status is not None:
-            cur["status"] = status if status in self.status_options else "Unknown"
-        if nozzle is not None:
-            cur["nozzle"] = nozzle if (nozzle in self.nozzle_options or nozzle == "Unknown") else "Unknown"
         self.tools[tool][bay] = cur
-        if persist:
-            self._persist_tool_state()
         self.tool_bay_state_changed.emit(tool, bay, cur.copy())
 
     # Backward-compatible wrapper

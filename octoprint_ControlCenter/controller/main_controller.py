@@ -10,7 +10,7 @@ To Implement Multiple Material Bays:"
 Load each active material bay using update_tool_bay_state
 and also set this up in Klipper Variables.
 Depending on the state of the KLipper Variables, SYNC_EXTRUDER_MOTION
-is set whereever applicable (homing overide, mirror/duplication modes etc)
+is set where ever applicable (homing overide, mirror/duplication modes etc)
 """
 from ui.main_window import MainWindow
 from utils.logger import get_logger
@@ -273,6 +273,11 @@ class MainController:
                     self.logger.warning(f"Failed to check for print failure: {e}")
                 except Exception as e:
                     self.logger.error(f"Unexpected error checking print failure: {e}")
+                # After initial status, sync filament sensor state with preferences
+                try:
+                    self.apply_filament_sensor_state()
+                except Exception as e:
+                    self.logger.warning(f"Failed applying initial filament sensor state: {e}")
             except Exception as e:
                 self.logger.error("Error in MainController.onWebSocketConnected: {}".format(e))
                 dialog.WarningOk(self.main_window, "Error in MainController.onWebSocketConnected: {}".format(e), overlay=True)
@@ -371,6 +376,33 @@ class MainController:
         self.logger.info(f"Filament jam sensor triggered for tool: {tool}")
         # TODO: Add UI or print handling logic here
         pass
+
+    # --- Filament sensor preference/state application -----------------------
+    def apply_filament_sensor_state(self):
+        """Apply filament sensor enable/disable based on persistent preferences and current print state.
+
+        Rules:
+          - If corresponding preference disabled -> always send S0.
+          - If enabled & printer_status in ["Printing"] or resuming -> S1.
+          - If enabled but status in ["Paused", "Operational", "Offline", others] -> S0 (only active during active print).
+        """
+        if not self.octoprint_client:
+            return
+        try:
+            runout_pref = getattr(self.printer_model, 'filament_runout_sensor_persistent_state', False)
+            jam_pref = getattr(self.printer_model, 'filament_jam_sensor_persistent_state', False)
+            status = self.printer_model.printer_status
+            active_printing = status in ["Printing"]  # Could extend with "Starting"
+            # Runout
+            desired_runout = 1 if (runout_pref and active_printing) else 0
+            # Jam
+            desired_jam = 1 if (jam_pref and active_printing) else 0
+            # Send macros
+            self.octoprint_client.gcode(command=f'SET_FILAMENT_RUNOUT_SENSOR S{desired_runout}')
+            self.octoprint_client.gcode(command=f'SET_FILAMENT_JAM_SENSOR S{desired_jam}')
+            self.logger.info(f"Applied filament sensor state: runout={desired_runout} jam={desired_jam} (status={status})")
+        except Exception as e:
+            self.logger.error(f"Failed applying filament sensor state: {e}")
 
     def onFilamentRunoutState(self, sensor, state):
         self.logger.info(f"Filament runout state changed: {sensor} is {'present' if state else 'not present'}")
@@ -510,7 +542,10 @@ class MainController:
         """Handle print cancelled event."""
         try:
             self.logger.info("MainController.onPrintCancelled invoked")
-            # Future: update UI or state based on event payload
+            # Disable sensors when print cancelled
+            if self.octoprint_client:
+                self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S0')
+                self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S0')
         except Exception as e:
             self.logger.error(f"Error in onPrintCancelled: {e}")
 
@@ -518,7 +553,8 @@ class MainController:
         """Handle print started event."""
         try:
             self.logger.info("MainController.onPrintStarted invoked")
-            # Future: update UI or state based on event payload
+            # Apply preferences (may enable sensors)
+            self.apply_filament_sensor_state()
         except Exception as e:
             self.logger.error(f"Error in onPrintStarted: {e}")
 
@@ -526,7 +562,7 @@ class MainController:
         """Handle print resumed event."""
         try:
             self.logger.info("MainController.onPrintResumed invoked")
-            # Future: update UI or state based on event payload
+            self.apply_filament_sensor_state()
         except Exception as e:
             self.logger.error(f"Error in onPrintResumed: {e}")
 
@@ -534,6 +570,9 @@ class MainController:
         """Handle print paused event."""
         try:
             self.logger.info("MainController.onPrintPaused invoked")
-            # Future: update UI or state based on event payload
+            # Disable during pause
+            if self.octoprint_client:
+                self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S0')
+                self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S0')
         except Exception as e:
             self.logger.error(f"Error in onPrintPaused: {e}")

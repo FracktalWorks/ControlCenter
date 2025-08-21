@@ -57,7 +57,7 @@ class ControlScreen(QWidget):
         self.setFlowRateButton = self.findChild(QPushButton, "setFlowRateButton")
 
         # Preferences controls
-        self.toggleFilamentOutageButton = self.findChild(QPushButton, "toggleFilamentOutageButton")
+        self.toggleFilamentRunoutButton = self.findChild(QPushButton, "toggleFilamentRunoutButton")
         self.toggleFilamentJamButton = self.findChild(QPushButton, "toggleFilamentJamButton")
         self.toggleAutoResumeButton = self.findChild(QPushButton, "toggleAutoResumeButton")
         self.toggleCheckPrintCompatibilityButton = self.findChild(QPushButton, "toggleCheckPrintCompatibilityButton")
@@ -105,7 +105,7 @@ class ControlScreen(QWidget):
             self.moveYPButton, self.moveYMButton, self.flowRateSpinBox,
             self.setFlowRateButton, 
             self.tuneTab, self.temperatureTab, self.motionTab, self.preferencesTab,
-            self.toggleFilamentOutageButton, self.toggleFilamentJamButton,
+            self.toggleFilamentRunoutButton, self.toggleFilamentJamButton,
             self.toggleAutoResumeButton, self.toggleCheckPrintCompatibilityButton
         ], "ControlScreen")
 
@@ -155,6 +155,12 @@ class ControlScreen(QWidget):
 
         # Filament Buttons Signal Connections
         self.setFlowRateButton.clicked.connect(lambda: self.octoprint_client.flowrate(self.flowRateSpinBox.value()))
+        if self.toggleFilamentRunoutButton:
+            self.toggleFilamentRunoutButton.setCheckable(True)
+            self.toggleFilamentRunoutButton.clicked.connect(self.toggleFilamentRunout)
+        if self.toggleFilamentJamButton:
+            self.toggleFilamentJamButton.setCheckable(True)
+            self.toggleFilamentJamButton.clicked.connect(self.toggleFilamentJam)
 
         # Configure spinboxes
         for spinbox in [self.feedRateSpinBox, self.toolTempSpinBox, self.bedTempSpinBox, self.flowRateSpinBox]:
@@ -170,11 +176,20 @@ class ControlScreen(QWidget):
                 palette.setColor(QPalette.HighlightedText, QColor(0, 0, 0))
                 spinbox.lineEdit().setPalette(palette)
 
-        # Default to tab 0
-        self.controlTabWidget.setCurrentIndex(0)
+        self.setStep(1)
 
-        # Initialize filament sensor state
-        self.filament_sensor_enabled = True
+        # Reflect persistent filament sensor preferences in toggle buttons
+        try:
+            if self.toggleFilamentRunoutButton:
+                runout_enabled = bool(self.main_window.printer_model.filament_runout_sensor_persistent_state)
+                self.toggleFilamentRunoutButton.setChecked(runout_enabled)
+                self.toggleFilamentRunoutButton.setText("Runout: ON" if runout_enabled else "Runout: OFF")
+            if self.toggleFilamentJamButton:
+                jam_enabled = bool(self.main_window.printer_model.filament_jam_sensor_persistent_state)
+                self.toggleFilamentJamButton.setChecked(jam_enabled)
+                self.toggleFilamentJamButton.setText("Jam: ON" if jam_enabled else "Jam: OFF")
+        except Exception as e:
+            self.logger.warning(f"Failed initializing filament toggle buttons: {e}")
 
 
         # Connect to printer model for status updates
@@ -340,22 +355,26 @@ class ControlScreen(QWidget):
             logger.error(f"Error updating ControlScreen UI for status {status}: {e}")
             dialog.WarningOk(self, f"Error updating ControlScreen UI for status {status}: {e}", overlay=True)
 
-    def toggleFilamentOutage(self):
-        """Toggle filament outage sensor"""
-        logger.info("ControlScreen.toggleFilamentOutage started")
+    def toggleFilamentRunout(self):
+        """Toggle filament runout sensor persistent preference and apply live state."""
+        logger.info("ControlScreen.toggleFilamentRunout started")
         try:
-            # Add your filament outage sensor logic here
-            pass
+            enabled = self.toggleFilamentRunoutButton.isChecked()
+            # Update model preference (persists)
+            self.main_window.printer_model.set_filament_runout_pref(enabled, persist=True)
+            # Apply immediate state depending on current print status
+            self.main_window.controller.apply_filament_sensor_state()
         except Exception as e:
-            logger.error(f"Error in ControlScreen.toggleFilamentOutage: {e}")
-            dialog.WarningOk(self, f"Error in ControlScreen.toggleFilamentOutage: {e}", overlay=True)
+            logger.error(f"Error in ControlScreen.toggleFilamentRunout: {e}")
+            dialog.WarningOk(self, f"Error in ControlScreen.toggleFilamentRunout: {e}", overlay=True)
 
     def toggleFilamentJam(self):
-        """Toggle filament jam sensor"""
+        """Toggle filament jam sensor persistent preference and apply live state."""
         logger.info("ControlScreen.toggleFilamentJam started")
         try:
-            # Add your filament jam sensor logic here
-            pass
+            enabled = self.toggleFilamentJamButton.isChecked()
+            self.main_window.printer_model.set_filament_jam_pref(enabled, persist=True)
+            self.main_window.controller.apply_filament_sensor_state()
         except Exception as e:
             logger.error(f"Error in ControlScreen.toggleFilamentJam: {e}")
             dialog.WarningOk(self, f"Error in ControlScreen.toggleFilamentJam: {e}", overlay=True)

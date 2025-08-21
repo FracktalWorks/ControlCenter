@@ -3236,12 +3236,12 @@ QScrollBar::down-arrow:vertical {
 background-color: rgba(255, 255, 255, 0);</string>
               </property>
               <property name="text">
-               <string>Filament Outage Sensor</string>
+               <string>Filament Runout Sensor</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="toggleFilamentOutageButton">
+             <widget class="QPushButton" name="toggleFilamentRunoutButton">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -3297,6 +3297,9 @@ QPushButton:default {
               </property>
               <property name="checkable">
                <bool>true</bool>
+              </property>
+              <property name="checked">
+               <bool>false</bool>
               </property>
              </widget>
             </item>
