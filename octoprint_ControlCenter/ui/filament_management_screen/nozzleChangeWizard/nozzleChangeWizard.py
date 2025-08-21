@@ -247,82 +247,76 @@ class NozzleChangeWizard(QWidget):
 	def goto_step(self, index: int):
 		"""Switch to the given step index (0-based) and run step-entry hooks."""
 		index = max(0, min(index, self.TOTAL_STEPS - 1))
+		prev_step = getattr(self, "_current_step", 0)
+
+		# 2) Commit the step change in UI
 		self._current_step = index
 		if self.stackedWidget:
 			self.stackedWidget.setCurrentIndex(index)
 		self._update_step_label()
 
-		# Step-specific connection handling
-		# Step 2 (index 1): disconnect printer via REST while keeping websocket running
+		# 3) Enter/leave logic organized by step order
+		# Step 1: Intro guard
+		if index == self.STEP_INTRO:
+			try:
+				if self._step1_guard_timer.isActive():
+					self._step1_guard_timer.stop()
+				self._enable_next(False)  # re-arm guard
+				self._step1_guard_timer.start(10000)
+			except Exception:
+				pass
+		elif prev_step == self.STEP_INTRO:
+			try:
+				if self._step1_guard_timer.isActive():
+					self._step1_guard_timer.stop()
+			except Exception:
+				pass
+
+		# Step 2: Disconnect on entry
 		if index == self.STEP_DISCONNECT:
 			self._disconnect_printer_soft()
-		# Step 5 handled in _begin_reconnect_validation
 
-		# Enter/leave step-specific hooks
-		if index == self.STEP_CHECK_CONNECTION:  # Step 5 page (0-based index)
+		# Step 4: Prepare selection UI on entry, teardown when leaving
+		if index == self.STEP_SELECT_NOZZLE:
+			self._prepare_step4()
+		elif prev_step == self.STEP_SELECT_NOZZLE:
+			self._teardown_step4()
+
+		# Step 5: Reconnect/validate on entry; otherwise ensure teardown
+		if index == self.STEP_CHECK_CONNECTION:
+			nozzle = self.changeNozzleComboBox.currentText()
+			try:
+				self.model.update_tool_bay_state(self.active_tool, nozzle=nozzle, persist=True)
+				self.logger.info(f"Persisted nozzle '{nozzle}' for {self.active_tool}")
+			except Exception as e:
+				self.logger.warning(f"Unable to persist nozzle selection: {e}")
 			self._begin_reconnect_validation()
 		else:
 			self._teardown_step5_connections()
 			self._stop_nozzle_check()
 
-		# Step 4 setup/teardown
-		if index == self.STEP_SELECT_NOZZLE:
-			self._prepare_step4()
-		else:
-			self._teardown_step4()
-
-		# Step 1 guard handling: start when entering intro; stop when leaving
-		if index == self.STEP_INTRO:
-			try:
-				if self._step1_guard_timer.isActive():
-					self._step1_guard_timer.stop()
-				# Always enforce a fresh 10s guard when showing step 1
-				self._enable_next(False)
-				self._step1_guard_timer.start(10000)
-			except Exception:
-				pass
-		else:
-			try:
-				if self._step1_guard_timer.isActive():
-					self._step1_guard_timer.stop()
-			except Exception:
-				pass
-
-
-		# Enable/disable Next based on step and update label
+		# 4) Next button state/text
 		if self.nextButton:
+			self.nextButton.setText("Done" if index == self.STEP_DONE else "Next")
 			if index == self.STEP_CHECK_CONNECTION:
 				self._enable_next(False)
 			elif index == self.STEP_SELECT_NOZZLE:
 				self._enable_next(bool(self.changeNozzleComboBox and self.changeNozzleComboBox.currentIndex() > 0))
 			elif index == self.STEP_INTRO:
-				# Keep disabled during the intro guard; will be enabled on timer elapsed
-				self._enable_next(False)
+				self._enable_next(False)  # guard will enable later
 			else:
 				self._enable_next(True)
-			self.nextButton.setText("Done" if index == self.STEP_DONE else "Next")
 
 	def on_next_clicked(self):
 		"""Handle Next button clicks, including Done semantics on final step.
 
-		Also persists the nozzle selection on Step 4.
+		Persistence for nozzle selection during Step 4 -> 5 transition is handled in goto_step.
 		"""
 		try:
 			# If we are on the last step, treat Next as Done
 			if self._current_step >= self.STEP_DONE:
 				self.on_finish_clicked()
 				return
-			# Enforce selection and persist nozzle (step 4)
-			if self._current_step == self.STEP_SELECT_NOZZLE:
-				if not self.changeNozzleComboBox or self.changeNozzleComboBox.currentIndex() <= 0:
-					dialog.WarningOk(self, "Please select a nozzle size to continue.", overlay=True)
-					return
-				nozzle = self.changeNozzleComboBox.currentText()
-				try:
-					self.model.update_tool_bay_state(self.active_tool, nozzle=nozzle, persist=True)
-					self.logger.info(f"Persisted nozzle '{nozzle}' for {self.active_tool}")
-				except Exception as e:
-					self.logger.warning(f"Unable to persist nozzle selection: {e}")
 			# If we are on step 5, Next is disabled until progress completes.
 			self.goto_step(self._current_step + 1)
 		except Exception as e:
@@ -648,7 +642,7 @@ class NozzleChangeWizard(QWidget):
 				pass
 
 			self.changeNozzleComboBox.clear()
-			self.changeNozzleComboBox.addItem("Select nozzle size")
+			self.changeNozzleComboBox.addItem("Select Size")
 			options = []
 			if self.model is not None and hasattr(self.model, 'nozzle_options'):
 				options = list(getattr(self.model, 'nozzle_options') or [])
@@ -656,20 +650,6 @@ class NozzleChangeWizard(QWidget):
 				options = ["0.25", "0.4", "0.6", "0.8", "1.0"]
 			for opt in options:
 				self.changeNozzleComboBox.addItem(str(opt))
-
-			# Preselect current nozzle if available in model state
-			current_nozzle = None
-			try:
-				if self.model and hasattr(self.model, 'get_bay_state') and self.active_tool:
-					state = self.model.get_bay_state(self.active_tool)
-					current_nozzle = state.get('nozzle') if isinstance(state, dict) else None
-			except Exception:
-				current_nozzle = None
-
-			if current_nozzle:
-				idx = self.changeNozzleComboBox.findText(str(current_nozzle))
-				if idx > 0:
-					self.changeNozzleComboBox.setCurrentIndex(idx)
 
 			# Next enabled only when a real selection is made
 			if self.nextButton:

@@ -202,6 +202,99 @@ class MainController:
             self.logger.error(f"Error during startup success handling: {e}")
             self.handleStartupError()
 
+    def initialize_websocket(self):
+        """Initialize websocket connection and signal bindings.
+        
+        Creates OctoPrint websocket client and connects all websocket signals
+        to appropriate handlers in the printer model and main controller.
+        """
+        self.octoprint_websocket = OctoPrintWebSocket(ip=ip, api_key=apiKey)
+        self.octoprint_websocket.start()
+
+        # Connect signals from the websocket to the printer model
+        self.octoprint_websocket.temperatures_signal.connect(self.printer_model.updateTemperature)
+        self.octoprint_websocket.status_signal.connect(self.printer_model.updateStatus)
+        self.octoprint_websocket.set_z_tool_offset_signal.connect(self.printer_model.setZToolOffset)
+        self.octoprint_websocket.print_status_signal.connect(self.printer_model.updatePrintStatus)
+        self.octoprint_websocket.update_started_signal.connect(self.printer_model.softwareUpdateProgress)
+        self.octoprint_websocket.update_log_signal.connect(self.printer_model.softwareUpdateProgressLog)
+        self.octoprint_websocket.update_log_result_signal.connect(self.printer_model.softwareUpdateResult)
+        self.octoprint_websocket.update_failed_signal.connect(self.printer_model.updateFailed)
+        self.octoprint_websocket.tool_offset_signal.connect(self.printer_model.getToolOffset)
+        self.octoprint_websocket.active_extruder_signal.connect(self.printer_model.setActiveExtruder)
+        self.octoprint_websocket.z_probe_offset_signal.connect(self.printer_model.updateEEPROMProbeOffset)
+        self.octoprint_websocket.klipper_state_signal.connect(self.printer_model.update_klipper_state)
+        self.octoprint_websocket.filament_presence_sensor_persistent_state_signal.connect(self.printer_model.filamentPresenceSensorPersistentState)
+        self.octoprint_websocket.filament_jam_sensor_persistent_state_signal.connect(self.printer_model.filamentJamSensorPersistentState)
+        self.octoprint_websocket.filament_presence_state_signal.connect(self.printer_model.filamentPresenceState)
+
+        # local signal slot connections
+        self.octoprint_websocket.connected_signal.connect(self.onWebSocketConnected)  # function is defined in main only
+        self.octoprint_websocket.filament_presence_sensor_triggered_signal.connect(self.filamentPresenceSensorTriggered)
+        self.octoprint_websocket.filament_jam_sensor_triggered_signal.connect(self.filamentJamSensorTriggered)
+        self.octoprint_websocket.z_probing_failed_signal.connect(self.showProbingFailed)
+        self.octoprint_websocket.printer_error_signal.connect(self.showPrinterError)
+        
+    def onWebSocketConnected(self):
+        """Handle websocket connection establishment.
+        
+        Checks printer status, detects previous print failures, and offers
+        print restoration if applicable. Called when websocket connects.
+        """
+        self.logger.info("MainController.onWebSocketConnected started")
+
+        if self.octoprint_client:
+            try:
+                # Send status command to check printer state
+                status_response = self.octoprint_client.gcode(command='status')
+                if status_response:
+                    self.logger.debug(f"Printer status response: {status_response}")
+                try:
+                    response = self.octoprint_client.isFailureDetected()
+                    if response["canRestore"] is True:
+                        self.printRestoreMessageBox(response["file"])
+                    else:
+                        #TODO: Check for updates on startup if preferred
+                        pass
+                    
+                except (KeyError, TypeError, AttributeError) as e:
+                    self.logger.warning(f"Failed to check for print failure: {e}")
+                except Exception as e:
+                    self.logger.error(f"Unexpected error checking print failure: {e}")
+            except Exception as e:
+                self.logger.error("Error in MainController.onWebSocketConnected: {}".format(e))
+                dialog.WarningOk(self.main_window, "Error in MainController.onWebSocketConnected: {}".format(e), overlay=True)
+        
+    def checkKlipperPrinterCFG(self):
+        """Check for valid printer.cfg and restore if needed.
+        
+        Validates the Klipper printer configuration file and attempts to
+        restore from backup if corrupted. Cancels active print and cools
+        down if configuration is invalid.
+        """
+        if not self.octoprint_client:
+            return
+        try:
+            if not klipper_cfg_utils.is_config_valid():
+                self.logger.error("Printer Config File Corrupted or Not Found, Attempting to restore Backup")
+                restored = klipper_cfg_utils.restore_backup_config()
+                if restored:
+                    self.logger.info("Printer Config File Restored from backup")
+                    return
+                # If no valid backups found, show error dialog:
+                dialog.WarningOk(self.main_window,
+                                 "Printer Config File corrupted. Contact Fracktal support or raise a ticket at care.fracktal.in")
+                if self.printer_model.printer_status in ["Printing", "Paused"]:
+                    self.octoprint_client.cancelPrint()
+                    self.coolDownAction()
+            else:
+                self.logger.info("Printer Config File OK")
+                klipper_cfg_utils.cleanup_old_backups()
+        except Exception as e:
+            self.logger.error(f"Error in MainController.checkKlipperPrinterCFG: {e}")
+            dialog.WarningOk(self.main_window, f"Error in MainController.checkKlipperPrinterCFG: {e}", overlay=True)
+
+
     def handleStartupError(self):
         """Handle OctoPrint connection failure.
         
@@ -248,72 +341,6 @@ class MainController:
             self.logger.error(f"Error in handleStartupError: {e}")
             dialog.WarningOk(self.main_window, f"Error in startup error handling: {e}", overlay=True)
 
-    def onWebSocketConnected(self):
-        """Handle websocket connection establishment.
-        
-        Checks printer status, detects previous print failures, and offers
-        print restoration if applicable. Called when websocket connects.
-        """
-        self.logger.info("MainController.onWebSocketConnected started")
-
-        if self.octoprint_client:
-            try:
-                # Send status command to check printer state
-                status_response = self.octoprint_client.gcode(command='status')
-                if status_response:
-                    self.logger.debug(f"Printer status response: {status_response}")
-                try:
-                    response = self.octoprint_client.isFailureDetected()
-                    if response["canRestore"] is True:
-                        self.printRestoreMessageBox(response["file"])
-                    else:
-                        #TODO: Check for updates on startup if preferred
-                        pass
-                    
-                except (KeyError, TypeError, AttributeError) as e:
-                    self.logger.warning(f"Failed to check for print failure: {e}")
-                except Exception as e:
-                    self.logger.error(f"Unexpected error checking print failure: {e}")
-            except Exception as e:
-                self.logger.error("Error in MainController.onWebSocketConnected: {}".format(e))
-                dialog.WarningOk(self.main_window, "Error in MainController.onWebSocketConnected: {}".format(e), overlay=True)
-        
-
-    def initialize_websocket(self):
-        """Initialize websocket connection and signal bindings.
-        
-        Creates OctoPrint websocket client and connects all websocket signals
-        to appropriate handlers in the printer model and main controller.
-        """
-        self.octoprint_websocket = OctoPrintWebSocket(ip=ip, api_key=apiKey)
-        self.octoprint_websocket.start()
-
-        # Connect signals from the websocket to the printer model
-        self.octoprint_websocket.temperatures_signal.connect(self.printer_model.updateTemperature)
-        self.octoprint_websocket.status_signal.connect(self.printer_model.updateStatus)
-        self.octoprint_websocket.set_z_tool_offset_signal.connect(self.printer_model.setZToolOffset)
-        self.octoprint_websocket.print_status_signal.connect(self.printer_model.updatePrintStatus)
-        self.octoprint_websocket.update_started_signal.connect(self.printer_model.softwareUpdateProgress)
-        self.octoprint_websocket.update_log_signal.connect(self.printer_model.softwareUpdateProgressLog)
-        self.octoprint_websocket.update_log_result_signal.connect(self.printer_model.softwareUpdateResult)
-        self.octoprint_websocket.update_failed_signal.connect(self.printer_model.updateFailed)
-        self.octoprint_websocket.connected_signal.connect(self.onWebSocketConnected)  # function is defined in main only
-        self.octoprint_websocket.filament_presence_sensor_triggered_signal.connect(self.filamentPresenceSensorTriggered)
-        self.octoprint_websocket.filament_jam_sensor_triggered_signal.connect(self.filamentJamSensorTriggered)
-        self.octoprint_websocket.filament_presence_sensor_persistent_state_signal.connect(self.printer_model.filamentPresenceSensorPersistentState)
-        self.octoprint_websocket.filament_jam_sensor_persistent_state_signal.connect(self.printer_model.filamentJamSensorPersistentState)
-        self.octoprint_websocket.filament_presence_state_signal.connect(self.printer_model.filamentPresenceState)
-        self.octoprint_websocket.tool_offset_signal.connect(self.printer_model.getToolOffset)
-        self.octoprint_websocket.active_extruder_signal.connect(self.printer_model.setActiveExtruder)
-        self.octoprint_websocket.z_probe_offset_signal.connect(self.printer_model.updateEEPROMProbeOffset)
-        self.octoprint_websocket.z_probing_failed_signal.connect(self.showProbingFailed)
-        self.octoprint_websocket.printer_error_signal.connect(self.showPrinterError)
-        # New: propagate klipper state to the model
-        if hasattr(self.octoprint_websocket, 'klipper_state_signal'):
-            self.octoprint_websocket.klipper_state_signal.connect(self.printer_model.update_klipper_state)
-
-        # local signal slot connections
-        self.printer_model.filament_sensor_triggered.connect(self.filamentSensorHandler)
 
     def filamentPresenceSensorTriggered(self, tool):
         """
@@ -332,35 +359,6 @@ class MainController:
         self.logger.info(f"Filament jam sensor triggered for tool: {tool}")
         # TODO: Add UI or print handling logic here
         pass
-
-    def checkKlipperPrinterCFG(self):
-        """Check for valid printer.cfg and restore if needed.
-        
-        Validates the Klipper printer configuration file and attempts to
-        restore from backup if corrupted. Cancels active print and cools
-        down if configuration is invalid.
-        """
-        if not self.octoprint_client:
-            return
-        try:
-            if not klipper_cfg_utils.is_config_valid():
-                self.logger.error("Printer Config File Corrupted or Not Found, Attempting to restore Backup")
-                restored = klipper_cfg_utils.restore_backup_config()
-                if restored:
-                    self.logger.info("Printer Config File Restored from backup")
-                    return
-                # If no valid backups found, show error dialog:
-                dialog.WarningOk(self.main_window,
-                                 "Printer Config File corrupted. Contact Fracktal support or raise a ticket at care.fracktal.in")
-                if self.printer_model.printer_status in ["Printing", "Paused"]:
-                    self.octoprint_client.cancelPrint()
-                    self.coolDownAction()
-            else:
-                self.logger.info("Printer Config File OK")
-                klipper_cfg_utils.cleanup_old_backups()
-        except Exception as e:
-            self.logger.error(f"Error in MainController.checkKlipperPrinterCFG: {e}")
-            dialog.WarningOk(self.main_window, f"Error in MainController.checkKlipperPrinterCFG: {e}", overlay=True)
 
     def coolDownAction(self):
         """Turn off all heaters and fans.

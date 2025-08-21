@@ -84,12 +84,12 @@ class PrinterModel(QObject):
                 "material_bay_x": {"filament": None, "status": "Unknown", "nozzle": "Unknown"}
             },
         }
-    self._config_store = PrinterConfigStore()
-    self._load_persistent_tool_state()
-    # Filament sensor states for UI access
-    self.filament_presence_sensor_persistent_state = False
-    self.filament_jam_sensor_persistent_state = False
-    self.filament_presence_state_map = {}  # {sensor: bool}
+        self._config_store = PrinterConfigStore()
+        self._load_persistent_tool_state()
+        # Filament sensor states for UI access
+        self.filament_presence_sensor_persistent_state = False
+        self.filament_jam_sensor_persistent_state = False
+        self.filament_presence_state_map = {}  # {sensor: bool}
 
     def updateTemperature(self, temp_data):
         """ Updates the temperature data. Is a slot for the temperatures_updated signal. """
