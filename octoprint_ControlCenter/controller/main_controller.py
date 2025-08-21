@@ -4,6 +4,14 @@ This module contains the primary application controller that manages
 OctoPrint connections, websocket communications, error handling, and
 application startup/shutdown procedures.
 """
+
+"""
+To Implement Multiple Material Bays:"
+Load each active material bay using update_tool_bay_state
+and also set this up in Klipper Variables.
+Depending on the state of the KLipper Variables, SYNC_EXTRUDER_MOTION
+is set whereever applicable (homing overide, mirror/duplication modes etc)
+"""
 from ui.main_window import MainWindow
 from utils.logger import get_logger
 from models.printer_model import PrinterModel
@@ -224,17 +232,21 @@ class MainController:
         self.octoprint_websocket.active_extruder_signal.connect(self.printer_model.setActiveExtruder)
         self.octoprint_websocket.z_probe_offset_signal.connect(self.printer_model.updateEEPROMProbeOffset)
         self.octoprint_websocket.klipper_state_signal.connect(self.printer_model.update_klipper_state)
-        self.octoprint_websocket.filament_presence_sensor_persistent_state_signal.connect(self.printer_model.filamentPresenceSensorPersistentState)
-        self.octoprint_websocket.filament_jam_sensor_persistent_state_signal.connect(self.printer_model.filamentJamSensorPersistentState)
-        self.octoprint_websocket.filament_presence_state_signal.connect(self.printer_model.filamentPresenceState)
+        self.octoprint_websocket.filament_runout_state_signal.connect(self.printer_model.filamentRunoutState)
 
         # local signal slot connections
         self.octoprint_websocket.connected_signal.connect(self.onWebSocketConnected)  # function is defined in main only
-        self.octoprint_websocket.filament_presence_sensor_triggered_signal.connect(self.filamentPresenceSensorTriggered)
+        self.octoprint_websocket.filament_runout_sensor_triggered_signal.connect(self.filamentRunoutSensorTriggered)
         self.octoprint_websocket.filament_jam_sensor_triggered_signal.connect(self.filamentJamSensorTriggered)
+        self.printer_model.filament_runout_state.connect(self.onFilamentRunoutState)
         self.octoprint_websocket.z_probing_failed_signal.connect(self.showProbingFailed)
         self.octoprint_websocket.printer_error_signal.connect(self.showPrinterError)
-        
+        # Print lifecycle events
+        self.octoprint_websocket.print_cancelled_signal.connect(self.onPrintCancelled)
+        self.octoprint_websocket.print_started_signal.connect(self.onPrintStarted)
+        self.octoprint_websocket.print_resumed_signal.connect(self.onPrintResumed)
+        self.octoprint_websocket.print_paused_signal.connect(self.onPrintPaused)
+            
     def onWebSocketConnected(self):
         """Handle websocket connection establishment.
         
@@ -342,12 +354,12 @@ class MainController:
             dialog.WarningOk(self.main_window, f"Error in startup error handling: {e}", overlay=True)
 
 
-    def filamentPresenceSensorTriggered(self, tool):
+    def filamentRunoutSensorTriggered(self, tool):
         """
-        Slot for filament presence sensor triggered signal.
+        Slot for filament runout sensor triggered signal.
         :param tool: Tool identifier (str)
         """
-        self.logger.info(f"Filament presence sensor triggered for tool: {tool}")
+        self.logger.info(f"Filament runout sensor triggered for tool: {tool}")
         # TODO: Add UI or print handling logic here
         pass
 
@@ -359,6 +371,9 @@ class MainController:
         self.logger.info(f"Filament jam sensor triggered for tool: {tool}")
         # TODO: Add UI or print handling logic here
         pass
+
+    def onFilamentRunoutState(self, sensor, state):
+        self.logger.info(f"Filament runout state changed: {sensor} is {'present' if state else 'not present'}")
 
     def coolDownAction(self):
         """Turn off all heaters and fans.
@@ -489,3 +504,36 @@ class MainController:
             except Exception as e:
                 self.logger.error("Error in MainController.showPrinterError: {}".format(e))
                 dialog.WarningOk(self.main_window, "Error in MainController.showPrinterError: {}".format(e), overlay=True)
+
+    # --- Print lifecycle handlers ---
+    def onPrintCancelled(self, event):
+        """Handle print cancelled event."""
+        try:
+            self.logger.info("MainController.onPrintCancelled invoked")
+            # Future: update UI or state based on event payload
+        except Exception as e:
+            self.logger.error(f"Error in onPrintCancelled: {e}")
+
+    def onPrintStarted(self, event):
+        """Handle print started event."""
+        try:
+            self.logger.info("MainController.onPrintStarted invoked")
+            # Future: update UI or state based on event payload
+        except Exception as e:
+            self.logger.error(f"Error in onPrintStarted: {e}")
+
+    def onPrintResumed(self, event):
+        """Handle print resumed event."""
+        try:
+            self.logger.info("MainController.onPrintResumed invoked")
+            # Future: update UI or state based on event payload
+        except Exception as e:
+            self.logger.error(f"Error in onPrintResumed: {e}")
+
+    def onPrintPaused(self, event):
+        """Handle print paused event."""
+        try:
+            self.logger.info("MainController.onPrintPaused invoked")
+            # Future: update UI or state based on event payload
+        except Exception as e:
+            self.logger.error(f"Error in onPrintPaused: {e}")

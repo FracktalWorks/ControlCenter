@@ -44,12 +44,16 @@ class OctoPrintWebSocket(QThread):
     # New: Klipper state updates (e.g., 'ready', 'shutdown')
     klipper_state_signal = pyqtSignal(str)
 
+    # New: Print lifecycle events
+    print_cancelled_signal = pyqtSignal(dict)
+    print_started_signal = pyqtSignal(dict)
+    print_resumed_signal = pyqtSignal(dict)
+    print_paused_signal = pyqtSignal(dict)
+
     # Filament sensor related signals
-    filament_presence_sensor_triggered_signal = pyqtSignal(str) #! done
+    filament_runout_sensor_triggered_signal = pyqtSignal(str) #! done
     filament_jam_sensor_triggered_signal = pyqtSignal(str) #! done
-    filament_presence_sensor_persistent_state_signal = pyqtSignal(str) #! done
-    filament_jam_sensor_persistent_state_signal = pyqtSignal(str) #! done
-    filament_presence_state_signal = pyqtSignal(str, bool) #! done
+    filament_runout_state_signal = pyqtSignal(str, bool) #! done
 
     def __init__(self, ip="0.0.0.0:5000", api_key=None):
         """
@@ -249,6 +253,30 @@ class OctoPrintWebSocket(QThread):
                     self.logger.info("Emitting connected_signal")
                     self.connected_signal.emit()
                     self.logger.info("Connected to OctoPrint server")
+                elif data["event"]["type"] == "PrintCancelled":
+                    self.logger.info("Emitting print_cancelled_signal")
+                    try:
+                        self.print_cancelled_signal.emit(data["event"])  # pass entire event payload
+                    except Exception:
+                        pass
+                elif data["event"]["type"] == "PrintStarted":
+                    self.logger.info("Emitting print_started_signal")
+                    try:
+                        self.print_started_signal.emit(data["event"])  # pass entire event payload
+                    except Exception:
+                        pass
+                elif data["event"]["type"] == "PrintResumed":
+                    self.logger.info("Emitting print_resumed_signal")
+                    try:
+                        self.print_resumed_signal.emit(data["event"])  # pass entire event payload
+                    except Exception:
+                        pass
+                elif data["event"]["type"] == "PrintPaused":
+                    self.logger.info("Emitting print_paused_signal")
+                    try:
+                        self.print_paused_signal.emit(data["event"])  # pass entire event payload
+                    except Exception:
+                        pass
             
             if "plugin" in data:
                 plugin_name = data["plugin"]["plugin"]
@@ -316,34 +344,24 @@ class OctoPrintWebSocket(QThread):
                         if 'Filament Runout' in item:  # "Filament Runout on T0/T1"
                             tool = item[item.index('T') + 1:].split(' ', 1)[0]
                             self.logger.info(f"Filament runout triggered on tool {tool}")
-                            self.filament_presence_sensor_triggered_signal.emit(tool)
+                            self.filament_runout_sensor_triggered_signal.emit(tool)
 
                         if 'Filament Jam' in item:  # "Filament Jam on T0/T1"
                             tool = item[item.index('T') + 1:].split(' ', 1)[0]
                             self.logger.info(f"Filament jam triggered on tool {tool}")
                             self.filament_jam_sensor_triggered_signal.emit(tool)
-
-                        if 'Filament Presence Sensor Persistent State' in item:
-                            tool = item[item.index('is ') + 1:].split(' ', 1)[0]
-                            self.logger.info(f"Filament Presence Sensor Persistent State is {tool}")
-                            self.filament_presence_sensor_persistent_state_signal.emit(tool)
-
-                        if 'Filament Jam Sensor Persistent State' in item:
-                            tool = item[item.index('is ') + 1:].split(' ', 1)[0]
-                            self.logger.info(f"Filament Jam Sensor Persistent State is {tool}")
-                            self.filament_jam_sensor_persistent_state_signal.emit(tool)
                         
                         if 'filament detected' in item:
-                            sensor = item[item.index('Filament Sensor ') + 1:].split(' ', 1)[0]
-                            self.logger.info(f"Filament Jam Sensor Persistent State is {sensor}")
-                            self.filament_presence_state_signal.emit(sensor, True)
+                            sensor = item[item.index('T') + 1:].split(' ', 1)[0]
+                            self.logger.info(f"Filament detected in {sensor}")
+                            self.filament_runout_state_signal.emit(sensor, True)
                         
                         if 'filament not detected' in item:
-                            sensor = item[item.index('Filament Sensor ') + 1:].split(' ', 1)[0]
+                            sensor = item[item.index('T') + 1:].split(' ', 1)[0]
                             self.logger.info(f"Filament not Detected in {sensor}")
-                            self.filament_presence_state_signal.emit(sensor, False)
+                            self.filament_runout_state_signal.emit(sensor, False)
 
-                        if 'Count' in item:  # can get through the positionUpdate event
+                        if 'Count' in item and 'z' in item:  # can get through the positionUpdate event
                             z_offset = item[item.index('z') + 2:].split(',', 1)[0]
                             self.logger.debug(f"Z tool offset update: {z_offset}")
                             self.set_z_tool_offset_signal.emit(z_offset, False)
