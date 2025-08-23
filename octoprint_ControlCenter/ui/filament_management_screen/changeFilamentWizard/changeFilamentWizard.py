@@ -133,8 +133,6 @@ class ChangeFilamentWizard(QWidget):
         ]
         check_ui_elements(self, components, "ChangeFilament")
 
-        # Connect signals directly here (simplified)
-        self.model.active_extruder_changed.connect(self.setActiveExtruder)
 
         # UI button connections
         self.changeFilamentBackButton.clicked.connect(self.changeFilamentCancel)
@@ -176,6 +174,8 @@ class ChangeFilamentWizard(QWidget):
             time.sleep(1)
             if self.model.printer_status not in ["Printing", "Paused"]:
                 self.octoprint_client.gcode("G28")
+            elif self.model.printer_status == "Printing":
+                self.octoprint_client.pausePrint()
             self.selectToolChangeFilament()
             self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
             self.changeFilamentComboBox.clear()

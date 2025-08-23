@@ -132,11 +132,12 @@ class MainController:
     initialization, error recovery, and websocket communications.
     """
 
+    # =========================================================================
+    # SECTION: Initialization / Startup Lifecycle
+    # =========================================================================
+
     def __init__(self):
-        """Initialize the main controller.
-        
-        Sets up the logger, printer model, and main window components.
-        """
+        """Initialize controller state, model and main window."""
         self.logger = get_logger(__name__)
         self.logger.info("Initializing MainController")
         self.dialogShown = False
@@ -145,18 +146,14 @@ class MainController:
         self.main_window = MainWindow(controller=self, printer_model=self.printer_model)
 
     def start(self):
-        """Start the application and begin connection check.
-        
-        Initializes the connection check thread and connects signal handlers.
-        Shows error dialog and closes application if startup fails.
-        """
+        """Kick off application startup and async connectivity check."""
         self.logger.info("Starting application")
         try:
             self.updateLoadingProgress(5, "Initializing application...")
             self.connection_check = ThreadConnectionCheck(ip=ip, api_key=apiKey, virtual=False)
             self.connection_check.loaded_signal.connect(self.handleStartupSuccess)
             self.connection_check.startup_error_signal.connect(self.handleStartupError)
-            self.connection_check.progress_signal.connect(self.updateLoadingProgress)  # Connect progress signal
+            self.connection_check.progress_signal.connect(self.updateLoadingProgress)
             self.connection_check.start()
         except Exception as e:
             self.logger.error(f"Error during startup: {e}")
@@ -164,62 +161,68 @@ class MainController:
             self.main_window.close()
 
     def updateLoadingProgress(self, progress, message):
-        """Update the loading screen progress.
-        
-        Args:
-            progress: Progress percentage (0-100).
-            message: Status message to display.
-        """
+        """Proxy progress updates to loading screen."""
         self.main_window.loading_screen.update_progress(progress, message)
 
     def handleStartupSuccess(self):
-        """Handle successful OctoPrint connection.
-        
-        Initializes the OctoPrint client, loads the UI, establishes websocket
-        connection, checks Klipper configuration, and switches to home screen.
-        """
+        """Complete startup after connectivity check passes."""
         self.logger.info("OctoPrint connection successful")
-        
         try:
-            # Update progress for different startup phases
             self.updateLoadingProgress(96, "Initializing client...")
-            
-            # Now that we know OctoPrint is available, initialize the client
             self.octoprint_client = octoprint_singleton.get_client()
-            
             self.updateLoadingProgress(97, "Loading user interface...")
-            
-            # Load the full UI
             self.main_window.loadUI(minimalUI=False)
-            
             self.updateLoadingProgress(98, "Initializing websocket connection...")
-            
-            # Initialize websocket
             self.initialize_websocket()
-            
             self.updateLoadingProgress(99, "Checking Klipper configuration...")
-            
-            # Check Klipper config
             self.checkKlipperPrinterCFG()
-            
             self.updateLoadingProgress(100, "Startup complete!")
-
             self.main_window.switch_to_home_screen()
-            
         except Exception as e:
             self.logger.error(f"Error during startup success handling: {e}")
             self.handleStartupError()
 
+    def handleStartupError(self):
+        """Display recovery options when OctoPrint isn't reachable."""
+        self.logger.info("OctoPrint connection failed")
+        try:
+            self.updateLoadingProgress(0, "Connection failed - showing options...")
+            if dialog.WarningYesNo(self.main_window, "Server Error, Restore failsafe settings?", overlay=True):
+                self.logger.info("Restoring Failsafe Settings")
+                self.updateLoadingProgress(25, "Restoring failsafe settings...")
+                try:
+                    subprocess.run(["sudo", "rm", "-rf", "/home/pi/.octoprint/users.yaml"], check=True)
+                    subprocess.run(["sudo", "rm", "-rf", "/home/pi/.octoprint/config.yaml"], check=True)
+                    subprocess.run(["sudo", "cp", "-f", "config/users.yaml", "/home/pi/.octoprint/users.yaml"], check=True)
+                    subprocess.run(["sudo", "cp", "-f", "config/config.yaml", "/home/pi/.octoprint/config.yaml"], check=True)
+                except subprocess.CalledProcessError as e:
+                    self.logger.error(f"Failed to restore failsafe settings: {e}")
+                    dialog.WarningOk(self.main_window, f"Failed to restore settings: {e}", overlay=True)
+                    return
+                self.updateLoadingProgress(50, "Restarting OctoPrint service...")
+                try:
+                    subprocess.run(["sudo", "systemctl", "restart", "octoprint"], check=True)
+                except subprocess.CalledProcessError as e:
+                    self.logger.error(f"Failed to restart OctoPrint service: {e}")
+                    dialog.WarningOk(self.main_window, f"Failed to restart service: {e}", overlay=True)
+                self.updateLoadingProgress(10, "Retrying connection...")
+                self.connection_check.start()
+            else:
+                self.logger.info("User chose not to restore failsafe settings")
+                self.main_window.loadUI(minimalUI=True)
+        except Exception as e:
+            self.logger.error(f"Error in handleStartupError: {e}")
+            dialog.WarningOk(self.main_window, f"Error in startup error handling: {e}", overlay=True)
+
+    # =========================================================================
+    # SECTION: Websocket / Connection Management
+    # =========================================================================
+
     def initialize_websocket(self):
-        """Initialize websocket connection and signal bindings.
-        
-        Creates OctoPrint websocket client and connects all websocket signals
-        to appropriate handlers in the printer model and main controller.
-        """
+        """Start websocket and bind signals to model/controller."""
         self.octoprint_websocket = OctoPrintWebSocket(ip=ip, api_key=apiKey)
         self.octoprint_websocket.start()
-
-        # Connect signals from the websocket to the printer model
+        # Model signal wiring
         self.octoprint_websocket.temperatures_signal.connect(self.printer_model.updateTemperature)
         self.octoprint_websocket.status_signal.connect(self.printer_model.updateStatus)
         self.octoprint_websocket.set_z_tool_offset_signal.connect(self.printer_model.setZToolOffset)
@@ -233,9 +236,8 @@ class MainController:
         self.octoprint_websocket.z_probe_offset_signal.connect(self.printer_model.updateEEPROMProbeOffset)
         self.octoprint_websocket.klipper_state_signal.connect(self.printer_model.update_klipper_state)
         self.octoprint_websocket.filament_runout_state_signal.connect(self.printer_model.filamentRunoutState)
-
-        # local signal slot connections
-        self.octoprint_websocket.connected_signal.connect(self.onWebSocketConnected)  # function is defined in main only
+        # Controller signal wiring
+        self.octoprint_websocket.connected_signal.connect(self.onWebSocketConnected)
         self.octoprint_websocket.filament_runout_sensor_triggered_signal.connect(self.filamentRunoutSensorTriggered)
         self.octoprint_websocket.filament_jam_sensor_triggered_signal.connect(self.filamentJamSensorTriggered)
         self.printer_model.filament_runout_state.connect(self.onFilamentRunoutState)
@@ -246,61 +248,42 @@ class MainController:
         self.octoprint_websocket.print_started_signal.connect(self.onPrintStarted)
         self.octoprint_websocket.print_resumed_signal.connect(self.onPrintResumed)
         self.octoprint_websocket.print_paused_signal.connect(self.onPrintPaused)
-            
-    def onWebSocketConnected(self):
-        """Handle websocket connection establishment.
-        
-        Checks printer status, detects previous print failures, and offers
-        print restoration if applicable. Called when websocket connects.
-        """
-        self.logger.info("MainController.onWebSocketConnected started")
 
+    def onWebSocketConnected(self):
+        """Respond to websocket connection with status sync & sensor setup."""
+        self.logger.info("MainController.onWebSocketConnected started")
         if self.octoprint_client:
             try:
-                # Send status command to check printer state
                 status_response = self.octoprint_client.gcode(command='status')
                 if status_response:
                     self.logger.debug(f"Printer status response: {status_response}")
                 try:
                     response = self.octoprint_client.isFailureDetected()
-                    if response["canRestore"] is True:
-                        self.printRestoreMessageBox(response["file"])
-                    else:
-                        #TODO: Check for updates on startup if preferred
-                        pass
-                    
+                    if response.get("canRestore"):
+                        self.printRestoreMessageBox(response.get("file"))
                 except (KeyError, TypeError, AttributeError) as e:
                     self.logger.warning(f"Failed to check for print failure: {e}")
                 except Exception as e:
                     self.logger.error(f"Unexpected error checking print failure: {e}")
-                # After initial status, sync filament sensor state with preferences
                 try:
                     self.apply_filament_sensor_state()
                 except Exception as e:
                     self.logger.warning(f"Failed applying initial filament sensor state: {e}")
             except Exception as e:
-                self.logger.error("Error in MainController.onWebSocketConnected: {}".format(e))
-                dialog.WarningOk(self.main_window, "Error in MainController.onWebSocketConnected: {}".format(e), overlay=True)
-        
+                self.logger.error(f"Error in MainController.onWebSocketConnected: {e}")
+                dialog.WarningOk(self.main_window, f"Error in MainController.onWebSocketConnected: {e}", overlay=True)
+
     def checkKlipperPrinterCFG(self):
-        """Check for valid printer.cfg and restore if needed.
-        
-        Validates the Klipper printer configuration file and attempts to
-        restore from backup if corrupted. Cancels active print and cools
-        down if configuration is invalid.
-        """
+        """Validate printer.cfg; attempt restore or cleanup backups."""
         if not self.octoprint_client:
             return
         try:
             if not klipper_cfg_utils.is_config_valid():
                 self.logger.error("Printer Config File Corrupted or Not Found, Attempting to restore Backup")
-                restored = klipper_cfg_utils.restore_backup_config()
-                if restored:
+                if klipper_cfg_utils.restore_backup_config():
                     self.logger.info("Printer Config File Restored from backup")
                     return
-                # If no valid backups found, show error dialog:
-                dialog.WarningOk(self.main_window,
-                                 "Printer Config File corrupted. Contact Fracktal support or raise a ticket at care.fracktal.in")
+                dialog.WarningOk(self.main_window, "Printer Config File corrupted. Contact Fracktal support or raise a ticket at care.fracktal.in")
                 if self.printer_model.printer_status in ["Printing", "Paused"]:
                     self.octoprint_client.cancelPrint()
                     self.coolDownAction()
@@ -311,155 +294,79 @@ class MainController:
             self.logger.error(f"Error in MainController.checkKlipperPrinterCFG: {e}")
             dialog.WarningOk(self.main_window, f"Error in MainController.checkKlipperPrinterCFG: {e}", overlay=True)
 
+    # =========================================================================
+    # SECTION: Filament Sensor Management
+    # =========================================================================
 
-    def handleStartupError(self):
-        """Handle OctoPrint connection failure.
-        
-        Prompts user to restore failsafe settings or load minimal UI.
-        If user chooses to restore, attempts to restore configuration files
-        and restart OctoPrint service.
-        """
-        self.logger.info("OctoPrint connection failed")
-        try:
-            self.updateLoadingProgress(0, "Connection failed - showing options...")
-                
-            if dialog.WarningYesNo(self.main_window, "Server Error, Restore failsafe settings?", overlay=True):
-                self.logger.info("Restoring Failsafe Settings")
-                
-                self.updateLoadingProgress(25, "Restoring failsafe settings...")
-                
-                # Restore failsafe settings
-                try:
-                    subprocess.run(["sudo", "rm", "-rf", "/home/pi/.octoprint/users.yaml"], check=True)
-                    subprocess.run(["sudo", "rm", "-rf", "/home/pi/.octoprint/config.yaml"], check=True)
-                    subprocess.run(["sudo", "cp", "-f", "config/users.yaml", "/home/pi/.octoprint/users.yaml"], check=True)
-                    subprocess.run(["sudo", "cp", "-f", "config/config.yaml", "/home/pi/.octoprint/config.yaml"], check=True)
-                except subprocess.CalledProcessError as e:
-                    self.logger.error(f"Failed to restore failsafe settings: {e}")
-                    dialog.WarningOk(self.main_window, f"Failed to restore settings: {e}", overlay=True)
-                    return
-                
-                self.updateLoadingProgress(50, "Restarting OctoPrint service...")
-                
-                try:
-                    subprocess.run(["sudo", "systemctl", "restart", "octoprint"], check=True)
-                except subprocess.CalledProcessError as e:
-                    self.logger.error(f"Failed to restart OctoPrint service: {e}")
-                    dialog.WarningOk(self.main_window, f"Failed to restart service: {e}", overlay=True)
-                
-                self.updateLoadingProgress(10, "Retrying connection...")
-                
-                # Restart the connection check
-                self.connection_check.start()
-            else:
-                self.logger.info("User chose not to restore failsafe settings")
-                self.main_window.loadUI(minimalUI=True)
-        except Exception as e:
-            self.logger.error(f"Error in handleStartupError: {e}")
-            dialog.WarningOk(self.main_window, f"Error in startup error handling: {e}", overlay=True)
-
-
-    def filamentRunoutSensorTriggered(self, tool):
-        """
-        Slot for filament runout sensor triggered signal.
-        :param tool: Tool identifier (str)
-        """
-        self.logger.info(f"Filament runout sensor triggered for tool: {tool}")
-        # TODO: Add UI or print handling logic here
-        pass
-
-    def filamentJamSensorTriggered(self, tool):
-        """
-        Slot for filament jam sensor triggered signal.
-        :param tool: Tool identifier (str)
-        """
-        self.logger.info(f"Filament jam sensor triggered for tool: {tool}")
-        # TODO: Add UI or print handling logic here
-        pass
-
-    # --- Filament sensor preference/state application -----------------------
     def apply_filament_sensor_state(self):
-        """Apply filament sensor enable/disable based on persistent preferences and current print state.
-
-        Rules:
-          - If corresponding preference disabled -> always send S0.
-          - If enabled & printer_status in ["Printing"] or resuming -> S1.
-          - If enabled but status in ["Paused", "Operational", "Offline", others] -> S0 (only active during active print).
-        """
+        """Enable/disable sensors per preferences & active print state."""
         if not self.octoprint_client:
             return
         try:
             runout_pref = getattr(self.printer_model, 'filament_runout_sensor_persistent_state', False)
             jam_pref = getattr(self.printer_model, 'filament_jam_sensor_persistent_state', False)
             status = self.printer_model.printer_status
-            active_printing = status in ["Printing"]  # Could extend with "Starting"
-            # Runout
+            active_printing = status in ["Printing"]
             desired_runout = 1 if (runout_pref and active_printing) else 0
-            # Jam
             desired_jam = 1 if (jam_pref and active_printing) else 0
-            # Send macros
             self.octoprint_client.gcode(command=f'SET_FILAMENT_RUNOUT_SENSOR S{desired_runout}')
             self.octoprint_client.gcode(command=f'SET_FILAMENT_JAM_SENSOR S{desired_jam}')
             self.logger.info(f"Applied filament sensor state: runout={desired_runout} jam={desired_jam} (status={status})")
         except Exception as e:
             self.logger.error(f"Failed applying filament sensor state: {e}")
 
+    def filamentRunoutSensorTriggered(self, tool):
+        self.logger.info(f"Filament runout sensor triggered for tool: {tool}")
+        # Future: pause print / prompt user
+
+    def filamentJamSensorTriggered(self, tool):
+        self.logger.info(f"Filament jam sensor triggered for tool: {tool}")
+        # Future: pause / recovery logic
+
     def onFilamentRunoutState(self, sensor, state):
         self.logger.info(f"Filament runout state changed: {sensor} is {'present' if state else 'not present'}")
 
-    def coolDownAction(self):
-        """Turn off all heaters and fans.
-        
-        Sends commands to disable all heating elements and fans, then updates
-        the UI temperature controls to reflect the zero values.
-        """
-        self.logger.info("MainController.coolDownAction started")
-        try:
-            self.octoprint_client.gcode(command='M107')
-            self.octoprint_client.setToolTemperature({"tool0": 0, "tool1": 0})
-            # octopiclient.setToolTemperature({"tool0": 0})
-            self.octoprint_client.setBedTemperature(0)
-            self.main_window.control_screen.toolTempSpinBox.setProperty("value", 0)
-            self.main_window.control_screen.bedTempSpinBox.setProperty("value", 0)
-        except Exception as e:
-            self.logger.error("Error in MainController.coolDownAction: {}".format(e))
-            dialog.WarningOk(self.main_window, "Error in MainController.coolDownAction: {}".format(e), overlay=True)
+    # =========================================================================
+    # SECTION: Print Lifecycle Events
+    # =========================================================================
 
-    def printRestoreMessageBox(self, file):
-        """Display a message box for print restoration options.
-        
-        Args:
-            file: Name of the file that did not finish printing.
-            
-        Shows a dialog asking if the user wants to restore a failed print
-        and handles the restoration process if confirmed.
-        """
-        self.logger.info("MainController.printRestoreMessageBox started")
-        if self.octoprint_client:
-            try:
-                if dialog.WarningYesNo(self.main_window, file + " Did not finish, would you like to restore?"):
-                    response = self.octoprint_client.restore(restore=True)
-                    if response["status"] == "Successfully Restored":
-                        dialog.WarningOk(self.main_window, response["status"])
-                    else:
-                        dialog.WarningOk(self.main_window, response["status"])
-            except Exception as e:
-                self.logger.error("Error in MainController.printRestoreMessageBox: {}".format(e))
-                dialog.WarningOk(self.main_window, "Error in MainController.printRestoreMessageBox: {}".format(e), overlay=True)
+    def onPrintStarted(self, event):
+        try:
+            self.logger.info("MainController.onPrintStarted invoked")
+            self.apply_filament_sensor_state()
+        except Exception as e:
+            self.logger.error(f"Error in onPrintStarted: {e}")
+
+    def onPrintResumed(self, event):
+        try:
+            self.logger.info("MainController.onPrintResumed invoked")
+            self.apply_filament_sensor_state()
+        except Exception as e:
+            self.logger.error(f"Error in onPrintResumed: {e}")
+
+    def onPrintPaused(self, event):
+        try:
+            self.logger.info("MainController.onPrintPaused invoked")
+            if self.octoprint_client:
+                self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S0')
+                self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S0')
+        except Exception as e:
+            self.logger.error(f"Error in onPrintPaused: {e}")
+
+    def onPrintCancelled(self, event):
+        try:
+            self.logger.info("MainController.onPrintCancelled invoked")
+            if self.octoprint_client:
+                self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S0')
+                self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S0')
+        except Exception as e:
+            self.logger.error(f"Error in onPrintCancelled: {e}")
+
+    # =========================================================================
+    # SECTION: Error & Recovery Dialogs
+    # =========================================================================
 
     def showProbingFailed(self, msg='Probing Failed, Calibrate bed again or check for hardware issue', overlay=True):
-        """Show probing failure dialog and handle response.
-        
-        Args:
-            msg: Error message to display to the user.
-            overlay: Whether to show dialog as overlay.
-            
-        Returns:
-            bool: True if user acknowledged the error, False otherwise.
-            
-        Displays an error dialog for probing failures and cancels the current
-        print if user confirms.
-        """
         self.logger.info("MainController.showProbingFailed started")
         if self.octoprint_client:
             try:
@@ -468,49 +375,30 @@ class MainController:
                     return True
                 return False
             except Exception as e:
-                self.logger.error("Error in MainController.showProbingFailed: {}".format(e))
-                dialog.WarningOk(self.main_window, "Error in MainController.showProbingFailed: {}".format(e), overlay=True)
+                self.logger.error(f"Error in MainController.showProbingFailed: {e}")
+                dialog.WarningOk(self.main_window, f"Error in MainController.showProbingFailed: {e}", overlay=True)
 
     def showPrinterError(self, msg='Printer error, Check Terminal', overlay=False):
-        """Show printer error dialog and handle critical errors.
-        
-        Args:
-            msg: Error message to display to the user.
-            overlay: Whether to show dialog as overlay.
-            
-        Displays printer error messages and performs emergency shutdown
-        procedures for critical errors. Handles dialog state to prevent
-        multiple simultaneous error dialogs.
-        """
         self.logger.info("MainController.showPrinterError started")
-        
-        # Strip exclamation marks and leading spaces from the message before processing
-        # Handle common error message prefixes like "!", "!!", "!!!", etc. followed by spaces
-        cleaned_msg = msg.strip()  # First remove leading/trailing whitespace
+        cleaned_msg = msg.strip()
         while cleaned_msg.startswith('!'):
-            cleaned_msg = cleaned_msg[1:].lstrip()  # Remove one ! and any following spaces
-        
-        # Always log the error, but check if it should be ignored for UI display
+            cleaned_msg = cleaned_msg[1:].lstrip()
         self.logger.error(f"Printer error received: {msg}")
         self.logger.debug(f"Cleaned message for processing: {cleaned_msg}")
-        
-        # Check if this error should be ignored for UI display using cleaned message
         for ignore_item in IGNORED_PRINTER_ERRORS:
             if ignore_item in cleaned_msg:
                 self.logger.debug(f"Ignoring error message for UI display: {cleaned_msg}")
-                return  # Don't show dialog for ignored errors
-        
+                return
         if self.octoprint_client:
             try:
                 if any(error in cleaned_msg for error in CRITICAL_PRINTER_ERRORS):
                     self.logger.error("CRITICAL ERROR SHUTDOWN NEEDED")
-                    # Check printer status through main_window.home_screen if available
                     if self.printer_model.printer_status in ["Starting", "Printing", "Paused"]:
                         self.octoprint_client.cancelPrint()
                         self.octoprint_client.gcode(command='M112')
                         try:
                             self.octoprint_client.connectPrinter(port="/tmp/printer", baudrate=115200)
-                        except Exception as e:
+                        except Exception:
                             self.octoprint_client.connectPrinter(port="VIRTUAL", baudrate=115200)
                         self.octoprint_client.gcode(command='FIRMWARE_RESTART')
                         self.octoprint_client.gcode(command='RESTART')
@@ -527,52 +415,37 @@ class MainController:
                             if dialog.WarningOk(self.main_window, cleaned_msg, overlay=overlay):
                                 self.dialogShown = False
                 else:
-                    # For non-critical errors, only show dialog if not already shown
                     if not self.dialogShown:
                         self.dialogShown = True
                         if dialog.WarningOk(self.main_window, cleaned_msg, overlay=overlay):
                             self.dialogShown = False
-
             except Exception as e:
-                self.logger.error("Error in MainController.showPrinterError: {}".format(e))
-                dialog.WarningOk(self.main_window, "Error in MainController.showPrinterError: {}".format(e), overlay=True)
+                self.logger.error(f"Error in MainController.showPrinterError: {e}")
+                dialog.WarningOk(self.main_window, f"Error in MainController.showPrinterError: {e}", overlay=True)
 
-    # --- Print lifecycle handlers ---
-    def onPrintCancelled(self, event):
-        """Handle print cancelled event."""
-        try:
-            self.logger.info("MainController.onPrintCancelled invoked")
-            # Disable sensors when print cancelled
-            if self.octoprint_client:
-                self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S0')
-                self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S0')
-        except Exception as e:
-            self.logger.error(f"Error in onPrintCancelled: {e}")
+    def printRestoreMessageBox(self, file):
+        self.logger.info("MainController.printRestoreMessageBox started")
+        if self.octoprint_client:
+            try:
+                if dialog.WarningYesNo(self.main_window, file + " Did not finish, would you like to restore?"):
+                    response = self.octoprint_client.restore(restore=True)
+                    dialog.WarningOk(self.main_window, response.get("status", "Unknown status"))
+            except Exception as e:
+                self.logger.error(f"Error in MainController.printRestoreMessageBox: {e}")
+                dialog.WarningOk(self.main_window, f"Error in MainController.printRestoreMessageBox: {e}", overlay=True)
 
-    def onPrintStarted(self, event):
-        """Handle print started event."""
-        try:
-            self.logger.info("MainController.onPrintStarted invoked")
-            # Apply preferences (may enable sensors)
-            self.apply_filament_sensor_state()
-        except Exception as e:
-            self.logger.error(f"Error in onPrintStarted: {e}")
+    # =========================================================================
+    # SECTION: Utility / Convenience Actions
+    # =========================================================================
 
-    def onPrintResumed(self, event):
-        """Handle print resumed event."""
+    def coolDownAction(self):
+        self.logger.info("MainController.coolDownAction started")
         try:
-            self.logger.info("MainController.onPrintResumed invoked")
-            self.apply_filament_sensor_state()
+            self.octoprint_client.gcode(command='M107')
+            self.octoprint_client.setToolTemperature({"tool0": 0, "tool1": 0})
+            self.octoprint_client.setBedTemperature(0)
+            self.main_window.control_screen.toolTempSpinBox.setProperty("value", 0)
+            self.main_window.control_screen.bedTempSpinBox.setProperty("value", 0)
         except Exception as e:
-            self.logger.error(f"Error in onPrintResumed: {e}")
-
-    def onPrintPaused(self, event):
-        """Handle print paused event."""
-        try:
-            self.logger.info("MainController.onPrintPaused invoked")
-            # Disable during pause
-            if self.octoprint_client:
-                self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S0')
-                self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S0')
-        except Exception as e:
-            self.logger.error(f"Error in onPrintPaused: {e}")
+            self.logger.error(f"Error in MainController.coolDownAction: {e}")
+            dialog.WarningOk(self.main_window, f"Error in MainController.coolDownAction: {e}", overlay=True)
