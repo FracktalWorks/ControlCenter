@@ -61,6 +61,7 @@ class ControlScreen(QWidget):
         self.toggleFilamentJamButton = self.findChild(QPushButton, "toggleFilamentJamButton")
         self.toggleAutoResumeButton = self.findChild(QPushButton, "toggleAutoResumeButton")
         self.toggleCheckPrintCompatibilityButton = self.findChild(QPushButton, "toggleCheckPrintCompatibilityButton")
+        self.togglePrintRestoreButton = self.findChild(QPushButton, "togglePrintRestoreButton")
 
         # Temperature controls
         self.fanOnButton = self.findChild(QPushButton, "fanOnButton")
@@ -106,7 +107,8 @@ class ControlScreen(QWidget):
             self.setFlowRateButton, 
             self.tuneTab, self.temperatureTab, self.motionTab, self.preferencesTab,
             self.toggleFilamentRunoutButton, self.toggleFilamentJamButton,
-            self.toggleAutoResumeButton, self.toggleCheckPrintCompatibilityButton
+            self.toggleAutoResumeButton, self.toggleCheckPrintCompatibilityButton,
+            self.togglePrintRestoreButton
         ], "ControlScreen")
 
         # set the active extruder to 0 initially
@@ -159,7 +161,9 @@ class ControlScreen(QWidget):
         self.toggleFilamentJamButton.clicked.connect(self.toggleFilamentJam)
 
         # Preferences Signal Connections
+        self.toggleAutoResumeButton.clicked.connect(self.toggleAutoResume)
         self.toggleCheckPrintCompatibilityButton.clicked.connect(self.toggleCheckPrintCompatibility)
+        self.togglePrintRestoreButton.clicked.connect(self.togglePrintRestore)
 
         # Configure spinboxes
         for spinbox in [self.feedRateSpinBox, self.toolTempSpinBox, self.bedTempSpinBox, self.flowRateSpinBox]:
@@ -186,6 +190,13 @@ class ControlScreen(QWidget):
             # Initialize print compatibility check button
             compatibility_enabled = bool(self.main_window.printer_model.print_compatibility_check_enabled)
             self.toggleCheckPrintCompatibilityButton.setChecked(compatibility_enabled)
+            # Initialize print restore preferences
+            print_restore_enabled = bool(self.main_window.printer_model.print_restore_enabled)
+            self.togglePrintRestoreButton.setChecked(print_restore_enabled)
+            auto_resume_enabled = bool(self.main_window.printer_model.auto_resume_enabled)
+            self.toggleAutoResumeButton.setChecked(auto_resume_enabled)
+            # Set auto resume button state based on print restore being enabled
+            self.toggleAutoResumeButton.setEnabled(print_restore_enabled)
         except Exception as e:
             self.logger.warning(f"Failed initializing toggle buttons: {e}")
 
@@ -414,11 +425,43 @@ class ControlScreen(QWidget):
         """Toggle auto-resume on power outage"""
         logger.info("ControlScreen.toggleAutoResume started")
         try:
-            # Add your auto-resume logic here
-            pass
+            enabled = self.toggleAutoResumeButton.isChecked()
+            # Update model preference (persists)
+            self.main_window.printer_model.set_auto_resume_pref(enabled, persist=True)
+            # Apply the setting to OctoPrint via the TwinDragonPrintRestore plugin
+            self.main_window.octoprint_client.savePrintRestoreSettings(
+                restore=enabled,
+                enabled=self.main_window.printer_model.print_restore_enabled,
+                interval=1  # Default interval of 1 second
+            )
+            self.logger.info(f"Auto-resume {'enabled' if enabled else 'disabled'}")
         except Exception as e:
             logger.error(f"Error in ControlScreen.toggleAutoResume: {e}")
             dialog.WarningOk(self, f"Error in ControlScreen.toggleAutoResume: {e}", overlay=True)
+
+    def togglePrintRestore(self):
+        """Toggle print restore functionality"""
+        logger.info("ControlScreen.togglePrintRestore started")
+        try:
+            enabled = self.togglePrintRestoreButton.isChecked()
+            # Update model preference (persists)
+            self.main_window.printer_model.set_print_restore_pref(enabled, persist=True)
+            # Enable/disable the auto-resume button based on print restore state
+            self.toggleAutoResumeButton.setEnabled(enabled)
+            # If print restore is disabled, also disable auto-resume
+            if not enabled:
+                self.toggleAutoResumeButton.setChecked(False)
+                self.main_window.printer_model.set_auto_resume_pref(False, persist=True)
+            # Apply the setting to OctoPrint via the TwinDragonPrintRestore plugin
+            self.main_window.octoprint_client.savePrintRestoreSettings(
+                restore=self.main_window.printer_model.auto_resume_enabled,
+                enabled=enabled,
+                interval=1  # Default interval of 1 second
+            )
+            self.logger.info(f"Print restore {'enabled' if enabled else 'disabled'}")
+        except Exception as e:
+            logger.error(f"Error in ControlScreen.togglePrintRestore: {e}")
+            dialog.WarningOk(self, f"Error in ControlScreen.togglePrintRestore: {e}", overlay=True)
 
     def toggleCheckPrintCompatibility(self):
         """Toggle check print compatibility preference and persist the setting."""

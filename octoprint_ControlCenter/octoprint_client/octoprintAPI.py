@@ -810,7 +810,7 @@ class octoprintAPI:
         temp = response.json()
         return temp
 
-    def savePrintRestoreSettigns(self, restore = False, enabled = True, interval = 1):
+    def savePrintRestoreSettings(self, restore = False, enabled = True, interval = 1):
         url = 'http://' + self.ip + '/plugin/TwinDragonPrintRestore/saveSettings'
         headers = {'content-type': 'application/json', 'X-Api-Key': self.apiKey}
         payload = {'restore': restore, "interval" : interval, "enabled": enabled}

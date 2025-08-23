@@ -99,6 +99,11 @@ class PrinterModel(QObject):
         self.filament_runout_sensor_persistent_state = bool(prefs.get("filament_runout_enabled", False))
         self.filament_jam_sensor_persistent_state = bool(prefs.get("filament_jam_enabled", False))
         self.print_compatibility_check_enabled = bool(prefs.get("print_compatibility_check_enabled", True))  # Default to enabled
+        
+        # Print restore preferences
+        self.print_restore_enabled = bool(prefs.get("print_restore_enabled", True))  # Default to enabled
+        self.auto_resume_enabled = bool(prefs.get("auto_resume_enabled", False))  # Default to disabled
+        
         self.filament_runout_state_map = {}  # {sensor: bool}
         
         # Feed rate and flow rate storage
@@ -132,6 +137,42 @@ class PrinterModel(QObject):
         self.print_compatibility_check_enabled = bool(enabled)
         if persist and prev != enabled:
             self._config_store.set_preference('print_compatibility_check_enabled', bool(enabled))
+
+    def set_print_restore_pref(self, enabled: bool, persist: bool = True):
+        """Set print restore enabled preference and persist if requested."""
+        prev = self.print_restore_enabled
+        self.print_restore_enabled = bool(enabled)
+        if persist and prev != enabled:
+            self._config_store.set_preference('print_restore_enabled', bool(enabled))
+
+    def set_auto_resume_pref(self, enabled: bool, persist: bool = True):
+        """Set auto resume preference and persist if requested."""
+        prev = self.auto_resume_enabled
+        self.auto_resume_enabled = bool(enabled)
+        if persist and prev != enabled:
+            self._config_store.set_preference('auto_resume_enabled', bool(enabled))
+
+    def update_print_restore_settings_from_octoprint(self, settings_data):
+        """Update print restore settings from OctoPrint plugin response."""
+        try:
+            if isinstance(settings_data, dict):
+                # Update print restore enabled state
+                if 'enabled' in settings_data:
+                    new_enabled = bool(settings_data['enabled'])
+                    if new_enabled != self.print_restore_enabled:
+                        self.set_print_restore_pref(new_enabled, persist=True)
+                
+                # Update auto resume state
+                if 'restore' in settings_data:
+                    new_restore = bool(settings_data['restore'])
+                    if new_restore != self.auto_resume_enabled:
+                        self.set_auto_resume_pref(new_restore, persist=True)
+                
+                self.logger.info(f"Updated print restore settings from OctoPrint: enabled={self.print_restore_enabled}, auto_resume={self.auto_resume_enabled}")
+                return True
+        except Exception as e:
+            self.logger.error(f"Failed to update print restore settings: {e}")
+        return False
 
     def update_feed_rate(self, rate: int):
         """Update the current feed rate and emit signal."""

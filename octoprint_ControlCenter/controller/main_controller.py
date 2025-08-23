@@ -279,6 +279,7 @@ class MainController:
                     self.logger.error(f"Unexpected error checking print failure: {e}")
                 try:
                     self.apply_filament_sensor_state()
+                    self.sync_print_restore_settings()
                 except Exception as e:
                     self.logger.warning(f"Failed applying initial filament sensor state: {e}")
             except Exception as e:
@@ -305,6 +306,52 @@ class MainController:
         except Exception as e:
             self.logger.error(f"Error in MainController.checkKlipperPrinterCFG: {e}")
             dialog.WarningOk(self.main_window, f"Error in MainController.checkKlipperPrinterCFG: {e}", overlay=True)
+
+    # =========================================================================
+    # SECTION: Print Restore Management
+    # =========================================================================
+
+    def sync_print_restore_settings(self):
+        """Sync print restore settings from OctoPrint to local preferences."""
+        if not self.octoprint_client:
+            return
+        try:
+            settings = self.octoprint_client.getPrintRestoreSettings()
+            if settings and self.printer_model.update_print_restore_settings_from_octoprint(settings):
+                # Update UI button states if control screen is available
+                try:
+                    if hasattr(self.main_window, 'control_screen') and self.main_window.control_screen:
+                        control_screen = self.main_window.control_screen
+                        # Update print restore button state
+                        control_screen.togglePrintRestoreButton.setChecked(self.printer_model.print_restore_enabled)
+                        # Update auto resume button state and enabled/disabled state
+                        control_screen.toggleAutoResumeButton.setChecked(self.printer_model.auto_resume_enabled)
+                        control_screen.toggleAutoResumeButton.setEnabled(self.printer_model.print_restore_enabled)
+                        self.logger.info("Updated UI buttons from synced print restore settings")
+                except Exception as e:
+                    self.logger.warning(f"Failed to update UI buttons after sync: {e}")
+                # Update UI state to ensure consistency
+                self.update_print_restore_ui_state()
+            else:
+                self.logger.warning("Failed to sync print restore settings from OctoPrint")
+        except Exception as e:
+            self.logger.error(f"Error syncing print restore settings: {e}")
+
+    def update_print_restore_ui_state(self):
+        """Update UI button states for print restore functionality."""
+        try:
+            if hasattr(self.main_window, 'control_screen') and self.main_window.control_screen:
+                control_screen = self.main_window.control_screen
+                # Ensure auto resume button is disabled if print restore is disabled
+                print_restore_enabled = self.printer_model.print_restore_enabled
+                control_screen.toggleAutoResumeButton.setEnabled(print_restore_enabled)
+                # If print restore gets disabled from OctoPrint web UI, disable auto resume too
+                if not print_restore_enabled and self.printer_model.auto_resume_enabled:
+                    control_screen.toggleAutoResumeButton.setChecked(False)
+                    self.printer_model.set_auto_resume_pref(False, persist=True)
+                    self.logger.info("Auto-resume disabled because print restore was disabled")
+        except Exception as e:
+            self.logger.error(f"Error updating print restore UI state: {e}")
 
     # =========================================================================
     # SECTION: Filament Sensor Management
