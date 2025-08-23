@@ -42,6 +42,9 @@ class PrinterModel(QObject):
     # Signals for tool-bay state persistence and UI sync
     tool_bay_states_loaded = pyqtSignal(dict)      # {'tool0': {...}, 'tool1': {...}}
     tool_bay_state_changed = pyqtSignal(str, str, dict) # tool, bay, bay_state
+    # Signals for feed rate and flow rate updates
+    feed_rate_updated = pyqtSignal(int)  # Feed rate percentage
+    flow_rate_updated = pyqtSignal(int)  # Flow rate percentage
 
     def __init__(self):
         super(PrinterModel, self).__init__()
@@ -96,6 +99,10 @@ class PrinterModel(QObject):
         self.filament_runout_sensor_persistent_state = bool(prefs.get("filament_runout_enabled", False))
         self.filament_jam_sensor_persistent_state = bool(prefs.get("filament_jam_enabled", False))
         self.filament_runout_state_map = {}  # {sensor: bool}
+        
+        # Feed rate and flow rate storage
+        self.current_feed_rate = 100  # Default 100%
+        self.current_flow_rate = 100  # Default 100%
 
     # --- Filament sensor preference setters (called by controller/UI) -------
     def set_filament_runout_pref(self, enabled: bool, persist: bool = True):
@@ -117,6 +124,22 @@ class PrinterModel(QObject):
             pass
         if persist and prev != enabled:
             self._config_store.set_preference('filament_jam_enabled', bool(enabled))
+
+    def update_feed_rate(self, rate: int):
+        """Update the current feed rate and emit signal."""
+        try:
+            self.current_feed_rate = max(1, min(500, int(rate)))  # Clamp between 1-500%
+            self.feed_rate_updated.emit(self.current_feed_rate)
+        except (ValueError, TypeError):
+            self.logger.error(f"Invalid feed rate value: {rate}")
+
+    def update_flow_rate(self, rate: int):
+        """Update the current flow rate and emit signal."""
+        try:
+            self.current_flow_rate = max(1, min(500, int(rate)))  # Clamp between 1-500%
+            self.flow_rate_updated.emit(self.current_flow_rate)
+        except (ValueError, TypeError):
+            self.logger.error(f"Invalid flow rate value: {rate}")
 
     def updateTemperature(self, temp_data):
         """ Updates the temperature data. Is a slot for the temperatures_updated signal. """

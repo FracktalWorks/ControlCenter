@@ -83,6 +83,10 @@ class HomeScreen(QWidget):
         self.printProgressBar = self.findChild(QProgressBar, "printProgressBar")
         self.printPreviewMain = self.findChild(QLabel, "printPreviewMain")
 
+        # Feed rate and flow rate labels
+        self.feedRateLabel = self.findChild(QLabel, "feedRateLabel")
+        self.flowRateLabel = self.findChild(QLabel, "flowRateLabel")
+
         # Validate UI components
         all_components = [
             self.doorLockButton, self.menuButton, self.stopButton, self.playPauseButton, self.controlButton,
@@ -90,7 +94,8 @@ class HomeScreen(QWidget):
             self.tool1TargetTemperature, self.tool1ActualTemperature, self.tool1TempBar, self.tool1Label,
             self.bedTargetTemperature, self.bedActualTemperature, self.bedTempBar,
             self.printerStatus, self.printerStatusColour, self.ipStatus,
-            self.fileName, self.printTime, self.timeLeft, self.printProgressBar, self.printPreviewMain
+            self.fileName, self.printTime, self.timeLeft, self.printProgressBar, self.printPreviewMain,
+            self.feedRateLabel, self.flowRateLabel
         ]
         check_ui_elements(self, all_components, "HomeScreen")
 
@@ -100,6 +105,9 @@ class HomeScreen(QWidget):
         self.main_window.printer_model.print_status_updated.connect(self.updatePrintStatus)
         self.main_window.printer_model.temperatures_updated.connect(self.updateTemperature)
         self.main_window.printer_model.active_extruder_changed.connect(self.setActiveExtruder)
+        # Connect feed rate and flow rate signals
+        self.main_window.printer_model.feed_rate_updated.connect(self.updateFeedRate)
+        self.main_window.printer_model.flow_rate_updated.connect(self.updateFlowRate)
         # New: reflect loaded filament/nozzle
         try:
             self.main_window.printer_model.tool_bay_states_loaded.connect(self.on_tool_states_loaded)
@@ -133,6 +141,19 @@ class HomeScreen(QWidget):
         self.printTime.setText(self.print_time)
         self.timeLeft.setText(self.time_left)
         self.printProgressBar.setValue(self.print_progress)
+
+        # Initialize feed rate and flow rate labels
+        self.feedRateLabel.setText("100%")
+        self.flowRateLabel.setText("100%")
+        
+        # Set initial values from printer model if available
+        try:
+            if hasattr(self.main_window.printer_model, 'current_feed_rate'):
+                self.feedRateLabel.setText(f"{self.main_window.printer_model.current_feed_rate}%")
+            if hasattr(self.main_window.printer_model, 'current_flow_rate'):
+                self.flowRateLabel.setText(f"{self.main_window.printer_model.current_flow_rate}%")
+        except Exception as e:
+            self.logger.debug(f"Could not initialize rate labels from model: {e}")
 
         # Update printer status
         self.printerStatus.setText("Disconnected")
@@ -474,6 +495,20 @@ class HomeScreen(QWidget):
         except Exception as e:
             self.logger.error("Error in HomeScreen.setActiveExtruder: {}".format(e))
             dialog.WarningOk(self, "Error in home_screen.setActiveExtruder: {}".format(e), overlay=True)
+
+    def updateFeedRate(self, rate):
+        """Update the feed rate label when feed rate changes."""
+        try:
+            self.feedRateLabel.setText(f"{rate}%")
+        except Exception as e:
+            self.logger.error(f"Error updating feed rate label: {e}")
+
+    def updateFlowRate(self, rate):
+        """Update the flow rate label when flow rate changes."""
+        try:
+            self.flowRateLabel.setText(f"{rate}%")
+        except Exception as e:
+            self.logger.error(f"Error updating flow rate label: {e}")
 
     # --- New slots for tool state reflection on HomeScreen ---
     def on_tool_states_loaded(self, states: dict):

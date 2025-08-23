@@ -114,9 +114,7 @@ class ControlScreen(QWidget):
 
         # Feed Rate Buttons Signal Connections
         self.controlBackButton.clicked.connect(lambda: self.main_window.switch_to_home_screen())
-        self.setFeedRateButton.clicked.connect(
-            lambda: self.octoprint_client.feedrate(self.feedRateSpinBox.value())
-        )
+        self.setFeedRateButton.clicked.connect(self.setFeedRate)
         self.moveZPBabyStep.clicked.connect(
             lambda: self.octoprint_client.gcode(command='M290 Z0.025')
         )
@@ -154,7 +152,7 @@ class ControlScreen(QWidget):
         self.retractButton.clicked.connect(lambda: self.octoprint_client.extrude(-self.step))
 
         # Filament Buttons Signal Connections
-        self.setFlowRateButton.clicked.connect(lambda: self.octoprint_client.flowrate(self.flowRateSpinBox.value()))
+        self.setFlowRateButton.clicked.connect(self.setFlowRate)
 
         self.toggleFilamentRunoutButton.clicked.connect(self.toggleFilamentRunout)
 
@@ -191,6 +189,15 @@ class ControlScreen(QWidget):
         self.main_window.printer_model.active_extruder_changed.connect(self.setActiveExtruder)
         self.logger.debug("Connected ControlScreen to printer model status updates")
 
+        # Initialize spinboxes with current values from printer model
+        try:
+            if hasattr(self.main_window.printer_model, 'current_feed_rate'):
+                self.feedRateSpinBox.setValue(self.main_window.printer_model.current_feed_rate)
+            if hasattr(self.main_window.printer_model, 'current_flow_rate'):
+                self.flowRateSpinBox.setValue(self.main_window.printer_model.current_flow_rate)
+        except Exception as e:
+            self.logger.debug(f"Could not initialize spinboxes from model: {e}")
+
 
     def coolDownAction(self):
         """'
@@ -207,6 +214,30 @@ class ControlScreen(QWidget):
         except Exception as e:
             logger.error("Error in ControlScreen.coolDownAction: {}".format(e))
             dialog.WarningOk(self, "Error in ControlScreen.coolDownAction: {}".format(e), overlay=True)
+
+    def setFeedRate(self):
+        """Set the feed rate via OctoPrint and update the printer model."""
+        logger.info("ControlScreen.setFeedRate started")
+        try:
+            feed_rate = self.feedRateSpinBox.value()
+            self.octoprint_client.feedrate(feed_rate)
+            # Update the printer model to emit signal for home screen
+            self.main_window.printer_model.update_feed_rate(feed_rate)
+        except Exception as e:
+            logger.error("Error in ControlScreen.setFeedRate: {}".format(e))
+            dialog.WarningOk(self, "Error in ControlScreen.setFeedRate: {}".format(e), overlay=True)
+
+    def setFlowRate(self):
+        """Set the flow rate via OctoPrint and update the printer model."""
+        logger.info("ControlScreen.setFlowRate started")
+        try:
+            flow_rate = self.flowRateSpinBox.value()
+            self.octoprint_client.flowrate(flow_rate)
+            # Update the printer model to emit signal for home screen
+            self.main_window.printer_model.update_flow_rate(flow_rate)
+        except Exception as e:
+            logger.error("Error in ControlScreen.setFlowRate: {}".format(e))
+            dialog.WarningOk(self, "Error in ControlScreen.setFlowRate: {}".format(e), overlay=True)
 
     def setToolTemp(self):
         """
