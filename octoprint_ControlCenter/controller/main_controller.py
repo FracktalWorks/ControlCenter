@@ -39,6 +39,7 @@ class ThreadConnectionCheck(QtCore.QThread):
     loaded_signal = QtCore.pyqtSignal()
     startup_error_signal = QtCore.pyqtSignal()
     progress_signal = QtCore.pyqtSignal(int, str)  # Progress percentage and message
+    virtual_fallback_signal = QtCore.pyqtSignal(str)  # Emitted when falling back to virtual printer
 
     def __init__(self, ip=None, api_key=None, virtual=False):
         """Initialize the connection check thread.
@@ -104,6 +105,8 @@ class ThreadConnectionCheck(QtCore.QThread):
                             octoprint_singleton.get_client().connectPrinter(port="VIRTUAL", baudrate=115200)
                             self.logger.info("Connected to printer in VIRTUAL mode")
                             self.progress_signal.emit(85, "Connected to virtual printer")
+                            # Notify UI thread to show fallback dialog
+                            self.virtual_fallback_signal.emit("There was an issue conencting to Klipper, conencted to Virtual Printer instead for diagnosis")
                         except Exception as e:
                             self.logger.error(f"Failed to connect to printer in VIRTUAL mode: {e}")
                             self.progress_signal.emit(85, "Printer connection failed - continuing...")
@@ -154,6 +157,7 @@ class MainController:
             self.connection_check.loaded_signal.connect(self.handleStartupSuccess)
             self.connection_check.startup_error_signal.connect(self.handleStartupError)
             self.connection_check.progress_signal.connect(self.updateLoadingProgress)
+            self.connection_check.virtual_fallback_signal.connect(self.handleVirtualFallback)
             self.connection_check.start()
         except Exception as e:
             self.logger.error(f"Error during startup: {e}")
@@ -181,6 +185,14 @@ class MainController:
         except Exception as e:
             self.logger.error(f"Error during startup success handling: {e}")
             self.handleStartupError()
+
+    def handleVirtualFallback(self, message):
+        """Show dialog if physical Klipper connection failed and virtual printer used."""
+        try:
+            self.logger.warning("Virtual printer fallback engaged: %s", message)
+            dialog.WarningOk(self.main_window, message, overlay=True)
+        except Exception as e:
+            self.logger.error(f"Error showing virtual fallback dialog: {e}")
 
     def handleStartupError(self):
         """Display recovery options when OctoPrint isn't reachable."""
