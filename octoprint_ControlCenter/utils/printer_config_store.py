@@ -28,6 +28,7 @@ DEFAULT_STATE = {
     "preferences": {
         "filament_runout_enabled": False,
         "filament_jam_enabled": False,
+        "print_compatibility_check_enabled": True,  # Default to enabled
     }
 }
 

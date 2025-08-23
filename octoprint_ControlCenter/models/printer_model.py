@@ -98,6 +98,7 @@ class PrinterModel(QObject):
         prefs = state.get("preferences", {})
         self.filament_runout_sensor_persistent_state = bool(prefs.get("filament_runout_enabled", False))
         self.filament_jam_sensor_persistent_state = bool(prefs.get("filament_jam_enabled", False))
+        self.print_compatibility_check_enabled = bool(prefs.get("print_compatibility_check_enabled", True))  # Default to enabled
         self.filament_runout_state_map = {}  # {sensor: bool}
         
         # Feed rate and flow rate storage
@@ -124,6 +125,13 @@ class PrinterModel(QObject):
             pass
         if persist and prev != enabled:
             self._config_store.set_preference('filament_jam_enabled', bool(enabled))
+
+    def set_print_compatibility_check_pref(self, enabled: bool, persist: bool = True):
+        """Set print compatibility check preference and persist if requested."""
+        prev = self.print_compatibility_check_enabled
+        self.print_compatibility_check_enabled = bool(enabled)
+        if persist and prev != enabled:
+            self._config_store.set_preference('print_compatibility_check_enabled', bool(enabled))
 
     def update_feed_rate(self, rate: int):
         """Update the current feed rate and emit signal."""
@@ -323,6 +331,20 @@ class PrinterModel(QObject):
     def get_bay_state(self, tool: str, bay: str = None) -> dict:
         bay = bay or self.get_default_bay(tool)
         return self.tools.get(tool, {}).get(bay, {"filament": None, "status": "Unknown", "nozzle": "Unknown"})
+
+    def get_current_tool_config(self):
+        """
+        Get current nozzle and material configuration for both tools.
+        Returns dictionary with current setup for validation against GCODE metadata.
+        """
+        config = {}
+        for tool in ["tool0", "tool1"]:
+            bay_state = self.get_bay_state(tool)
+            config[tool] = {
+                'nozzle': bay_state.get('nozzle', 'Unknown'),
+                'material': bay_state.get('filament', None)
+            }
+        return config
 
     # --- Klipper state updater ---
     def update_klipper_state(self, state: str):

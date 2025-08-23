@@ -1,4 +1,5 @@
 import os
+import subprocess
 from PyQt5 import uic, QtGui, QtCore
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QListWidget, QLabel, QToolButton
 from utils.helpers import check_ui_elements

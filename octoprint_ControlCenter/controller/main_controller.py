@@ -342,10 +342,114 @@ class MainController:
     # SECTION: Print Lifecycle Events
     # =========================================================================
 
+    def validate_gcode_compatibility(self, filename):
+        """
+        Validate GCODE file compatibility with current printer configuration.
+        Returns (is_compatible, mismatches) where mismatches is a list of issues.
+        """
+        if not self.octoprint_client or not filename:
+            return True, []
+
+        try:
+            # Extract metadata from GCODE file
+            gcode_metadata = self.octoprint_client.getGcodeMetadata(filename)
+            if not gcode_metadata:
+                self.logger.warning(f"Could not extract metadata from {filename}, skipping validation")
+                return True, []
+
+            # Get current printer configuration
+            current_config = self.printer_model.get_current_tool_config()
+            
+            mismatches = []
+            
+            # Check tool0 nozzle
+            if gcode_metadata.get('nozzle_t0') is not None:
+                expected_nozzle = gcode_metadata['nozzle_t0']
+                current_nozzle = current_config['tool0']['nozzle']
+                if current_nozzle != 'Unknown' and expected_nozzle != current_nozzle:
+                    mismatches.append(f"Tool0 nozzle mismatch: GCODE expects {expected_nozzle}mm, printer has {current_nozzle}mm")
+
+            # Check tool1 nozzle
+            if gcode_metadata.get('nozzle_t1') is not None:
+                expected_nozzle = gcode_metadata['nozzle_t1']
+                current_nozzle = current_config['tool1']['nozzle']
+                if current_nozzle != 'Unknown' and expected_nozzle != current_nozzle:
+                    mismatches.append(f"Tool1 nozzle mismatch: GCODE expects {expected_nozzle}mm, printer has {current_nozzle}mm")
+
+            # Check tool0 material
+            if gcode_metadata.get('material_t0') is not None:
+                expected_material = gcode_metadata['material_t0']
+                current_material = current_config['tool0']['material']
+                if current_material is not None and expected_material != current_material:
+                    mismatches.append(f"Tool0 material mismatch: GCODE expects {expected_material}, printer has {current_material}")
+
+            # Check tool1 material
+            if gcode_metadata.get('material_t1') is not None:
+                expected_material = gcode_metadata['material_t1']
+                current_material = current_config['tool1']['material']
+                if current_material is not None and expected_material != current_material:
+                    mismatches.append(f"Tool1 material mismatch: GCODE expects {expected_material}, printer has {current_material}")
+
+            is_compatible = len(mismatches) == 0
+            self.logger.info(f"GCODE compatibility check for {filename}: {'PASS' if is_compatible else 'FAIL'}")
+            if mismatches:
+                self.logger.warning(f"Compatibility issues found: {mismatches}")
+            
+            return is_compatible, mismatches
+
+        except Exception as e:
+            self.logger.error(f"Error validating GCODE compatibility: {e}")
+            return True, []  # Default to compatible on error
+
     def onPrintStarted(self, event):
         try:
             self.logger.info("MainController.onPrintStarted invoked")
+            self.logger.debug(f"PrintStarted event data: {event}")
+            
+            # Check GCODE compatibility if enabled and we have file information
+            # According to OctoPrint docs, PrintStarted event contains: name, path, origin, size, owner, user
+            if (self.printer_model.print_compatibility_check_enabled and event):
+                filename = event.get('name')  # Direct access to filename from event payload
+                
+                if filename:
+                    self.logger.info(f"Validating GCODE compatibility for file: {filename}")
+                    is_compatible, mismatches = self.validate_gcode_compatibility(filename)
+                    
+                    if not is_compatible:
+                        # Pause the print immediately (if not already paused)
+                        if self.octoprint_client:
+                            try:
+                                job_info = self.octoprint_client.getJobInformation()
+                                if job_info and job_info.get('state') not in ['Paused', 'Pausing']:
+                                    self.octoprint_client.pausePrint()
+                            except Exception as e:
+                                self.logger.error(f"Error pausing print: {e}")
+                                # Try to pause anyway
+                                self.octoprint_client.pausePrint()
+                        
+                        # Show dialog with mismatch information
+                        mismatch_text = "Print configuration mismatch detected:\n\n" + "\n".join(mismatches)
+                        mismatch_text += "\n\nWould you like to continue printing anyway?"
+                        
+                        if dialog.WarningYesNo(self.main_window, mismatch_text, overlay=True):
+                            # User wants to continue - resume the print
+                            self.logger.info("User chose to continue print despite mismatches")
+                            if self.octoprint_client:
+                                self.octoprint_client.startPrint()  # Resume from pause
+                        else:
+                            # User wants to cancel - cancel the print
+                            self.logger.info("User chose to cancel print due to mismatches")
+                            if self.octoprint_client:
+                                self.octoprint_client.cancelPrint()
+                            return
+                else:
+                    self.logger.warning("PrintStarted event received but no filename found in event data")
+            elif not self.printer_model.print_compatibility_check_enabled:
+                self.logger.info("Print compatibility check is disabled, skipping validation")
+            
+            # Apply filament sensor state if print continues
             self.apply_filament_sensor_state()
+            
         except Exception as e:
             self.logger.error(f"Error in onPrintStarted: {e}")
 

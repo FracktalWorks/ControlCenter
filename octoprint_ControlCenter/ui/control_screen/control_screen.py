@@ -158,6 +158,9 @@ class ControlScreen(QWidget):
 
         self.toggleFilamentJamButton.clicked.connect(self.toggleFilamentJam)
 
+        # Preferences Signal Connections
+        self.toggleCheckPrintCompatibilityButton.clicked.connect(self.toggleCheckPrintCompatibility)
+
         # Configure spinboxes
         for spinbox in [self.feedRateSpinBox, self.toolTempSpinBox, self.bedTempSpinBox, self.flowRateSpinBox]:
             if spinbox:
@@ -180,8 +183,11 @@ class ControlScreen(QWidget):
             self.toggleFilamentRunoutButton.setChecked(runout_enabled)
             jam_enabled = bool(self.main_window.printer_model.filament_jam_sensor_persistent_state)
             self.toggleFilamentJamButton.setChecked(jam_enabled)
+            # Initialize print compatibility check button
+            compatibility_enabled = bool(self.main_window.printer_model.print_compatibility_check_enabled)
+            self.toggleCheckPrintCompatibilityButton.setChecked(compatibility_enabled)
         except Exception as e:
-            self.logger.warning(f"Failed initializing filament toggle buttons: {e}")
+            self.logger.warning(f"Failed initializing toggle buttons: {e}")
 
 
         # Connect to printer model for status updates
@@ -415,11 +421,13 @@ class ControlScreen(QWidget):
             dialog.WarningOk(self, f"Error in ControlScreen.toggleAutoResume: {e}", overlay=True)
 
     def toggleCheckPrintCompatibility(self):
-        """Toggle check print compatibility"""
+        """Toggle check print compatibility preference and persist the setting."""
         logger.info("ControlScreen.toggleCheckPrintCompatibility started")
         try:
-            # Add your print compatibility check logic here
-            pass
+            enabled = self.toggleCheckPrintCompatibilityButton.isChecked()
+            # Update model preference (persists)
+            self.main_window.printer_model.set_print_compatibility_check_pref(enabled, persist=True)
+            self.logger.info(f"Print compatibility check {'enabled' if enabled else 'disabled'}")
         except Exception as e:
             logger.error(f"Error in ControlScreen.toggleCheckPrintCompatibility: {e}")
             dialog.WarningOk(self, f"Error in ControlScreen.toggleCheckPrintCompatibility: {e}", overlay=True)

@@ -219,6 +219,87 @@ class octoprintAPI:
         else:
             return False
 
+    def getGcodeMetadata(self, name):
+        """
+        Extract nozzle and material metadata from GCODE file between "; file data begin" and "; file data end"
+        Returns dictionary with nozzle_t0, nozzle_t1, material_t0, material_t1 or False if extraction fails
+        """
+        logger.debug(f"Extracting GCODE metadata from: {name}")
+        url = 'http://' + self.ip + '/downloads/files/local/' + name
+        headers = {'X-Api-Key': self.apiKey}
+        
+        try:
+            response = requests.get(url, headers=headers, stream=True)
+            if response.status_code == 200:
+                content = response.content
+                
+                # Find the file data section
+                start = content.find(b'; file data begin')
+                end = content.find(b'; file data end')
+                
+                if start != -1 and end != -1:
+                    # Extract the metadata section
+                    metadata_section = content[start:end].decode('utf-8', errors='ignore')
+                    
+                    # Initialize return dictionary
+                    metadata = {
+                        'nozzle_t0': None,
+                        'nozzle_t1': None,
+                        'material_t0': None,
+                        'material_t1': None
+                    }
+                    
+                    # Extract nozzle and material information using string parsing
+                    lines = metadata_section.split('\n')
+                    for line in lines:
+                        line = line.strip()
+                        if 'nozzle_t0=' in line:
+                            try:
+                                # Extract value between = and next ; or end of line
+                                value = line.split('nozzle_t0=')[1].split(';')[0].strip()
+                                # Remove 'mm' if present and convert to float then back to string for consistency
+                                if value.endswith('mm'):
+                                    value = value[:-2]
+                                metadata['nozzle_t0'] = str(float(value))
+                            except (IndexError, ValueError) as e:
+                                logger.warning(f"Failed to parse nozzle_t0 from line: {line} - {e}")
+                        
+                        elif 'nozzle_t1=' in line:
+                            try:
+                                value = line.split('nozzle_t1=')[1].split(';')[0].strip()
+                                if value.endswith('mm'):
+                                    value = value[:-2]
+                                metadata['nozzle_t1'] = str(float(value))
+                            except (IndexError, ValueError) as e:
+                                logger.warning(f"Failed to parse nozzle_t1 from line: {line} - {e}")
+                        
+                        elif 'material_t0=' in line:
+                            try:
+                                value = line.split('material_t0=')[1].split(';')[0].strip()
+                                metadata['material_t0'] = value
+                            except IndexError as e:
+                                logger.warning(f"Failed to parse material_t0 from line: {line} - {e}")
+                        
+                        elif 'material_t1=' in line:
+                            try:
+                                value = line.split('material_t1=')[1].split(';')[0].strip()
+                                metadata['material_t1'] = value
+                            except IndexError as e:
+                                logger.warning(f"Failed to parse material_t1 from line: {line} - {e}")
+                    
+                    logger.info(f"Extracted GCODE metadata: {metadata}")
+                    return metadata
+                else:
+                    logger.warning(f"File data section not found in {name}")
+                    return False
+            else:
+                logger.error(f"Failed to download GCODE file {name}: HTTP {response.status_code}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error extracting GCODE metadata from {name}: {e}")
+            return False
+
     # Upload directly to directory
     # Download Timelapse
     # Print from USB
