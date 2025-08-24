@@ -11,6 +11,7 @@ from utils.dialog import WarningYesNo, WarningOk
 # Import sub-UI classes
 from ui.settings_screen.software_update.software_update import SoftwareUpdate
 from ui.settings_screen.network_settings.network_settings import NetworkSettings
+from ui.settings_screen.printer_setup.printer_setup import PrinterSetup
 
 logger = get_logger(__name__)
 
@@ -44,6 +45,7 @@ class SettingsScreen(QWidget):
         self.backButton = self.findChild(QPushButton, "settingsBackButton")
         self.networkSettingsButton = self.findChild(QPushButton, "networkSettingsButton")
         self.softwareUpdateButton = self.findChild(QPushButton, "softwareUpdateButton")
+        self.printerSetupButton = self.findChild(QPushButton, "printerSetupButton")
         self.restorePrintSettingsButton = self.findChild(QPushButton, "restorePrintSettingsButton")
         self.restoreFactoryDefaultsButton = self.findChild(QPushButton, "restoreFactoryDefaultsButton")
         self.restartButton = self.findChild(QPushButton, "restartButton")
@@ -57,6 +59,7 @@ class SettingsScreen(QWidget):
             self.backButton,
             self.networkSettingsButton,
             self.softwareUpdateButton,
+            self.printerSetupButton,
             self.restorePrintSettingsButton,
             self.restoreFactoryDefaultsButton,
             self.restartButton
@@ -66,6 +69,7 @@ class SettingsScreen(QWidget):
         self.backButton.clicked.connect(lambda: self.main_window.switch_to_menu_screen())
         self.networkSettingsButton.clicked.connect(self.navigate_to_network_settings)
         self.softwareUpdateButton.clicked.connect(self.navigate_to_software_update)
+        self.printerSetupButton.clicked.connect(self.navigate_to_printer_setup)
         self.restorePrintSettingsButton.clicked.connect(self.restore_print_settings)
         self.restoreFactoryDefaultsButton.clicked.connect(self.restore_factory_defaults)
         self.restartButton.clicked.connect(self.restart_system)
@@ -172,11 +176,17 @@ class SettingsScreen(QWidget):
             # Create instances of each sub-screen
             self.screens["network_settings"] = NetworkSettings(self, self)
             self.screens["software_update"] = SoftwareUpdate(self, self)
+            self.screens["printer_setup"] = PrinterSetup(self, self)
 
             # Add each screen to the stacked widget
             for name, screen in self.screens.items():
                 self.stackedWidget.addWidget(screen)
                 self.logger.info(f"Added {name} screen to settings stacked widget")
+                
+            # Connect printer setup signal if available
+            if "printer_setup" in self.screens:
+                self.screens["printer_setup"].printer_changed.connect(self._on_printer_changed)
+                
         except Exception as e:
             self.logger.exception(f"Error initializing sub-screens: {e}")
 
@@ -194,3 +204,15 @@ class SettingsScreen(QWidget):
         software_update_screen.displayVersionInfo()
         self.stackedWidget.setCurrentWidget(software_update_screen)
         self.logger.info("Navigated to software_update")
+
+    def navigate_to_printer_setup(self):
+        """Open the Printer Setup screen."""
+        self.logger.info("Navigating to Printer Setup screen")
+        printer_setup_screen = self.screens.get("printer_setup")
+        self.stackedWidget.setCurrentWidget(printer_setup_screen)
+        self.logger.info("Navigated to printer_setup")
+
+    def _on_printer_changed(self, printer_config):
+        """Handle printer configuration change."""
+        self.logger.info(f"Printer configuration changed to: {printer_config}")
+        # Optionally notify other components or trigger additional actions

@@ -106,6 +106,9 @@ class PrinterModel(QObject):
         
         self.filament_runout_state_map = {}  # {sensor: bool}
         
+        # Printer configuration
+        self.selected_printer_config = state.get("printer_config", {}).get("selected_printer", "DRAGON_400")
+        
         # Feed rate and flow rate storage
         self.current_feed_rate = 100  # Default 100%
         self.current_flow_rate = 100  # Default 100%
@@ -399,3 +402,19 @@ class PrinterModel(QObject):
             # Ensure we don't crash signal flow
             self.klipper_state = str(state)
             self.klipper_state_changed.emit(self.klipper_state)
+
+    # --- Printer configuration methods ---
+    def get_selected_printer_config(self) -> str:
+        """Get the currently selected printer configuration."""
+        return self.selected_printer_config
+
+    def set_selected_printer_config(self, printer_config: str, persist: bool = True):
+        """Set the selected printer configuration and persist if requested."""
+        prev = self.selected_printer_config
+        self.selected_printer_config = printer_config
+        if persist and prev != printer_config:
+            try:
+                self._config_store.set_selected_printer(printer_config)
+                self.logger.info(f"Printer configuration updated to: {printer_config}")
+            except Exception as e:
+                self.logger.error(f"Failed to persist printer configuration: {e}")

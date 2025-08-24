@@ -31,6 +31,10 @@ DEFAULT_STATE = {
         "print_compatibility_check_enabled": True,  # Default to enabled
         "print_restore_enabled": True,  # Default to enabled
         "auto_resume_enabled": False,  # Default to disabled
+    },
+    # Printer configuration
+    "printer_config": {
+        "selected_printer": "DRAGON_400",  # Default printer (without PRINTER_ prefix and .cfg suffix)
     }
 }
 
@@ -83,6 +87,15 @@ class PrinterConfigStore:
             for k, v in DEFAULT_STATE["preferences"].items():
                 prefs.setdefault(k, v)
             data["preferences"] = prefs
+            
+            # Ensure printer_config section exists with defaults
+            if "printer_config" not in data:
+                data["printer_config"] = DEFAULT_STATE["printer_config"].copy()
+            else:
+                # Inject defaults for any missing printer config keys
+                for k, v in DEFAULT_STATE["printer_config"].items():
+                    data["printer_config"].setdefault(k, v)
+            
             # Legacy upgrade: flat tool schema (filament/status/nozzle at tools.toolX root)
             for tool_id in ("tool0", "tool1"):
                 raw = data["tools"].get(tool_id)
@@ -236,3 +249,19 @@ class PrinterConfigStore:
         def list_tool_bays(self, tool: str):
             data = self.load_full()
             return list(data.get("tools", {}).get(tool, {}).keys())
+
+        # --- Printer config API -----------------------------------------------
+        def get_printer_config(self) -> dict:
+            return self.load_full().get("printer_config", {})
+
+        def get_selected_printer(self) -> str:
+            return self.get_printer_config().get("selected_printer", "DRAGON_400")
+
+        def set_selected_printer(self, printer_config: str) -> None:
+            with self._lock:
+                config = self.load_full().setdefault("printer_config", {})
+                if config.get("selected_printer") != printer_config:
+                    config["selected_printer"] = printer_config
+                    self._dirty = True
+                    if self._batch_depth == 0:
+                        self.save()
