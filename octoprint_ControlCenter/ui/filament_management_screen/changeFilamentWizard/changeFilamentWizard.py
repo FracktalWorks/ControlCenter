@@ -49,6 +49,7 @@ from PyQt5 import uic, QtCore
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QComboBox, QProgressBar, QLabel
 from utils.helpers import check_ui_elements, run_async
 from utils.logger import get_logger
+from utils.printer_ui_config import is_dual_nozzle_printer, force_single_tool
 from utils import dialog
 
 # UI/logic constants
@@ -195,7 +196,11 @@ class ChangeFilamentWizard(QWidget):
         logger.info("changeFilament.selectToolChangeFilament started")
         try:
             # Use the activeExtruder value (set by setup() or model signal) to select tool and jog
-            if int(self.activeExtruder) == 1:
+            if not is_dual_nozzle_printer():
+                # Force tool0 for single nozzle
+                self.octoprint_client.selectTool(0)
+                self.octoprint_client.jog(self.model.tool0PurgePosition['X'], self.model.tool0PurgePosition["Y"], absolute=True, speed=10000)
+            elif int(self.activeExtruder) == 1:
                 self.octoprint_client.selectTool(1)
                 self.octoprint_client.jog(self.model.tool1PurgePosition['X'], self.model.tool1PurgePosition["Y"], absolute=True, speed=10000)
             else:
@@ -492,6 +497,8 @@ class ChangeFilamentWizard(QWidget):
             tool = params.get('tool')
             if isinstance(tool, str) and tool.startswith('tool'):
                 try:
+                    # Force single nozzle compliance
+                    tool = force_single_tool(tool)
                     nozzle_index = int(tool.replace('tool', ''))
                     self.setActiveExtruder(nozzle_index)
                 except Exception:

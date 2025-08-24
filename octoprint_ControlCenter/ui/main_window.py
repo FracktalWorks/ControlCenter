@@ -15,6 +15,8 @@ import os
 import subprocess
 import ui.resources.resource_rc  # Ensure resources are loaded
 import config
+from config import is_dual_nozzle_printer
+from utils.printer_ui_config import apply_nozzle_config_to_all_screens
 from utils.styles import printer_status_red, printer_status_green, printer_status_amber, printer_status_blue
 # Import the specific dialog functions needed, not just the dialog module
 from utils.dialog import WarningOk, WarningYesNo
@@ -134,6 +136,9 @@ class MainWindow(QMainWindow):
                     # Adjust the size of the main window to fit its contents
                     self.adjustSize()
                     self.logger.info("MainWindow initialized successfully")
+                    
+                    # Apply single/dual nozzle configuration
+                    self._apply_nozzle_configuration()
                 except Exception as e:
                     self.logger.exception("Error during MainWindow initialization")
                     WarningOk(self,
@@ -172,11 +177,18 @@ class MainWindow(QMainWindow):
         self.logger.debug("Switching to control screen")
         try:
             self.switch_screen(self.control_screen)
-            if self.control_screen.toolToggleTemperatureButton.isChecked():
-                self.control_screen.toolTempSpinBox.setProperty(
-                    "value", float(self.printer_model.temperatures.get("tool1", 0))
-                )
+            # Handle temperature spinbox based on nozzle configuration
+            if is_dual_nozzle_printer() and hasattr(self.control_screen, 'toolToggleTemperatureButton'):
+                if self.control_screen.toolToggleTemperatureButton.isChecked():
+                    self.control_screen.toolTempSpinBox.setProperty(
+                        "value", float(self.printer_model.temperatures.get("tool1", 0))
+                    )
+                else:
+                    self.control_screen.toolTempSpinBox.setProperty(
+                        "value", float(self.printer_model.temperatures.get("tool0", 0))
+                    )
             else:
+                # Single nozzle - always use tool0
                 self.control_screen.toolTempSpinBox.setProperty(
                     "value", float(self.printer_model.temperatures.get("tool0", 0))
                 )
@@ -199,4 +211,13 @@ class MainWindow(QMainWindow):
     def switch_to_filament_management_screen(self):
         self.logger.debug("Switching to filament/nozzle screen")
         self.switch_screen(self.filament_management_screen)
+    
+    def _apply_nozzle_configuration(self):
+        """Apply single/dual nozzle configuration by hiding appropriate UI elements."""
+        apply_nozzle_config_to_all_screens(self)
+    
+    def _hide_dual_nozzle_elements(self):
+        """Hide all UI elements related to the second nozzle/tool when in single nozzle mode."""
+        # This method is now handled by apply_nozzle_config_to_all_screens
+        pass
 

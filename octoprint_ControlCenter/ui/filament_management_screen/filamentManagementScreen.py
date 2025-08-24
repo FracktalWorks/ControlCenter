@@ -6,6 +6,7 @@ from PyQt5.QtCore import Qt
 from PyQt5 import uic
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
+from utils.printer_ui_config import apply_nozzle_config_to_screen
 from utils import dialog
 from utils import styles
 import config
@@ -130,6 +131,13 @@ class filamentManagementScreen(QWidget):
             self._on_status_updated(self.main_window.printer_model.printer_status)
         except Exception as e:
             self.logger.debug(f"Unable to apply initial status to buttons: {e}")
+
+        # Apply nozzle configuration
+        self.apply_nozzle_configuration()
+
+    def apply_nozzle_configuration(self):
+        """Hide dual nozzle elements for single nozzle configuration."""
+        apply_nozzle_config_to_screen(self, 'filament_management_screen')
 
     def _on_status_updated(self, status: str):
         """Enable/disable change buttons based on printer status.

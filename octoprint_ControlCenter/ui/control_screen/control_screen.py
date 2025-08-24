@@ -7,6 +7,7 @@ from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import QWidget, QPushButton, QSpinBox, QTabWidget, QToolButton
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
+from utils.printer_ui_config import apply_nozzle_config_to_screen
 from utils import dialog
 
 try:
@@ -215,6 +216,12 @@ class ControlScreen(QWidget):
         except Exception as e:
             self.logger.debug(f"Could not initialize spinboxes from model: {e}")
 
+        # Apply nozzle configuration
+        self.apply_nozzle_configuration()
+
+    def apply_nozzle_configuration(self):
+        """Hide dual nozzle elements for single nozzle configuration."""
+        apply_nozzle_config_to_screen(self, 'control_screen')
 
     def coolDownAction(self):
         """'

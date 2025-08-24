@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QStackedWidget
 from PyQt5 import uic
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
+from utils.printer_ui_config import apply_nozzle_config_to_screen
 from utils import dialog
 
 # Import all calibration sub-screens
@@ -66,6 +67,13 @@ class CalibrateScreen(QWidget):
         # Show the main calibration page initially
         self.calibration_stacked_widget.setCurrentWidget(self.main_calibrate_page)
         self.logger.debug("Set current widget to mainCalibratePage")
+
+        # Apply nozzle configuration
+        self.apply_nozzle_configuration()
+
+    def apply_nozzle_configuration(self):
+        """Hide dual nozzle elements for single nozzle configuration."""
+        apply_nozzle_config_to_screen(self, 'calibrate_screen')
 
     def showEvent(self, event):
         """Reset to main_calibrate_page whenever this widget is shown from main window navigation."""

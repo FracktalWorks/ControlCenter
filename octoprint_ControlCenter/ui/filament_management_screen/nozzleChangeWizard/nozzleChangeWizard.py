@@ -43,6 +43,7 @@ from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel, QProgr
 
 from utils.helpers import check_ui_elements, run_async
 from utils.logger import get_logger
+from utils.printer_ui_config import force_single_tool
 from utils import dialog
 # Use machineBuildSize from the printer model instead of importing config here
 
@@ -235,6 +236,8 @@ class NozzleChangeWizard(QWidget):
 				tool = params.get("tool")
 			elif isinstance(params, str):
 				tool = params
+			# Force tool1 to tool0 for single nozzle configuration
+			tool = force_single_tool(tool)
 			if tool in ("tool0", "tool1"):
 				self.active_tool = tool
 			self.logger.info(f"NozzleChangeWizard.setup: active_tool={self.active_tool}")

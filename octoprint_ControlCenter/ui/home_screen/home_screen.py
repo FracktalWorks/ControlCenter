@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QLabel, QProgress
 from PyQt5 import QtGui, QtCore
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
+from utils.printer_ui_config import apply_nozzle_config_to_screen
 from utils.styles import printer_status_green, printer_status_red, printer_status_amber
 from utils import dialog
 from utils import styles
@@ -190,6 +191,13 @@ class HomeScreen(QWidget):
                 self.on_tool_states_loaded(m.tools)
         except Exception as e:
             self.logger.debug(f"Unable to init tool labels: {e}")
+
+        # Apply nozzle configuration
+        self.apply_nozzle_configuration()
+
+    def apply_nozzle_configuration(self):
+        """Hide dual nozzle elements for single nozzle configuration."""
+        apply_nozzle_config_to_screen(self, 'home_screen')
 
     def updatePrinterStatus(self, status):
         """Update the status bar and enable/disable relevant buttons.

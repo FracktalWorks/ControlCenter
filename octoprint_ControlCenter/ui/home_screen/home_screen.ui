@@ -270,7 +270,7 @@ background-color: rgba(255, 255, 255, 0);</string>
                 </spacer>
                </item>
                <item alignment="Qt::AlignHCenter">
-                <widget class="QLabel" name="label">
+                <widget class="QLabel" name="tool0TextLabel">
                  <property name="font">
                   <font>
                    <family>Montserrat</family>
@@ -381,7 +381,7 @@ background-color: rgb(255, 255, 255,0);</string>
                <property name="spacing">
                 <number>0</number>
                </property>
-               <item alignment="Qt::AlignHCenter|Qt::AlignBottom">
+               <item alignment="Qt::AlignLeft|Qt::AlignBottom">
                 <widget class="QLabel" name="tool0TargetTemperature">
                  <property name="font">
                   <font>
@@ -406,7 +406,7 @@ background-color: rgba(255, 255, 255, 0);</string>
                  </property>
                 </widget>
                </item>
-               <item alignment="Qt::AlignHCenter">
+               <item alignment="Qt::AlignLeft">
                 <widget class="QProgressBar" name="tool0TempBar">
                  <property name="minimumSize">
                   <size>
@@ -458,7 +458,7 @@ QProgressBar {
                  </property>
                 </widget>
                </item>
-               <item alignment="Qt::AlignHCenter|Qt::AlignTop">
+               <item alignment="Qt::AlignLeft|Qt::AlignTop">
                 <widget class="QLabel" name="tool0ActualTemperature">
                  <property name="font">
                   <font>
@@ -519,32 +519,6 @@ background-color: rgba(0, 0, 0, 0);</string>
             </widget>
            </item>
            <item>
-            <spacer name="horizontalSpacer_3">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_5">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
             <layout class="QHBoxLayout" name="tool1Layout">
              <property name="spacing">
               <number>4</number>
@@ -568,7 +542,7 @@ background-color: rgba(0, 0, 0, 0);</string>
                 </spacer>
                </item>
                <item alignment="Qt::AlignHCenter">
-                <widget class="QLabel" name="label_2">
+                <widget class="QLabel" name="tool1TextLabel">
                  <property name="font">
                   <font>
                    <family>Montserrat</family>
@@ -679,7 +653,7 @@ background-color: rgb(255, 255, 255,0);</string>
                <property name="spacing">
                 <number>0</number>
                </property>
-               <item alignment="Qt::AlignHCenter|Qt::AlignBottom">
+               <item alignment="Qt::AlignLeft|Qt::AlignBottom">
                 <widget class="QLabel" name="tool1TargetTemperature">
                  <property name="font">
                   <font>
@@ -704,7 +678,7 @@ background-color: rgba(255, 255, 255, 0);</string>
                  </property>
                 </widget>
                </item>
-               <item alignment="Qt::AlignHCenter">
+               <item alignment="Qt::AlignLeft">
                 <widget class="QProgressBar" name="tool1TempBar">
                  <property name="minimumSize">
                   <size>
@@ -756,7 +730,7 @@ QProgressBar {
                  </property>
                 </widget>
                </item>
-               <item alignment="Qt::AlignHCenter|Qt::AlignTop">
+               <item alignment="Qt::AlignLeft|Qt::AlignTop">
                 <widget class="QLabel" name="tool1ActualTemperature">
                  <property name="font">
                   <font>
@@ -815,32 +789,6 @@ background-color: rgba(0, 0, 0, 0);</string>
               <enum>Qt::Vertical</enum>
              </property>
             </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_2">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_4">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
            </item>
            <item>
             <layout class="QHBoxLayout" name="bedLayout">
@@ -938,7 +886,7 @@ background-color: rgb(255, 255, 255,0);</string>
                <property name="spacing">
                 <number>0</number>
                </property>
-               <item alignment="Qt::AlignHCenter|Qt::AlignBottom">
+               <item alignment="Qt::AlignLeft|Qt::AlignBottom">
                 <widget class="QLabel" name="bedTargetTemperature">
                  <property name="font">
                   <font>
@@ -963,7 +911,7 @@ background-color: rgba(255, 255, 255, 0);</string>
                  </property>
                 </widget>
                </item>
-               <item alignment="Qt::AlignHCenter">
+               <item alignment="Qt::AlignLeft">
                 <widget class="QProgressBar" name="bedTempBar">
                  <property name="minimumSize">
                   <size>
@@ -1015,7 +963,7 @@ QProgressBar {
                  </property>
                 </widget>
                </item>
-               <item alignment="Qt::AlignHCenter|Qt::AlignTop">
+               <item alignment="Qt::AlignLeft|Qt::AlignTop">
                 <widget class="QLabel" name="bedActualTemperature">
                  <property name="font">
                   <font>
