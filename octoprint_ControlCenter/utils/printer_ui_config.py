@@ -5,10 +5,14 @@ This module handles printer configuration (single vs dual nozzle) and manages
 which UI elements should be shown/hidden based on the printer type.
 """
 
-from config import is_dual_nozzle_printer
+from config import IS_DUAL_NOZZLE
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+def is_dual_nozzle_printer():
+    """Check if the printer is configured for dual nozzle operation."""
+    return IS_DUAL_NOZZLE
 
 # UI elements that should be hidden for single nozzle printers
 DUAL_NOZZLE_ELEMENTS = {

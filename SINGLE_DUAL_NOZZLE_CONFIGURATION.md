@@ -231,9 +231,9 @@ if not is_dual_nozzle_printer():
 
 ```
 octoprint_ControlCenter/
-├── config.py                          # Main configuration (IS_DUAL_NOZZLE)
+├── config.py                          # Main configuration data (IS_DUAL_NOZZLE)
 ├── utils/
-│   └── printer_ui_config.py          # UI configuration module
+│   └── printer_ui_config.py          # UI configuration module with is_dual_nozzle_printer()
 └── ui/
     ├── main_window.py                 # Uses apply_nozzle_config_to_all_screens()
     ├── home_screen/
@@ -241,6 +241,26 @@ octoprint_ControlCenter/
     ├── calibrate_screen/
     ├── filament_management_screen/
     └── your_new_screen/               # Your new screen here
+```
+
+## Architecture Design
+
+### Clean Separation of Concerns
+- **`config.py`**: Pure data configuration (no functions, only variables)
+- **`utils/printer_ui_config.py`**: Configuration logic and UI management functions
+- **UI Files**: Import from `printer_ui_config` for all configuration needs
+
+### Configuration Flow
+```python
+# config.py - Data only
+IS_DUAL_NOZZLE = True
+
+# utils/printer_ui_config.py - Logic
+def is_dual_nozzle_printer():
+    return IS_DUAL_NOZZLE
+
+# UI files - Usage
+from utils.printer_ui_config import is_dual_nozzle_printer
 ```
 
 ## Best Practices

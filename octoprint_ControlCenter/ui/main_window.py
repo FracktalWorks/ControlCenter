@@ -15,8 +15,7 @@ import os
 import subprocess
 import ui.resources.resource_rc  # Ensure resources are loaded
 import config
-from config import is_dual_nozzle_printer
-from utils.printer_ui_config import apply_nozzle_config_to_all_screens
+from utils.printer_ui_config import apply_nozzle_config_to_all_screens, is_dual_nozzle_printer
 from utils.styles import printer_status_red, printer_status_green, printer_status_amber, printer_status_blue
 # Import the specific dialog functions needed, not just the dialog module
 from utils.dialog import WarningOk, WarningYesNo
