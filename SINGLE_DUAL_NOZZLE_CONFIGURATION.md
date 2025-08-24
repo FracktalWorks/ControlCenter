@@ -191,6 +191,26 @@ Search this UI file for any dual nozzle elements (containing 'tool1', 'T1', or d
 3. Verify all elements are visible
 4. Test tool selection works for both tools
 
+## Workflow Adaptations
+
+### Calibration Workflows
+The system automatically adapts calibration workflows for single nozzle mode:
+
+**Bed Leveling (`bedLevelingPage.py`)**:
+- ✅ **Single Nozzle**: Skips nozzle height calibration step, goes directly to completion
+- ✅ **Dual Nozzle**: Performs full dual nozzle height calibration workflow
+- ✅ **Heater Management**: Only heats/cools relevant extruders based on configuration
+- ✅ **Tool Offset**: Skips tool offset calculations for single nozzle mode
+
+### Implementation Example
+```python
+# In calibration workflow
+if not is_dual_nozzle_printer():
+    self.logger.info("Single nozzle mode detected - skipping dual nozzle steps")
+    self.skip_to_completion()
+    return
+```
+
 ## Common Element Patterns
 
 ### UI Elements to Hide (Examples)

@@ -3,6 +3,7 @@ from PyQt5 import uic, QtGui
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
+from utils.printer_ui_config import is_dual_nozzle_printer
 from utils import dialog
 
 
@@ -108,7 +109,10 @@ class BedLeveling(QWidget):
         try:
             self.toolZOffsetCaliberationPageCount = 0
             self.octoprint_client.gcode(command='M104 S200')
-            self.octoprint_client.gcode(command='M104 T1 S200')
+            
+            # Only heat T1 for dual nozzle printers
+            if is_dual_nozzle_printer():
+                self.octoprint_client.gcode(command='M104 T1 S200')
 
             self.octoprint_client.gcode(command='T0')  # Set active tool to t0
             self.octoprint_client.gcode(
@@ -213,6 +217,13 @@ class BedLeveling(QWidget):
         self.logger.info("BedLeveling.nozzleHeightStep1 started")
         try:
             self.movie3.stop()
+            
+            # For single nozzle printers, skip nozzle height calibration and go directly to done
+            if not is_dual_nozzle_printer():
+                self.logger.info("Single nozzle mode detected - skipping nozzle height calibration")
+                self.doneStep()
+                return
+            
             if self.toolZOffsetCaliberationPageCount == 0:
                 self.toolZOffsetLabel.setText(
                     "Move the bed up or down to the First Nozzle , testing height using paper")
@@ -256,14 +267,21 @@ class BedLeveling(QWidget):
         """
         self.logger.info("BedLeveling.doneStep started")
         try:
-            self.setNewToolZOffsetFromCurrentZBool = True
-            self.octoprint_client.gcode(command='M114') #setZToolOffset ill set the new tool offset once M114 gives the current Z position from the websocket response
+            # Only set tool offset for dual nozzle printers
+            if is_dual_nozzle_printer():
+                self.setNewToolZOffsetFromCurrentZBool = True
+                self.octoprint_client.gcode(command='M114') #setZToolOffset ill set the new tool offset once M114 gives the current Z position from the websocket response
+            
             self.octoprint_client.jog(z=4, absolute=True, speed=1500)
             self.octoprint_client.gcode(command='T0')
 
             self.main_window.calibrate_screen.show_calibrate_screen()
             self.octoprint_client.gcode(command='M104 S0')
-            self.octoprint_client.gcode(command='M104 T1 S0')
+            
+            # Only turn off T1 heater for dual nozzle printers
+            if is_dual_nozzle_printer():
+                self.octoprint_client.gcode(command='M104 T1 S0')
+                
             self.octoprint_client.gcode(command='M84')
             self.octoprint_client.gcode(
                 command='M500')  # store eeprom settings to get Z home offset, mesh bed leveling back
@@ -283,7 +301,11 @@ class BedLeveling(QWidget):
             self.main_window.calibrate_screen.show_calibrate_screen()
             self.octoprint_client.home(['x', 'y', 'z'])
             self.octoprint_client.gcode(command='M104 S0')
-            self.octoprint_client.gcode(command='M104 T1 S0')
+            
+            # Only turn off T1 heater for dual nozzle printers
+            if is_dual_nozzle_printer():
+                self.octoprint_client.gcode(command='M104 T1 S0')
+                
             self.octoprint_client.gcode(command='M84')
             try:
                 self.movie1.stop()
