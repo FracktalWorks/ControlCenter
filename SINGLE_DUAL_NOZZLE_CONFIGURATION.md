@@ -44,7 +44,43 @@ dual_elements = ['tool1Button', 'tool1Label', 'tool1Widget']
 hide_dual_nozzle_elements(self, dual_elements)
 ```
 
-### 3. For Tool Selection Logic
+### 3. For Custom Single Nozzle Styling
+
+If you need custom styling for single nozzle mode (like border radius):
+
+```python
+# In your screen file
+from utils.printer_ui_config import is_dual_nozzle_printer
+
+def apply_nozzle_configuration(self):
+    """Apply nozzle configuration and styling"""
+    apply_nozzle_config_to_screen(self, 'your_screen')
+    
+    # Apply custom styling for single nozzle mode
+    if not is_dual_nozzle_printer():
+        self._apply_single_nozzle_styling()
+
+def _apply_single_nozzle_styling(self):
+    """Apply custom styling for single nozzle configuration."""
+    if hasattr(self, 'someButton') and self.someButton:
+        current_style = self.someButton.styleSheet()
+        # Create proper CSS structure for QPushButton
+        border_style = "QPushButton { border-top-left-radius: 15px; border-top-right-radius: 15px; }"
+        # Combine existing style with new border style
+        new_style = current_style + " " + border_style if current_style else border_style
+        self.someButton.setStyleSheet(new_style)
+        
+    # Example for spinbox styling
+    if hasattr(self, 'someSpinBox') and self.someSpinBox:
+        current_style = self.someSpinBox.styleSheet()
+        # Create proper CSS structure for QSpinBox
+        border_style = "QSpinBox { border-bottom-left-radius: 15px; }"
+        # Combine existing style with new border style
+        new_style = current_style + " " + border_style if current_style else border_style
+        self.someSpinBox.setStyleSheet(new_style)
+```
+
+### 4. For Tool Selection Logic
 
 When handling tool selection in wizards or dialogs:
 
@@ -112,6 +148,17 @@ Add single/dual nozzle configuration to this new UI screen.
 
 ```
 Update the DUAL_NOZZLE_ELEMENTS dictionary in utils/printer_ui_config.py to include these new dual nozzle elements for 'screen_name': [list of element names that should be hidden for single nozzle printers]. Look for elements with 'tool1', 'T1', or dual-specific naming.
+```
+
+### For Custom Single Nozzle Styling
+
+```
+Add custom styling for single nozzle mode to this screen:
+1. Import is_dual_nozzle_printer from utils.printer_ui_config
+2. Modify apply_nozzle_configuration() to check if not is_dual_nozzle_printer() and call _apply_single_nozzle_styling()
+3. Create _apply_single_nozzle_styling() method that applies custom CSS styling (like border-radius) to specific UI elements for single nozzle mode
+4. Use proper CSS structure with selectors like "QPushButton { property: value; }" or "QSpinBox { property: value; }"
+5. Combine existing styles with new styles using string concatenation and conditional logic
 ```
 
 ### For Wizard/Tool Selection Logic

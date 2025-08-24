@@ -14,10 +14,10 @@ logger = get_logger(__name__)
 DUAL_NOZZLE_ELEMENTS = {
     'home_screen': [
         'tool1Layout', 'tool1Label', 'tool1LoadedNozzle', 'tool1LoadedFilament',
-        'tool1TargetTemperature', 'tool1TempBar', 'tool1ActualTemperature', 'tool1TextLabel'
+        'tool1TargetTemperature', 'tool1TempBar', 'tool1ActualTemperature', 'tool1TextLabel', 'toolSeperationLine'
     ],
     'control_screen': [
-        'toolToggleTemperatureButton', 'toolToggleMotionButton', 'tool180PreheatButton'
+        'toolToggleTemperatureButton', 'toolToggleMotionButton'
     ],
     'filament_management_screen': [
         'changeTool1MaterialBayX', 'tool1Frame', 'editTool1MaterialBayX',

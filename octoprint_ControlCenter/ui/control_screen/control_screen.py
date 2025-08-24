@@ -7,7 +7,7 @@ from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import QWidget, QPushButton, QSpinBox, QTabWidget, QToolButton
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
-from utils.printer_ui_config import apply_nozzle_config_to_screen
+from utils.printer_ui_config import apply_nozzle_config_to_screen, is_dual_nozzle_printer
 from utils import dialog
 
 try:
@@ -220,8 +220,40 @@ class ControlScreen(QWidget):
         self.apply_nozzle_configuration()
 
     def apply_nozzle_configuration(self):
-        """Hide dual nozzle elements for single nozzle configuration."""
+        """Hide dual nozzle elements and apply styling for single nozzle configuration."""
         apply_nozzle_config_to_screen(self, 'control_screen')
+        
+        # Apply border radius styling for single nozzle mode
+        if not is_dual_nozzle_printer():
+            self._apply_single_nozzle_styling()
+
+    def _apply_single_nozzle_styling(self):
+        """Apply custom styling for single nozzle configuration."""
+        # Set border radius for top corners of setToolTempButton and extruderButton
+        if hasattr(self, 'setToolTempButton') and self.setToolTempButton:
+            current_style = self.setToolTempButton.styleSheet()
+            # Create proper CSS structure for QPushButton
+            border_style = "QPushButton { border-top-right-radius: 15px; }"
+            # Combine existing style with new border style
+            new_style = current_style + " " + border_style if current_style else border_style
+            self.setToolTempButton.setStyleSheet(new_style)
+            
+        if hasattr(self, 'extruderButton') and self.extruderButton:
+            current_style = self.extruderButton.styleSheet()
+            # Create proper CSS structure for QPushButton
+            border_style = "QPushButton { border-top-left-radius: 15px; border-top-right-radius: 15px; }"
+            # Combine existing style with new border style
+            new_style = current_style + " " + border_style if current_style else border_style
+            self.extruderButton.setStyleSheet(new_style)
+            
+        # Set border radius for toolTempSpinBox
+        if hasattr(self, 'toolTempSpinBox') and self.toolTempSpinBox:
+            current_style = self.toolTempSpinBox.styleSheet()
+            # Create proper CSS structure for QSpinBox
+            border_style = "QSpinBox { border-top-left-radius: 15px; border-bottom-left-radius: 15px; }"
+            # Combine existing style with new border style
+            new_style = current_style + " " + border_style if current_style else border_style
+            self.toolTempSpinBox.setStyleSheet(new_style)
 
     def coolDownAction(self):
         """'

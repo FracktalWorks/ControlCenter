@@ -325,7 +325,7 @@ background-color: rgb(255, 255, 255,0);</string>
                  </property>
                 </widget>
                </item>
-               <item>
+               <item alignment="Qt::AlignHCenter">
                 <widget class="QLabel" name="tool0LoadedNozzle">
                  <property name="font">
                   <font>
@@ -488,7 +488,7 @@ background-color: rgba(0, 0, 0, 0);</string>
             </layout>
            </item>
            <item>
-            <widget class="Line" name="line_2">
+            <widget class="Line" name="toolSeperationLine">
              <property name="minimumSize">
               <size>
                <width>1</width>
