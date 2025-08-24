@@ -487,7 +487,7 @@ background-color: rgba(0, 0, 0, 0);</string>
              </item>
             </layout>
            </item>
-           <item>
+           <item alignment="Qt::AlignHCenter">
             <widget class="Line" name="toolSeperationLine">
              <property name="minimumSize">
               <size>
@@ -759,7 +759,7 @@ background-color: rgba(0, 0, 0, 0);</string>
              </item>
             </layout>
            </item>
-           <item>
+           <item alignment="Qt::AlignHCenter">
             <widget class="Line" name="line_3">
              <property name="minimumSize">
               <size>

@@ -57,7 +57,7 @@ tool1PurgePosition = {'X': 655, 'Y': -77}
 ptfeTubeLength = 1500  # 2400 for 600x600, 1500 for 600x300 keep as multiples of 300 only
 
 # Printer Configuration
-IS_DUAL_NOZZLE = False  # Set to False for single nozzle printers
+IS_DUAL_NOZZLE = True  # Set to False for single nozzle printers
 
 def is_dual_nozzle_printer():
     """Check if the printer is configured for dual nozzle operation."""
