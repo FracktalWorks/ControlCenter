@@ -407,7 +407,7 @@ margin-right:6px;</string>
                      <number>0</number>
                     </property>
                     <item alignment="Qt::AlignLeft">
-                     <widget class="QLabel" name="tool10MaterialBayAStateColor">
+                     <widget class="QLabel" name="tool0MaterialBayAStateColor">
                       <property name="minimumSize">
                        <size>
                         <width>20</width>

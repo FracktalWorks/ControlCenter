@@ -22,7 +22,7 @@ DUAL_NOZZLE_ELEMENTS = {
     'filament_management_screen': [
         'changeTool1MaterialBayX', 'tool1Frame', 'editTool1MaterialBayX',
         'tool11MaterialBayXStateColor', 'tool1MaterialBayXStateLabel', 'changeTool1Button',
-        'tool1MaterialBayXLabel', 'tool10MaterialBayAStateColor'
+        'tool1MaterialBayXLabel'
     ],
     'calibrate_screen': [
         'idexCalibrationWizardButton', 'toolOffsetZButton', 'toolOffsetXYButton'
