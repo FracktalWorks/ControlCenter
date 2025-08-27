@@ -194,15 +194,14 @@ class PrinterSetup(QWidget):
                 self.statusLabel.setText("Printer configuration applied successfully!")
                 self.update_current_printer_display()
                 
-                # Get file count for success message
+                # Show restart dialog and restart when OK is pressed
                 firmware_files = get_firmware_files()
-                dialog.WarningOk(
-                    self,
+                restart_msg = (
                     f"Printer configuration changed to '{selected_display_name}'.\n\n"
-                    f"Copied {len(firmware_files)} configuration files to Klipper.\n"
-                    "Please restart Klipper for the changes to take effect.",
-                    overlay=True
+                    f"Copied {len(firmware_files)} configuration files to Klipper.\n\n"
+                    "The printer will restart now for changes to take effect."
                 )
+                self.restart_printer_system(restart_msg)
                 
             else:
                 self.statusLabel.setText("Failed to apply printer configuration")
@@ -231,6 +230,21 @@ class PrinterSetup(QWidget):
             self.logger.info("Returned to main settings screen")
         except Exception as e:
             self.logger.error(f"Error returning to main settings: {e}")
+
+    def restart_printer_system(self, msg="Printer configuration applied successfully!\n\nThe printer needs to restart for changes to take effect.", overlay=True):
+        """Show restart dialog and restart the printer system when OK is pressed."""
+        try:
+            # Use WarningOk which only has an OK button - when clicked, restart immediately
+            if dialog.WarningOk(self, msg, overlay=overlay):
+                self.logger.info("User confirmed printer restart - restarting now")
+                # Restart the printer system
+                os.system('sudo reboot now')
+                return True
+            return False
+        except Exception as e:
+            self.logger.error(f"Error during printer restart: {e}")
+            dialog.WarningOk(self, f"Error during restart: {e}", overlay=True)
+            return False
 
     def showEvent(self, event):
         """Refresh data when the screen is shown."""
