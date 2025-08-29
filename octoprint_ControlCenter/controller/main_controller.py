@@ -266,6 +266,9 @@ class MainController:
         self.logger.info("MainController.onWebSocketConnected started")
         if self.octoprint_client:
             try:
+                # Reload printer configuration from Klipper after connection is established
+                self.printer_model.reload_printer_configuration()
+                
                 status_response = self.octoprint_client.gcode(command='status')
                 if status_response:
                     self.logger.debug(f"Printer status response: {status_response}")

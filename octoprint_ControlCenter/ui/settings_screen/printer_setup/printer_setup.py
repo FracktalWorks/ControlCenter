@@ -5,13 +5,12 @@ from PyQt5.QtCore import pyqtSignal
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
 from utils import dialog
-from utils.printer_setup_utils import (
+from utils.klipper_config_manager import (
     get_available_printers, 
     get_printer_display_name, 
     copy_firmware_files, 
     get_current_printer_selection,
-    get_firmware_files,
-    get_missing_config_files
+    get_klipper_config_manager
 )
 
 logger = get_logger(__name__)
@@ -158,7 +157,8 @@ class PrinterSetup(QWidget):
             selected_display_name = self.printerComboBox.currentText()
             
             # Confirm the change with the user
-            firmware_files = get_firmware_files()
+            manager = get_klipper_config_manager()
+            firmware_files = manager.get_firmware_files()
             if not dialog.WarningYesNo(
                 self, 
                 f"Are you sure you want to change the printer configuration to '{selected_display_name}'?\n\n"
@@ -185,6 +185,9 @@ class PrinterSetup(QWidget):
                         config_store.set_selected_printer(selected_printer)  # Store just the printer name
                         self.logger.info(f"Stored printer selection: {selected_printer}")
                         
+                        # Reload printer configuration from the new Klipper settings
+                        self.mainSettingsWidget.main_window.printer_model.reload_printer_configuration()
+                        
                         # Emit signal for other components
                         self.printer_changed.emit(selected_printer)
                         
@@ -195,7 +198,7 @@ class PrinterSetup(QWidget):
                 self.update_current_printer_display()
                 
                 # Show restart dialog and restart when OK is pressed
-                firmware_files = get_firmware_files()
+                firmware_files = manager.get_firmware_files()
                 restart_msg = (
                     f"Printer configuration changed to '{selected_display_name}'.\n\n"
                     f"Copied {len(firmware_files)} configuration files to Klipper.\n\n"
@@ -259,8 +262,9 @@ class PrinterSetup(QWidget):
     def check_firmware_files_status(self):
         """Check and log the status of firmware files in Klipper config directory."""
         try:
-            missing_files = get_missing_config_files()
-            firmware_files = get_firmware_files()
+            manager = get_klipper_config_manager()
+            missing_files = manager.get_missing_config_files()
+            firmware_files = manager.get_firmware_files()
             
             if missing_files:
                 self.logger.warning(f"Missing {len(missing_files)} firmware files in Klipper config: {', '.join(missing_files[:5])}{'...' if len(missing_files) > 5 else ''}")

@@ -45,10 +45,16 @@ class PrinterModel(QObject):
     # Signals for feed rate and flow rate updates
     feed_rate_updated = pyqtSignal(int)  # Feed rate percentage
     flow_rate_updated = pyqtSignal(int)  # Flow rate percentage
+    # Signal for printer configuration changes
+    printer_config_updated = pyqtSignal(dict)  # Emitted when printer configuration changes
 
     def __init__(self):
         super(PrinterModel, self).__init__()
         self.logger = get_logger(self.__class__.__name__)
+        
+        # Initialize printer configuration from Klipper
+        self._load_printer_configuration()
+        
         self.temperatures = {
             'tool0Actual': 0, 'tool0Target': 0,
             'tool1Actual': 0, 'tool1Target': 0,
@@ -65,11 +71,14 @@ class PrinterModel(QObject):
         self.print_time_left = 0
         self.updateData = {}
         self.filaments = config.filaments
+        
+        # Printer configuration properties (loaded dynamically from Klipper)
         self.calibrationPosition = config.calibrationPosition
         self.tool0PurgePosition = config.tool0PurgePosition
         self.tool1PurgePosition = config.tool1PurgePosition
         self.ptfeTubeLength = config.ptfeTubeLength
         self.machineBuildSize = config.machineBuildSize
+        self.IS_DUAL_NOZZLE = config.IS_DUAL_NOZZLE
         # Klipper state cache
         self.klipper_state = "unknown"
         # Tool state persistence
@@ -416,5 +425,53 @@ class PrinterModel(QObject):
             try:
                 self._config_store.set_selected_printer(printer_config)
                 self.logger.info(f"Printer configuration updated to: {printer_config}")
+                
+                # Reload printer configuration from Klipper when printer changes
+                self._load_printer_configuration()
+                
             except Exception as e:
                 self.logger.error(f"Failed to persist printer configuration: {e}")
+
+    def _load_printer_configuration(self):
+        """Load printer configuration from Klipper PRINTER_VARIABLES."""
+        try:
+            # Load configuration from Klipper
+            success = config.load_printer_config_from_klipper()
+            
+            if success:
+                # Update our local configuration properties
+                self.calibrationPosition = config.calibrationPosition
+                self.tool0PurgePosition = config.tool0PurgePosition
+                self.tool1PurgePosition = config.tool1PurgePosition
+                self.ptfeTubeLength = config.ptfeTubeLength
+                self.machineBuildSize = config.machineBuildSize
+                self.IS_DUAL_NOZZLE = config.IS_DUAL_NOZZLE
+                
+                self.logger.info("Successfully loaded printer configuration from Klipper")
+                self.logger.debug(f"Machine build size: {self.machineBuildSize}")
+                self.logger.debug(f"Dual nozzle: {self.IS_DUAL_NOZZLE}")
+                
+                # Emit signal with updated configuration
+                self.printer_config_updated.emit(self.get_printer_configuration())
+                
+            else:
+                self.logger.warning("Failed to load printer configuration from Klipper, using defaults")
+                
+        except Exception as e:
+            self.logger.error(f"Error loading printer configuration: {e}")
+
+    def reload_printer_configuration(self):
+        """Reload printer configuration from Klipper (public method for external calls)."""
+        self._load_printer_configuration()
+        
+    def get_printer_configuration(self) -> dict:
+        """Get current printer configuration as a dictionary."""
+        return {
+            'calibrationPosition': self.calibrationPosition,
+            'machineBuildSize': self.machineBuildSize,
+            'tool0PurgePosition': self.tool0PurgePosition,
+            'tool1PurgePosition': self.tool1PurgePosition,
+            'ptfeTubeLength': self.ptfeTubeLength,
+            'IS_DUAL_NOZZLE': self.IS_DUAL_NOZZLE,
+            'selected_printer_config': self.selected_printer_config
+        }
