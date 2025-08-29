@@ -16,7 +16,7 @@ from ui.main_window import MainWindow
 from utils.logger import get_logger
 from models.printer_model import PrinterModel
 from octoprint_client.websocket_client import OctoPrintWebSocket
-from utils import klipper_cfg_utils
+from utils.klipper_config_manager import get_klipper_config_manager
 from octoprint_client import octoprint_singleton
 from PyQt5 import QtCore
 import time
@@ -294,9 +294,10 @@ class MainController:
         if not self.octoprint_client:
             return
         try:
-            if not klipper_cfg_utils.is_config_valid():
+            manager = get_klipper_config_manager()
+            if not manager.is_config_valid():
                 self.logger.error("Printer Config File Corrupted or Not Found, Attempting to restore Backup")
-                if klipper_cfg_utils.restore_backup_config():
+                if manager.restore_backup_config():
                     self.logger.info("Printer Config File Restored from backup")
                     return
                 dialog.WarningOk(self.main_window, "Printer Config File corrupted. Contact Fracktal support or raise a ticket at care.fracktal.in")
@@ -305,7 +306,7 @@ class MainController:
                     self.coolDownAction()
             else:
                 self.logger.info("Printer Config File OK")
-                klipper_cfg_utils.cleanup_old_backups()
+                manager.cleanup_old_backups()
         except Exception as e:
             self.logger.error(f"Error in MainController.checkKlipperPrinterCFG: {e}")
             dialog.WarningOk(self.main_window, f"Error in MainController.checkKlipperPrinterCFG: {e}", overlay=True)
@@ -371,8 +372,8 @@ class MainController:
             active_printing = status in ["Printing"]
             desired_runout = 1 if (runout_pref and active_printing) else 0
             desired_jam = 1 if (jam_pref and active_printing) else 0
-            self.octoprint_client.gcode(command=f'SET_FILAMENT_RUNOUT_SENSOR S{desired_runout}')
-            self.octoprint_client.gcode(command=f'SET_FILAMENT_JAM_SENSOR S{desired_jam}')
+            self.octoprint_client.gcode(command=f'SET_FILAMENT_RUNOUT_SENSOR S={desired_runout}')
+            self.octoprint_client.gcode(command=f'SET_FILAMENT_JAM_SENSOR S={desired_jam}')
             self.logger.info(f"Applied filament sensor state: runout={desired_runout} jam={desired_jam} (status={status})")
         except Exception as e:
             self.logger.error(f"Failed applying filament sensor state: {e}")
@@ -514,8 +515,8 @@ class MainController:
         try:
             self.logger.info("MainController.onPrintPaused invoked")
             if self.octoprint_client:
-                self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S0')
-                self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S0')
+                self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S=0')
+                self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S=0')
         except Exception as e:
             self.logger.error(f"Error in onPrintPaused: {e}")
 
@@ -523,8 +524,8 @@ class MainController:
         try:
             self.logger.info("MainController.onPrintCancelled invoked")
             if self.octoprint_client:
-                self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S0')
-                self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S0')
+                self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S=0')
+                self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S=0')
         except Exception as e:
             self.logger.error(f"Error in onPrintCancelled: {e}")
 
