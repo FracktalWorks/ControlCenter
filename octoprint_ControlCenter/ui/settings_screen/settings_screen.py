@@ -105,33 +105,116 @@ class SettingsScreen(QWidget):
         return False
 
     def restore_print_settings(self):
-        """Restore the print settings to their default values."""
+        """Restore the print settings to their default values for the currently configured printer."""
         self.logger.info("Restoring print settings to default values.")
-        # Add logic to restore print settings
 
         try:
-            if dialog.WarningYesNo(self,
-                                   "Are you sure you want to restore default print settings?\nWarning: Doing so will erase offsets and bed leveling info",
-                                   overlay=True):
-                os.system('sudo cp -f firmware/COMMON_FILAMENT_SENSOR.cfg /home/pi/COMMON_FILAMENT_SENSOR.cfg')
-                os.system('sudo cp -f firmware/COMMON_GCODE_MACROS.cfg /home/pi/COMMON_GCODE_MACROS.cfg')
-                os.system('sudo cp -f firmware/COMMON_IDEX.cfg /home/pi/COMMON_IDEX.cfg')
-                os.system('sudo cp -f firmware/COMMON_MOTHERBOARD.cfg /home/pi/COMMON_MOTHERBOARD.cfg')
-                os.system(
-                    'sudo cp -f firmware/PRINTERS_TWINDRAGON_600x300.cfg /home/pi/PRINTERS_TWINDRAGON_600x300.cfg')
-                os.system(
-                    'sudo cp -f firmware/PRINTERS_TWINDRAGON_600x600.cfg /home/pi/PRINTERS_TWINDRAGON_600x600.cfg')
-                os.system('sudo cp -f firmware/TOOLHEADS_TD-01_TOOLHEAD0.cfg /home/pi/TOOLHEADS_TD-01_TOOLHEAD0.cfg')
-                os.system('sudo cp -f firmware/TOOLHEADS_TD-01_TOOLHEAD1.cfg /home/pi/TOOLHEADS_TD-01_TOOLHEAD1.cfg')
-                os.system('sudo cp -f firmware/variables.cfg /home/pi/variables.cfg')
-                # TODO: check printer variant setting and modify printer.cfg accordingly
-                self.octoprint_client.gcode(command='M502')
-                self.octoprint_client.gcode(command='M500')
-                self.octoprint_client.gcode(command='FIRMWARE_RESTART')
-                self.octoprint_client.gcode(command='RESTART')
+            # Import the required modules for printer configuration
+            from utils.klipper_config_manager import (
+                get_current_printer_selection,
+                get_printer_display_name,
+                copy_firmware_files,
+                get_klipper_config_manager
+            )
+            
+            # Check if a printer is currently configured
+            current_printer = get_current_printer_selection()
+            
+            if not current_printer:
+                # No printer configured - redirect to printer setup
+                self.logger.warning("No printer configured, redirecting to printer setup")
+                if dialog.WarningYesNo(
+                    self,
+                    "No printer configuration found!\n\n"
+                    "You need to configure a printer before restoring print settings.\n"
+                    "Would you like to configure a printer now?",
+                    overlay=True
+                ):
+                    # Navigate to printer setup screen
+                    self.navigate_to_printer_setup()
+                else:
+                    self.logger.info("User chose not to configure printer")
+                return
+            
+            # Get printer display name for user-friendly dialog
+            printer_display_name = get_printer_display_name(current_printer)
+            manager = get_klipper_config_manager()
+            firmware_files = manager.get_firmware_files()
+            
+            # Confirm restoration with user
+            if dialog.WarningYesNo(
+                self,
+                f"Are you sure you want to restore default print settings for '{printer_display_name}'?\n\n"
+                f"This will:\n"
+                f"• Copy {len(firmware_files)} default configuration files\n"
+                f"• Reset printer firmware settings (M502/M500)\n"
+                f"• Erase bed leveling data and offsets\n"
+                f"• Restart Klipper firmware\n\n"
+                f"Warning: All calibration data will be lost!",
+                overlay=True
+            ):
+                self.logger.info(f"User confirmed restoration of print settings for {current_printer}")
+                
+                # Use the same system as printer setup wizard to restore files
+                self.logger.info(f"Copying firmware files for {current_printer}...")
+                success = copy_firmware_files(current_printer)
+                
+                if success:
+                    self.logger.info("Firmware files copied successfully, executing printer reset commands")
+                    
+                    # Reset printer firmware settings (same as before)
+                    try:
+                        self.octoprint_client.gcode(command='M502')  # Load factory defaults
+                        self.octoprint_client.gcode(command='M500')  # Save settings to EEPROM
+                        self.octoprint_client.gcode(command='FIRMWARE_RESTART')  # Restart Klipper
+                        
+                        self.logger.info("Print settings restoration completed successfully")
+                        
+                        # Show success message with restart dialog
+                        restart_msg = (
+                            f"Print settings for '{printer_display_name}' have been restored to defaults.\n\n"
+                            f"Configuration files have been refreshed and firmware settings reset.\n\n"
+                            "The printer will restart now for changes to take effect."
+                        )
+                        self.restart_printer_system(restart_msg)
+                        
+                    except Exception as e:
+                        self.logger.error(f"Error executing printer reset commands: {e}")
+                        dialog.WarningOk(
+                            self, 
+                            f"Files restored but failed to reset printer firmware: {e}\n"
+                            "Please manually restart the printer.",
+                            overlay=True
+                        )
+                        
+                else:
+                    self.logger.error("Failed to copy firmware files")
+                    dialog.WarningOk(
+                        self,
+                        "Failed to restore print settings. Please check the logs for details.",
+                        overlay=True
+                    )
+            else:
+                self.logger.info("User cancelled print settings restoration")
+                
         except Exception as e:
-            self.logger.error("Error in SettingsScreen.restorePrintDefaults: {}".format(e))
-            dialog.WarningOk(self, "Error in SettingsScreen.restorePrintDefaults: {}".format(e), overlay=True)
+            self.logger.error(f"Error in restore_print_settings: {e}")
+            dialog.WarningOk(self, f"Error restoring print settings: {e}", overlay=True)
+
+    def restart_printer_system(self, msg="Printer configuration applied successfully!\n\nThe printer needs to restart for changes to take effect.", overlay=True):
+        """Show restart dialog and restart the printer system when OK is pressed."""
+        try:
+            # Use WarningOk which only has an OK button - when clicked, restart immediately
+            if dialog.WarningOk(self, msg, overlay=overlay):
+                self.logger.info("User confirmed printer restart - restarting now")
+                # Restart the printer system
+                os.system('sudo reboot now')
+                return True
+            return False
+        except Exception as e:
+            self.logger.error(f"Error during printer restart: {e}")
+            dialog.WarningOk(self, f"Error during restart: {e}", overlay=True)
+            return False
 
     def restore_factory_defaults(self):
         """Restore the system to factory default settings."""
