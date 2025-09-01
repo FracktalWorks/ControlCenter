@@ -212,17 +212,14 @@ class SoftwareUpdate(QWidget):
             self.logger.error("Error in SoftwareUpdate.displayVersionInfo: {}".format(e))
             dialog.WarningOk(self, "Error in SoftwareUpdate.displayVersionInfo: {}".format(e), overlay=True)
 
-    def askAndReboot(self, msg="Are you sure you want to reboot?", overlay=True):
-        """Ask user for confirmation and reboot the system."""
+    def askAndReboot(self, msg="Software update successful, press OK to reboot.", overlay=True):
+        """Show success message and reboot the system when OK is pressed."""
         self.logger.info("SoftwareUpdate.askAndReboot started")
         try:
-            if dialog.WarningYesNo(self, msg, overlay=overlay):
-                self.logger.info("User confirmed reboot after software update")
-                os.system('sudo reboot now')
-                return True
-            else:
-                self.logger.info("User cancelled reboot after software update")
-                return False
+            dialog.WarningOk(self, msg, overlay=overlay)
+            self.logger.info("User pressed OK, proceeding with reboot after software update")
+            os.system('sudo reboot now')
+            return True
         except Exception as e:
             self.logger.error(f"Error during askAndReboot: {e}")
             dialog.WarningOk(self, f"Error during askAndReboot: {e}", overlay=True)
