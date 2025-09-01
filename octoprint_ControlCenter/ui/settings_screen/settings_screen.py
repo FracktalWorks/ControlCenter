@@ -256,9 +256,10 @@ class SettingsScreen(QWidget):
                     self.tellAndReboot("Settings restored. Rebooting...")
                 else:
                     self.logger.error("Failed to restore some factory default settings")
-                    # Fallback to old method for critical system files
-                    os.system('sudo cp -f config/dhcpcd.conf /etc/dhcpcd.conf')
-                    os.system('sudo cp -f config/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf')
+                    # # Fallback to old method for critical system files using absolute paths
+                    # config_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config")
+                    # os.system(f'sudo cp -f "{config_dir}/dhcpcd.conf" /etc/dhcpcd.conf')
+                    # os.system(f'sudo cp -f "{config_dir}/wpa_supplicant.conf" /etc/wpa_supplicant/wpa_supplicant.conf')
                     self.tellAndReboot("Partial settings restored. Rebooting...")
                     
         except Exception as e:
