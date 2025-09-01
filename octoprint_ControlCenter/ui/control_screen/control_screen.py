@@ -351,10 +351,20 @@ class ControlScreen(QWidget):
             #     "1") if self.toolToggleTemperatureButton.isChecked() else self.toolToggleTemperatureButton.setText("0")
             if self.toolToggleTemperatureButton.isChecked():
                 print("extruder 1 Temperature")
-                self.toolTempSpinBox.setProperty("value", float(self.main_window.home_screen.tool1TargetTemperature.text()))
+                temp_text = self.main_window.home_screen.tool1TargetTemperature.text().replace("°C", "").strip()
+                # Handle empty string or non-numeric values
+                if temp_text and temp_text.replace('.', '', 1).replace('-', '', 1).isdigit():
+                    self.toolTempSpinBox.setProperty("value", float(temp_text))
+                else:
+                    self.toolTempSpinBox.setProperty("value", 0)
             else:
                 print("extruder 0 Temperature")
-                self.toolTempSpinBox.setProperty("value", float(self.main_window.home_screen.tool0TargetTemperature.text()))
+                temp_text = self.main_window.home_screen.tool0TargetTemperature.text().replace("°C", "").strip()
+                # Handle empty string or non-numeric values
+                if temp_text and temp_text.replace('.', '', 1).replace('-', '', 1).isdigit():
+                    self.toolTempSpinBox.setProperty("value", float(temp_text))
+                else:
+                    self.toolTempSpinBox.setProperty("value", 0)
         except Exception as e:
             logger.error("Error in ControlScreen.selectToolTemperature: {}".format(e))
             dialog.WarningOk(self, "Error in ControlScreen.selectToolTemperature: {}".format(e), overlay=True)
