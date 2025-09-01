@@ -9,9 +9,9 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-PRIMARY_PATH = "/home/pi/.octoprint/.printerConfig"
+PRIMARY_PATH = "/home/pi/.octoprint/.printerPreference"
 FALLBACK_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
-                             ".printerConfig")
+                             ".printerPreference")
 
 
 DEFAULT_STATE = {
@@ -31,15 +31,12 @@ DEFAULT_STATE = {
         "print_compatibility_check_enabled": True,  # Default to enabled
         "print_restore_enabled": True,  # Default to enabled
         "auto_resume_enabled": False,  # Default to disabled
-    },
-    # Printer configuration section (empty - printer.cfg is the source of truth)
-    "printer_config": {
-        # Note: selected_printer removed - use printer.cfg file directly
     }
+    # Note: printer_config section removed - all printer configuration now handled by printer_config_manager
 }
 
 
-class PrinterConfigStore:
+class PrinterPreferenceStore:
         """Unified persistence layer for printer runtime state & user preferences.
 
         Responsibilities:
@@ -70,7 +67,7 @@ class PrinterConfigStore:
                 with open(path, "r", encoding="utf-8") as f:
                     return json.load(f)
             except Exception as e:
-                logger.warning(f"Failed to read printer config at {path}: {e}")
+                logger.warning(f"Failed to read printer preferences at {path}: {e}")
                 return None
 
         def _fresh_load(self) -> dict:
@@ -87,14 +84,6 @@ class PrinterConfigStore:
             for k, v in DEFAULT_STATE["preferences"].items():
                 prefs.setdefault(k, v)
             data["preferences"] = prefs
-            
-            # Ensure printer_config section exists with defaults
-            if "printer_config" not in data:
-                data["printer_config"] = DEFAULT_STATE["printer_config"].copy()
-            else:
-                # Inject defaults for any missing printer config keys
-                for k, v in DEFAULT_STATE["printer_config"].items():
-                    data["printer_config"].setdefault(k, v)
             
             # Legacy upgrade: flat tool schema (filament/status/nozzle at tools.toolX root)
             for tool_id in ("tool0", "tool1"):
@@ -128,7 +117,7 @@ class PrinterConfigStore:
                 # Directory must exist for atomic write; let caller choose fallback
                 raise FileNotFoundError(f"Directory does not exist: {directory}")
 
-            fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".printerConfig.tmp.")
+            fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".printerPreference.tmp.")
             try:
                 with os.fdopen(fd, "w", encoding="utf-8") as tmp:
                     json.dump(data, tmp, indent=2)
@@ -147,12 +136,12 @@ class PrinterConfigStore:
             for path in (self.primary_path, self.fallback_path):
                 try:
                     self._atomic_write(path, state)
-                    logger.info(f"Saved printer config to {path}")
+                    logger.info(f"Saved printer preferences to {path}")
                     return True
                 except FileNotFoundError:
                     continue
                 except Exception as e:
-                    logger.error(f"Failed to save printer config at {path}: {e}")
+                    logger.error(f"Failed to save printer preferences at {path}: {e}")
             return False
 
         def save(self, force: bool = False) -> bool:
@@ -250,8 +239,5 @@ class PrinterConfigStore:
             data = self.load_full()
             return list(data.get("tools", {}).get(tool, {}).keys())
 
-        # --- Printer config API -----------------------------------------------
-        # Note: Printer configuration methods removed as printer.cfg is now the source of truth
-        # Use get_current_printer_selection() from printer_config_manager instead
-        def get_printer_config(self) -> dict:
-            return self.load_full().get("printer_config", {})
+        # Note: All printer configuration now handled by printer_config_manager
+        # Use get_current_printer_selection() and related functions from printer_config_manager

@@ -9,7 +9,7 @@ logger = get_logger(__name__)
 from utils import dialog
 # Use configuration from config.py
 import config
-from utils.printer_config_store import PrinterConfigStore
+from utils.printer_preference_store import PrinterPreferenceStore
 
 class PrinterModel(QObject):
     """
@@ -94,7 +94,7 @@ class PrinterModel(QObject):
                 "material_bay_x": {"filament": None, "status": "Unknown", "nozzle": "Unknown"}
             },
         }
-        self._config_store = PrinterConfigStore()
+        self._config_store = PrinterPreferenceStore()
         # Load full cached state once
         try:
             state = self._config_store.load_full()
