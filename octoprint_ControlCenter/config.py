@@ -12,7 +12,8 @@ CRITICAL_PRINTER_ERRORS = [
     "'mcu' must be specified", 
     "Unable to connect",
     "Shutdown due to M112",
-    "Printer is not ready"
+    "Printer is not ready",
+    "Unable to connect"
 ]
 from collections import OrderedDict
 
