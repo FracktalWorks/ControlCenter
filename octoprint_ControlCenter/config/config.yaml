@@ -2,9 +2,7 @@ accessControl:
   autologinAs: admin
   autologinLocal: true
   localNetworks:
-  - 127.0.0.0/8
-  - 192.168.0.0/24
-  - 192.168.1.0/24
+  - 0.0.0.0/0
   salt: 1jjovY7wxfFi7NrEuFv6eTAXgmyvECPc
 api:
   allowCrossOrigin: true
