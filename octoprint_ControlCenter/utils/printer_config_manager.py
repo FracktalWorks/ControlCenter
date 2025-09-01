@@ -8,15 +8,30 @@ import shutil
 import glob
 import re
 import json
+import subprocess
+import sys
 from typing import List, Dict, Optional, Any
 
 try:
     import yaml
-except ImportError as e:
-    raise ImportError(
-        "PyYAML is required for OctoPrint configuration management. "
-        "Please install it with: pip install PyYAML"
-    ) from e
+except ImportError:
+    print("PyYAML not found. Attempting to install...")
+    try:
+        # Try to install PyYAML automatically
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'PyYAML'])
+        import yaml
+        print("✓ PyYAML installed successfully!")
+    except subprocess.CalledProcessError:
+        # If pip install fails, try with sudo
+        try:
+            subprocess.check_call(['sudo', 'pip', 'install', 'PyYAML'])
+            import yaml
+            print("✓ PyYAML installed successfully with sudo!")
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            raise ImportError(
+                "Failed to automatically install PyYAML. "
+                "Please install it manually with: pip install PyYAML or sudo pip install PyYAML"
+            ) from e
 
 from utils.logger import get_logger
 
