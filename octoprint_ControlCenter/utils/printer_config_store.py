@@ -32,9 +32,9 @@ DEFAULT_STATE = {
         "print_restore_enabled": True,  # Default to enabled
         "auto_resume_enabled": False,  # Default to disabled
     },
-    # Printer configuration
+    # Printer configuration section (empty - printer.cfg is the source of truth)
     "printer_config": {
-        "selected_printer": "DRAGON_400",  # Default printer (without PRINTER_ prefix and .cfg suffix)
+        # Note: selected_printer removed - use printer.cfg file directly
     }
 }
 
@@ -251,17 +251,7 @@ class PrinterConfigStore:
             return list(data.get("tools", {}).get(tool, {}).keys())
 
         # --- Printer config API -----------------------------------------------
+        # Note: Printer configuration methods removed as printer.cfg is now the source of truth
+        # Use get_current_printer_selection() from printer_config_manager instead
         def get_printer_config(self) -> dict:
             return self.load_full().get("printer_config", {})
-
-        def get_selected_printer(self) -> str:
-            return self.get_printer_config().get("selected_printer", "DRAGON_400")
-
-        def set_selected_printer(self, printer_config: str) -> None:
-            with self._lock:
-                config = self.load_full().setdefault("printer_config", {})
-                if config.get("selected_printer") != printer_config:
-                    config["selected_printer"] = printer_config
-                    self._dirty = True
-                    if self._batch_depth == 0:
-                        self.save()

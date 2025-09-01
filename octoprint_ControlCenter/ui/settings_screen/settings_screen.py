@@ -110,11 +110,12 @@ class SettingsScreen(QWidget):
 
         try:
             # Import the required modules for printer configuration
-            from utils.klipper_config_manager import (
+            from utils.printer_config_manager import (
                 get_current_printer_selection,
                 get_printer_display_name,
                 copy_firmware_files,
-                get_klipper_config_manager
+                get_printer_config_manager,
+                restore_octoprint_configs
             )
             
             # Check if a printer is currently configured
@@ -138,7 +139,7 @@ class SettingsScreen(QWidget):
             
             # Get printer display name for user-friendly dialog
             printer_display_name = get_printer_display_name(current_printer)
-            manager = get_klipper_config_manager()
+            manager = get_printer_config_manager()
             firmware_files = manager.get_firmware_files()
             
             # Confirm restoration with user
@@ -158,6 +159,13 @@ class SettingsScreen(QWidget):
                 # Use the same system as printer setup wizard to restore files
                 self.logger.info(f"Copying firmware files for {current_printer}...")
                 success = copy_firmware_files(current_printer)
+                
+                # Also restore OctoPrint configurations
+                if success:
+                    self.logger.info("Restoring OctoPrint configurations...")
+                    octoprint_success = restore_octoprint_configs(current_printer)
+                    if not octoprint_success:
+                        self.logger.warning("Failed to restore OctoPrint configs, but Klipper config was successful")
                 
                 if success:
                     self.logger.info("Firmware files copied successfully, executing printer reset commands")
@@ -219,21 +227,40 @@ class SettingsScreen(QWidget):
     def restore_factory_defaults(self):
         """Restore the system to factory default settings."""
         self.logger.info("Restoring system to factory default settings.")
-        # Add logic to restore factory default settings
 
         try:
+            from utils.printer_config_manager import (
+                get_current_printer_selection,
+                get_printer_config_manager,
+                restore_octoprint_configs
+            )
+            
             if dialog.WarningYesNo(self,
                                    "Are you sure you want to restore machine state to factory defaults?\nWarning: Doing so will also reset printer profiles, WiFi & Ethernet config.",
                                    overlay=True):
-                os.system('sudo cp -f config/dhcpcd.conf /etc/dhcpcd.conf')
-                os.system('sudo cp -f config/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf')
-                os.system('sudo rm -rf /home/pi/.octoprint/users.yaml')
-                os.system('sudo cp -f config/users.yaml /home/pi/.octoprint/users.yaml')
-                os.system('sudo rm -rf /home/pi/.octoprint/printerProfiles/*')
-                os.system('sudo rm -rf /home/pi/.octoprint/scripts/gcode')
-                os.system('sudo rm -rf /home/pi/.octoprint/print_restore.json')
-                os.system('sudo cp -f config/config.yaml /home/pi/.octoprint/config.yaml')
-                self.tellAndReboot("Settings restored. Rebooting...")
+                
+                # Get current printer selection to restore appropriate configs
+                current_printer = get_current_printer_selection()
+                if not current_printer:
+                    current_printer = "DRAGON_400"  # Default fallback
+                    self.logger.warning(f"No current printer found, using default: {current_printer}")
+                
+                self.logger.info(f"Restoring factory defaults for printer: {current_printer}")
+                
+                # Use the enhanced config manager to restore all settings
+                manager = get_printer_config_manager()
+                success = manager.restore_octoprint_configs(current_printer)
+                
+                if success:
+                    self.logger.info("Factory defaults restored successfully")
+                    self.tellAndReboot("Settings restored. Rebooting...")
+                else:
+                    self.logger.error("Failed to restore some factory default settings")
+                    # Fallback to old method for critical system files
+                    os.system('sudo cp -f config/dhcpcd.conf /etc/dhcpcd.conf')
+                    os.system('sudo cp -f config/wpa_supplicant.conf /etc/wpa_supplicant/wpa_supplicant.conf')
+                    self.tellAndReboot("Partial settings restored. Rebooting...")
+                    
         except Exception as e:
             self.logger.error("Error in SettingsScreen.restoreFactoryDefaults: {}".format(e))
             dialog.WarningOk(self, "Error in SettingsScreen.restoreFactoryDefaults: {}".format(e), overlay=True)

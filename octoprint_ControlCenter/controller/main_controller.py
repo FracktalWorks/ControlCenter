@@ -16,7 +16,7 @@ from ui.main_window import MainWindow
 from utils.logger import get_logger
 from models.printer_model import PrinterModel
 from octoprint_client.websocket_client import OctoPrintWebSocket
-from utils.klipper_config_manager import get_klipper_config_manager
+from utils.printer_config_manager import get_printer_config_manager
 from octoprint_client import octoprint_singleton
 from PyQt5 import QtCore
 import time
@@ -294,7 +294,7 @@ class MainController:
         if not self.octoprint_client:
             return
         try:
-            manager = get_klipper_config_manager()
+            manager = get_printer_config_manager()
             if not manager.is_config_valid():
                 self.logger.error("Printer Config File Corrupted or Not Found, Attempting to restore Backup")
                 if manager.restore_backup_config():

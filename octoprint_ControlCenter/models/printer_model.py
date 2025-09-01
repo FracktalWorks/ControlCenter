@@ -115,8 +115,8 @@ class PrinterModel(QObject):
         
         self.filament_runout_state_map = {}  # {sensor: bool}
         
-        # Printer configuration
-        self.selected_printer_config = state.get("printer_config", {}).get("selected_printer", "DRAGON_400")
+        # Note: Printer configuration now managed by printer.cfg file directly
+        # No need to store selected_printer_config in memory
         
         # Feed rate and flow rate storage
         self.current_feed_rate = 100  # Default 100%
@@ -413,25 +413,9 @@ class PrinterModel(QObject):
             self.klipper_state_changed.emit(self.klipper_state)
 
     # --- Printer configuration methods ---
-    def get_selected_printer_config(self) -> str:
-        """Get the currently selected printer configuration."""
-        return self.selected_printer_config
-
-    def set_selected_printer_config(self, printer_config: str, persist: bool = True):
-        """Set the selected printer configuration and persist if requested."""
-        prev = self.selected_printer_config
-        self.selected_printer_config = printer_config
-        if persist and prev != printer_config:
-            try:
-                self._config_store.set_selected_printer(printer_config)
-                self.logger.info(f"Printer configuration updated to: {printer_config}")
-                
-                # Reload printer configuration from Klipper when printer changes
-                self._load_printer_configuration()
-                
-            except Exception as e:
-                self.logger.error(f"Failed to persist printer configuration: {e}")
-
+    # Note: Printer selection now managed by printer.cfg file directly
+    # Use get_current_printer_selection() from printer_config_manager for current printer info
+    
     def _load_printer_configuration(self):
         """Load printer configuration from Klipper PRINTER_VARIABLES."""
         try:
@@ -472,6 +456,6 @@ class PrinterModel(QObject):
             'tool0PurgePosition': self.tool0PurgePosition,
             'tool1PurgePosition': self.tool1PurgePosition,
             'ptfeTubeLength': self.ptfeTubeLength,
-            'IS_DUAL_NOZZLE': self.IS_DUAL_NOZZLE,
-            'selected_printer_config': self.selected_printer_config
+            'IS_DUAL_NOZZLE': self.IS_DUAL_NOZZLE
+            # Note: selected_printer_config removed - use get_current_printer_selection() instead
         }

@@ -75,7 +75,7 @@ def load_printer_config_from_klipper():
         bool: True if configuration was successfully loaded, False if fallback values used
     """
     try:
-        from utils.klipper_config_manager import get_printer_config_from_klipper
+        from utils.printer_config_manager import get_printer_config_from_klipper
         
         config = get_printer_config_from_klipper()
         if not config:

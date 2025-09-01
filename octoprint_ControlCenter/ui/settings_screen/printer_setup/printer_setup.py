@@ -5,12 +5,13 @@ from PyQt5.QtCore import pyqtSignal
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
 from utils import dialog
-from utils.klipper_config_manager import (
+from utils.printer_config_manager import (
     get_available_printers, 
     get_printer_display_name, 
     copy_firmware_files, 
     get_current_printer_selection,
-    get_klipper_config_manager
+    get_printer_config_manager,
+    restore_octoprint_configs
 )
 
 logger = get_logger(__name__)
@@ -157,7 +158,7 @@ class PrinterSetup(QWidget):
             selected_display_name = self.printerComboBox.currentText()
             
             # Confirm the change with the user
-            manager = get_klipper_config_manager()
+            manager = get_printer_config_manager()
             firmware_files = manager.get_firmware_files()
             if not dialog.WarningYesNo(
                 self, 
@@ -174,25 +175,28 @@ class PrinterSetup(QWidget):
             # Apply the configuration
             success = copy_firmware_files(selected_printer)
             
+            # Also restore OctoPrint configurations for the selected printer
             if success:
-                # Store the selection in printer config
+                self.statusLabel.setText("Updating OctoPrint configurations...")
+                octoprint_success = restore_octoprint_configs(selected_printer)
+                if not octoprint_success:
+                    self.logger.warning("Failed to restore OctoPrint configs, but Klipper config was successful")
+            
+            if success:
+                # Note: No need to store selection in config store - printer.cfg is the source of truth
                 try:
                     if hasattr(self.mainSettingsWidget, 'main_window') and \
-                       hasattr(self.mainSettingsWidget.main_window, 'printer_model') and \
-                       hasattr(self.mainSettingsWidget.main_window.printer_model, '_config_store'):
-                        
-                        config_store = self.mainSettingsWidget.main_window.printer_model._config_store
-                        config_store.set_selected_printer(selected_printer)  # Store just the printer name
-                        self.logger.info(f"Stored printer selection: {selected_printer}")
+                       hasattr(self.mainSettingsWidget.main_window, 'printer_model'):
                         
                         # Reload printer configuration from the new Klipper settings
                         self.mainSettingsWidget.main_window.printer_model.reload_printer_configuration()
                         
                         # Emit signal for other components
                         self.printer_changed.emit(selected_printer)
+                        self.logger.info(f"Applied printer configuration: {selected_printer}")
                         
                 except Exception as e:
-                    self.logger.error(f"Error storing printer selection: {e}")
+                    self.logger.error(f"Error reloading printer configuration: {e}")
                 
                 self.statusLabel.setText("Printer configuration applied successfully!")
                 self.update_current_printer_display()
@@ -262,7 +266,7 @@ class PrinterSetup(QWidget):
     def check_firmware_files_status(self):
         """Check and log the status of firmware files in Klipper config directory."""
         try:
-            manager = get_klipper_config_manager()
+            manager = get_printer_config_manager()
             missing_files = manager.get_missing_config_files()
             firmware_files = manager.get_firmware_files()
             
