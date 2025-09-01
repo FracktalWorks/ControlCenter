@@ -222,18 +222,45 @@ class PrinterConfigManager:
         """Get PRINTER_VARIABLES from the currently active printer configuration."""
         current_printer = self.get_current_printer_selection()
         if current_printer:
-            config_file = os.path.join(self.firmware_path, f"PRINTER_{current_printer}.cfg")
-            return self.parse_printer_variables_from_file(config_file)
+            # First try the deployed Klipper config directory (where Klipper actually reads from)
+            klipper_config_file = os.path.join(self.klipper_config_path, f"PRINTER_{current_printer}.cfg")
+            if os.path.exists(klipper_config_file):
+                logger.debug(f"Reading PRINTER_VARIABLES from deployed Klipper config: {klipper_config_file}")
+                return self.parse_printer_variables_from_file(klipper_config_file)
+            
+            # Fallback to firmware directory if not deployed yet
+            firmware_config_file = os.path.join(self.firmware_path, f"PRINTER_{current_printer}.cfg")
+            if os.path.exists(firmware_config_file):
+                logger.warning(f"Klipper config not found, falling back to firmware directory: {firmware_config_file}")
+                return self.parse_printer_variables_from_file(firmware_config_file)
+            
+            logger.error(f"Could not find PRINTER_{current_printer}.cfg in either Klipper config or firmware directories")
         return None
 
     def get_printer_config_from_variables(self, printer_name: str) -> Dict[str, Any]:
-        """Get printer configuration by parsing PRINTER_VARIABLES from the firmware file."""
-        config_file = os.path.join(self.firmware_path, f"PRINTER_{printer_name}.cfg")
-        variables = self.parse_printer_variables_from_file(config_file)
+        """Get printer configuration by parsing PRINTER_VARIABLES from the printer config file."""
+        # First try the deployed Klipper config directory (where Klipper actually reads from)
+        klipper_config_file = os.path.join(self.klipper_config_path, f"PRINTER_{printer_name}.cfg")
+        firmware_config_file = os.path.join(self.firmware_path, f"PRINTER_{printer_name}.cfg")
+        
+        variables = None
+        config_source = None
+        
+        # Try Klipper config directory first
+        if os.path.exists(klipper_config_file):
+            variables = self.parse_printer_variables_from_file(klipper_config_file)
+            config_source = "deployed Klipper config"
+        
+        # Fallback to firmware directory
+        if not variables and os.path.exists(firmware_config_file):
+            variables = self.parse_printer_variables_from_file(firmware_config_file)
+            config_source = "firmware directory"
         
         if not variables:
             logger.warning(f"No PRINTER_VARIABLES found for {printer_name}, using fallback config")
             return FALLBACK_CONFIG.copy()
+        
+        logger.debug(f"Loaded {printer_name} configuration from {config_source}")
         
         # Extract configuration from variables
         config = {

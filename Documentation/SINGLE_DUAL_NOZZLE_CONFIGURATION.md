@@ -5,8 +5,17 @@ This guide explains how to configure new UI elements or pages to work with both 
 ## Overview
 
 The ControlCenter project supports both single and dual nozzle printers. The configuration is controlled by:
-- **Main Config**: `config.py` - `IS_DUAL_NOZZLE` boolean flag
+- **Main Config**: `config.py` - `IS_DUAL_NOZZLE` boolean flag (dynamically loaded from Klipper)
 - **UI Config Module**: `utils/printer_ui_config.py` - Handles UI element hiding and tool forcing
+- **Configuration Manager**: `utils/printer_config_manager.py` - Manages printer configuration from Klipper firmware files
+- **Dynamic Loading**: Configuration is automatically loaded from active `PRINTER_<NAME>.cfg` files
+
+### How It Works
+
+1. **Klipper Configuration**: Each printer firmware file (`PRINTER_DRAGON_400.cfg`, etc.) contains a `PRINTER_VARIABLES` macro with `variable_is_dual_nozzle: 0` (single) or `1` (dual)
+2. **Dynamic Loading**: `PrinterConfigManager` parses the active printer configuration and updates `config.IS_DUAL_NOZZLE`
+3. **UI Adaptation**: `printer_ui_config.py` reads the current value and shows/hides UI elements accordingly
+4. **Real-time Updates**: Configuration is reloaded when printer type changes or on WebSocket connection
 
 ## Quick Setup for New UI Elements
 
@@ -106,7 +115,22 @@ Add your screen's dual nozzle elements to `utils/printer_ui_config.py`:
 
 ```python
 DUAL_NOZZLE_ELEMENTS = {
-    # ... existing screens ...
+    'home_screen': [
+        'tool1Layout', 'tool1Label', 'tool1LoadedNozzle', 'tool1LoadedFilament',
+        'tool1TargetTemperature', 'tool1TempBar', 'tool1ActualTemperature', 'tool1TextLabel', 'toolSeperationLine'
+    ],
+    'control_screen': [
+        'toolToggleTemperatureButton', 'toolToggleMotionButton'
+    ],
+    'filament_management_screen': [
+        'changeTool1MaterialBayX', 'tool1Frame', 'editTool1MaterialBayX',
+        'tool11MaterialBayXStateColor', 'tool1MaterialBayXStateLabel', 'changeTool1Button',
+        'tool1MaterialBayXLabel'
+    ],
+    'calibrate_screen': [
+        'idexCalibrationWizardButton', 'toolOffsetZButton', 'toolOffsetXYButton'
+    ],
+    # Add your new screen here
     'your_new_screen': [
         'tool1Button',
         'tool1Label', 
@@ -116,6 +140,8 @@ DUAL_NOZZLE_ELEMENTS = {
     ]
 }
 ```
+
+**Note**: The current implementation uses `getattr(widget, element_name, None)` to find elements, so ensure your element names match the actual attribute names on your widget.
 
 ### Step 2: Import and Apply Configuration
 
@@ -180,16 +206,32 @@ Search this UI file for any dual nozzle elements (containing 'tool1', 'T1', or d
 ## Testing Your Implementation
 
 ### Test Single Nozzle Mode
-1. Set `IS_DUAL_NOZZLE = False` in `config.py`
-2. Launch the application
-3. Verify dual nozzle elements are hidden
-4. Test tool selection defaults to tool0
+1. **Automatic Detection**: Configuration is automatically read from active `PRINTER_<NAME>.cfg` file
+2. **For Manual Testing**: Temporarily modify `variable_is_dual_nozzle: 0` in the active printer config file
+3. Launch the application
+4. Verify dual nozzle elements are hidden
+5. Test tool selection defaults to tool0
 
 ### Test Dual Nozzle Mode  
-1. Set `IS_DUAL_NOZZLE = True` in `config.py`
-2. Launch the application
-3. Verify all elements are visible
-4. Test tool selection works for both tools
+1. **Automatic Detection**: Configuration is automatically read from active `PRINTER_<NAME>.cfg` file
+2. **For Manual Testing**: Temporarily modify `variable_is_dual_nozzle: 1` in the active printer config file
+3. Launch the application
+4. Verify all elements are visible
+5. Test tool selection works for both tools
+
+### Test Configuration Loading
+```python
+# Test current configuration
+from utils.printer_config_manager import get_printer_config_from_klipper
+config = get_printer_config_from_klipper()
+print(f"Dual nozzle: {config['IS_DUAL_NOZZLE'] if config else 'Failed to load'}")
+
+# Test specific printer
+from utils.printer_config_manager import get_printer_config_manager
+manager = get_printer_config_manager()
+dragon_config = manager.get_printer_config_from_variables("DRAGON_400")
+print(f"Dragon 400 dual nozzle: {dragon_config['is_dual']}")
+```
 
 ## Workflow Adaptations
 
@@ -231,9 +273,15 @@ if not is_dual_nozzle_printer():
 
 ```
 octoprint_ControlCenter/
-├── config.py                          # Main configuration data (IS_DUAL_NOZZLE)
+├── config.py                          # Dynamic configuration data (IS_DUAL_NOZZLE loaded from Klipper)
 ├── utils/
-│   └── printer_ui_config.py          # UI configuration module with is_dual_nozzle_printer()
+│   ├── printer_ui_config.py          # UI configuration module with is_dual_nozzle_printer()
+│   └── printer_config_manager.py     # Manages printer configuration from Klipper files
+├── firmware/                          # Printer configuration files
+│   ├── PRINTER_DRAGON_400.cfg        # Single nozzle printer (is_dual_nozzle: 0)
+│   ├── PRINTER_DRAGON_500.cfg        # Single nozzle printer (is_dual_nozzle: 0)
+│   ├── PRINTER_TWINDRAGON_600.cfg    # Dual nozzle printer (is_dual_nozzle: 1)
+│   └── PRINTER_TWINDRAGON_600x300.cfg # Dual nozzle printer (is_dual_nozzle: 1)
 └── ui/
     ├── main_window.py                 # Uses apply_nozzle_config_to_all_screens()
     ├── home_screen/
@@ -246,30 +294,69 @@ octoprint_ControlCenter/
 ## Architecture Design
 
 ### Clean Separation of Concerns
-- **`config.py`**: Pure data configuration (no functions, only variables)
-- **`utils/printer_ui_config.py`**: Configuration logic and UI management functions
+- **`config.py`**: Dynamic configuration data (automatically updated from Klipper)
+- **`utils/printer_config_manager.py`**: Configuration loading and parsing logic
+- **`utils/printer_ui_config.py`**: UI configuration logic and management functions
 - **UI Files**: Import from `printer_ui_config` for all configuration needs
 
 ### Configuration Flow
 ```python
-# config.py - Data only
-IS_DUAL_NOZZLE = True
+# Klipper firmware files - Source of truth
+# PRINTER_DRAGON_400.cfg: variable_is_dual_nozzle: 0
+# PRINTER_TWINDRAGON_600.cfg: variable_is_dual_nozzle: 1
 
-# utils/printer_ui_config.py - Logic
+# utils/printer_config_manager.py - Loading logic
+def get_printer_config_from_klipper():
+    variables = parse_printer_variables_from_file(active_printer_file)
+    return extract_printer_configuration(variables)
+
+# config.py - Dynamic data (updated at runtime)
+IS_DUAL_NOZZLE = False  # Updated by load_printer_config_from_klipper()
+
+# utils/printer_ui_config.py - UI logic
 def is_dual_nozzle_printer():
-    return IS_DUAL_NOZZLE
+    return config.IS_DUAL_NOZZLE
 
 # UI files - Usage
 from utils.printer_ui_config import is_dual_nozzle_printer
 ```
 
+### Dynamic Configuration Loading
+
+The system automatically loads configuration in these scenarios:
+1. **Application Startup**: PrinterModel initialization loads config from Klipper
+2. **WebSocket Connection**: MainController triggers config reload when connected to Klipper
+3. **Printer Type Change**: Printer setup triggers config reload when printer type is changed
+4. **Manual Reload**: `printer_model.reload_printer_configuration()` can be called manually
+
 ## Best Practices
 
-1. **Consistent Naming**: Use `tool1*` prefix for dual nozzle elements
-2. **Single Method**: Use `apply_nozzle_config_to_screen()` for simplicity
-3. **Complete Lists**: Include all dual nozzle elements in the configuration
-4. **Test Both Modes**: Always test with both single and dual nozzle settings
-5. **Tool Forcing**: Use `force_single_tool()` in wizards and tool selection logic
+1. **Dynamic Configuration**: Don't hardcode `IS_DUAL_NOZZLE` values - let the system load them from Klipper
+2. **Consistent Naming**: Use `tool1*` prefix for dual nozzle elements
+3. **Element Discovery**: Use `getattr(widget, element_name, None)` pattern for finding elements
+4. **Single Method**: Use `apply_nozzle_config_to_screen()` for simplicity
+5. **Complete Lists**: Include all dual nozzle elements in the DUAL_NOZZLE_ELEMENTS dictionary
+6. **Test Both Modes**: Always test with both Dragon (single) and TwinDragon (dual) printer configurations
+7. **Tool Forcing**: Use `force_single_tool()` in wizards and tool selection logic
+8. **Configuration Signals**: Listen to `printer_config_updated` signal for dynamic updates
+9. **Error Handling**: Always check if elements exist before trying to hide them
+10. **Logging**: Use the logger to debug element hiding issues
+
+### Performance Considerations
+
+- **Lazy Loading**: UI elements are only hidden when `is_dual_nozzle_printer()` returns False
+- **Cached Access**: `is_dual_nozzle_printer()` directly accesses `config.IS_DUAL_NOZZLE` (no file I/O)
+- **Batch Operations**: `apply_nozzle_config_to_all_screens()` processes all screens efficiently
+- **Error Resilience**: Failed element hiding doesn't crash the application
+
+### Integration Points
+
+The single/dual nozzle system integrates with:
+- **PrinterModel**: Automatic configuration loading and updates
+- **MainController**: Configuration reload on WebSocket connection  
+- **Printer Setup**: Configuration reload when printer type changes
+- **Calibration Workflows**: Automatic workflow adaptation for single nozzle mode
+- **Filament Management**: Tool-specific UI element management
 
 ## Quick Validation
 
@@ -280,8 +367,37 @@ Run this test to verify your configuration works:
 cd octoprint_ControlCenter
 python -c "from utils.printer_ui_config import *; print('✅ Configuration working')"
 
-# Test with single nozzle mode
-# Set IS_DUAL_NOZZLE = False in config.py, then run app
+# Test configuration loading
+python -c "from utils.printer_config_manager import get_printer_config_from_klipper; config = get_printer_config_from_klipper(); print(f'✅ Config loaded: IS_DUAL_NOZZLE = {config[\"IS_DUAL_NOZZLE\"] if config else \"Failed to load\"}')"
+
+# Test specific printer configurations
+python -c "
+from utils.printer_config_manager import get_printer_config_manager
+manager = get_printer_config_manager()
+for printer in manager.get_available_printers():
+    config = manager.get_printer_config_from_variables(printer)
+    print(f'{printer}: dual_nozzle = {config[\"is_dual\"]}')
+"
+```
+
+### Configuration Debugging
+
+If configuration isn't working as expected:
+
+```python
+# Debug current configuration
+import config
+from utils.printer_ui_config import is_dual_nozzle_printer
+from utils.printer_config_manager import get_current_printer_selection
+
+print(f"Current config.IS_DUAL_NOZZLE: {config.IS_DUAL_NOZZLE}")
+print(f"is_dual_nozzle_printer(): {is_dual_nozzle_printer()}")
+print(f"Active printer: {get_current_printer_selection()}")
+
+# Force reload configuration
+success = config.load_printer_config_from_klipper()
+print(f"Config reload success: {success}")
+print(f"After reload IS_DUAL_NOZZLE: {config.IS_DUAL_NOZZLE}")
 ```
 
 ---
@@ -290,4 +406,20 @@ python -c "from utils.printer_ui_config import *; print('✅ Configuration worki
 1. Check that element names in `DUAL_NOZZLE_ELEMENTS` match exactly with `findChild()` calls
 2. Verify imports are correct
 3. Ensure `apply_nozzle_configuration()` is called after UI setup
-4. Test with both `IS_DUAL_NOZZLE = True` and `False`
+4. Test configuration loading with the debug scripts above
+5. Verify the active printer configuration file contains correct `variable_is_dual_nozzle` value
+6. Check that `PrinterConfigManager` can successfully parse the active printer file
+
+### Common Issues and Solutions
+
+**Issue**: UI elements not hiding for single nozzle printer
+- **Solution**: Check that `config.IS_DUAL_NOZZLE` is correctly loaded from Klipper
+- **Debug**: Run `python -c "import config; print(config.IS_DUAL_NOZZLE)"` to verify value
+
+**Issue**: Configuration not updating after printer change
+- **Solution**: Ensure `printer_model.reload_printer_configuration()` is called after printer selection
+- **Debug**: Check that WebSocket connection triggers configuration reload
+
+**Issue**: Parser cannot find PRINTER_VARIABLES
+- **Solution**: Verify `PRINTER_<NAME>.cfg` file exists in firmware directory and contains valid `[gcode_macro PRINTER_VARIABLES]` section
+- **Debug**: Use `manager.parse_printer_variables_from_file()` to test specific files
