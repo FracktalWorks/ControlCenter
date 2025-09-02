@@ -304,21 +304,73 @@ class CameraToolOffsetCalibration(QWidget):
 
         # Step-specific logic
         if index == self.STEP_CLEAN_NOZZLES:
+            # Step 1: Clean Nozzles
             self.nextButton.setText("Next")
             self.nextButton.setEnabled(True)
             
         elif index == self.STEP_CONNECT_CAMERA:
+            # Step 2: Connect Camera and position printer
             self.nextButton.setText("Next")
             self.nextButton.setEnabled(True)
+            # Start printer positioning when entering step 2
+            if prev_step != self.STEP_CONNECT_CAMERA:
+                self._perform_printer_positioning()
             
         elif index == self.STEP_CAMERA_FEED:
+            # Step 3: Camera Feed and detection
             self.nextButton.setText("Detect Nozzle")
             self.nextButton.setEnabled(True)
             # Stop camera from previous steps if running
             if prev_step != self.STEP_CAMERA_FEED:
                 self.stop_camera()
+            # Check for USB camera and start feed
+            if not self.check_usb_camera_available():
+                dialog.WarningOk(self, "Please connect a USB calibration camera to a USB port and try again", overlay=True)
+                # Go back to step 2
+                self.goto_step(self.STEP_CONNECT_CAMERA)
+                return
+            # Start camera with loading dialog
+            self.start_camera_with_loading()
 
         self.logger.info(f"Switched to step {index + 1}/{self.TOTAL_STEPS}")
+
+    def _perform_printer_positioning(self):
+        """Perform printer homing and positioning for step 2."""
+        self.logger.info("Starting printer positioning for camera calibration")
+        
+        try:
+            if not self.octoprint_client:
+                self.logger.error("OctoPrint client not available for positioning")
+                return
+            
+            # Simple direct positioning sequence like nozzleChangeWizard
+            self.logger.info("Homing all axes...")
+            self.octoprint_client.gcode("G28")
+            
+            self.logger.info("Selecting T0 tool...")
+            self.octoprint_client.selectTool(0)
+            
+            self.logger.info("Moving bed to Z25...")
+            self.octoprint_client.gcode("G1 Z25 F1200")
+            
+            # Move to front center position (same as nozzleChangeWizard)
+            self.logger.info("Moving to front center position...")
+            try:
+                build_size = self.main_window.printer_model.machineBuildSize
+                center_x = build_size.get('X', 220) / 2  # X center with fallback
+                front_y = 30  # Front position (30mm from front)
+                
+                self.octoprint_client.gcode(f"G1 X{center_x} Y{front_y} F6000")
+                self.logger.info(f"Moved to X{center_x} Y{front_y}")
+            except Exception as e:
+                # Fallback to default position if build size not available
+                self.logger.warning(f"Could not get build size, using default position: {e}")
+                self.octoprint_client.gcode("G1 X110 Y30 F6000")  # Default 220mm bed center
+            
+            self.logger.info("Printer positioning complete")
+            
+        except Exception as e:
+            self.logger.error(f"Error during printer positioning: {e}")
 
     def _update_step_label(self):
         """Update the "Step X/Y" label to match the current index."""
@@ -327,6 +379,25 @@ class CameraToolOffsetCalibration(QWidget):
                 self.stepLabel.setText(f"Step {self._current_step + 1}/{self.TOTAL_STEPS}")
         except Exception:
             pass
+
+    def on_next_clicked(self):
+        """Handle Next button click - simple step advancement."""
+        try:
+            if self._current_step == self.STEP_CLEAN_NOZZLES:
+                # Step 1 -> Step 2
+                self.goto_step(self.STEP_CONNECT_CAMERA)
+                
+            elif self._current_step == self.STEP_CONNECT_CAMERA:
+                # Step 2 -> Step 3
+                self.goto_step(self.STEP_CAMERA_FEED)
+                
+            elif self._current_step == self.STEP_CAMERA_FEED:
+                # Step 3: Perform nozzle detection
+                self._perform_nozzle_detection()
+                
+        except Exception as e:
+            self.logger.error(f"Error in on_next_clicked: {e}")
+            dialog.WarningOk(self, f"Navigation error: {str(e)}", overlay=True)
 
     def setup_camera_placeholder(self):
         """Set up placeholder text for camera feed."""
@@ -591,7 +662,7 @@ class CameraToolOffsetCalibration(QWidget):
             # Draw center circle for precise positioning
             pen.setWidth(1)
             painter.setPen(pen)
-            circle_radius = 3
+            circle_radius = 5
             painter.drawEllipse(center_x - circle_radius, center_y - circle_radius,
                               circle_radius * 2, circle_radius * 2)
             
@@ -647,40 +718,6 @@ class CameraToolOffsetCalibration(QWidget):
             self.logger.error(f"Error moving {axis} axis: {e}")
             dialog.WarningOk(self, f"Movement error: {str(e)}", overlay=True)
 
-    def on_next_clicked(self):
-        """Handle Next button click - wizard navigation."""
-        try:
-            if self._current_step == self.STEP_CLEAN_NOZZLES:
-                # Step 1 -> Step 2: Move to camera connection
-                self.logger.info("Moving from clean nozzles to connect camera step")
-                self.goto_step(self.STEP_CONNECT_CAMERA)
-                
-            elif self._current_step == self.STEP_CONNECT_CAMERA:
-                # Step 2 -> Step 3: Check camera and start feed
-                self.logger.info("Moving from connect camera to camera feed step")
-                self._prepare_camera_step()
-                
-            elif self._current_step == self.STEP_CAMERA_FEED:
-                # Step 3: Perform nozzle detection
-                self.logger.info("Performing nozzle detection")
-                self._perform_nozzle_detection()
-                
-        except Exception as e:
-            self.logger.error(f"Error in on_next_clicked: {e}")
-            dialog.WarningOk(self, f"Navigation error: {str(e)}", overlay=True)
-
-    def _prepare_camera_step(self):
-        """Prepare step 3 (camera feed) by checking camera and showing loading."""
-        # Check for USB camera before proceeding
-        if not self.check_usb_camera_available():
-            # Show dialog and stay on step 2
-            dialog.WarningOk(self, "Please connect a USB calibration camera to a USB port and try again", overlay=True)
-            return
-        
-        # Show loading dialog and start camera
-        self.goto_step(self.STEP_CAMERA_FEED)
-        self.start_camera_with_loading()
-
     def _perform_nozzle_detection(self):
         """Perform enhanced nozzle detection on step 3."""
         if not self.camera_available or not self.camera_thread:
@@ -729,7 +766,7 @@ class CameraToolOffsetCalibration(QWidget):
         try:
             self.detection_progress_dialog = dialog.dialog(
                 self, 
-                "Detecting nozzle position...\n\nHold camera steady for best results.", 
+                "Detecting nozzle position...\n\nKeep camera steady for best results.", 
                 buttons=QMessageBox.Cancel,
                 overlay=True,
                 icon=":/Icons/img/icons/information.png"
@@ -791,8 +828,8 @@ class CameraToolOffsetCalibration(QWidget):
                           f"Offset from center: ({offset_x:+.0f}, {offset_y:+.0f}) pixels\n"
                           f"Algorithm used: {algorithm_or_error}\n\n"
                           f"Would you like to proceed with calibration?")
-                
-                reply = dialog.QuestionYesNo(self, message, overlay=True)
+
+                reply = dialog.YesNo(self, message, overlay=True)
                 if reply == QMessageBox.Yes:
                     self.proceed_with_calibration(center, algorithm_or_error)
                 
@@ -837,7 +874,7 @@ class CameraToolOffsetCalibration(QWidget):
             # Stop camera before returning
             self.stop_camera()
             
-            # Add a small delay to ensure camera cleanup completes
+            # Add a small delay to ensure cleanup completes
             QTimer.singleShot(100, self._return_to_calibrate_screen)
             
         except Exception as e:

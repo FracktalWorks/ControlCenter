@@ -129,7 +129,7 @@ class SelfCenteringMessageBox(QtWidgets.QMessageBox):
             objLabel.setStyleSheet(styles.msgbox_label)
             objLabel.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
             objLabel.setMinimumSize(350, 120)
-            objLabel.setMaximumSize(450, 300)  # Reduced width from 500 to 450
+            objLabel.setMaximumSize(450, 500)  # Reduced width from 500 to 450
             objLabel.setWordWrap(True)  # Enable word wrapping
             objLabel.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
             
@@ -140,13 +140,13 @@ class SelfCenteringMessageBox(QtWidgets.QMessageBox):
             # If text is very long, add scroll area
             text_length = len(objLabel.text())
             if text_length > 500:  # Threshold for very long text
-                objLabel.setMaximumSize(450, 250)  # Reduce height for scroll and use consistent width
+                objLabel.setMaximumSize(450, 500)  # Reduce height for scroll and use consistent width
                 
         # Set size policy for the message box itself to allow proper resizing
         self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         
         # Ensure the dialog doesn't exceed screen bounds
-        self.setMaximumSize(500, 350)
+        self.setMaximumSize(500, 500)
 
     def setLocalIcon(self, icon=None):
         """Set an icon using a Qt resource path.
