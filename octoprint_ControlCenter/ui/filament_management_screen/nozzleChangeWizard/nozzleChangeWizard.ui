@@ -95,7 +95,7 @@
     );</string>
         </property>
         <property name="currentIndex">
-         <number>3</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="step1Page">
          <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -147,6 +147,11 @@
           </item>
           <item>
            <widget class="QLabel" name="step2Gif">
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);
+border: 2px dashed rgb(100, 100, 100);
+border-radius: 5px;</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -182,6 +187,11 @@
           </item>
           <item>
            <widget class="QLabel" name="step3Gif">
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);
+border: 2px dashed rgb(100, 100, 100);
+border-radius: 5px;</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -299,6 +309,11 @@ height: 30px;
           </item>
           <item>
            <widget class="QLabel" name="step4Gif">
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);
+border: 2px dashed rgb(100, 100, 100);
+border-radius: 5px;</string>
+            </property>
             <property name="text">
              <string/>
             </property>
@@ -433,6 +448,11 @@ QProgressBar::chunk {
           </item>
           <item>
            <widget class="QLabel" name="step6Gif">
+            <property name="styleSheet">
+             <string notr="true">color: rgb(255, 255, 255);
+border: 2px dashed rgb(100, 100, 100);
+border-radius: 5px;</string>
+            </property>
             <property name="text">
              <string/>
             </property>

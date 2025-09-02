@@ -31,7 +31,6 @@ class PrinterModel(QObject):
     filament_jam_sensor_triggered = pyqtSignal(str)
     filament_runout_state = pyqtSignal(str, bool)
     z_probing_failed = pyqtSignal()  # done
-    z_tool_offset_updated = pyqtSignal(str)  # done
     update_started_signal = pyqtSignal(dict)
     update_log_signal = pyqtSignal(dict)  # ! REMAINING
     update_log_result_signal = pyqtSignal(dict)  # ! REMAINING
@@ -352,11 +351,6 @@ class PrinterModel(QObject):
         # Store in map for UI access
         self.filament_runout_state_map[sensor] = bool(present)
         self.filament_runout_state.emit(sensor, present)
-
-    def setZToolOffset(self, offset):
-        # self.tool_offsets['Z'] = offset
-        self.z_tool_offset_updated.emit(offset)
-        pass
 
     # Use the softwareUpdateProgress function to send data about software updates
     def softwareUpdateProgress(self, update_info):

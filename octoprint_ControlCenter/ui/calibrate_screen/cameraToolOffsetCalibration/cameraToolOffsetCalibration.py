@@ -18,6 +18,7 @@ Future features:
 
 import os
 import sys
+import time
 import subprocess
 import time
 
@@ -187,6 +188,12 @@ class CameraToolOffsetCalibration(QWidget):
     - Provide 1mm movement controls
     - Basic navigation between calibration screen
     """
+    
+    # Step indices (0-based) for clarity
+    STEP_CLEAN_NOZZLES = 0
+    STEP_CONNECT_CAMERA = 1  
+    STEP_CAMERA_FEED = 2
+    TOTAL_STEPS = 3
 
     def __init__(self, main_window):
         super().__init__()
@@ -204,6 +211,9 @@ class CameraToolOffsetCalibration(QWidget):
         # Enhanced detection system
         self.nozzle_detector = None
         self.detection_active = False
+        
+        # Wizard state
+        self._current_step = 0
         
         # Check if OpenCV is available
         try:
@@ -227,10 +237,23 @@ class CameraToolOffsetCalibration(QWidget):
         self.stackedWidget: QStackedWidget = self.findChild(QStackedWidget, "stackedWidget")
         self.stepLabel: QLabel = self.findChild(QLabel, "stepLabel")
         
-        # Camera display
+        # Step pages
+        self.step1Page: QWidget = self.findChild(QWidget, "step1Page")
+        self.step2Page: QWidget = self.findChild(QWidget, "step2Page") 
+        self.step3Page: QWidget = self.findChild(QWidget, "step3Page")
+        
+        # Step 1 elements (Clean Nozzles)
+        self.step1Label: QLabel = self.findChild(QLabel, "step1Label")
+        self.step1Gif: QLabel = self.findChild(QLabel, "step1Gif")
+        
+        # Step 2 elements (Connect Camera)
+        self.step2Label: QLabel = self.findChild(QLabel, "step2Label")
+        self.step2Gif: QLabel = self.findChild(QLabel, "step2Gif")
+        
+        # Step 3 elements (Camera Feed)
         self.webCamFeed: QLabel = self.findChild(QLabel, "webCamFeed")
         
-        # Movement buttons
+        # Movement buttons (only on step 3)
         self.moveXPButton: QPushButton = self.findChild(QPushButton, "moveXPButton")
         self.moveXMButton: QPushButton = self.findChild(QPushButton, "moveXMButton")
         self.moveYPButton: QPushButton = self.findChild(QPushButton, "moveYPButton")
@@ -242,7 +265,9 @@ class CameraToolOffsetCalibration(QWidget):
 
         # Validate required elements
         required = [
-            self.stackedWidget, self.stepLabel, self.webCamFeed,
+            self.stackedWidget, self.stepLabel,
+            self.step1Page, self.step2Page, self.step3Page,
+            self.step1Label, self.step1Gif, self.step2Label, self.step2Gif, self.webCamFeed,
             self.moveXPButton, self.moveXMButton, self.moveYPButton, self.moveYMButton,
             self.nextButton, self.cancelButton
         ]
@@ -255,19 +280,53 @@ class CameraToolOffsetCalibration(QWidget):
         self.nextButton.clicked.connect(self.on_next_clicked)
         self.cancelButton.clicked.connect(self.on_cancel_clicked)
         
-        # Update button text to reflect new functionality
-        self.nextButton.setText("Detect Nozzle")
-        
-        # Movement button connections (1mm steps)
+        # Movement button connections (1mm steps) - only active on step 3
         self.moveXPButton.clicked.connect(lambda: self.move_axis('x', self.movement_step))
         self.moveXMButton.clicked.connect(lambda: self.move_axis('x', -self.movement_step))
         self.moveYPButton.clicked.connect(lambda: self.move_axis('y', self.movement_step))
         self.moveYMButton.clicked.connect(lambda: self.move_axis('y', -self.movement_step))
 
-        # Initialize camera feed placeholder
-        self.setup_camera_placeholder()
+        # Start at step 1 (Clean Nozzles)
+        self.goto_step(self.STEP_CLEAN_NOZZLES)
 
         self.logger.info("CameraToolOffsetCalibration initialized successfully")
+
+    def goto_step(self, index: int):
+        """Switch to the given step index (0-based) and run step-entry hooks."""
+        index = max(0, min(index, self.TOTAL_STEPS - 1))
+        prev_step = getattr(self, "_current_step", 0)
+
+        # Update the step
+        self._current_step = index
+        if self.stackedWidget:
+            self.stackedWidget.setCurrentIndex(index)
+        self._update_step_label()
+
+        # Step-specific logic
+        if index == self.STEP_CLEAN_NOZZLES:
+            self.nextButton.setText("Next")
+            self.nextButton.setEnabled(True)
+            
+        elif index == self.STEP_CONNECT_CAMERA:
+            self.nextButton.setText("Next")
+            self.nextButton.setEnabled(True)
+            
+        elif index == self.STEP_CAMERA_FEED:
+            self.nextButton.setText("Detect Nozzle")
+            self.nextButton.setEnabled(True)
+            # Stop camera from previous steps if running
+            if prev_step != self.STEP_CAMERA_FEED:
+                self.stop_camera()
+
+        self.logger.info(f"Switched to step {index + 1}/{self.TOTAL_STEPS}")
+
+    def _update_step_label(self):
+        """Update the "Step X/Y" label to match the current index."""
+        try:
+            if self.stepLabel:
+                self.stepLabel.setText(f"Step {self._current_step + 1}/{self.TOTAL_STEPS}")
+        except Exception:
+            pass
 
     def setup_camera_placeholder(self):
         """Set up placeholder text for camera feed."""
@@ -297,22 +356,10 @@ class CameraToolOffsetCalibration(QWidget):
             """)
 
     def showEvent(self, event):
-        """Check for USB camera and start camera when widget is shown."""
+        """Reset to step 1 when widget is shown."""
         super().showEvent(event)
-        
-        # Check for USB camera before proceeding
-        if not self.check_usb_camera_available():
-            # Show dialog and return to calibrate screen
-            dialog.WarningOk(self, "Please connect a USB calibration camera to a USB port and try again", overlay=True)
-            # Return to calibrate screen after dialog
-            try:
-                self.main_window.calibrate_screen.show_calibrate_screen()
-            except Exception as e:
-                self.logger.error(f"Error returning to calibrate screen: {e}")
-            return
-        
-        # If camera is available, start it with loading dialog
-        self.start_camera_with_loading()
+        # Reset to first step
+        self.goto_step(self.STEP_CLEAN_NOZZLES)
 
     def hideEvent(self, event):
         """Stop camera when widget is hidden."""
@@ -541,9 +588,41 @@ class CameraToolOffsetCalibration(QWidget):
             dialog.WarningOk(self, f"Movement error: {str(e)}", overlay=True)
 
     def on_next_clicked(self):
-        """Handle Next button click - perform enhanced nozzle detection."""
-        self.logger.info("Next button clicked - starting enhanced nozzle detection")
+        """Handle Next button click - wizard navigation."""
+        try:
+            if self._current_step == self.STEP_CLEAN_NOZZLES:
+                # Step 1 -> Step 2: Move to camera connection
+                self.logger.info("Moving from clean nozzles to connect camera step")
+                self.goto_step(self.STEP_CONNECT_CAMERA)
+                
+            elif self._current_step == self.STEP_CONNECT_CAMERA:
+                # Step 2 -> Step 3: Check camera and start feed
+                self.logger.info("Moving from connect camera to camera feed step")
+                self._prepare_camera_step()
+                
+            elif self._current_step == self.STEP_CAMERA_FEED:
+                # Step 3: Perform nozzle detection
+                self.logger.info("Performing nozzle detection")
+                self._perform_nozzle_detection()
+                
+        except Exception as e:
+            self.logger.error(f"Error in on_next_clicked: {e}")
+            dialog.WarningOk(self, f"Navigation error: {str(e)}", overlay=True)
+
+    def _prepare_camera_step(self):
+        """Prepare step 3 (camera feed) by checking camera and showing loading."""
+        # Check for USB camera before proceeding
+        if not self.check_usb_camera_available():
+            # Show dialog and stay on step 2
+            dialog.WarningOk(self, "Please connect a USB calibration camera to a USB port and try again", overlay=True)
+            return
         
+        # Show loading dialog and start camera
+        self.goto_step(self.STEP_CAMERA_FEED)
+        self.start_camera_with_loading()
+
+    def _perform_nozzle_detection(self):
+        """Perform enhanced nozzle detection on step 3."""
         if not self.camera_available or not self.camera_thread:
             dialog.WarningOk(self, "Camera not available for detection", overlay=True)
             return
