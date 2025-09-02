@@ -11,6 +11,7 @@ from ui.calibrate_screen.nozzleOffsetPage.nozzleOffsetPage import NozzleOffsetPa
 from ui.calibrate_screen.toolOffset.toolOffset import ToolOffset
 from ui.calibrate_screen.bedLevelingPage.bedLevelingPage import BedLeveling
 from ui.calibrate_screen.idexLevelCalibration.idexLevelCalibration import IdexLevelCalibration
+from ui.calibrate_screen.cameraToolOffsetCalibration.cameraToolOffsetCalibration import CameraToolOffsetCalibration
 
 
 logger = get_logger(__name__)
@@ -36,6 +37,7 @@ class CalibrateScreen(QWidget):
         self.main_calibrate_page = self.findChild(QWidget, "mainCalibratePage")
         self.calibrationWizardButton = self.findChild(QToolButton, "calibrationWizardButton")
         self.inputShaperCalibrateButton = self.findChild(QToolButton, "inputShaperCalibrateButton")
+        self.cameraToolOffsetCalibrateButton = self.findChild(QToolButton, "cameraToolOffsetCalibrateButton")
         self.nozzleOffsetButton = self.findChild(QToolButton, "nozzleOffsetButton")
         self.toolOffsetZButton = self.findChild(QToolButton, "toolOffsetZButton")
         self.toolOffsetXYButton = self.findChild(QToolButton, "toolOffsetXYButton")
@@ -47,7 +49,7 @@ class CalibrateScreen(QWidget):
         check_ui_elements(self, [
             self.calibration_stacked_widget, self.main_calibrate_page,
             self.calibrationWizardButton, self.inputShaperCalibrateButton,
-            self.nozzleOffsetButton, self.toolOffsetZButton, self.toolOffsetXYButton, self.idexCalibrationWizardButton,
+            self.cameraToolOffsetCalibrateButton, self.nozzleOffsetButton, self.toolOffsetZButton, self.toolOffsetXYButton, self.idexCalibrationWizardButton,
             self.calibrateBackButton
         ], "CalibrateScreen")
 
@@ -58,6 +60,7 @@ class CalibrateScreen(QWidget):
         # Connect buttons to their respective methods
         self.calibrationWizardButton.clicked.connect(lambda: self.show_calibrate_screen("bed_leveling"))
         self.inputShaperCalibrateButton.clicked.connect(self.inputShaperCalibrate)
+        self.cameraToolOffsetCalibrateButton.clicked.connect(lambda: self.show_calibrate_screen("camera_tool_offset"))
         self.nozzleOffsetButton.clicked.connect(lambda: self.show_calibrate_screen("nozzle_offset"))
         self.toolOffsetZButton.clicked.connect(lambda: self.show_calibrate_screen("tool_offset", tab="Z"))
         self.toolOffsetXYButton.clicked.connect(lambda: self.show_calibrate_screen("tool_offset", tab="XY"))
@@ -91,6 +94,7 @@ class CalibrateScreen(QWidget):
             self.screens["bed_leveling"] = BedLeveling(self.main_window)
             self.screens["nozzle_offset"] = NozzleOffsetPage(self.main_window)
             self.screens["tool_offset"] = ToolOffset(self.main_window)
+            self.screens["camera_tool_offset"] = CameraToolOffsetCalibration(self.main_window)
             self.screens["idex_calibration"] = IdexLevelCalibration(self.main_window)
 
             # Add each screen to the stacked widget

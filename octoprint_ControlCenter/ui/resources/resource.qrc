@@ -23,6 +23,7 @@
     <file>img/splash_2.png</file>
   </qresource>
   <qresource prefix="Icons">
+    <file>img/icons/lens.png</file>
     <file>img/icons/pencil.png</file>
     <file>img/icons/switch-off.png</file>
     <file>img/icons/switch-on.png</file>

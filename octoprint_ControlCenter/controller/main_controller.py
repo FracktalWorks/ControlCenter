@@ -14,6 +14,7 @@ is set where ever applicable (homing overide, mirror/duplication modes etc)
 """
 from ui.main_window import MainWindow
 from utils.logger import get_logger
+from utils.dependency_manager import DependencyInstaller
 from models.printer_model import PrinterModel
 from octoprint_client.websocket_client import OctoPrintWebSocket
 from utils.printer_config_manager import get_printer_config_manager
@@ -147,12 +148,43 @@ class MainController:
         self.printer_model = PrinterModel()
         self.octoprint_client = None
         self.main_window = MainWindow(controller=self, printer_model=self.printer_model)
+        
+        # Initialize dependency installer
+        self.dependency_installer = DependencyInstaller()
+        self.dependency_installer.progress_signal.connect(self.updateLoadingProgress)
+        self.dependency_installer.installation_complete_signal.connect(self.handleDependencyInstallation)
 
     def start(self):
-        """Kick off application startup and async connectivity check."""
+        """Kick off application startup with dependency check and async connectivity check."""
         self.logger.info("Starting application")
         try:
-            self.updateLoadingProgress(5, "Initializing application...")
+            self.updateLoadingProgress(5, "Checking dependencies...")
+            # Start dependency checking first
+            self.dependency_installer.check_and_install_dependencies()
+        except Exception as e:
+            self.logger.error(f"Error during startup: {e}")
+            dialog.WarningOk(self.main_window, f"Error during startup: {e}", overlay=True)
+            self.main_window.close()
+
+    def handleDependencyInstallation(self, success):
+        """Handle completion of dependency installation."""
+        if success:
+            self.logger.info("Dependencies ready, starting OctoPrint connection check")
+            self.startConnectionCheck()
+        else:
+            self.logger.error("Dependency installation failed")
+            dialog.WarningOk(
+                self.main_window, 
+                "Failed to install required dependencies. Some features may not work properly.", 
+                overlay=True
+            )
+            # Continue with connection check even if dependencies failed
+            self.startConnectionCheck()
+
+    def startConnectionCheck(self):
+        """Start the OctoPrint connection check after dependencies are ready."""
+        try:
+            self.updateLoadingProgress(10, "Starting OctoPrint connection check...")
             self.connection_check = ThreadConnectionCheck(ip=ip, api_key=apiKey, virtual=False)
             self.connection_check.loaded_signal.connect(self.handleStartupSuccess)
             self.connection_check.startup_error_signal.connect(self.handleStartupError)
@@ -160,8 +192,8 @@ class MainController:
             self.connection_check.virtual_fallback_signal.connect(self.handleVirtualFallback)
             self.connection_check.start()
         except Exception as e:
-            self.logger.error(f"Error during startup: {e}")
-            dialog.WarningOk(self.main_window, f"Error during startup: {e}", overlay=True)
+            self.logger.error(f"Error during connection check startup: {e}")
+            dialog.WarningOk(self.main_window, f"Error during connection check: {e}", overlay=True)
             self.main_window.close()
 
     def updateLoadingProgress(self, progress, message):
