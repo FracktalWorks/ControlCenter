@@ -534,6 +534,10 @@ class CameraToolOffsetCalibration(QWidget):
     def set_camera_image(self, image):
         """Update the camera feed label with new image."""
         try:
+            # Add crosshairs if we're on step 3 (camera feed step)
+            if hasattr(self, '_current_step') and self._current_step == self.STEP_CAMERA_FEED:
+                image = self._add_crosshairs_to_image(image)
+            
             # Scale image to fit the label while maintaining aspect ratio
             pixmap = QPixmap.fromImage(image)
             scaled_pixmap = pixmap.scaled(
@@ -550,6 +554,62 @@ class CameraToolOffsetCalibration(QWidget):
                 
         except Exception as e:
             self.logger.error(f"Error updating camera image: {e}")
+
+    def _add_crosshairs_to_image(self, qimage):
+        """Add crosshairs overlay to QImage for centering guidance."""
+        try:
+            # Convert QImage to QPixmap for drawing
+            pixmap = QPixmap.fromImage(qimage)
+            
+            # Create painter for drawing crosshairs
+            painter = QtGui.QPainter(pixmap)
+            painter.setRenderHint(QtGui.QPainter.Antialiasing)
+            
+            # Get image dimensions
+            width = pixmap.width()
+            height = pixmap.height()
+            center_x = width // 2
+            center_y = height // 2
+            
+            # Set up pen for crosshairs
+            pen = QtGui.QPen(QtCore.Qt.red)
+            pen.setWidth(2)
+            pen.setStyle(QtCore.Qt.SolidLine)
+            painter.setPen(pen)
+            
+            # Draw crosshairs
+            crosshair_length = min(width, height) // 8  # Crosshair arm length
+            
+            # Horizontal line
+            painter.drawLine(center_x - crosshair_length, center_y, 
+                           center_x + crosshair_length, center_y)
+            
+            # Vertical line  
+            painter.drawLine(center_x, center_y - crosshair_length,
+                           center_x, center_y + crosshair_length)
+            
+            # Draw center circle for precise positioning
+            pen.setWidth(1)
+            painter.setPen(pen)
+            circle_radius = 3
+            painter.drawEllipse(center_x - circle_radius, center_y - circle_radius,
+                              circle_radius * 2, circle_radius * 2)
+            
+            # Draw outer targeting circle
+            pen.setStyle(QtCore.Qt.DashLine)
+            painter.setPen(pen)
+            outer_radius = crosshair_length // 2
+            painter.drawEllipse(center_x - outer_radius, center_y - outer_radius,
+                              outer_radius * 2, outer_radius * 2)
+            
+            painter.end()
+            
+            # Convert back to QImage
+            return pixmap.toImage()
+            
+        except Exception as e:
+            self.logger.error(f"Error adding crosshairs: {e}")
+            return qimage  # Return original image if drawing fails
 
     def show_camera_error(self, message):
         """Show camera error message."""
@@ -669,7 +729,7 @@ class CameraToolOffsetCalibration(QWidget):
         try:
             self.detection_progress_dialog = dialog.dialog(
                 self, 
-                "Detecting nozzle position...\n\nMove the nozzle so it's clearly visible in the camera\nand hold steady for best results.", 
+                "Detecting nozzle position...\n\nHold camera steady for best results.", 
                 buttons=QMessageBox.Cancel,
                 overlay=True,
                 icon=":/Icons/img/icons/information.png"
