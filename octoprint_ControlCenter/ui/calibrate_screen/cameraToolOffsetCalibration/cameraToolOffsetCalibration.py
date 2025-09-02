@@ -54,7 +54,7 @@ except ImportError:
                 ) from e
 
 from PyQt5 import uic, QtCore, QtGui
-from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel
+from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel, QMessageBox
 from PyQt5.QtCore import QTimer, QThread, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap
 
@@ -160,6 +160,7 @@ class CameraToolOffsetCalibration(QWidget):
         self.camera_thread = None
         self.camera_available = False
         self.opencv_available = True
+        self.loading_dialog = None
         
         # Check if OpenCV is available
         try:
@@ -261,8 +262,8 @@ class CameraToolOffsetCalibration(QWidget):
                 self.logger.error(f"Error returning to calibrate screen: {e}")
             return
         
-        # If camera is available, start it
-        self.start_camera()
+        # If camera is available, start it with loading dialog
+        self.start_camera_with_loading()
 
     def hideEvent(self, event):
         """Stop camera when widget is hidden."""
@@ -297,9 +298,49 @@ class CameraToolOffsetCalibration(QWidget):
             self.logger.error(f"Error detecting USB camera: {e}")
             return False
 
+    def start_camera_with_loading(self):
+        """Show loading dialog and start camera initialization."""
+        try:
+            # Show loading dialog
+            self.show_loading_dialog()
+            
+            # Use a timer to start camera after dialog is shown
+            QTimer.singleShot(100, self.start_camera)
+            
+        except Exception as e:
+            self.logger.error(f"Error starting camera with loading: {e}")
+            self.hide_loading_dialog()
+            self.show_camera_error(f"Initialization error: {str(e)}")
+
+    def show_loading_dialog(self):
+        """Show 'Please wait, loading...' dialog."""
+        try:
+            self.loading_dialog = dialog.dialog(
+                self, 
+                "Please wait, loading camera...", 
+                buttons=QMessageBox.NoButton,  # No buttons
+                overlay=True,
+                icon=":/Icons/img/icons/information.png"
+            )
+            self.loading_dialog.show()
+            self.logger.info("Loading dialog shown")
+        except Exception as e:
+            self.logger.error(f"Error showing loading dialog: {e}")
+
+    def hide_loading_dialog(self):
+        """Hide the loading dialog."""
+        try:
+            if self.loading_dialog:
+                self.loading_dialog.hide()
+                self.loading_dialog = None
+                self.logger.info("Loading dialog hidden")
+        except Exception as e:
+            self.logger.error(f"Error hiding loading dialog: {e}")
+
     def start_camera(self):
         """Initialize and start the camera feed."""
         if not self.opencv_available:
+            self.hide_loading_dialog()
             self.show_camera_error("OpenCV not available - install opencv-python")
             return
             
@@ -315,16 +356,24 @@ class CameraToolOffsetCalibration(QWidget):
                 self.camera_thread.start()
                 self.camera_available = True
                 self.logger.info(f"Camera started successfully on index {camera_index}")
+                
+                # Hide loading dialog on success
+                self.hide_loading_dialog()
             else:
+                self.hide_loading_dialog()
                 self.show_camera_error("No USB camera detected")
                 
         except Exception as e:
             self.logger.error(f"Error starting camera: {e}")
+            self.hide_loading_dialog()
             self.show_camera_error(f"Camera error: {str(e)}")
 
     def stop_camera(self):
         """Stop the camera feed safely."""
         try:
+            # Hide loading dialog if it's still showing
+            self.hide_loading_dialog()
+            
             if self.camera_thread and self.camera_thread.isRunning():
                 self.logger.info("Stopping camera thread...")
                 
@@ -472,6 +521,7 @@ class CameraToolOffsetCalibration(QWidget):
     def __del__(self):
         """Destructor to ensure camera cleanup."""
         try:
+            self.hide_loading_dialog()
             self.stop_camera()
         except:
             pass  # Ignore errors during destruction
