@@ -19,7 +19,6 @@ This document provides a comprehensive manual testing checklist for the OctoPrin
 - OctoPrint ControlCenter TouchUI application
 - OctoPrint with required plugins:
   - TwinDragonPrintRestore plugin
-  - VolterraServices plugin (for door lock)
   - Klipper plugin
 - Test G-code files with embedded metadata
 
