@@ -25,21 +25,51 @@ try:
     import cv2
 except ImportError:
     print("OpenCV not found. Attempting to install...")
+    
+    # First, check and upgrade pip if needed
+    def upgrade_pip_if_needed():
+        try:
+            import subprocess
+            import sys
+            
+            # Get current pip version
+            result = subprocess.run([sys.executable, '-m', 'pip', '--version'], 
+                                  capture_output=True, text=True, check=True)
+            pip_version_line = result.stdout.strip()
+            
+            # Extract version number (format: "pip X.Y.Z from ...")
+            version_part = pip_version_line.split()[1]
+            major, minor = map(int, version_part.split('.')[:2])
+            
+            # Check if pip version is older than 24.0
+            if major < 24:
+                print(f"Upgrading pip from {version_part} to latest version...")
+                subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
+                print("✓ pip upgraded successfully!")
+            else:
+                print(f"✓ pip {version_part} is already up to date")
+                
+        except Exception as e:
+            print(f"Warning: Could not check/upgrade pip: {e}")
+            # Continue anyway, pip upgrade is not critical
+    
+    upgrade_pip_if_needed()
+    
     try:
         # Try to install opencv-python automatically
         subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'opencv-python'])
         import cv2
         print("✓ OpenCV installed successfully!")
     except subprocess.CalledProcessError:
-        # If pip install fails, try with sudo
+        # If pip install fails, try with sudo (common on RPi)
         try:
-            subprocess.check_call(['sudo', 'pip', 'install', 'opencv-python'])
+            subprocess.check_call(['sudo', 'pip3', 'install', 'opencv-python'])
             import cv2
             print("✓ OpenCV installed successfully with sudo!")
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
             raise ImportError(
                 "Failed to automatically install OpenCV. "
-                "Please install it manually with: pip install opencv-python or sudo pip install opencv-python"
+                "Please install it manually with: pip install opencv-python or sudo pip3 install opencv-python"
             ) from e
 
 from PyQt5 import uic, QtCore, QtGui
