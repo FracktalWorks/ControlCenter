@@ -18,6 +18,7 @@ class BedLeveling(QWidget):
     def __init__(self, main_window):
         super().__init__()
         self.main_window = main_window
+        self.model = main_window.printer_model
         self.octoprint_client = main_window.octoprint_client
         self.logger = get_logger(self.__class__.__name__)  # Using the centralized logger
         self.logger.info("Initializing Bed Leveling screen")
@@ -79,12 +80,19 @@ class BedLeveling(QWidget):
         self.quickStep3CancelButton.clicked.connect(self.cancelStep)
         self.quickStep4CancelButton.clicked.connect(self.cancelStep)
 
-        self.setNewToolZOffsetFromCurrentZBool = False
+        # Remove old flag-based approach - now using signal/slot
+        # self.setNewToolZOffsetFromCurrentZBool = False
 
-        self.main_window.printer_model.z_tool_offset_updated.connect(self.setZToolOffset)
+        # Connect to position updates for tool offset calibration
+        # This will be connected/disconnected dynamically when needed
+        # self.main_window.printer_model.current_position_updated.connect(self.on_position_updated_for_tool_offset)
 
         # Ensure state variables are initialized even if quickStep1 hasn't run yet
         self.toolZOffsetCaliberationPageCount = 0
+        
+        # Store positions for tool offset calculation
+        self.tool0_calibration_position = None
+        self.tool1_calibration_position = None
 
         # self.quickStep1()
         self.logger.info("Bed Leveling initialization complete")
@@ -269,8 +277,12 @@ class BedLeveling(QWidget):
         try:
             # Only set tool offset for dual nozzle printers
             if is_dual_nozzle_printer():
-                self.setNewToolZOffsetFromCurrentZBool = True
-                self.octoprint_client.gcode(command='M114') #setZToolOffset ill set the new tool offset once M114 gives the current Z position from the websocket response
+                # Connect to position updates to capture T1 position for offset calculation
+                self.main_window.printer_model.current_position_updated.connect(self.on_position_updated_for_tool_offset)
+                self.logger.info("Connected to position updates for tool offset calculation")
+                
+                # Request current position - this will trigger our slot when response arrives
+                self.octoprint_client.gcode(command='M114')
             
             self.octoprint_client.jog(z=4, absolute=True, speed=1500)
             self.octoprint_client.gcode(command='T0')
@@ -336,9 +348,9 @@ class BedLeveling(QWidget):
         self.currentZPosition = offset  # gets the current z position, used to set new tool offsets.
         try:
             if self.setNewToolZOffsetFromCurrentZBool:
-                print(self.toolOffsetZ)
+                print(self.model.tool_offsets['Z'])
                 print(self.currentZPosition)
-                newToolOffsetZ = (float(self.toolOffsetZ) + float(self.currentZPosition))
+                newToolOffsetZ = (float(self.model.tool_offsets['Z']) + float(self.currentZPosition))
                 self.octoprint_client.gcode(
                     command='M218 T1 Z{}'.format(newToolOffsetZ)
                 )  # restore eeprom settings to get Z home offset, mesh bed leveling back
@@ -348,3 +360,65 @@ class BedLeveling(QWidget):
         except Exception as e:
             logger.error("Error in BedLeveling.setZToolOffset: {}".format(e))
             dialog.WarningOk(self, "Error in BedLeveling.setZToolOffset: {}".format(e), overlay=True)
+
+    def on_position_updated_for_tool_offset(self, position: dict):
+        """
+        Handle position updates for tool offset calculation.
+        This replaces the old flag-based approach with a clean signal/slot mechanism.
+        """
+        try:
+            # Disconnect immediately to avoid multiple calls
+            self.main_window.printer_model.current_position_updated.disconnect(self.on_position_updated_for_tool_offset)
+            self.logger.info("Disconnected from position updates after receiving data")
+            
+            # Extract Z position for tool offset calculation
+            if 'z' in position:
+                z_position = position['z']
+                self.logger.info(f"Received position for tool offset calculation: {position}")
+                
+                # Calculate and set tool offset using the new method
+                self.calculate_and_set_tool_offset(z_position)
+            else:
+                self.logger.warning("Position update missing Z coordinate")
+                
+        except Exception as e:
+            self.logger.error(f"Error in on_position_updated_for_tool_offset: {e}")
+            # Ensure we disconnect even on error
+            try:
+                self.main_window.printer_model.current_position_updated.disconnect(self.on_position_updated_for_tool_offset)
+            except:
+                pass
+
+    def calculate_and_set_tool_offset(self, current_z_position: float):
+        """
+        Calculate and set the tool offset based on the current Z position.
+        This method implements the same logic as the old setZToolOffset but uses 
+        the new signal-based position data.
+        """
+        try:
+            self.logger.info(f"Calculating tool offset from current Z position: {current_z_position}")
+            
+            # Store the current position for potential future use
+            self.currentZPosition = current_z_position
+            
+            # Calculate new tool offset: current tool offset + current Z position
+            current_tool_offset_z = float(self.model.tool_offsets['Z'])
+            new_tool_offset_z = current_tool_offset_z + float(current_z_position)
+            
+            self.logger.info(f"Current tool offset Z: {current_tool_offset_z}")
+            self.logger.info(f"Current Z position: {current_z_position}")
+            self.logger.info(f"New tool offset Z: {new_tool_offset_z}")
+            
+            # Set the tool offset using M218 command
+            offset_command = f"M218 T1 Z{new_tool_offset_z}"
+            self.logger.info(f"Setting tool offset with command: {offset_command}")
+            self.octoprint_client.gcode(command=offset_command)
+            
+            # Save configuration to EEPROM
+            self.octoprint_client.gcode(command='SAVE_CONFIG')
+            
+            self.logger.info(f"Tool Z offset set to: {new_tool_offset_z}mm and saved to EEPROM")
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating tool offset: {e}")
+            dialog.WarningOk(self, f"Error calculating tool offset: {e}", overlay=True)

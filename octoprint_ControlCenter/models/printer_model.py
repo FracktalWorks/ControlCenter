@@ -24,7 +24,7 @@ class PrinterModel(QObject):
     print_status_updated = pyqtSignal('PyQt_PyObject')  # ! done
     active_extruder_changed = pyqtSignal(str)  # ! done
     z_probe_offset_updated = pyqtSignal(str)  # ! done
-    tool_offset_updated = pyqtSignal(str)  # done
+    tool_offset_data = pyqtSignal(str)  # done
     printer_error_signal = pyqtSignal(str)  # done
     filament_sensor_triggered = pyqtSignal(str)  # done
     filament_runout_sensor_triggered = pyqtSignal(str)
@@ -47,6 +47,9 @@ class PrinterModel(QObject):
     flow_rate_updated = pyqtSignal(int)  # Flow rate percentage
     # Signal for printer configuration changes
     printer_config_updated = pyqtSignal(dict)  # Emitted when printer configuration changes
+    
+    # Position tracking signals
+    current_position_updated = pyqtSignal(dict)  # {'x': float, 'y': float, 'z': float}
 
     def __init__(self):
         super(PrinterModel, self).__init__()
@@ -66,6 +69,11 @@ class PrinterModel(QObject):
         self.current_image = None
         self.z_probe_offset = 0.0
         self.tool_offsets = {'X': 0, 'Y': 0, 'Z': 0}
+        
+        # Current hotend position tracking
+        self.current_position = {'x': 0.0, 'y': 0.0, 'z': 0.0}
+        self.position_timestamp = 0.0  # When position was last updated
+        
         self.print_progress = 0
         self.print_time = 0
         self.print_time_left = 0
@@ -202,6 +210,45 @@ class PrinterModel(QObject):
         except (ValueError, TypeError):
             self.logger.error(f"Invalid flow rate value: {rate}")
 
+    def update_current_position(self, position_data: dict):
+        """
+        Update the current hotend position from M114 response.
+        
+        Args:
+            position_data: Dictionary with 'x', 'y', 'z' keys (any subset is acceptable)
+        """
+        import time
+        
+        try:
+            # Validate and update position data
+            updated = False
+            for axis in ['x', 'y', 'z']:
+                if axis in position_data:
+                    try:
+                        new_value = float(position_data[axis])
+                        if self.current_position[axis] != new_value:
+                            self.current_position[axis] = new_value
+                            updated = True
+                    except (ValueError, TypeError):
+                        self.logger.warning(f"Invalid {axis} position value: {position_data[axis]}")
+            
+            if updated:
+                self.position_timestamp = time.time()
+                self.logger.debug(f"Position updated: {self.current_position}")
+                self.current_position_updated.emit(self.current_position.copy())
+                
+        except Exception as e:
+            self.logger.error(f"Error updating current position: {e}")
+
+    def get_current_position(self) -> dict:
+        """Get the current hotend position."""
+        return self.current_position.copy()
+
+    def get_position_age(self) -> float:
+        """Get how old the current position data is in seconds."""
+        import time
+        return time.time() - self.position_timestamp
+
     def updateTemperature(self, temp_data):
         """ Updates the temperature data. Is a slot for the temperatures_updated signal. """
         if temp_data['tool0Actual'] is None:
@@ -261,7 +308,7 @@ class PrinterModel(QObject):
             self.logger.error(f"Invalid Z probe offset value: {offset}")
             dialog.WarningOk(self, "Invalid Z probe offset value: {}".format(offset), overlay=True)
 
-    def getToolOffset(self, M218Data):
+    def setToolOffset(self, M218Data):
         """ Set the tool offsets from M218 response """
         try:
             if 'X' in M218Data:
@@ -270,10 +317,10 @@ class PrinterModel(QObject):
                 self.tool_offsets['Y'] = M218Data[M218Data.index('Y') + 1:].split(' ', 1)[0]
             if 'Z' in M218Data:
                 self.tool_offsets['Z'] = M218Data[M218Data.index('Z') + 1:].split(' ', 1)[0]
-            self.tool_offset_updated.emit(M218Data)
+            self.tool_offset_data.emit(M218Data)
         except Exception as e:
-            self.logger.error("Error in PrinterModel.getToolOffset: {}".format(e))
-            dialog.WarningOk(self, "Error in PrinterModel.getToolOffset: {}".format(e), overlay=True)
+            self.logger.error("Error in PrinterModel.setToolOffset: {}".format(e))
+            dialog.WarningOk(self, "Error in PrinterModel.setToolOffset: {}".format(e), overlay=True)
 
     def filamentSensorHandler(self, data):
         """

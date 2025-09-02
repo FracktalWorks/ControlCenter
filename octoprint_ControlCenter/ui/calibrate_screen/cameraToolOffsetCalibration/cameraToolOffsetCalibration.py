@@ -19,6 +19,7 @@ Future features:
 import os
 import sys
 import subprocess
+import time
 
 # Dynamic OpenCV import with automatic installation
 try:
@@ -61,6 +62,7 @@ from PyQt5.QtGui import QImage, QPixmap
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
 from utils import dialog
+from .nozzle_detector import NozzleDetector
 
 
 class CameraThread(QThread):
@@ -72,6 +74,9 @@ class CameraThread(QThread):
         self.camera_index = camera_index
         self.running = False
         self.cap = None
+        self.current_frame = None
+        self.display_frame = None
+        self._frame_lock = QtCore.QMutex()
 
     def run(self):
         """Main camera capture loop."""
@@ -93,8 +98,16 @@ class CameraThread(QThread):
                     ret, frame = self.cap.read()
                     if ret and self.running:  # Check running again after read
                         try:
-                            # Convert the image to RGB format
-                            rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                            # Store current frame for detection algorithms
+                            self._frame_lock.lock()
+                            self.current_frame = frame.copy()
+                            
+                            # Use display frame if available, otherwise use original frame
+                            display_frame = self.display_frame if self.display_frame is not None else frame
+                            self._frame_lock.unlock()
+                            
+                            # Convert the image to RGB format for display
+                            rgb_image = cv2.cvtColor(display_frame, cv2.COLOR_BGR2RGB)
                             h, w, ch = rgb_image.shape
                             bytes_per_line = ch * w
                             
@@ -106,6 +119,7 @@ class CameraThread(QThread):
                                 self.changePixmap.emit(qt_image)
                         except Exception as e:
                             # Silently continue on frame processing errors
+                            self._frame_lock.unlock()  # Ensure unlock on error
                             pass
                 else:
                     break
@@ -138,6 +152,31 @@ class CameraThread(QThread):
                 self.terminate()  # Force terminate if needed
                 self.wait(500)  # Give it a bit more time after terminate
 
+    def get_current_frame(self):
+        """Get the current raw frame for detection algorithms."""
+        self._frame_lock.lock()
+        try:
+            frame = self.current_frame.copy() if self.current_frame is not None else None
+            return frame
+        finally:
+            self._frame_lock.unlock()
+
+    def update_display_frame(self, annotated_frame):
+        """Update the frame that will be displayed (with detection overlays)."""
+        self._frame_lock.lock()
+        try:
+            self.display_frame = annotated_frame.copy() if annotated_frame is not None else None
+        finally:
+            self._frame_lock.unlock()
+
+    def clear_display_frame(self):
+        """Clear the display frame to show original camera feed."""
+        self._frame_lock.lock()
+        try:
+            self.display_frame = None
+        finally:
+            self._frame_lock.unlock()
+
 
 class CameraToolOffsetCalibration(QWidget):
     """Camera Tool Offset Calibration widget.
@@ -162,9 +201,16 @@ class CameraToolOffsetCalibration(QWidget):
         self.opencv_available = True
         self.loading_dialog = None
         
+        # Enhanced detection system
+        self.nozzle_detector = None
+        self.detection_active = False
+        
         # Check if OpenCV is available
         try:
             cv2.__version__
+            # Initialize nozzle detector
+            self.nozzle_detector = NozzleDetector()
+            self.logger.info("Enhanced nozzle detection system initialized")
         except NameError:
             self.opencv_available = False
             self.logger.warning("OpenCV not available - camera functionality disabled")
@@ -208,6 +254,9 @@ class CameraToolOffsetCalibration(QWidget):
         # Wire signals
         self.nextButton.clicked.connect(self.on_next_clicked)
         self.cancelButton.clicked.connect(self.on_cancel_clicked)
+        
+        # Update button text to reflect new functionality
+        self.nextButton.setText("Detect Nozzle")
         
         # Movement button connections (1mm steps)
         self.moveXPButton.clicked.connect(lambda: self.move_axis('x', self.movement_step))
@@ -374,6 +423,11 @@ class CameraToolOffsetCalibration(QWidget):
             # Hide loading dialog if it's still showing
             self.hide_loading_dialog()
             
+            # Cancel any ongoing detection
+            if hasattr(self, 'detection_thread') and self.detection_thread.isRunning():
+                self.detection_thread.terminate()
+                self.detection_thread.wait(1000)
+            
             if self.camera_thread and self.camera_thread.isRunning():
                 self.logger.info("Stopping camera thread...")
                 
@@ -441,6 +495,12 @@ class CameraToolOffsetCalibration(QWidget):
                 QtCore.Qt.SmoothTransformation
             )
             self.webCamFeed.setPixmap(scaled_pixmap)
+            
+            # Show that enhanced detection is ready
+            if not hasattr(self, '_detection_ready_shown'):
+                self._detection_ready_shown = True
+                self.logger.info("Enhanced detection system ready - camera feed active")
+                
         except Exception as e:
             self.logger.error(f"Error updating camera image: {e}")
 
@@ -481,9 +541,155 @@ class CameraToolOffsetCalibration(QWidget):
             dialog.WarningOk(self, f"Movement error: {str(e)}", overlay=True)
 
     def on_next_clicked(self):
-        """Handle Next button click - currently does nothing as requested."""
-        self.logger.info("Next button clicked (no action configured)")
-        # Future: Implement calibration logic here
+        """Handle Next button click - perform enhanced nozzle detection."""
+        self.logger.info("Next button clicked - starting enhanced nozzle detection")
+        
+        if not self.camera_available or not self.camera_thread:
+            dialog.WarningOk(self, "Camera not available for detection", overlay=True)
+            return
+        
+        if not self.nozzle_detector:
+            dialog.WarningOk(self, "Detection system not initialized", overlay=True)
+            return
+        
+        # Disable the next button during detection
+        self.nextButton.setEnabled(False)
+        self.nextButton.setText("Detecting...")
+        
+        # Start detection in a separate thread to avoid blocking UI
+        from PyQt5.QtCore import QThread, pyqtSignal
+        
+        class DetectionThread(QThread):
+            detection_complete = pyqtSignal(object, str)  # (center, algorithm_used)
+            
+            def __init__(self, nozzle_detector, camera_thread):
+                super().__init__()
+                self.nozzle_detector = nozzle_detector
+                self.camera_thread = camera_thread
+            
+            def run(self):
+                try:
+                    # Perform consistency detection (3 matches, 10s timeout, 1px tolerance)
+                    center, algorithm = self.nozzle_detector.detect_with_consistency(
+                        self.camera_thread, min_matches=3, timeout=10.0, tolerance=1
+                    )
+                    self.detection_complete.emit(center, algorithm)
+                except Exception as e:
+                    self.detection_complete.emit(None, f"Detection error: {str(e)}")
+        
+        # Create and start detection thread
+        self.detection_thread = DetectionThread(self.nozzle_detector, self.camera_thread)
+        self.detection_thread.detection_complete.connect(self.on_detection_complete)
+        self.detection_thread.start()
+        
+        # Show progress dialog
+        self.show_detection_progress()
+
+    def show_detection_progress(self):
+        """Show detection progress dialog."""
+        try:
+            self.detection_progress_dialog = dialog.dialog(
+                self, 
+                "Detecting nozzle position...\n\nMove the nozzle so it's clearly visible in the camera\nand hold steady for best results.", 
+                buttons=QMessageBox.Cancel,
+                overlay=True,
+                icon=":/Icons/img/icons/information.png"
+            )
+            
+            # Connect cancel button to stop detection
+            if hasattr(self.detection_progress_dialog, 'button'):
+                cancel_button = self.detection_progress_dialog.button(QMessageBox.Cancel)
+                if cancel_button:
+                    cancel_button.clicked.connect(self.cancel_detection)
+            
+            self.detection_progress_dialog.show()
+            self.logger.info("Detection progress dialog shown")
+        except Exception as e:
+            self.logger.error(f"Error showing detection progress dialog: {e}")
+
+    def cancel_detection(self):
+        """Cancel ongoing detection."""
+        try:
+            if hasattr(self, 'detection_thread') and self.detection_thread.isRunning():
+                self.detection_thread.terminate()
+                self.detection_thread.wait(1000)
+            
+            self.hide_detection_progress()
+            self.restore_next_button()
+            self.logger.info("Detection cancelled by user")
+        except Exception as e:
+            self.logger.error(f"Error cancelling detection: {e}")
+
+    def hide_detection_progress(self):
+        """Hide the detection progress dialog."""
+        try:
+            if hasattr(self, 'detection_progress_dialog') and self.detection_progress_dialog:
+                self.detection_progress_dialog.hide()
+                self.detection_progress_dialog = None
+                self.logger.info("Detection progress dialog hidden")
+        except Exception as e:
+            self.logger.error(f"Error hiding detection progress dialog: {e}")
+
+    def on_detection_complete(self, center, algorithm_or_error):
+        """Handle detection completion."""
+        try:
+            self.hide_detection_progress()
+            self.restore_next_button()
+            
+            if center is not None:
+                # Detection successful
+                x, y = center
+                self.logger.info(f"Enhanced detection successful: {center} using {algorithm_or_error}")
+                
+                # Calculate offset from center (320, 240)
+                center_x, center_y = 320, 240
+                offset_x = x - center_x
+                offset_y = y - center_y
+                
+                # Show success dialog with results
+                message = (f"Nozzle detected successfully!\n\n"
+                          f"Position: ({x}, {y})\n"
+                          f"Offset from center: ({offset_x:+.0f}, {offset_y:+.0f}) pixels\n"
+                          f"Algorithm used: {algorithm_or_error}\n\n"
+                          f"Would you like to proceed with calibration?")
+                
+                reply = dialog.QuestionYesNo(self, message, overlay=True)
+                if reply == QMessageBox.Yes:
+                    self.proceed_with_calibration(center, algorithm_or_error)
+                
+            else:
+                # Detection failed
+                self.logger.warning(f"Enhanced detection failed: {algorithm_or_error}")
+                dialog.WarningOk(self, f"Nozzle detection failed:\n{algorithm_or_error}\n\nTry adjusting lighting or nozzle position.", overlay=True)
+                
+        except Exception as e:
+            self.logger.error(f"Error handling detection completion: {e}")
+            self.restore_next_button()
+
+    def restore_next_button(self):
+        """Restore Next button to original state."""
+        try:
+            self.nextButton.setEnabled(True)
+            self.nextButton.setText("Detect Nozzle")
+        except Exception as e:
+            self.logger.error(f"Error restoring next button: {e}")
+
+    def proceed_with_calibration(self, center, algorithm_used):
+        """Proceed with calibration using detected center."""
+        self.logger.info(f"Proceeding with calibration using detected center: {center}")
+        
+        # Store detection results for future use
+        self.last_detection = {
+            'center': center,
+            'algorithm': algorithm_used,
+            'timestamp': time.time()
+        }
+        
+        # Show success message
+        dialog.InfoOk(self, f"Detection data saved!\nReady for calibration implementation.", overlay=True)
+        
+        # Future: Implement actual calibration logic here
+        # For now, just show that we have the detection data
 
     def on_cancel_clicked(self):
         """Handle Cancel button click - return to calibrate screen."""

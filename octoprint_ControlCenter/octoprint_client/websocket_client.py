@@ -35,7 +35,6 @@ class OctoPrintWebSocket(QThread):
     update_failed_signal = pyqtSignal(dict) #! done
     connected_signal = pyqtSignal() #! done
     # firmware_updater_signal = pyqtSignal(dict) ... likely not to be used, but can be added later
-    set_z_tool_offset_signal = pyqtSignal(str, bool) #! done
     tool_offset_signal = pyqtSignal(str) # done
     active_extruder_signal = pyqtSignal(str) # done
     z_probe_offset_signal = pyqtSignal(str) # done
@@ -54,6 +53,9 @@ class OctoPrintWebSocket(QThread):
     filament_runout_sensor_triggered_signal = pyqtSignal(str) #! done
     filament_jam_sensor_triggered_signal = pyqtSignal(str) #! done
     filament_runout_state_signal = pyqtSignal(str, bool) #! done
+    
+    # Position update signals
+    current_position_updated_signal = pyqtSignal(dict)  # {'x': float, 'y': float, 'z': float}
 
     def __init__(self, ip="0.0.0.0:5000", api_key=None):
         """
@@ -361,10 +363,51 @@ class OctoPrintWebSocket(QThread):
                             self.logger.info(f"Filament not Detected in {sensor}")
                             self.filament_runout_state_signal.emit(sensor, False)
 
-                        if 'Count' in item and 'z' in item:  # can get through the positionUpdate event
-                            z_offset = item[item.index('z') + 2:].split(',', 1)[0]
-                            self.logger.debug(f"Z tool offset update: {z_offset}")
-                            self.set_z_tool_offset_signal.emit(z_offset, False)
+                        if 'Count' in item and ('x' in item or 'y' in item or 'z' in item):
+                            # Parse full position from M114 response: "Count X:123.45 Y:67.89 Z:0.12"
+                            try:
+                                position = {}
+                                
+                                # Extract X position
+                                if 'x' in item.lower():
+                                    x_start = item.lower().index('x') + 1
+                                    if item[x_start] == ':':
+                                        x_start += 1
+                                    x_end = x_start
+                                    while x_end < len(item) and (item[x_end].isdigit() or item[x_end] in '.-'):
+                                        x_end += 1
+                                    if x_end > x_start:
+                                        position['x'] = float(item[x_start:x_end])
+                                
+                                # Extract Y position  
+                                if 'y' in item.lower():
+                                    y_start = item.lower().index('y') + 1
+                                    if item[y_start] == ':':
+                                        y_start += 1
+                                    y_end = y_start
+                                    while y_end < len(item) and (item[y_end].isdigit() or item[y_end] in '.-'):
+                                        y_end += 1
+                                    if y_end > y_start:
+                                        position['y'] = float(item[y_start:y_end])
+                                
+                                # Extract Z position
+                                if 'z' in item.lower():
+                                    z_start = item.lower().index('z') + 1
+                                    if item[z_start] == ':':
+                                        z_start += 1
+                                    z_end = z_start
+                                    while z_end < len(item) and (item[z_end].isdigit() or item[z_end] in '.-'):
+                                        z_end += 1
+                                    if z_end > z_start:
+                                        position['z'] = float(item[z_start:z_end])
+                                
+                                # Emit full position update if we got any coordinates
+                                if position:
+                                    self.logger.debug(f"Position update: {position}")
+                                    self.current_position_updated_signal.emit(position)
+                                        
+                            except Exception as e:
+                                self.logger.error(f"Error parsing position from '{item}': {e}")
                             
                         if 'M218' in item:
                             tool_offset_data = item[item.index('M218'):]
