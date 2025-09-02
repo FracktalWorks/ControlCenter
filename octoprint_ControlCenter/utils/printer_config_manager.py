@@ -12,14 +12,26 @@ import subprocess
 import sys
 from typing import List, Dict, Optional, Any
 
-from utils.dependency_manager import SimplifiedDependencyChecker
-
-# Try to import YAML, using the dependency checker
-yaml = SimplifiedDependencyChecker.import_with_install(
-    'yaml',
-    'PyYAML', 
-    'YAML parser for configuration files'
-)
+try:
+    import yaml
+except ImportError:
+    print("PyYAML not found. Attempting to install...")
+    try:
+        # Try to install PyYAML automatically
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'PyYAML'])
+        import yaml
+        print("✓ PyYAML installed successfully!")
+    except subprocess.CalledProcessError:
+        # If pip install fails, try with sudo
+        try:
+            subprocess.check_call(['sudo', 'pip', 'install', 'PyYAML'])
+            import yaml
+            print("✓ PyYAML installed successfully with sudo!")
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            raise ImportError(
+                "Failed to automatically install PyYAML. "
+                "Please install it manually with: pip install PyYAML or sudo pip install PyYAML"
+            ) from e
 
 from utils.logger import get_logger
 
@@ -54,15 +66,6 @@ class PrinterConfigManager:
         self.klipper_config_path = KLIPPER_CONFIG_PATH
         self.octoprint_config_path = OCTOPRINT_CONFIG_PATH
         self.backup_pattern = BACKUP_CFG_PATTERN
-        
-        # Check if YAML is available
-        if yaml is None:
-            logger.warning("PyYAML not available - YAML configuration features disabled")
-
-    def _check_yaml_available(self):
-        """Check if YAML is available and raise error if not."""
-        if yaml is None:
-            raise RuntimeError("PyYAML not available - cannot process YAML configuration files")
 
     # ========================================================================
     # PRINTER DISCOVERY AND MANAGEMENT

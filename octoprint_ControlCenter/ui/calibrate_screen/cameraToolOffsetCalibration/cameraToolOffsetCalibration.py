@@ -17,6 +17,31 @@ Future features:
 """
 
 import os
+import sys
+import subprocess
+
+# Dynamic OpenCV import with automatic installation
+try:
+    import cv2
+except ImportError:
+    print("OpenCV not found. Attempting to install...")
+    try:
+        # Try to install opencv-python automatically
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'opencv-python'])
+        import cv2
+        print("✓ OpenCV installed successfully!")
+    except subprocess.CalledProcessError:
+        # If pip install fails, try with sudo
+        try:
+            subprocess.check_call(['sudo', 'pip', 'install', 'opencv-python'])
+            import cv2
+            print("✓ OpenCV installed successfully with sudo!")
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            raise ImportError(
+                "Failed to automatically install OpenCV. "
+                "Please install it manually with: pip install opencv-python or sudo pip install opencv-python"
+            ) from e
+
 from PyQt5 import uic, QtCore, QtGui
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel
 from PyQt5.QtCore import QTimer, QThread, pyqtSignal
@@ -24,15 +49,7 @@ from PyQt5.QtGui import QImage, QPixmap
 
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
-from utils.dependency_manager import SimplifiedDependencyChecker
 from utils import dialog
-
-# Try to import OpenCV, using the dependency checker
-cv2 = SimplifiedDependencyChecker.import_with_install(
-    'cv2', 
-    'opencv-python', 
-    'Computer vision library for camera functionality'
-)
 
 
 class CameraThread(QThread):
@@ -46,9 +63,6 @@ class CameraThread(QThread):
 
     def run(self):
         """Main camera capture loop."""
-        if cv2 is None:
-            return  # Cannot run without OpenCV
-            
         cap = cv2.VideoCapture(self.camera_index)
         
         # Set camera properties
@@ -104,10 +118,13 @@ class CameraToolOffsetCalibration(QWidget):
         # Camera related attributes
         self.camera_thread = None
         self.camera_available = False
-        self.opencv_available = cv2 is not None
+        self.opencv_available = True
         
         # Check if OpenCV is available
-        if not self.opencv_available:
+        try:
+            cv2.__version__
+        except NameError:
+            self.opencv_available = False
             self.logger.warning("OpenCV not available - camera functionality disabled")
 
         # Load UI
@@ -236,7 +253,7 @@ class CameraToolOffsetCalibration(QWidget):
 
     def find_available_camera(self):
         """Find the first available camera index."""
-        if not self.opencv_available or cv2 is None:
+        if not self.opencv_available:
             return None
             
         for i in range(5):  # Check first 5 camera indices
