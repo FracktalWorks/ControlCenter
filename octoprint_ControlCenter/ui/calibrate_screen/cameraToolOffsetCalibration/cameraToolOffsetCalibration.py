@@ -26,51 +26,32 @@ try:
 except ImportError:
     print("OpenCV not found. Attempting to install...")
     
-    # First, check and upgrade pip if needed
-    def upgrade_pip_if_needed():
-        try:
-            import subprocess
-            import sys
-            
-            # Get current pip version
-            result = subprocess.run([sys.executable, '-m', 'pip', '--version'], 
-                                  capture_output=True, text=True, check=True)
-            pip_version_line = result.stdout.strip()
-            
-            # Extract version number (format: "pip X.Y.Z from ...")
-            version_part = pip_version_line.split()[1]
-            major, minor = map(int, version_part.split('.')[:2])
-            
-            # Check if pip version is older than 24.0
-            if major < 24:
-                print(f"Upgrading pip from {version_part} to latest version...")
-                subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
-                print("✓ pip upgraded successfully!")
-            else:
-                print(f"✓ pip {version_part} is already up to date")
-                
-        except Exception as e:
-            print(f"Warning: Could not check/upgrade pip: {e}")
-            # Continue anyway, pip upgrade is not critical
-    
-    upgrade_pip_if_needed()
-    
     try:
-        # Try to install opencv-python automatically
-        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'opencv-python'])
+        # For Raspberry Pi - use prebuilt package to avoid long compilation
+        print("Installing OpenCV using apt (prebuilt package)...")
+        subprocess.check_call(['sudo', 'apt', 'update'])
+        subprocess.check_call(['sudo', 'apt', 'install', '-y', 'python3-opencv'])
         import cv2
-        print("✓ OpenCV installed successfully!")
+        print("✓ OpenCV installed successfully from apt!")
     except subprocess.CalledProcessError:
-        # If pip install fails, try with sudo (common on RPi)
+        # Fallback to pip if apt fails
         try:
-            subprocess.check_call(['sudo', 'pip3', 'install', 'opencv-python'])
+            print("Apt installation failed, trying pip as fallback...")
+            subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'opencv-python'])
             import cv2
-            print("✓ OpenCV installed successfully with sudo!")
-        except (subprocess.CalledProcessError, FileNotFoundError) as e:
-            raise ImportError(
-                "Failed to automatically install OpenCV. "
-                "Please install it manually with: pip install opencv-python or sudo pip3 install opencv-python"
-            ) from e
+            print("✓ OpenCV installed successfully with pip!")
+        except subprocess.CalledProcessError:
+            # Final fallback with sudo pip
+            try:
+                subprocess.check_call(['sudo', 'pip3', 'install', 'opencv-python'])
+                import cv2
+                print("✓ OpenCV installed successfully with sudo pip!")
+            except (subprocess.CalledProcessError, FileNotFoundError) as e:
+                raise ImportError(
+                    "Failed to automatically install OpenCV. "
+                    "Please install it manually with: sudo apt install python3-opencv "
+                    "or pip install opencv-python"
+                ) from e
 
 from PyQt5 import uic, QtCore, QtGui
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel
@@ -90,42 +71,72 @@ class CameraThread(QThread):
         super().__init__()
         self.camera_index = camera_index
         self.running = False
+        self.cap = None
 
     def run(self):
         """Main camera capture loop."""
-        cap = cv2.VideoCapture(self.camera_index)
-        
-        # Set camera properties
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        cap.set(cv2.CAP_PROP_FPS, 30)
-        
-        self.running = True
-        
-        while self.running:
-            ret, frame = cap.read()
-            if ret:
-                # Convert the image to RGB format
-                rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                h, w, ch = rgb_image.shape
-                bytes_per_line = ch * w
-                
-                # Create QImage
-                qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
-                
-                # Emit the image
-                self.changePixmap.emit(qt_image)
+        try:
+            self.cap = cv2.VideoCapture(self.camera_index)
             
-            # Control frame rate
-            self.msleep(33)  # ~30 FPS
+            if not self.cap.isOpened():
+                return
+            
+            # Set camera properties
+            self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+            self.cap.set(cv2.CAP_PROP_FPS, 30)
+            
+            self.running = True
+            
+            while self.running:
+                if self.cap and self.cap.isOpened():
+                    ret, frame = self.cap.read()
+                    if ret and self.running:  # Check running again after read
+                        try:
+                            # Convert the image to RGB format
+                            rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                            h, w, ch = rgb_image.shape
+                            bytes_per_line = ch * w
+                            
+                            # Create QImage - make a copy of the data to avoid memory issues
+                            qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888).copy()
+                            
+                            # Only emit if still running
+                            if self.running:
+                                self.changePixmap.emit(qt_image)
+                        except Exception as e:
+                            # Silently continue on frame processing errors
+                            pass
+                else:
+                    break
+                
+                # Control frame rate
+                self.msleep(33)  # ~30 FPS
         
-        cap.release()
+        except Exception as e:
+            # Handle any camera errors gracefully
+            pass
+        finally:
+            # Always clean up camera resource
+            if self.cap:
+                self.cap.release()
+                self.cap = None
 
     def stop(self):
-        """Stop the camera thread."""
+        """Stop the camera thread safely."""
         self.running = False
-        self.quit()
-        self.wait()
+        
+        # Release camera resource immediately
+        if self.cap:
+            self.cap.release()
+            self.cap = None
+        
+        # Wait for thread to finish with a timeout
+        if self.isRunning():
+            self.quit()
+            if not self.wait(1000):  # Wait up to 1 second
+                self.terminate()  # Force terminate if needed
+                self.wait(500)  # Give it a bit more time after terminate
 
 
 class CameraToolOffsetCalibration(QWidget):
@@ -236,14 +247,55 @@ class CameraToolOffsetCalibration(QWidget):
             """)
 
     def showEvent(self, event):
-        """Start camera when widget is shown."""
+        """Check for USB camera and start camera when widget is shown."""
         super().showEvent(event)
+        
+        # Check for USB camera before proceeding
+        if not self.check_usb_camera_available():
+            # Show dialog and return to calibrate screen
+            dialog.WarningOk(self, "Please connect a USB calibration camera to a USB port and try again", overlay=True)
+            # Return to calibrate screen after dialog
+            try:
+                self.main_window.calibrate_screen.show_calibrate_screen()
+            except Exception as e:
+                self.logger.error(f"Error returning to calibrate screen: {e}")
+            return
+        
+        # If camera is available, start it
         self.start_camera()
 
     def hideEvent(self, event):
         """Stop camera when widget is hidden."""
         super().hideEvent(event)
-        self.stop_camera()
+        # Use a timer to delay camera stop to avoid race conditions
+        QTimer.singleShot(50, self.stop_camera)
+
+    def check_usb_camera_available(self):
+        """Check if a USB camera is available before starting the camera screen."""
+        if not self.opencv_available:
+            self.logger.warning("OpenCV not available, cannot detect cameras")
+            return False
+        
+        self.logger.info("Checking for USB camera before opening camera calibration")
+        
+        try:
+            # Check indices 1-5 first (USB cameras typically start at 1 if CSI is at 0)
+            for i in range(1, 6):
+                if self._test_camera_index(i):
+                    self.logger.info(f"USB camera found at index {i}")
+                    return True
+            
+            # If no cameras found at 1+, check index 0 but assume it might be USB
+            if self._test_camera_index(0):
+                self.logger.info("Camera found at index 0 (assuming USB)")
+                return True
+                
+            self.logger.warning("No USB camera detected")
+            return False
+            
+        except Exception as e:
+            self.logger.error(f"Error detecting USB camera: {e}")
+            return False
 
     def start_camera(self):
         """Initialize and start the camera feed."""
@@ -271,29 +323,63 @@ class CameraToolOffsetCalibration(QWidget):
             self.show_camera_error(f"Camera error: {str(e)}")
 
     def stop_camera(self):
-        """Stop the camera feed."""
+        """Stop the camera feed safely."""
         try:
             if self.camera_thread and self.camera_thread.isRunning():
+                self.logger.info("Stopping camera thread...")
+                
+                # Disconnect signal to prevent any remaining frames from being processed
+                try:
+                    self.camera_thread.changePixmap.disconnect()
+                except:
+                    pass  # Signal might already be disconnected
+                
+                # Stop the thread
                 self.camera_thread.stop()
+                
+                # Clear the reference
                 self.camera_thread = None
                 self.camera_available = False
-                self.logger.info("Camera stopped")
+                self.logger.info("Camera stopped successfully")
+            
+            # Clear the camera display
+            self.setup_camera_placeholder()
+                
         except Exception as e:
             self.logger.error(f"Error stopping camera: {e}")
+            # Even if there's an error, clear the reference to prevent further issues
+            self.camera_thread = None
+            self.camera_available = False
 
     def find_available_camera(self):
-        """Find the first available camera index."""
+        """Find the first available USB camera index (prioritizing USB over CSI)."""
         if not self.opencv_available:
             return None
+        
+        # Check indices 1-5 first (USB cameras typically start at 1 if CSI is at 0)
+        for i in range(1, 6):
+            if self._test_camera_index(i):
+                self.logger.info(f"Found USB camera at index {i}")
+                return i
+        
+        # If no cameras found at 1+, check index 0 but assume it might be CSI
+        if self._test_camera_index(0):
+            self.logger.info("Found camera at index 0 (may be CSI or USB)")
+            return 0
             
-        for i in range(5):  # Check first 5 camera indices
-            cap = cv2.VideoCapture(i)
+        return None
+
+    def _test_camera_index(self, index):
+        """Test if a camera at the given index is accessible."""
+        try:
+            cap = cv2.VideoCapture(index)
             if cap.isOpened():
                 ret, _ = cap.read()
                 cap.release()
-                if ret:
-                    return i
-        return None
+                return ret
+            return False
+        except Exception:
+            return False
 
     def set_camera_image(self, image):
         """Update the camera feed label with new image."""
@@ -356,7 +442,18 @@ class CameraToolOffsetCalibration(QWidget):
         try:
             # Stop camera before returning
             self.stop_camera()
-            # Return to main calibrate screen
+            
+            # Add a small delay to ensure camera cleanup completes
+            QTimer.singleShot(100, self._return_to_calibrate_screen)
+            
+        except Exception as e:
+            self.logger.error(f"Error during cancel: {e}")
+            # Still try to return to calibrate screen
+            self._return_to_calibrate_screen()
+
+    def _return_to_calibrate_screen(self):
+        """Helper method to return to calibrate screen."""
+        try:
             self.main_window.calibrate_screen.show_calibrate_screen()
         except Exception as e:
             self.logger.error(f"Error returning to calibrate screen: {e}")
@@ -371,3 +468,10 @@ class CameraToolOffsetCalibration(QWidget):
         """Clean up when widget is closed."""
         self.stop_camera()
         super().closeEvent(event)
+
+    def __del__(self):
+        """Destructor to ensure camera cleanup."""
+        try:
+            self.stop_camera()
+        except:
+            pass  # Ignore errors during destruction
