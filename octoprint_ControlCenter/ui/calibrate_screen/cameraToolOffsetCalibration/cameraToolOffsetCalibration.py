@@ -334,6 +334,35 @@ class CameraToolOffsetCalibration(QWidget):
 
         self.logger.info(f"Switched to step {index + 1}/{self.TOTAL_STEPS}")
 
+
+    def _update_step_label(self):
+        """Update the "Step X/Y" label to match the current index."""
+        try:
+            if self.stepLabel:
+                self.stepLabel.setText(f"Step {self._current_step + 1}/{self.TOTAL_STEPS}")
+        except Exception:
+            pass
+
+    def on_next_clicked(self):
+        """Handle Next button click - simple step advancement."""
+        try:
+            if self._current_step == self.STEP_CLEAN_NOZZLES:
+                # Step 1 -> Step 2
+                self.goto_step(self.STEP_CONNECT_CAMERA)
+                
+            elif self._current_step == self.STEP_CONNECT_CAMERA:
+                # Step 2 -> Step 3
+                self.goto_step(self.STEP_CAMERA_FEED)
+                
+            elif self._current_step == self.STEP_CAMERA_FEED:
+                # Step 3: Perform nozzle detection
+                self._perform_nozzle_detection()
+                
+        except Exception as e:
+            self.logger.error(f"Error in on_next_clicked: {e}")
+            dialog.WarningOk(self, f"Navigation error: {str(e)}", overlay=True)
+            
+
     def _perform_printer_positioning(self):
         """Perform printer homing and positioning for step 2."""
         self.logger.info("Starting printer positioning for camera calibration")
@@ -372,32 +401,7 @@ class CameraToolOffsetCalibration(QWidget):
         except Exception as e:
             self.logger.error(f"Error during printer positioning: {e}")
 
-    def _update_step_label(self):
-        """Update the "Step X/Y" label to match the current index."""
-        try:
-            if self.stepLabel:
-                self.stepLabel.setText(f"Step {self._current_step + 1}/{self.TOTAL_STEPS}")
-        except Exception:
-            pass
 
-    def on_next_clicked(self):
-        """Handle Next button click - simple step advancement."""
-        try:
-            if self._current_step == self.STEP_CLEAN_NOZZLES:
-                # Step 1 -> Step 2
-                self.goto_step(self.STEP_CONNECT_CAMERA)
-                
-            elif self._current_step == self.STEP_CONNECT_CAMERA:
-                # Step 2 -> Step 3
-                self.goto_step(self.STEP_CAMERA_FEED)
-                
-            elif self._current_step == self.STEP_CAMERA_FEED:
-                # Step 3: Perform nozzle detection
-                self._perform_nozzle_detection()
-                
-        except Exception as e:
-            self.logger.error(f"Error in on_next_clicked: {e}")
-            dialog.WarningOk(self, f"Navigation error: {str(e)}", overlay=True)
 
     def setup_camera_placeholder(self):
         """Set up placeholder text for camera feed."""
