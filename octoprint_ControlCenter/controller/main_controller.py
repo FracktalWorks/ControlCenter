@@ -552,6 +552,13 @@ class MainController:
             cleaned_msg = cleaned_msg[1:].lstrip()
         self.logger.error(f"Printer error received: {msg}")
         self.logger.debug(f"Cleaned message for processing: {cleaned_msg}")
+        
+        # Check if this is a "Printer is not ready" error and printer is in expected states
+        if "Printer is not ready" in cleaned_msg:
+            if self.printer_model.printer_status not in ["Starting", "Printing", "Paused"]:
+                self.logger.debug(f"Suppressing 'Printer is not ready' error because printer status is '{self.printer_model.printer_status}'")
+                return
+        
         for ignore_item in IGNORED_PRINTER_ERRORS:
             if ignore_item in cleaned_msg:
                 self.logger.debug(f"Ignoring error message for UI display: {cleaned_msg}")

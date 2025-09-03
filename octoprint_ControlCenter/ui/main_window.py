@@ -177,27 +177,10 @@ class MainWindow(QMainWindow):
         self.logger.debug("Switching to control screen")
         try:
             self.switch_screen(self.control_screen)
-            # Handle temperature spinbox based on nozzle configuration
-            if is_dual_nozzle_printer() and hasattr(self.control_screen, 'toolToggleTemperatureButton'):
-                if self.control_screen.toolToggleTemperatureButton.isChecked():
-                    self.control_screen.toolTempSpinBox.setProperty(
-                        "value", float(self.printer_model.temperatures.get("tool1", 0))
-                    )
-                else:
-                    self.control_screen.toolTempSpinBox.setProperty(
-                        "value", float(self.printer_model.temperatures.get("tool0", 0))
-                    )
-            else:
-                # Single nozzle - always use tool0
-                self.control_screen.toolTempSpinBox.setProperty(
-                    "value", float(self.printer_model.temperatures.get("tool0", 0))
-                )
-            self.control_screen.bedTempSpinBox.setProperty(
-                "value", float(self.printer_model.temperatures.get("bed", 0))
-            )
+            # Spinbox values are now updated automatically via showEvent in control_screen
         except Exception as e:
-            self.logger.error("Error in MainWaindow.control: {}".format(e))
-            dialog.WarningOk(self, "Error in MainWaindow.control: {}".format(e), overlay=True)
+            self.logger.error("Error in MainWindow.control: {}".format(e))
+            dialog.WarningOk(self, "Error in MainWindow.control: {}".format(e), overlay=True)
 
     def switch_to_print_location_screen(self):
         self.logger.debug("Switching to print location screen")

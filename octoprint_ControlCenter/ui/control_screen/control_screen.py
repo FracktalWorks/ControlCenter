@@ -131,11 +131,11 @@ class ControlScreen(QWidget):
         self.cooldownButton.clicked.connect(self.coolDownAction)
         self.setToolTempButton.clicked.connect(self.setToolTemp)
         self.setBedTempButton.clicked.connect(lambda: self.octoprint_client.setBedTemperature(self.bedTempSpinBox.value()))
-        self.bed60PreheatButton.pressed.connect(lambda: self.preheatBedTemp(60))
-        self.bed100PreheatButton.pressed.connect(lambda: self.preheatBedTemp(100))
-        self.tool180PreheatButton.pressed.connect(lambda: self.preheatToolTemp(180))
-        self.tool250PreheatButton.pressed.connect(lambda: self.preheatToolTemp(250))
-        self.toolToggleTemperatureButton.pressed.connect(self.selectToolTemperature)
+        self.bed60PreheatButton.clicked.connect(lambda: self.preheatBedTemp(60))
+        self.bed100PreheatButton.clicked.connect(lambda: self.preheatBedTemp(100))
+        self.tool180PreheatButton.clicked.connect(lambda: self.preheatToolTemp(180))
+        self.tool250PreheatButton.clicked.connect(lambda: self.preheatToolTemp(250))
+        self.toolToggleTemperatureButton.clicked.connect(self.selectToolTemperature)
 
         # Motion Buttons Signal Connections
         self.step1mmButton.clicked.connect(lambda: self.setStep(1))
@@ -218,6 +218,37 @@ class ControlScreen(QWidget):
 
         # Apply nozzle configuration
         self.apply_nozzle_configuration()
+
+    def showEvent(self, event):
+        """Update all spinbox values with latest printer model data when screen is shown."""
+        super().showEvent(event)
+        self.update_spinbox_values()
+
+    def update_spinbox_values(self):
+        """Update all spinbox values with the latest data from printer model."""
+        try:
+            # Update feed rate and flow rate
+            if hasattr(self.main_window.printer_model, 'current_feed_rate'):
+                self.feedRateSpinBox.setValue(self.main_window.printer_model.current_feed_rate)
+            if hasattr(self.main_window.printer_model, 'current_flow_rate'):
+                self.flowRateSpinBox.setValue(self.main_window.printer_model.current_flow_rate)
+            
+            # Update bed temperature (always use bed target)
+            bed_target = self.main_window.printer_model.temperatures.get('bedTarget', 0)
+            self.bedTempSpinBox.setValue(bed_target)
+            
+            # Update tool temperature based on active tool and nozzle configuration
+            if is_dual_nozzle_printer():
+                # For dual nozzle, sync temperature toggle with active extruder
+                active_extruder = getattr(self.main_window.printer_model, 'active_extruder', 0)
+                if hasattr(self, 'toolToggleTemperatureButton'):
+                    self.toolToggleTemperatureButton.setChecked(active_extruder == 1)
+            
+            # Update tool temperature spinbox using helper method
+            self._update_tool_temperature_spinbox()
+            
+        except Exception as e:
+            self.logger.error(f"Error updating spinbox values: {e}")
 
     def apply_nozzle_configuration(self):
         """Hide dual nozzle elements and apply styling for single nozzle configuration."""
@@ -347,24 +378,8 @@ class ControlScreen(QWidget):
         """
         logger.info("ControlScreen.selectToolTemperature started")
         try:
-            # self.toolToggleTemperatureButton.setText(
-            #     "1") if self.toolToggleTemperatureButton.isChecked() else self.toolToggleTemperatureButton.setText("0")
-            if self.toolToggleTemperatureButton.isChecked():
-                print("extruder 1 Temperature")
-                temp_text = self.main_window.home_screen.tool1TargetTemperature.text().replace("°C", "").strip()
-                # Handle empty string or non-numeric values
-                if temp_text and temp_text.replace('.', '', 1).replace('-', '', 1).isdigit():
-                    self.toolTempSpinBox.setProperty("value", float(temp_text))
-                else:
-                    self.toolTempSpinBox.setProperty("value", 0)
-            else:
-                print("extruder 0 Temperature")
-                temp_text = self.main_window.home_screen.tool0TargetTemperature.text().replace("°C", "").strip()
-                # Handle empty string or non-numeric values
-                if temp_text and temp_text.replace('.', '', 1).replace('-', '', 1).isdigit():
-                    self.toolTempSpinBox.setProperty("value", float(temp_text))
-                else:
-                    self.toolTempSpinBox.setProperty("value", 0)
+            # Update the spinbox with the target temperature of the newly selected tool
+            self._update_tool_temperature_spinbox()
         except Exception as e:
             logger.error("Error in ControlScreen.selectToolTemperature: {}".format(e))
             dialog.WarningOk(self, "Error in ControlScreen.selectToolTemperature: {}".format(e), overlay=True)
@@ -423,13 +438,41 @@ class ControlScreen(QWidget):
                 self.toolToggleMotionButton.setChecked(False)
                 self.toolToggleMotionButton.setText("0")
                 self.activeExtruder = 0
+                # For dual nozzle, also update temperature toggle
+                if is_dual_nozzle_printer() and hasattr(self, 'toolToggleTemperatureButton'):
+                    self.toolToggleTemperatureButton.setChecked(False)
             elif activeNozzle == 1:
                 self.toolToggleMotionButton.setChecked(True)
                 self.toolToggleMotionButton.setText("1")
                 self.activeExtruder = 1
+                # For dual nozzle, also update temperature toggle
+                if is_dual_nozzle_printer() and hasattr(self, 'toolToggleTemperatureButton'):
+                    self.toolToggleTemperatureButton.setChecked(True)
+            
+            # Update temperature spinbox to show the correct tool's target temperature
+            self._update_tool_temperature_spinbox()
+            
         except Exception as e:
             logger.error("Error in control_screen.setActiveExtruder: {}".format(e))
             dialog.WarningOk(self, "Error in control_screen.setActiveExtruder: {}".format(e), overlay=True)
+
+    def _update_tool_temperature_spinbox(self):
+        """Helper method to update tool temperature spinbox based on current tool selection."""
+        try:
+            if is_dual_nozzle_printer() and hasattr(self, 'toolToggleTemperatureButton'):
+                if self.toolToggleTemperatureButton.isChecked():
+                    # Tool 1 is selected
+                    tool_target = self.main_window.printer_model.temperatures.get('tool1Target', 0)
+                else:
+                    # Tool 0 is selected
+                    tool_target = self.main_window.printer_model.temperatures.get('tool0Target', 0)
+            else:
+                # Single nozzle, always use tool0
+                tool_target = self.main_window.printer_model.temperatures.get('tool0Target', 0)
+            
+            self.toolTempSpinBox.setValue(tool_target)
+        except Exception as e:
+            self.logger.error(f"Error updating tool temperature spinbox: {e}")
 
     def buttonStatusUpdate(self, status):
         """Update ControlScreen UI elements based on printer status"""
