@@ -138,9 +138,9 @@ class ToolOffset(QWidget):
         try:
             # if float(M218Data[M218Data.index('X') + 1:].split(' ', 1)[0] ) > 0:
             print("____________________TOOL OFFSET CALLED____________________")
-            # self.toolOffsetZ = M218Data[M218Data.index('Z') + 1:].split(' ', 1)[0]
-            # self.toolOffsetX = M218Data[M218Data.index('X') + 1:].split(' ', 1)[0]
-            # self.toolOffsetY = M218Data[M218Data.index('Y') + 1:].split(' ', 1)[0]
+            self.toolOffsetZ = M218Data[M218Data.index('Z') + 1:].split(' ', 1)[0]
+            self.toolOffsetX = M218Data[M218Data.index('X') + 1:].split(' ', 1)[0]
+            self.toolOffsetY = M218Data[M218Data.index('Y') + 1:].split(' ', 1)[0]
             self.toolOffsetXDoubleSpinBox.setValue(float(self.toolOffsetX))
             self.toolOffsetYDoubleSpinBox.setValue(float(self.toolOffsetY))
             self.toolOffsetZDoubleSpinBox.setValue(float(self.toolOffsetZ))
