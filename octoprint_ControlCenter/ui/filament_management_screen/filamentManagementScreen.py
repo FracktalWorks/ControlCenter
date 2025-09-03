@@ -57,7 +57,7 @@ class filamentManagementScreen(QWidget):
         self.tool1MaterialBayXLabel = self.findChild(QLabel, "tool1MaterialBayXLabel")
         self.tool0MaterialBayAStateLabel = self.findChild(QLabel, "tool0MaterialBayAStateLabel")
         self.tool1MaterialBayXStateLabel = self.findChild(QLabel, "tool1MaterialBayXStateLabel")
-        self.tool10MaterialBayAStateColor = self.findChild(QLabel, "tool10MaterialBayAStateColor")
+        self.tool0MaterialBayAStateColor = self.findChild(QLabel, "tool0MaterialBayAStateColor")
         self.tool11MaterialBayXStateColor = self.findChild(QLabel, "tool11MaterialBayXStateColor")
 
         # Edit buttons
@@ -77,7 +77,7 @@ class filamentManagementScreen(QWidget):
             self.changeTool0Button, self.changeTool1Button,
             self.materialNozzleBackButton,
             self.tool0MaterialBayAStateLabel, self.tool1MaterialBayXStateLabel,
-            self.tool10MaterialBayAStateColor, self.tool11MaterialBayXStateColor,
+            self.tool0MaterialBayAStateColor, self.tool11MaterialBayXStateColor,
             self.editTool0MaterialBayA, self.editTool1MaterialBayX
         ], "filamentManagementScreen")
 
@@ -275,8 +275,8 @@ class filamentManagementScreen(QWidget):
                 self.changeTool0MaterialBayA.setText(display_filament)
             if self.tool0MaterialBayAStateLabel:
                 self.tool0MaterialBayAStateLabel.setText(str(status))
-            if self.tool10MaterialBayAStateColor:
-                self.tool10MaterialBayAStateColor.setStyleSheet(self._status_to_style(status))
+            if self.tool0MaterialBayAStateColor:
+                self.tool0MaterialBayAStateColor.setStyleSheet(self._status_to_style(status))
             if self.changeTool0Button:
                 self.changeTool0Button.setText("Unknown" if nozzle == "Unknown" or not nozzle else f"{nozzle} mm")
         elif tool == "tool1":
