@@ -363,43 +363,61 @@ class OctoPrintWebSocket(QThread):
                             self.logger.info(f"Filament not Detected in {sensor}")
                             self.filament_runout_state_signal.emit(sensor, False)
 
-                        if 'Count' in item and ('x' in item or 'y' in item or 'z' in item):
-                            # Parse full position from M114 response: "Count X:123.45 Y:67.89 Z:0.12"
+                        if 'Count' in item or 'Coord' in item:
+                            # Parse full position from M114 response
+                            # Handles both formats:
+                            # - "Count X:123.45 Y:67.89 Z:0.12" (Marlin)
+                            # - "Count Coord(x=300.0, y=10.0, z=10.0, e=0.0)" (Klipper)
                             try:
                                 position = {}
                                 
-                                # Extract X position
-                                if 'x' in item.lower():
-                                    x_start = item.lower().index('x') + 1
-                                    if item[x_start] == ':':
-                                        x_start += 1
-                                    x_end = x_start
-                                    while x_end < len(item) and (item[x_end].isdigit() or item[x_end] in '.-'):
-                                        x_end += 1
-                                    if x_end > x_start:
-                                        position['x'] = float(item[x_start:x_end])
-                                
-                                # Extract Y position  
-                                if 'y' in item.lower():
-                                    y_start = item.lower().index('y') + 1
-                                    if item[y_start] == ':':
-                                        y_start += 1
-                                    y_end = y_start
-                                    while y_end < len(item) and (item[y_end].isdigit() or item[y_end] in '.-'):
-                                        y_end += 1
-                                    if y_end > y_start:
-                                        position['y'] = float(item[y_start:y_end])
-                                
-                                # Extract Z position
-                                if 'z' in item.lower():
-                                    z_start = item.lower().index('z') + 1
-                                    if item[z_start] == ':':
-                                        z_start += 1
-                                    z_end = z_start
-                                    while z_end < len(item) and (item[z_end].isdigit() or item[z_end] in '.-'):
-                                        z_end += 1
-                                    if z_end > z_start:
-                                        position['z'] = float(item[z_start:z_end])
+                                # Check if it's Klipper format with Coord()
+                                if 'Coord(' in item:
+                                    # Klipper format: "Count Coord(x=300.0, y=10.0, z=10.0, e=0.0)"
+                                    coord_match = re.search(r'Coord\(([^)]+)\)', item)
+                                    if coord_match:
+                                        coord_str = coord_match.group(1)
+                                        # Parse x=value, y=value, z=value
+                                        for match in re.finditer(r'([xyz])=([\d.-]+)', coord_str):
+                                            axis = match.group(1)
+                                            value = float(match.group(2))
+                                            # Round to 3 decimal places
+                                            position[axis] = round(value, 3)
+
+                                else:
+                                    # Marlin format: "Count X:123.45 Y:67.89 Z:0.12"
+                                    # Extract X position
+                                    if 'x' in item.lower():
+                                        x_start = item.lower().index('x') + 1
+                                        if item[x_start] == ':':
+                                            x_start += 1
+                                        x_end = x_start
+                                        while x_end < len(item) and (item[x_end].isdigit() or item[x_end] in '.-'):
+                                            x_end += 1
+                                        if x_end > x_start:
+                                            position['x'] = round(float(item[x_start:x_end]), 3)
+                                    
+                                    # Extract Y position  
+                                    if 'y' in item.lower():
+                                        y_start = item.lower().index('y') + 1
+                                        if item[y_start] == ':':
+                                            y_start += 1
+                                        y_end = y_start
+                                        while y_end < len(item) and (item[y_end].isdigit() or item[y_end] in '.-'):
+                                            y_end += 1
+                                        if y_end > y_start:
+                                            position['y'] = round(float(item[y_start:y_end]), 3)
+                                    
+                                    # Extract Z position
+                                    if 'z' in item.lower():
+                                        z_start = item.lower().index('z') + 1
+                                        if item[z_start] == ':':
+                                            z_start += 1
+                                        z_end = z_start
+                                        while z_end < len(item) and (item[z_end].isdigit() or item[z_end] in '.-'):
+                                            z_end += 1
+                                        if z_end > z_start:
+                                            position['z'] = round(float(item[z_start:z_end]), 3)
                                 
                                 # Emit full position update if we got any coordinates
                                 if position:
