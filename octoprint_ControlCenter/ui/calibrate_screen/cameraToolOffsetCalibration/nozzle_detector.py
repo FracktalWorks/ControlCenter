@@ -520,6 +520,213 @@ class NozzleDetector:
             self.logger.info(f"Consistency detection completed in {elapsed:.1f}s")
             return final_position, successful_algorithm
 
+    def ktamv_calib_camera(self, camera_thread, octoprint_client, logger_func=None):
+        """
+        kTAMV Camera Calibration Implementation
+        
+        Performs multiple nozzle detections at different Z heights to calibrate
+        the camera offset and scaling factors.
+        
+        Returns:
+            dict: Calibration results with camera offset and scaling data
+        """
+        if logger_func is None:
+            logger_func = self.logger.info
+            
+        logger_func("Starting kTAMV Camera Calibration...")
+        
+        try:
+            # Calibration parameters (based on kTAMV)
+            z_positions = [10, 20, 30]  # Different Z heights for calibration
+            detection_results = []
+            
+            for i, z_pos in enumerate(z_positions):
+                logger_func(f"Calibration step {i+1}/{len(z_positions)}: Moving to Z{z_pos}")
+                
+                # Move to Z position
+                octoprint_client.gcode(f"G1 Z{z_pos} F1200")
+                time.sleep(2)  # Wait for movement to complete
+                
+                # Detect nozzle at this Z position
+                logger_func(f"Detecting nozzle at Z{z_pos}...")
+                center, algorithm = self.detect_with_consistency(
+                    camera_thread, min_matches=3, timeout=8.0, tolerance=2
+                )
+                
+                if center is not None:
+                    result = {
+                        'z_position': z_pos,
+                        'center': center,
+                        'algorithm': algorithm
+                    }
+                    detection_results.append(result)
+                    logger_func(f"Detection successful at Z{z_pos}: {center} using {algorithm}")
+                else:
+                    logger_func(f"Detection failed at Z{z_pos}")
+                    # Continue with other positions even if one fails
+            
+            # Analyze calibration data
+            if len(detection_results) >= 2:
+                # Calculate camera offset and scaling
+                calib_data = self._analyze_calibration_data(detection_results, logger_func)
+                logger_func("Camera calibration completed successfully!")
+                return calib_data
+            else:
+                error_msg = f"Insufficient calibration data: only {len(detection_results)} valid detections"
+                logger_func(f"Calibration failed: {error_msg}")
+                return {'success': False, 'error': error_msg}
+                
+        except Exception as e:
+            error_msg = f"Camera calibration error: {str(e)}"
+            logger_func(f"Calibration failed: {error_msg}")
+            return {'success': False, 'error': error_msg}
+
+    def _analyze_calibration_data(self, detection_results, logger_func):
+        """Analyze calibration data to compute camera offset and scaling."""
+        try:
+            # Simple implementation - calculate average center position
+            total_x = sum(result['center'][0] for result in detection_results)
+            total_y = sum(result['center'][1] for result in detection_results)
+            count = len(detection_results)
+            
+            avg_center_x = total_x / count
+            avg_center_y = total_y / count
+            
+            # Calculate offset from frame center (320, 240)
+            offset_x = avg_center_x - 320
+            offset_y = avg_center_y - 240
+            
+            # Calculate scaling factor based on Z height variations
+            if count >= 2:
+                # Simple scaling calculation
+                z_range = max(r['z_position'] for r in detection_results) - min(r['z_position'] for r in detection_results)
+                pixel_variation = max(
+                    abs(max(r['center'][0] for r in detection_results) - min(r['center'][0] for r in detection_results)),
+                    abs(max(r['center'][1] for r in detection_results) - min(r['center'][1] for r in detection_results))
+                )
+                scaling_factor = pixel_variation / z_range if z_range > 0 else 1.0
+            else:
+                scaling_factor = 1.0
+            
+            calibration_data = {
+                'success': True,
+                'offset_x': offset_x,
+                'offset_y': offset_y,
+                'scaling_factor': scaling_factor,
+                'average_center': (avg_center_x, avg_center_y),
+                'detection_count': count,
+                'detection_results': detection_results
+            }
+            
+            logger_func(f"Calibration analysis complete:")
+            logger_func(f"  Average center: ({avg_center_x:.1f}, {avg_center_y:.1f})")
+            logger_func(f"  Offset from center: ({offset_x:+.1f}, {offset_y:+.1f}) pixels")
+            logger_func(f"  Scaling factor: {scaling_factor:.3f}")
+            
+            return calibration_data
+            
+        except Exception as e:
+            error_msg = f"Calibration analysis error: {str(e)}"
+            logger_func(f"Analysis failed: {error_msg}")
+            return {'success': False, 'error': error_msg}
+
+    def ktamv_find_nozzle_center(self, camera_thread, octoprint_client, target_center=(320, 240), max_iterations=5, tolerance=5, logger_func=None):
+        """
+        kTAMV Find Nozzle Center Implementation
+        
+        Iteratively moves the nozzle to center it in the camera view.
+        
+        Args:
+            camera_thread: Camera thread for detection
+            octoprint_client: OctoPrint client for movement commands
+            target_center: Target center position in pixels (default: frame center)
+            max_iterations: Maximum number of centering iterations
+            tolerance: Pixel tolerance for "centered" position
+            logger_func: Logger function for debugging output
+            
+        Returns:
+            dict: Centering results
+        """
+        if logger_func is None:
+            logger_func = self.logger.info
+            
+        logger_func("Starting kTAMV Find Nozzle Center...")
+        logger_func(f"Target center: {target_center}, tolerance: {tolerance}px, max iterations: {max_iterations}")
+        
+        try:
+            # Movement scaling factors (pixels to mm)
+            # These may need adjustment based on camera height and resolution
+            pixel_to_mm_x = 0.05  # mm per pixel in X direction
+            pixel_to_mm_y = 0.05  # mm per pixel in Y direction
+            
+            for iteration in range(max_iterations):
+                logger_func(f"Centering iteration {iteration + 1}/{max_iterations}")
+                
+                # Detect current nozzle position
+                center, algorithm = self.detect_with_consistency(
+                    camera_thread, min_matches=2, timeout=5.0, tolerance=2
+                )
+                
+                if center is None:
+                    error_msg = f"Nozzle detection failed during centering iteration {iteration + 1}"
+                    logger_func(error_msg)
+                    return {'success': False, 'error': error_msg, 'iterations': iteration}
+                
+                # Calculate offset from target
+                offset_x = center[0] - target_center[0]
+                offset_y = center[1] - target_center[1]
+                
+                logger_func(f"Current position: {center}, offset: ({offset_x:+.1f}, {offset_y:+.1f})")
+                
+                # Check if within tolerance
+                if abs(offset_x) <= tolerance and abs(offset_y) <= tolerance:
+                    logger_func(f"Nozzle centered successfully in {iteration + 1} iterations!")
+                    return {
+                        'success': True,
+                        'final_position': center,
+                        'final_offset': (offset_x, offset_y),
+                        'iterations': iteration + 1,
+                        'algorithm': algorithm
+                    }
+                
+                # Calculate movement needed (invert Y because camera Y is inverted)
+                move_x = -offset_x * pixel_to_mm_x
+                move_y = offset_y * pixel_to_mm_y  # Note: Y inversion
+                
+                logger_func(f"Moving nozzle: X{move_x:+.2f}mm, Y{move_y:+.2f}mm")
+                
+                # Apply movement limits to prevent large moves
+                max_move = 5.0  # Max 5mm movement per iteration
+                move_x = max(-max_move, min(max_move, move_x))
+                move_y = max(-max_move, min(max_move, move_y))
+                
+                # Execute movement
+                octoprint_client.jog(x=move_x, y=move_y, speed=1000)
+                time.sleep(1.5)  # Wait for movement to complete
+            
+            # Max iterations reached
+            final_center, _ = self.detect_with_consistency(camera_thread, min_matches=1, timeout=3.0)
+            final_offset = (
+                (final_center[0] - target_center[0]) if final_center else 0,
+                (final_center[1] - target_center[1]) if final_center else 0
+            )
+            
+            error_msg = f"Max iterations ({max_iterations}) reached without achieving tolerance"
+            logger_func(f"Centering incomplete: {error_msg}")
+            
+            return {
+                'success': False,
+                'error': error_msg,
+                'iterations': max_iterations,
+                'final_position': final_center,
+                'final_offset': final_offset
+            }
+            
+        except Exception as e:
+            error_msg = f"Nozzle centering error: {str(e)}"
+            logger_func(f"Centering failed: {error_msg}")
+            return {'success': False, 'error': error_msg}
+
 
 class DetectionResult:
     """Container for detection results with metadata."""

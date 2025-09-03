@@ -317,8 +317,8 @@ class CameraToolOffsetCalibration(QWidget):
                 self._perform_printer_positioning()
             
         elif index == self.STEP_CAMERA_FEED:
-            # Step 3: Camera Feed and detection
-            self.nextButton.setText("Detect Nozzle")
+            # Step 3: Camera Feed - ready for kTAMV calibration
+            self.nextButton.setText("Start kTAMV Calibration")
             self.nextButton.setEnabled(True)
             # Stop camera from previous steps if running
             if prev_step != self.STEP_CAMERA_FEED:
@@ -355,13 +355,13 @@ class CameraToolOffsetCalibration(QWidget):
                 self.goto_step(self.STEP_CAMERA_FEED)
                 
             elif self._current_step == self.STEP_CAMERA_FEED:
-                # Step 3: Perform nozzle detection
-                self._perform_nozzle_detection()
+                # Step 3: Start kTAMV calibration directly
+                self._start_ktamv_calibration_direct()
                 
         except Exception as e:
             self.logger.error(f"Error in on_next_clicked: {e}")
             dialog.WarningOk(self, f"Navigation error: {str(e)}", overlay=True)
-            
+
 
     def _perform_printer_positioning(self):
         """Perform printer homing and positioning for step 2."""
@@ -550,6 +550,11 @@ class CameraToolOffsetCalibration(QWidget):
                 self.detection_thread.terminate()
                 self.detection_thread.wait(1000)
             
+            # Cancel any ongoing calibration
+            if hasattr(self, 'calibration_thread') and self.calibration_thread.isRunning():
+                self.calibration_thread.terminate()
+                self.calibration_thread.wait(1000)
+            
             if self.camera_thread and self.camera_thread.isRunning():
                 self.logger.info("Stopping camera thread...")
                 
@@ -722,154 +727,244 @@ class CameraToolOffsetCalibration(QWidget):
             self.logger.error(f"Error moving {axis} axis: {e}")
             dialog.WarningOk(self, f"Movement error: {str(e)}", overlay=True)
 
-    def _perform_nozzle_detection(self):
-        """Perform enhanced nozzle detection on step 3."""
-        if not self.camera_available or not self.camera_thread:
-            dialog.WarningOk(self, "Camera not available for detection", overlay=True)
-            return
-        
-        if not self.nozzle_detector:
-            dialog.WarningOk(self, "Detection system not initialized", overlay=True)
-            return
-        
-        # Disable the next button during detection
-        self.nextButton.setEnabled(False)
-        self.nextButton.setText("Detecting...")
-        
-        # Start detection in a separate thread to avoid blocking UI
-        from PyQt5.QtCore import QThread, pyqtSignal
-        
-        class DetectionThread(QThread):
-            detection_complete = pyqtSignal(object, str)  # (center, algorithm_used)
-            
-            def __init__(self, nozzle_detector, camera_thread):
-                super().__init__()
-                self.nozzle_detector = nozzle_detector
-                self.camera_thread = camera_thread
-            
-            def run(self):
-                try:
-                    # Perform consistency detection (3 matches, 10s timeout, 1px tolerance)
-                    center, algorithm = self.nozzle_detector.detect_with_consistency(
-                        self.camera_thread, min_matches=3, timeout=10.0, tolerance=1
-                    )
-                    self.detection_complete.emit(center, algorithm)
-                except Exception as e:
-                    self.detection_complete.emit(None, f"Detection error: {str(e)}")
-        
-        # Create and start detection thread
-        self.detection_thread = DetectionThread(self.nozzle_detector, self.camera_thread)
-        self.detection_thread.detection_complete.connect(self.on_detection_complete)
-        self.detection_thread.start()
-        
-        # Show progress dialog
-        self.show_detection_progress()
-
-    def show_detection_progress(self):
-        """Show detection progress dialog."""
+    def _start_ktamv_calibration_direct(self):
+        """Start kTAMV camera calibration directly (following original kTAMV approach)."""
         try:
-            self.detection_progress_dialog = dialog.dialog(
-                self, 
-                "Detecting nozzle position...\n\nKeep camera steady for best results.", 
-                buttons=QMessageBox.Cancel,
-                overlay=True,
-                icon=":/Icons/img/icons/information.png"
+            self.logger.info("Starting kTAMV camera calibration directly...")
+            
+            # Disable controls during calibration
+            self._disable_controls_for_calibration()
+            
+            # Start calibration in a separate thread to avoid blocking UI
+            from PyQt5.QtCore import QThread, pyqtSignal
+            
+            class CalibrationThread(QThread):
+                calibration_complete = pyqtSignal(dict)  # Results dictionary
+                calibration_progress = pyqtSignal(str)   # Progress messages
+                
+                def __init__(self, nozzle_detector, camera_thread, octoprint_client, parent_logger):
+                    super().__init__()
+                    self.nozzle_detector = nozzle_detector
+                    self.camera_thread = camera_thread
+                    self.octoprint_client = octoprint_client
+                    self.parent_logger = parent_logger
+                
+                def run(self):
+                    try:
+                        # Custom logger function for thread-safe logging
+                        def thread_logger(message):
+                            self.calibration_progress.emit(message)
+                            self.parent_logger.info(f"[KTAMV_CALIB] {message}")
+                        
+                        # Perform kTAMV camera calibration (this includes detection)
+                        calib_results = self.nozzle_detector.ktamv_calib_camera(
+                            self.camera_thread, 
+                            self.octoprint_client,
+                            logger_func=thread_logger
+                        )
+                        
+                        # If calibration successful, proceed with nozzle centering
+                        if calib_results.get('success', False):
+                            thread_logger("Camera calibration successful! Starting nozzle centering...")
+                            
+                            # Perform nozzle centering
+                            center_results = self.nozzle_detector.ktamv_find_nozzle_center(
+                                self.camera_thread,
+                                self.octoprint_client,
+                                target_center=(320, 240),
+                                max_iterations=5,
+                                tolerance=5,
+                                logger_func=thread_logger
+                            )
+                            
+                            # Combine results
+                            combined_results = {
+                                'calibration': calib_results,
+                                'centering': center_results,
+                                'overall_success': calib_results.get('success', False) and center_results.get('success', False)
+                            }
+                        else:
+                            # Calibration failed
+                            combined_results = {
+                                'calibration': calib_results,
+                                'centering': {'success': False, 'error': 'Calibration failed'},
+                                'overall_success': False
+                            }
+                        
+                        self.calibration_complete.emit(combined_results)
+                        
+                    except Exception as e:
+                        error_results = {
+                            'calibration': {'success': False, 'error': f"Thread error: {str(e)}"},
+                            'centering': {'success': False, 'error': 'Not attempted'},
+                            'overall_success': False
+                        }
+                        self.calibration_complete.emit(error_results)
+            
+            # Create and start calibration thread
+            self.calibration_thread = CalibrationThread(
+                self.nozzle_detector, 
+                self.camera_thread, 
+                self.octoprint_client,
+                self.logger
             )
+            self.calibration_thread.calibration_complete.connect(self._on_ktamv_calibration_complete)
+            self.calibration_thread.calibration_progress.connect(self._on_calibration_progress)
+            self.calibration_thread.start()
             
-            # Connect cancel button to stop detection
-            if hasattr(self.detection_progress_dialog, 'button'):
-                cancel_button = self.detection_progress_dialog.button(QMessageBox.Cancel)
-                if cancel_button:
-                    cancel_button.clicked.connect(self.cancel_detection)
+            # Show progress dialog
+            self._show_calibration_progress()
             
-            self.detection_progress_dialog.show()
-            self.logger.info("Detection progress dialog shown")
         except Exception as e:
-            self.logger.error(f"Error showing detection progress dialog: {e}")
-
-    def cancel_detection(self):
-        """Cancel ongoing detection."""
-        try:
-            if hasattr(self, 'detection_thread') and self.detection_thread.isRunning():
-                self.detection_thread.terminate()
-                self.detection_thread.wait(1000)
-            
-            self.hide_detection_progress()
-            self.restore_next_button()
-            self.logger.info("Detection cancelled by user")
-        except Exception as e:
-            self.logger.error(f"Error cancelling detection: {e}")
-
-    def hide_detection_progress(self):
-        """Hide the detection progress dialog."""
-        try:
-            if hasattr(self, 'detection_progress_dialog') and self.detection_progress_dialog:
-                self.detection_progress_dialog.hide()
-                self.detection_progress_dialog = None
-                self.logger.info("Detection progress dialog hidden")
-        except Exception as e:
-            self.logger.error(f"Error hiding detection progress dialog: {e}")
-
-    def on_detection_complete(self, center, algorithm_or_error):
-        """Handle detection completion."""
-        try:
-            self.hide_detection_progress()
-            self.restore_next_button()
-            
-            if center is not None:
-                # Detection successful
-                x, y = center
-                self.logger.info(f"Enhanced detection successful: {center} using {algorithm_or_error}")
-                
-                # Calculate offset from center (320, 240)
-                center_x, center_y = 320, 240
-                offset_x = x - center_x
-                offset_y = y - center_y
-                
-                # Show success dialog with results
-                message = (f"Nozzle detected successfully!\n\n"
-                          f"Position: ({x}, {y})\n"
-                          f"Offset from center: ({offset_x:+.0f}, {offset_y:+.0f}) pixels\n"
-                          f"Algorithm used: {algorithm_or_error}\n\n"
-                          f"Would you like to proceed with calibration?")
-
-                reply = dialog.YesNo(self, message, overlay=True)
-                if reply == QMessageBox.Yes:
-                    self.proceed_with_calibration(center, algorithm_or_error)
-                
-            else:
-                # Detection failed
-                self.logger.warning(f"Enhanced detection failed: {algorithm_or_error}")
-                dialog.WarningOk(self, f"Nozzle detection failed:\n{algorithm_or_error}\n\nTry adjusting lighting or nozzle position.", overlay=True)
-                
-        except Exception as e:
-            self.logger.error(f"Error handling detection completion: {e}")
-            self.restore_next_button()
+            self.logger.error(f"Error starting kTAMV calibration: {e}")
+            self._enable_controls_after_calibration()
+            dialog.ErrorOk(self, f"Calibration start error:\n{str(e)}", overlay=True)
 
     def restore_next_button(self):
         """Restore Next button to original state."""
         try:
             self.nextButton.setEnabled(True)
-            self.nextButton.setText("Detect Nozzle")
+            self.nextButton.setText("Start kTAMV Calibration")
         except Exception as e:
             self.logger.error(f"Error restoring next button: {e}")
 
-    def proceed_with_calibration(self, center, algorithm_used):
-        """Proceed with calibration using detected center."""
-        self.logger.info(f"Proceeding with calibration using detected center: {center}")
-        
-        # Store detection results for future use
-        self.last_detection = {
-            'center': center,
-            'algorithm': algorithm_used,
-            'timestamp': time.time()
-        }
-        
-        # Show success message
-        dialog.InfoOk(self, f"Detection data saved!\nReady for calibration implementation.", overlay=True)
-        
-        # Future: Implement actual calibration logic here
-        # For now, just show that we have the detection data
+    def _disable_controls_for_calibration(self):
+        """Disable movement controls and next button during calibration."""
+        try:
+            # Disable movement buttons
+            self.moveXPButton.setEnabled(False)
+            self.moveXMButton.setEnabled(False)
+            self.moveYPButton.setEnabled(False)
+            self.moveYMButton.setEnabled(False)
+            
+            # Disable next button
+            self.nextButton.setEnabled(False)
+            self.nextButton.setText("Calibrating...")
+            
+            self.logger.info("Controls disabled for calibration")
+        except Exception as e:
+            self.logger.error(f"Error disabling controls: {e}")
+
+    def _enable_controls_after_calibration(self):
+        """Re-enable controls after calibration is complete."""
+        try:
+            # Re-enable movement buttons
+            self.moveXPButton.setEnabled(True)
+            self.moveXMButton.setEnabled(True)
+            self.moveYPButton.setEnabled(True)
+            self.moveYMButton.setEnabled(True)
+            
+            # Re-enable next button
+            self.nextButton.setEnabled(True)
+            self.nextButton.setText("Next")
+            
+            self.logger.info("Controls re-enabled after calibration")
+        except Exception as e:
+            self.logger.error(f"Error enabling controls: {e}")
+
+    def _show_calibration_progress(self):
+        """Show calibration progress dialog."""
+        try:
+            self.calibration_progress_dialog = dialog.dialog(
+                self, 
+                "Performing kTAMV Camera Calibration...\n\nThis will take a few moments.\nCamera feed will remain live.", 
+                buttons=QMessageBox.Cancel,
+                overlay=True,
+                icon=":/Icons/img/icons/information.png"
+            )
+            
+            # Connect cancel button
+            if hasattr(self.calibration_progress_dialog, 'button'):
+                cancel_button = self.calibration_progress_dialog.button(QMessageBox.Cancel)
+                if cancel_button:
+                    cancel_button.clicked.connect(self._cancel_calibration)
+            
+            self.calibration_progress_dialog.show()
+            self.logger.info("Calibration progress dialog shown")
+        except Exception as e:
+            self.logger.error(f"Error showing calibration progress dialog: {e}")
+
+    def _on_calibration_progress(self, message):
+        """Handle calibration progress updates."""
+        try:
+            # Update progress dialog text if it exists
+            if hasattr(self, 'calibration_progress_dialog') and self.calibration_progress_dialog:
+                current_text = "Performing kTAMV Camera Calibration...\n\n"
+                current_text += f"Latest: {message}\n"
+                current_text += "Camera feed will remain live."
+                self.calibration_progress_dialog.setText(current_text)
+            
+            # Also log to console for debugging
+            print(f"[KTAMV_CALIB] {message}")
+            
+        except Exception as e:
+            self.logger.error(f"Error updating calibration progress: {e}")
+
+    def _cancel_calibration(self):
+        """Cancel ongoing calibration."""
+        try:
+            if hasattr(self, 'calibration_thread') and self.calibration_thread.isRunning():
+                self.calibration_thread.terminate()
+                self.calibration_thread.wait(2000)
+            
+            self._hide_calibration_progress()
+            self._enable_controls_after_calibration()
+            self.logger.info("Calibration cancelled by user")
+        except Exception as e:
+            self.logger.error(f"Error cancelling calibration: {e}")
+
+    def _hide_calibration_progress(self):
+        """Hide the calibration progress dialog."""
+        try:
+            if hasattr(self, 'calibration_progress_dialog') and self.calibration_progress_dialog:
+                self.calibration_progress_dialog.hide()
+                self.calibration_progress_dialog = None
+                self.logger.info("Calibration progress dialog hidden")
+        except Exception as e:
+            self.logger.error(f"Error hiding calibration progress dialog: {e}")
+
+    def _on_ktamv_calibration_complete(self, results):
+        """Handle kTAMV calibration completion."""
+        try:
+            self._hide_calibration_progress()
+            
+            # Store calibration results
+            self.calibration_results = results
+            
+            if results.get('overall_success', False):
+                # Both calibration and centering succeeded
+                calib_data = results['calibration']
+                center_data = results['centering']
+                
+                success_msg = (f"kTAMV Calibration Complete!\n\n"
+                              f"Camera Offset: ({calib_data['offset_x']:+.1f}, {calib_data['offset_y']:+.1f}) pixels\n"
+                              f"Scaling Factor: {calib_data['scaling_factor']:.3f}\n"
+                              f"Nozzle Centered in {center_data['iterations']} iterations\n"
+                              f"Final Position: {center_data['final_position']}")
+                
+                dialog.SuccessOk(self, success_msg, overlay=True)
+                self.logger.info("kTAMV calibration and centering completed successfully")
+                
+                # Enable controls with "Next" button to proceed
+                self._enable_controls_after_calibration()
+                
+            else:
+                # Calibration or centering failed
+                calib_error = results['calibration'].get('error', 'Unknown calibration error')
+                center_error = results['centering'].get('error', 'Unknown centering error')
+                
+                error_msg = f"kTAMV Calibration Failed:\n\nCalibration: {calib_error}\nCentering: {center_error}"
+                dialog.ErrorOk(self, error_msg, overlay=True)
+                self.logger.error(f"kTAMV calibration failed: {error_msg}")
+                
+                # Re-enable controls to allow retry
+                self.restore_next_button()
+                self._enable_controls_after_calibration()
+                
+        except Exception as e:
+            self.logger.error(f"Error handling calibration completion: {e}")
+            self.restore_next_button()
+            self._enable_controls_after_calibration()
 
     def on_cancel_clicked(self):
         """Handle Cancel button click - return to calibrate screen."""
