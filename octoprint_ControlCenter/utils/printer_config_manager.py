@@ -495,19 +495,73 @@ class PrinterConfigManager:
                 
             # Read the template
             with open(source_path, 'r') as f:
-                content = f.read()
+                template_content = f.read()
                 
+            # If preserve_mcu is True and destination file exists, extract MCU config from current file
+            existing_mcu_section = ""
+            existing_save_config_section = ""
+            
+            if preserve_mcu and os.path.exists(dest_path):
+                logger.info(f"Attempting to preserve MCU config from existing file: {dest_path}")
+                try:
+                    with open(dest_path, 'r') as f:
+                        existing_content = f.read()
+                    
+                    # Extract MCU Config section
+                    mcu_start_marker = "########################################\n# MCU Config\n########################################"
+                    save_config_marker = "#*# <---------------------- SAVE_CONFIG ---------------------->"
+                    
+                    logger.debug(f"Looking for MCU marker in existing file...")
+                    logger.debug(f"MCU marker found: {mcu_start_marker in existing_content}")
+                    logger.debug(f"SAVE_CONFIG marker found: {save_config_marker in existing_content}")
+                    
+                    if mcu_start_marker in existing_content:
+                        mcu_start = existing_content.find(mcu_start_marker)
+                        logger.debug(f"MCU marker position: {mcu_start}")
+                        
+                        if save_config_marker in existing_content:
+                            save_config_start = existing_content.find(save_config_marker)
+                            logger.debug(f"SAVE_CONFIG marker position: {save_config_start}")
+                            
+                            if mcu_start != -1 and save_config_start != -1 and mcu_start < save_config_start:
+                                # Extract MCU section (everything between MCU Config marker and SAVE_CONFIG marker)
+                                existing_mcu_section = existing_content[mcu_start:save_config_start].rstrip()
+                                logger.info(f"Extracted existing MCU configuration section ({len(existing_mcu_section)} chars)")
+                                logger.debug(f"MCU section preview: {existing_mcu_section[:200]}...")
+                        
+                        # Extract SAVE_CONFIG section (everything from SAVE_CONFIG marker to end)
+                        if save_config_marker in existing_content:
+                            save_config_start = existing_content.find(save_config_marker)
+                            if save_config_start != -1:
+                                existing_save_config_section = existing_content[save_config_start:]
+                                logger.info(f"Extracted existing SAVE_CONFIG section ({len(existing_save_config_section)} chars)")
+                    else:
+                        logger.warning("MCU Config marker not found in existing file")
+                    
+                except Exception as e:
+                    logger.warning(f"Could not extract existing MCU config: {e}")
+                    # Continue without preserving MCU config
+                    existing_mcu_section = ""
+                    existing_save_config_section = ""
+            else:
+                if not preserve_mcu:
+                    logger.info("MCU preservation disabled")
+                else:
+                    logger.info(f"Destination file does not exist: {dest_path}")
+            
             # Update the include statement to point to the selected printer
-            lines = content.split('\n')
+            template_lines = template_content.split('\n')
             updated_lines = []
             
-            for line in lines:
+            # Process template content, updating printer includes
+            for line in template_lines:
                 if 'PRINTER_' in line and '.cfg' in line:
                     if line.strip().startswith('#'):
                         # This is a commented printer config
                         if f'PRINTER_{selected_printer}.cfg' in line:
-                            # Uncomment this line
-                            updated_lines.append(line.replace('#', '', 1))
+                            # Uncomment this line and remove any leading spaces after #
+                            uncommented = line.replace('#', '', 1).lstrip()
+                            updated_lines.append(uncommented)
                         else:
                             # Keep other printer configs commented
                             updated_lines.append(line)
@@ -519,12 +573,56 @@ class PrinterConfigManager:
                             updated_lines.append('#' + line)
                 else:
                     updated_lines.append(line)
+            
+            # Reconstruct the final content
+            final_content = '\n'.join(updated_lines)
+            
+            # If we have preserved MCU config, replace the template MCU section with the existing one
+            if existing_mcu_section:
+                logger.info("Replacing template MCU section with preserved one")
+                mcu_start_marker = "########################################\n# MCU Config\n########################################"
+                save_config_marker = "#*# <---------------------- SAVE_CONFIG ---------------------->"
+                
+                if mcu_start_marker in final_content:
+                    mcu_start = final_content.find(mcu_start_marker)
+                    logger.debug(f"MCU marker position in template: {mcu_start}")
+                    
+                    if save_config_marker in final_content:
+                        # Replace from MCU Config marker to end with preserved MCU + SAVE_CONFIG
+                        save_config_start = final_content.find(save_config_marker)
+                        logger.debug(f"SAVE_CONFIG marker position in template: {save_config_start}")
+                        if mcu_start != -1 and save_config_start != -1:
+                            # Replace from MCU section to end with preserved sections
+                            final_content = (
+                                final_content[:mcu_start] + 
+                                existing_mcu_section + 
+                                "\n\n" +
+                                existing_save_config_section
+                            )
+                            logger.info("Successfully replaced MCU and SAVE_CONFIG sections")
+                    else:
+                        # No SAVE_CONFIG in template, append preserved MCU section and SAVE_CONFIG
+                        final_content = (
+                            final_content[:mcu_start] + 
+                            existing_mcu_section
+                        )
+                        if existing_save_config_section:
+                            final_content += "\n\n" + existing_save_config_section
+                        logger.info("Appended preserved MCU and SAVE_CONFIG sections")
+            
+            # If we have preserved SAVE_CONFIG section and it's not already included, append it
+            elif existing_save_config_section and "#*# <---------------------- SAVE_CONFIG ---------------------->" not in final_content:
+                final_content += "\n\n" + existing_save_config_section
+                logger.info("Appended preserved SAVE_CONFIG section")
                     
             # Write the updated content
             with open(dest_path, 'w') as f:
-                f.write('\n'.join(updated_lines))
+                f.write(final_content)
                 
-            logger.info(f"Updated printer.cfg for {selected_printer}")
+            if existing_mcu_section:
+                logger.info(f"Updated printer.cfg for {selected_printer} while preserving MCU configuration")
+            else:
+                logger.info(f"Updated printer.cfg for {selected_printer}")
             return True
             
         except Exception as e:
@@ -538,9 +636,14 @@ class PrinterConfigManager:
                 logger.error(f"Firmware path not found: {self.firmware_path}")
                 return False
                 
-            # Copy all .cfg files to Klipper config directory
+            # Copy all .cfg files to Klipper config directory (excluding printer.cfg which needs special handling)
             firmware_files = self.get_firmware_files()
             for file in firmware_files:
+                if file == 'printer.cfg':
+                    # Skip printer.cfg - it will be handled separately with MCU preservation
+                    logger.debug(f"Skipping {file} - will be handled with MCU preservation")
+                    continue
+                    
                 source = os.path.join(self.firmware_path, file)
                 dest = os.path.join(self.klipper_config_path, file)
                 try:
@@ -550,7 +653,7 @@ class PrinterConfigManager:
                     logger.error(f"Error copying {file}: {e}")
                     return False
                     
-            # Update printer.cfg with the selected printer
+            # Update printer.cfg with the selected printer (with MCU preservation)
             source_printer_cfg = os.path.join(self.firmware_path, 'printer.cfg')
             dest_printer_cfg = self.printer_cfg_path
             
