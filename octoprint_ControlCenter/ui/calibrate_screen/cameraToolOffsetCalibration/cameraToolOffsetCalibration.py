@@ -308,8 +308,6 @@ class CameraToolOffsetCalibration(QWidget):
         if self.model:
             self.model.current_position_updated.connect(self.on_position_updated)
 
-        # Start at step 1
-        self.goto_step(self.STEP_CLEAN_NOZZLES)
 
         self.logger.info("CameraToolOffsetCalibration initialized successfully")
 
