@@ -17,14 +17,43 @@ No automatic detection - relies on user manual positioning.
 import os
 import sys
 import time
+import subprocess
 
-# Dynamic OpenCV import
+# Dynamic OpenCV import with automatic installation
 try:
     import cv2
     OPENCV_AVAILABLE = True
 except ImportError:
     OPENCV_AVAILABLE = False
-    print("OpenCV not available - camera functionality will be limited")
+    print("OpenCV not found. Attempting to install...")
+    
+    try:
+        # For Raspberry Pi - use prebuilt package to avoid long compilation
+        print("Installing OpenCV using apt (prebuilt package)...")
+        subprocess.check_call(['sudo', 'apt', 'update'])
+        subprocess.check_call(['sudo', 'apt', 'install', '-y', 'python3-opencv'])
+        import cv2
+        OPENCV_AVAILABLE = True
+        print("✓ OpenCV installed successfully from apt!")
+    except subprocess.CalledProcessError:
+        # Fallback to pip if apt fails
+        try:
+            print("Apt installation failed, trying pip as fallback...")
+            subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'opencv-python'])
+            import cv2
+            OPENCV_AVAILABLE = True
+            print("✓ OpenCV installed successfully with pip!")
+        except subprocess.CalledProcessError:
+            # Final fallback with sudo pip
+            try:
+                subprocess.check_call(['sudo', 'pip3', 'install', 'opencv-python'])
+                import cv2
+                OPENCV_AVAILABLE = True
+                print("✓ OpenCV installed successfully with sudo pip!")
+            except (subprocess.CalledProcessError, FileNotFoundError) as e:
+                print(f"Failed to automatically install OpenCV: {e}")
+                print("Please install it manually with: sudo apt install python3-opencv or pip install opencv-python")
+                OPENCV_AVAILABLE = False
 
 from PyQt5 import uic, QtCore, QtGui
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel, QMessageBox
