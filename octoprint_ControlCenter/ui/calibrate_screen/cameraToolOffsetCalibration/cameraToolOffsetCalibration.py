@@ -98,8 +98,8 @@ class CameraThread(QThread):
                 self.cap = None
                 time.sleep(0.5)  # Give time for camera to be released
             
-            # Use V4L2 for Linux USB cameras
-            self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
+            # Try V4L2 for Linux USB cameras first, fallback to default
+            self.cap = cv2.VideoCapture(self.camera_index)
             
             if not self.cap.isOpened():
                 self.connectionError.emit(f"USB camera {self.camera_index} not found or in use by another application")
@@ -442,7 +442,12 @@ class CameraToolOffsetCalibration(QWidget):
             
             # Setup camera if not already running
             if not self.camera_thread or not self.camera_thread.isRunning():
-                self._try_connect_camera()
+                # Check for USB camera availability first
+                if not self.check_usb_camera_available():
+                    dialog.WarningOk(self, "Please connect a USB calibration camera to a USB port and try again", overlay=True)
+                    return
+                # Start camera with the working method
+                self.start_camera()
             
             # Set zoom level
             if self.camera_thread:
@@ -459,52 +464,109 @@ class CameraToolOffsetCalibration(QWidget):
             self.logger.error(f"Error setting up positioning step: {e}")
             dialog.WarningOk(self, f"Error setting up positioning: {e}")
 
-    def _try_connect_camera(self):
-        """Try to connect to USB cameras specifically (not CSI cameras)."""
+    def start_camera(self):
+        """Initialize and start the camera feed."""
         if not OPENCV_AVAILABLE:
-            dialog.WarningOk(self, "OpenCV not available for camera operations")
-            return False
-        
-        # Stop existing camera thread if running
-        if hasattr(self, 'camera_thread') and self.camera_thread:
-            self.camera_thread.stop()
-            self.camera_thread = None
-        
-        # Find USB cameras specifically
-        usb_camera_indices = self._find_usb_cameras()
-        
-        if not usb_camera_indices:
-            self.logger.error("No USB cameras detected")
-            dialog.WarningOk(self, 
-                "No USB cameras detected. Please ensure:\n"
-                "• USB calibration camera is connected\n"
-                "• Camera is not in use by another application\n"
-                "• Camera drivers are installed properly")
-            return False
-        
-        # Try each detected USB camera
-        for camera_index in usb_camera_indices:
-            self.logger.info(f"Trying USB camera at index {camera_index}...")
+            self.show_camera_error("OpenCV not available - install opencv-python")
+            return
             
-            # Test camera connection before creating thread
-            if self._test_camera_connection(camera_index):
-                self.logger.info(f"USB camera connected successfully at index {camera_index}")
-                
-                # Create and start camera thread
+        try:
+            self.logger.info("Starting camera feed...")
+            
+            # Try to find an available camera
+            camera_index = self.find_available_camera()
+            
+            if camera_index is not None:
                 self.camera_thread = CameraThread(camera_index)
                 self.camera_thread.changePixmap.connect(self._update_camera_feed)
                 self.camera_thread.connectionError.connect(self._on_camera_error)
                 self.camera_thread.start()
+                self.logger.info(f"Camera started successfully on index {camera_index}")
                 
-                # Give thread time to start
+                # Give camera time to initialize
                 QTimer.singleShot(1000, self._check_camera_status)
-                return True
-        
-        # No working USB camera found
-        self.logger.error("No working USB cameras found")
-        dialog.WarningOk(self, "USB cameras detected but none are working properly. Please check camera connections.")
-        return False
+            else:
+                self.show_camera_error("No USB camera detected")
+                
+        except Exception as e:
+            self.logger.error(f"Error starting camera: {e}")
+            self.show_camera_error(f"Camera error: {str(e)}")
+
+    def show_camera_error(self, message):
+        """Show camera error message."""
+        try:
+            if hasattr(self, 'webCamFeed') and self.webCamFeed:
+                self.webCamFeed.setText(f"Camera Error:\n{message}")
+                self.webCamFeed.setStyleSheet("""
+                    QLabel {
+                        color: rgb(255, 100, 100);
+                        background-color: rgb(60, 60, 60);
+                        border: 2px solid rgb(150, 100, 100);
+                        border-radius: 5px;
+                        font-size: 12px;
+                        text-align: center;
+                    }
+                """)
+        except Exception as e:
+            self.logger.error(f"Error showing camera error: {e}")
     
+    def check_usb_camera_available(self):
+        """Check if a USB camera is available before starting the camera screen."""
+        if not OPENCV_AVAILABLE:
+            self.logger.warning("OpenCV not available, cannot detect cameras")
+            return False
+        
+        self.logger.info("Checking for USB camera before opening camera calibration")
+        
+        try:
+            # Check indices 1-5 first (USB cameras typically start at 1 if CSI is at 0)
+            for i in range(1, 6):
+                if self._test_camera_index(i):
+                    self.logger.info(f"USB camera found at index {i}")
+                    return True
+            
+            # If no cameras found at 1+, check index 0 but assume it might be USB
+            if self._test_camera_index(0):
+                self.logger.info("Camera found at index 0 (assuming USB)")
+                return True
+                
+            self.logger.warning("No USB camera detected")
+            return False
+            
+        except Exception as e:
+            self.logger.error(f"Error detecting USB camera: {e}")
+            return False
+
+    def find_available_camera(self):
+        """Find the first available USB camera index (prioritizing USB over CSI)."""
+        if not OPENCV_AVAILABLE:
+            return None
+        
+        # Check indices 1-5 first (USB cameras typically start at 1 if CSI is at 0)
+        for i in range(1, 6):
+            if self._test_camera_index(i):
+                self.logger.info(f"Found USB camera at index {i}")
+                return i
+        
+        # If no cameras found at 1+, check index 0 but assume it might be CSI
+        if self._test_camera_index(0):
+            self.logger.info("Found camera at index 0 (may be CSI or USB)")
+            return 0
+            
+        return None
+
+    def _test_camera_index(self, index):
+        """Test if a camera at the given index is accessible - EXACT ORIGINAL METHOD."""
+        try:
+            cap = cv2.VideoCapture(index)
+            if cap.isOpened():
+                ret, _ = cap.read()
+                cap.release()
+                return ret
+            return False
+        except Exception:
+            return False
+
     def _find_usb_cameras(self):
         """Find USB cameras on Linux, excluding CSI cameras."""
         usb_cameras = []
@@ -540,8 +602,8 @@ class CameraToolOffsetCalibration(QWidget):
                         # Check if it's a USB device (look for usb in the info)
                         # Exclude CSI cameras explicitly
                         if 'usb' in info and 'csi' not in info and 'bcm2835' not in info:
-                            # Double-check by testing OpenCV connection with V4L2
-                            cap = cv2.VideoCapture(index, cv2.CAP_V4L2)
+                            # Double-check by testing OpenCV connection
+                            cap = cv2.VideoCapture(index)
                             if cap.isOpened():
                                 ret, frame = cap.read()
                                 if ret and frame is not None:
@@ -556,7 +618,7 @@ class CameraToolOffsetCalibration(QWidget):
                 except FileNotFoundError:
                     self.logger.debug("v4l2-ctl not available, using fallback detection")
                     # Fallback: test OpenCV connection and assume USB if working
-                    cap = cv2.VideoCapture(index, cv2.CAP_V4L2)
+                    cap = cv2.VideoCapture(index)
                     if cap.isOpened():
                         ret, frame = cap.read()
                         if ret and frame is not None:
@@ -568,10 +630,10 @@ class CameraToolOffsetCalibration(QWidget):
                     
         except Exception as e:
             self.logger.debug(f"Linux USB camera detection failed: {e}")
-            # Final fallback: try standard indices with V4L2
+            # Final fallback: try standard indices with default backend
             for i in [0, 1, 2]:
                 try:
-                    cap = cv2.VideoCapture(i, cv2.CAP_V4L2)
+                    cap = cv2.VideoCapture(i)
                     if cap.isOpened():
                         ret, frame = cap.read()
                         if ret and frame is not None:
@@ -590,8 +652,8 @@ class CameraToolOffsetCalibration(QWidget):
             return False
             
         try:
-            # Use V4L2 backend for Linux USB cameras
-            cap = cv2.VideoCapture(camera_index, cv2.CAP_V4L2)
+            # Use default backend like original working code
+            cap = cv2.VideoCapture(camera_index)
             
             if cap.isOpened():
                 # Test reading multiple frames to ensure stable connection
@@ -667,8 +729,11 @@ class CameraToolOffsetCalibration(QWidget):
         msg.exec_()
         
         if msg.clickedButton() == retry_button:
-            # Try to reconnect
-            QTimer.singleShot(500, self._try_connect_camera)
+            # Try to reconnect using working camera detection
+            if self.check_usb_camera_available():
+                QTimer.singleShot(500, self.start_camera)
+            else:
+                dialog.WarningOk(self, "Please connect a USB calibration camera and try again", overlay=True)
         elif msg.clickedButton() == skip_button:
             # Continue without camera - show placeholder
             self._show_camera_placeholder()
