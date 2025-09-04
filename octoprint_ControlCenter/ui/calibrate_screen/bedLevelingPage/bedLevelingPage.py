@@ -101,7 +101,7 @@ class BedLeveling(QWidget):
         """Reset to quickStep1Page whenever this widget is shown."""
         super().showEvent(event)
         try:
-            self.stackedWidget.setCurrentWidget(self.quickStep1Page)
+            self.quickStep1()
             self.logger.debug("Reset stacked widget to quickStep1Page on show")
         except Exception as e:
             self.logger.error(f"Error resetting to quickStep1Page: {e}")
