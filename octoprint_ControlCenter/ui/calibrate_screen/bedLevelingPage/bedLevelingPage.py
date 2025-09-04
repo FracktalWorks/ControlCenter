@@ -285,7 +285,7 @@ class BedLeveling(QWidget):
                 self.octoprint_client.gcode(command='M114')
             
             self.octoprint_client.jog(z=4, absolute=True, speed=1500)
-            self.octoprint_client.gcode(command='T0')
+            self.octoprint_client.home(['x', 'y', 'z'])
 
             self.main_window.calibrate_screen.show_calibrate_screen()
             self.octoprint_client.gcode(command='M104 S0')
