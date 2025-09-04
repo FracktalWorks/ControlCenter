@@ -155,13 +155,13 @@ class ChangeFilamentWizard(QWidget):
         """On show, reset to landing page to ensure a known state."""
         super().showEvent(event)
         try:
-            self.stackedWidget.setCurrentWidget(self.changeFilamentPage)
+            self.changeFilament()
             self.logger.debug("Reset stacked widget to changeFilamentPage on show")
         except Exception as e:
             self.logger.error(f"Error resetting to changeFilamentPage: {e}")
 
     def changeFilament(self):
-        """Initialize landing page and populate material options.
+        """Initialize landing page and populate material options.   
 
         Resets operation flags, homes if safe, selects the active tool,
         and prepares the material selection list.

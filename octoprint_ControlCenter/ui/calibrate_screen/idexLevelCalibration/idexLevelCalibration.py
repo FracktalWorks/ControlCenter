@@ -89,16 +89,7 @@ class IdexLevelCalibration(QWidget):
         """Reset to the first step when the widget is shown and ensure GIF is loaded."""
         super().showEvent(event)
         try:
-            self.stackedWidget.setCurrentWidget(self.idexConfigStep1Page)
-            # Lazily load and start the Step 1 GIF without triggering printer motions
-            if getattr(self, "movie1", None) is None:
-                gif_path = os.path.join(os.path.dirname(__file__), "resources", "Nozzlelevel1.gif")
-                if not os.path.exists(gif_path):
-                    self.logger.error(f"IDEX Calibration GIF missing: {gif_path}")
-                else:
-                    self.movie1 = QtGui.QMovie(gif_path)
-                    self.NozzleLevel1.setMovie(self.movie1)
-                    self.movie1.start()
+            self.idexConfigStep1()
             self.logger.info("IdexLevelCalibration showEvent: Reset to idexConfigStep1Page")
         except Exception as e:
             self.logger.error(f"Error in IdexLevelCalibration showEvent: {e}")

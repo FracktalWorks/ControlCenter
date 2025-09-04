@@ -198,7 +198,7 @@ class NozzleChangeWizard(QWidget):
 		super().showEvent(event)
 		# Match ChangeFilamentWizard: keep showEvent light and only reset the UI
 		try:
-			self.goto_step(self.STEP_INTRO)
+			self.changeNozzle()
 			self.logger.debug("Reset stacked widget to step 1 on show")
 		except Exception as e:
 			self.logger.warning(f"Error resetting wizard on show: {e}")
