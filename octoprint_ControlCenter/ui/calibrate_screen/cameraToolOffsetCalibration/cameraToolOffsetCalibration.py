@@ -313,6 +313,15 @@ class CameraToolOffsetCalibration(QWidget):
 
         self.logger.info("CameraToolOffsetCalibration initialized successfully")
 
+    def showEvent(self, event):
+        """Reset the wizard UI to Step 1 each time the widget is shown."""
+        super().showEvent(event)
+        try:
+            self.goto_step(self.STEP_CLEAN_NOZZLES)
+            self.logger.debug("Reset wizard to step 1 on show")
+        except Exception as e:
+            self.logger.warning(f"Error resetting wizard on show: {e}")
+
     def goto_step(self, index: int):
         """Switch to the given step index and run step-entry hooks."""
         index = max(0, min(index, self.TOTAL_STEPS - 1))
@@ -851,25 +860,20 @@ class CameraToolOffsetCalibration(QWidget):
             dialog.WarningOk(self, f"Error applying tool offsets: {e}")
 
     def on_cancel_clicked(self):
-        """Handle cancel button clicks."""
+        """Handle cancel button clicks and return to main calibrate screen."""
         try:
             # Stop camera thread
             if self.camera_thread and self.camera_thread.isRunning():
                 self.camera_thread.stop()
             
-            # Return to main calibrate screen
-            if hasattr(self.main_window, 'show_calibrate_screen'):
-                self.main_window.show_calibrate_screen()
-            elif hasattr(self.main_window, 'stackedWidget'):
-                # Find calibrate screen index and switch to it
-                for i in range(self.main_window.stackedWidget.count()):
-                    widget = self.main_window.stackedWidget.widget(i)
-                    if hasattr(widget, 'objectName') and 'calibrate' in widget.objectName().lower():
-                        self.main_window.stackedWidget.setCurrentIndex(i)
-                        break
+            # Return to main calibrate screen (similar to NozzleChangeWizard pattern)
+            self.main_window.calibrate_screen.show_calibrate_screen()
                         
         except Exception as e:
             self.logger.error(f"Error in cancel handler: {e}")
+            # Even if there's an error, try to return to calibrate screen
+            self.main_window.calibrate_screen.show_calibrate_screen()
+
 
     def cleanup(self):
         """Cleanup resources when widget is destroyed."""
