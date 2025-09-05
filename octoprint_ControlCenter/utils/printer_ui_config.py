@@ -30,7 +30,8 @@ DUAL_NOZZLE_ELEMENTS = {
         'tool1MaterialBayXLabel'
     ],
     'calibrate_screen': [
-        'idexCalibrationWizardButton', 'toolOffsetZButton', 'toolOffsetXYButton'
+        'idexCalibrationWizardButton', 'toolOffsetZButton', 'toolOffsetXYButton',
+        'cameraToolOffsetCalibrateButton', 'toolZOffsetWizardButton'
     ]
 }
 

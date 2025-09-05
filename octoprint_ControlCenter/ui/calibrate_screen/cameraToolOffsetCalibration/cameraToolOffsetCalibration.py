@@ -55,260 +55,19 @@ except ImportError:
                 print("Please install it manually with: sudo apt install python3-opencv or pip install opencv-python")
                 OPENCV_AVAILABLE = False
 
-from PyQt5 import uic, QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel, QMessageBox, QProgressDialog
+from PyQt5 import uic, QtCore, QtWidgets
+from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel, QMessageBox
 import time
-import traceback
 
-# Additional PyQt5 imports for loading dialog
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QProgressBar
-from PyQt5.QtCore import QTimer, QThread, pyqtSignal, QMutex, QWaitCondition
+# Additional PyQt5 imports
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout
+from PyQt5.QtCore import QTimer, QThread, pyqtSignal, QMutex
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QPen
 from PyQt5.QtCore import Qt
 
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
 from utils import dialog
-
-
-class CameraSystem(QThread):
-    """Unified camera management system combining detection, thread management, and UI feedback."""
-    
-    # Signals for camera events
-    camera_found = pyqtSignal(int)      # Emits camera index when found
-    camera_failed = pyqtSignal()        # Emits when camera initialization fails
-    frame_ready = pyqtSignal(QImage)    # Emits processed camera frames
-    connection_error = pyqtSignal(str)  # Emits connection errors
-    
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.logger = get_logger(self.__class__.__name__)
-        self.camera_thread = None
-        self.available_indices = []
-        self.should_stop = False
-        self.zoom_factor = 1.0
-        self.detection_mode = False  # True when running camera detection
-        
-    def find_working_camera(self):
-        """Find working camera using unified detection logic with enhanced V4L2 support."""
-        if not OPENCV_AVAILABLE:
-            print("ERROR: OpenCV not available")
-            return None
-            
-        try:
-            import cv2
-            import time
-            
-            print("Starting camera detection...")
-            
-            # Test camera indices in order of preference
-            test_indices = [1, 0, 2, 3]  # USB cameras typically at index 1
-            
-            for index in test_indices:
-                print(f"Testing camera at index {index}...")
-                if self._test_camera_at_index(index):
-                    print(f"SUCCESS: Found working camera at index {index}")
-                    return index
-                else:
-                    print(f"Camera at index {index} not working")
-                    
-            print("WARNING: No working camera found after testing all indices")
-            return None
-            
-        except Exception as e:
-            print(f"ERROR: Camera detection failed: {e}")
-            return None
-    
-    def _test_camera_at_index(self, index):
-        """Test if camera at given index is working with enhanced V4L2 support."""
-        try:
-            import cv2
-            import time
-            
-            print(f"  Testing camera at index {index}...")
-            
-            # For V4L2 cameras, try CAP_V4L2 backend if available, otherwise use default
-            try:
-                cap = cv2.VideoCapture(index, cv2.CAP_V4L2)
-                print(f"  Using V4L2 backend for camera {index}")
-            except (AttributeError, Exception):
-                cap = cv2.VideoCapture(index)
-                print(f"  Using default backend for camera {index}")
-            
-            # Give V4L2 cameras more time to initialize
-            time.sleep(0.3)
-            
-            # Don't rely on cap.isOpened() for V4L2 cameras - it's unreliable
-            success_count = 0
-            valid_frames = 0
-            
-            # Try multiple frame reads for stability with longer timeouts
-            for attempt in range(5):  # Increased attempts for V4L2
-                try:
-                    ret, frame = cap.read()
-                    if ret and frame is not None:
-                        # Check if frame has valid data
-                        if hasattr(frame, 'shape') and len(frame.shape) >= 2:
-                            height, width = frame.shape[:2]
-                            if height > 0 and width > 0 and frame.size > 0:
-                                valid_frames += 1
-                                print(f"  Camera {index} valid frame {valid_frames}: {width}x{height}")
-                                
-                                # If we get even 1 valid frame, camera is working
-                                if valid_frames >= 1:
-                                    success_count = valid_frames
-                                    break
-                except Exception as e:
-                    print(f"  Camera {index} read attempt {attempt + 1} failed: {e}")
-                
-                time.sleep(0.2)  # Longer delay for V4L2 cameras
-            
-            # Cleanup
-            try:
-                cap.release()
-            except Exception as e:
-                print(f"  Warning: Error releasing camera {index}: {e}")
-            
-            time.sleep(0.3)  # Allow camera to be released properly
-            
-            if success_count > 0:
-                print(f"  SUCCESS: Camera {index} is working ({success_count} valid frames)")
-                return True
-            else:
-                print(f"  FAILED: Camera {index} - no valid frames captured")
-                return False
-                
-        except Exception as e:
-            print(f"  ERROR: Camera {index} test exception: {e}")
-            try:
-                if 'cap' in locals():
-                    cap.release()
-            except:
-                pass
-            return False
-    
-    def start_camera_detection(self):
-        """Start background camera detection."""
-        if self.isRunning():
-            return
-        
-        self.detection_mode = True
-        self.should_stop = False
-        self.start()
-    
-    def start_camera_feed(self, camera_index):
-        """Start camera feed with given index."""
-        try:
-            # Stop any existing camera
-            self.stop_camera()
-            
-            # Create new camera thread
-            self.camera_thread = CameraThread(camera_index)
-            self.camera_thread.changePixmap.connect(self.frame_ready.emit)
-            self.camera_thread.connectionError.connect(self.connection_error.emit)
-            self.camera_thread.start()
-            
-            self.logger.info(f"Camera feed started on index {camera_index}")
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Failed to start camera feed: {e}")
-            self.connection_error.emit(f"Failed to start camera feed: {e}")
-            return False
-    
-    def set_zoom(self, factor):
-        """Set zoom factor for camera feed."""
-        self.zoom_factor = factor
-        if self.camera_thread:
-            self.camera_thread.set_zoom(factor)
-    
-    def stop_camera(self):
-        """Stop camera thread safely."""
-        try:
-            if self.camera_thread and self.camera_thread.isRunning():
-                # Disconnect signals first to prevent crashes during shutdown
-                try:
-                    self.camera_thread.changePixmap.disconnect()
-                    self.camera_thread.connectionError.disconnect()
-                except TypeError:
-                    # Signals already disconnected
-                    pass
-                
-                # Stop the thread
-                self.camera_thread.stop()
-                
-                # Wait for thread to finish, then delete
-                if not self.camera_thread.wait(3000):  # 3 second timeout
-                    self.logger.warning("Camera thread did not stop cleanly, terminating")
-                    self.camera_thread.terminate()
-                    self.camera_thread.wait(1000)
-                
-                # Clean up thread reference
-                self.camera_thread = None
-                self.logger.info("Camera stopped successfully")
-        except Exception as e:
-            self.logger.error(f"Error stopping camera: {e}")
-            # Force cleanup even if there was an error
-            self.camera_thread = None
-    
-    def stop_detection(self):
-        """Stop camera detection."""
-        self.should_stop = True
-        if self.detection_mode and self.isRunning():
-            self.wait(1000)
-    
-    def run(self):
-        """Background camera detection thread."""
-        if not self.detection_mode:
-            return
-            
-        try:
-            if not OPENCV_AVAILABLE:
-                self.camera_failed.emit()
-                return
-            
-            import time
-            
-            # Find working camera
-            camera_index = self.find_working_camera()
-            
-            if camera_index is not None and not self.should_stop:
-                print(f"CameraSystem: Found working camera at index {camera_index}")
-                self.camera_found.emit(camera_index)
-            else:
-                # Try fallback with longer delay for V4L2 cameras
-                if not self.should_stop:
-                    print("CameraSystem: Trying V4L2 fallback with longer delay...")
-                    time.sleep(0.5)  # Give V4L2 cameras more time
-                    
-                    camera_index = self.find_working_camera()
-                    if camera_index is not None:
-                        print(f"CameraSystem: V4L2 fallback found camera at index {camera_index}")
-                        self.camera_found.emit(camera_index)
-                    else:
-                        print("CameraSystem: No working camera found after fallback")
-                        self.camera_failed.emit()
-                else:
-                    self.camera_failed.emit()
-            
-        except Exception as e:
-            print(f"CameraSystem: Critical error: {e}")
-            self.camera_failed.emit()
-        finally:
-            self.detection_mode = False
-    
-    def is_camera_running(self):
-        """Check if camera is currently running."""
-        return (self.camera_thread and 
-                self.camera_thread.isRunning() and 
-                hasattr(self.camera_thread, 'cap') and 
-                self.camera_thread.cap and 
-                self.camera_thread.cap.isOpened())
-    
-    def cleanup(self):
-        """Cleanup all camera resources."""
-        self.stop_detection()
-        self.stop_camera()
 
 
 class CameraThread(QThread):
@@ -562,6 +321,8 @@ class CameraToolOffsetCalibration(QWidget):
         self.camera_thread = None
         self.camera_available = False
         self.camera_setup_in_progress = False
+        self._camera_skipped = False  # Track if user chose to skip camera
+        self.loading_dialog = None  # Dialog for camera loading
         
         # Positioning state
         self.tool0_position = None
@@ -803,15 +564,6 @@ class CameraToolOffsetCalibration(QWidget):
         except Exception as e:
             self.logger.error(f"Error configuring camera: {e}")
 
-    def _find_working_camera_direct(self):
-        """Find working camera using simple detection."""
-        return self.find_available_camera()
-
-    def _attempt_camera_connection_with_loading(self):
-        """Legacy method - redirect to new implementation with loading dialog."""
-        print("Using legacy camera connection method - redirecting to new implementation")
-        self.start_camera_with_loading_dialog()
-
     def _on_camera_connection_success(self, camera_index):
         """Handle successful camera connection with segfault protection."""
         try:
@@ -828,9 +580,6 @@ class CameraToolOffsetCalibration(QWidget):
             # Clear any placeholder content
             self._clear_no_camera_layout()
             
-            # Safely connect camera feed signals (prevent duplicates and segfaults)
-            self._safe_connect_camera_feed_signals()
-            
             # Proceed to next step
             self.goto_step(self.STEP_POSITION_T0_COURSE)
                 
@@ -842,10 +591,6 @@ class CameraToolOffsetCalibration(QWidget):
                 self.connecting_dialog = None
             self._on_camera_connection_failed()
     
-    def _safe_connect_camera_feed_signals(self):
-        """This method is no longer needed with simple camera thread approach."""
-        pass
-
     def _on_camera_connection_failed(self):
         """Handle failed camera connection with retry dialog."""
         try:
@@ -864,18 +609,18 @@ class CameraToolOffsetCalibration(QWidget):
             
             if result == "retry":
                 # User wants to retry - attempt connection again with small delay
-                print("User chose to retry camera connection")
+                self.logger.info("User chose to retry camera connection")
                 QTimer.singleShot(500, self.start_camera_with_loading_dialog)
             elif result == "skip":
                 # Continue without camera
-                print("User chose to skip camera setup")
+                self.logger.info("User chose to skip camera setup")
                 self.camera_available = False
                 self._camera_skipped = True
                 self._show_camera_placeholder()
                 self.goto_step(self.STEP_POSITION_T0_COURSE)
             else:
                 # User cancelled - stay on current step
-                print("User cancelled camera setup")
+                self.logger.info("User cancelled camera setup")
                 pass
                 
         except Exception as e:
@@ -1111,10 +856,6 @@ class CameraToolOffsetCalibration(QWidget):
         self.webCamFeed.setPixmap(placeholder)
         self.logger.info("Showing camera placeholder - manual positioning mode")
 
-    def _on_camera_found(self, camera_index):
-        """Legacy method - redirect to new success handler."""
-        self._on_camera_connection_success(camera_index)
-    
     def _clear_no_camera_layout(self):
         """Clear the no-camera layout if it exists."""
         try:
@@ -1133,162 +874,9 @@ class CameraToolOffsetCalibration(QWidget):
         except Exception as e:
             self.logger.error(f"Error clearing no-camera layout: {e}")
 
-    def _find_working_camera_direct(self):
-        """Direct camera detection fallback using simple detection."""
-        return self.find_available_camera()
-
     def _on_camera_failed(self):
         """Legacy method - redirect to new failure handler."""
         self._on_camera_connection_failed()
-    
-    def _show_camera_placeholder(self):
-        """Show placeholder when camera is not available."""
-        if hasattr(self, 'webCamFeed') and self.webCamFeed:
-            # Create a layout for the camera feed area
-            layout = QVBoxLayout(self.webCamFeed)
-            
-            # Message label
-            message_label = QLabel("Camera not available")
-            message_label.setStyleSheet("""
-                QLabel {
-                    color: rgb(200, 200, 200);
-                    background-color: transparent;
-                    font-size: 14px;
-                    font-weight: bold;
-                    padding: 10px;
-                    qproperty-alignment: AlignCenter;
-                }
-            """)
-            
-            # Instruction label
-            instruction_label = QLabel("You can continue with manual positioning\nor retry camera connection")
-            instruction_label.setStyleSheet("""
-                QLabel {
-                    color: rgb(150, 150, 150);
-                    background-color: transparent;
-                    font-size: 11px;
-                    padding: 5px;
-                    qproperty-alignment: AlignCenter;
-                }
-            """)
-            
-            # Retry button
-            retry_button = QPushButton("Retry Camera")
-            retry_button.clicked.connect(self.start_camera_with_loading_dialog)
-            retry_button.setStyleSheet("""
-                QPushButton {
-                    border: 1px solid rgb(87, 87, 87);
-                    background-color: qlineargradient(spread: pad, x1: 0, y1: 1, x2: 0, y2: 0.188, stop: 0 rgba(180, 180, 180, 255), stop: 1 rgba(255, 255, 255, 255));
-                    height: 50px;
-                    width: 120px;
-                    border-radius: 5px;
-                    font: 12pt "Gotham";
-                    color: rgb(50, 50, 50);
-                }
-                QPushButton:pressed {
-                    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #dadbde, stop: 1 #f6f7fa);
-                }
-                QPushButton:focus {
-                    outline: none;
-                }
-            """)
-            
-            layout.addStretch()
-            layout.addWidget(message_label)
-            layout.addWidget(instruction_label)
-            layout.addWidget(retry_button)
-            layout.addStretch()
-            
-        # Set camera feed area style
-        self.webCamFeed.setStyleSheet("""
-            QLabel {
-                background-color: rgb(60, 60, 60);
-                border: 2px solid rgb(100, 100, 100);
-                border-radius: 5px;
-            }
-        """)
-
-    def _handle_camera_setup_cancelled(self):
-        """Handle when user cancels camera setup."""
-        self.logger.info("Camera setup cancelled by user")
-        # Allow user to continue without camera
-        self.camera_available = False
-        self._camera_skipped = True  # Mark that user chose to skip camera
-        
-        # Update next button state to allow proceeding
-        self._update_next_button_state()
-        
-        # Show no-camera message in camera feed area with retry option
-        if hasattr(self, 'webCamFeed') and self.webCamFeed:
-            # Create a layout for the camera feed area if it doesn't have one
-            if not self.webCamFeed.layout():
-                layout = QVBoxLayout(self.webCamFeed)
-                
-                # Message label
-                message_label = QLabel("Camera not available")
-                message_label.setStyleSheet("""
-                    QLabel {
-                        color: rgb(200, 200, 200);
-                        background-color: transparent;
-                        font-size: 14px;
-                        font-weight: bold;
-                        padding: 10px;
-                        qproperty-alignment: AlignCenter;
-                    }
-                """)
-                
-                # Instruction label
-                instruction_label = QLabel("You can continue with manual positioning\nor retry camera connection")
-                instruction_label.setStyleSheet("""
-                    QLabel {
-                        color: rgb(150, 150, 150);
-                        background-color: transparent;
-                        font-size: 11px;
-                        padding: 5px;
-                        qproperty-alignment: AlignCenter;
-                    }
-                """)
-                
-                # Retry button
-                retry_button = QPushButton("Retry Camera")
-                retry_button.clicked.connect(self.start_camera_with_loading_dialog)
-                retry_button.setStyleSheet("""
-                    QPushButton {
-                        border: 1px solid rgb(87, 87, 87);
-                        background-color: qlineargradient(spread: pad, x1: 0, y1: 1, x2: 0, y2: 0.188, stop: 0 rgba(180, 180, 180, 255), stop: 1 rgba(255, 255, 255, 255));
-                        height: 50px;
-                        width: 120px;
-                        border-radius: 5px;
-                        font: 12pt "Gotham";
-                        color: rgb(50, 50, 50);
-                    }
-                    QPushButton:pressed {
-                        background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #dadbde, stop: 1 #f6f7fa);
-                    }
-                    QPushButton:focus {
-                        outline: none;
-                    }
-                """)
-                
-                layout.addStretch()
-                layout.addWidget(message_label)
-                layout.addWidget(instruction_label)
-                layout.addWidget(retry_button)
-                layout.addStretch()
-                
-            # Set camera feed area style
-            self.webCamFeed.setStyleSheet("""
-                QLabel {
-                    background-color: rgb(60, 60, 60);
-                    border: 2px solid rgb(100, 100, 100);
-                    border-radius: 5px;
-                }
-            """)
-
-    # Legacy methods removed - now using unified CameraSystem
-    # start_camera(), show_camera_error(), check_usb_camera_available(),
-    # find_available_camera(), _test_camera_index(), _find_usb_cameras(),
-    # _test_camera_connection(), _check_camera_status() have been replaced
 
     def _update_camera_feed(self, qt_image):
         """Update the camera feed with crosshair overlay."""
@@ -1365,17 +953,17 @@ class CameraToolOffsetCalibration(QWidget):
             )
             
             if result == "retry":
-                print("User chose to retry after camera error")
+                self.logger.info("User chose to retry after camera error")
                 QTimer.singleShot(500, self.start_camera_with_loading_dialog)
             elif result == "skip":
-                print("User chose to continue without camera after error")
+                self.logger.info("User chose to continue without camera after error")
                 self.camera_available = False
                 self._camera_skipped = True
                 self._show_camera_placeholder()
                 # Continue to positioning steps
                 self.goto_step(self.STEP_POSITION_T0_COURSE)
             else:
-                print("User cancelled after camera error")
+                self.logger.info("User cancelled after camera error")
                 # Stay on current step - user can try again or cancel wizard
                 pass
                 
@@ -1384,25 +972,6 @@ class CameraToolOffsetCalibration(QWidget):
             # Fallback - show placeholder and continue
             self._show_camera_placeholder()
     
-    def _show_camera_placeholder(self):
-        """Show a placeholder when camera is not available."""
-        if not self.webCamFeed:
-            return
-        
-        # Create a placeholder image
-        placeholder = QPixmap(640, 480)
-        placeholder.fill(Qt.lightGray)
-        
-        # Draw text on placeholder
-        painter = QPainter(placeholder)
-        painter.setPen(Qt.black)
-        painter.drawText(placeholder.rect(), Qt.AlignCenter, 
-                        "Camera Not Available\nPosition nozzle manually\nusing movement controls")
-        painter.end()
-        
-        self.webCamFeed.setPixmap(placeholder)
-        self.logger.info("Showing camera placeholder - manual positioning mode")
-
     def _connect_position_tracking(self):
         """Connect position tracking when needed for recording tool positions."""
         if not self._position_tracking_connected and self.model:
@@ -1658,7 +1227,7 @@ class CameraToolOffsetCalibration(QWidget):
     def cleanup(self):
         """Cleanup resources when widget is destroyed."""
         try:
-            print("Starting simple cleanup...")
+            self.logger.debug("Starting cleanup...")
             
             # Stop camera using simple method
             self.stop_camera()
@@ -1666,11 +1235,10 @@ class CameraToolOffsetCalibration(QWidget):
             # Disconnect position tracking
             self._disconnect_position_tracking()
             
-            print("Cleanup completed successfully")
+            self.logger.debug("Cleanup completed successfully")
             
         except Exception as e:
             self.logger.error(f"Error during cleanup: {e}")
-            print(f"Cleanup error (non-critical): {e}")
 
     def closeEvent(self, event):
         """Handle widget close event with full cleanup."""
