@@ -333,12 +333,10 @@ class CameraThread(QThread):
     def try_connect(self):
         """Try to connect to USB camera with segfault protection."""
         if not OPENCV_AVAILABLE:
-            print(f"=== CAMERA_THREAD: OpenCV not available")
             self.connectionError.emit("OpenCV not available")
             return False
             
         try:
-            print(f"=== CAMERA_THREAD: Starting connection to camera {self.camera_index}")
             # Clean up any existing connection first
             if self.cap:
                 try:
@@ -349,32 +347,24 @@ class CameraThread(QThread):
                 time.sleep(0.3)  # Give time for cleanup
             
             # Try to connect with safety measures for older OpenCV
-            print(f"=== CAMERA_THREAD: Creating VideoCapture for index {self.camera_index}")
             self.cap = cv2.VideoCapture(self.camera_index)
             
             if not self.cap.isOpened():
-                print(f"=== CAMERA_THREAD: Camera {self.camera_index} failed to open")
                 self.connectionError.emit(f"USB camera {self.camera_index} not found or in use")
                 return False
-            
-            print(f"=== CAMERA_THREAD: Camera {self.camera_index} opened, testing frame capture...")
             
             # Test reading a frame with safety checks
             for attempt in range(3):  # Try multiple times
                 ret, frame = self.cap.read()
-                print(f"=== CAMERA_THREAD: Frame read attempt {attempt + 1}: ret={ret}, frame_valid={ret and frame is not None and frame.size > 0}")
                 if ret and frame is not None and frame.size > 0:
                     break
                 time.sleep(0.1)
             else:
-                print(f"=== CAMERA_THREAD: Camera {self.camera_index} failed all frame capture attempts")
                 self.cap.release()
                 self.cap = None
                 self.connectionError.emit(f"USB camera {self.camera_index} cannot capture frames")
                 return False
                 
-            print(f"=== CAMERA_THREAD: Camera {self.camera_index} frame capture successful, setting properties...")
-            
             # Set basic camera properties safely - square aspect ratio and 10 FPS
             try:
                 self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 480)
@@ -402,23 +392,20 @@ class CameraThread(QThread):
                 ret, test_frame = self.cap.read()
                 if ret and test_frame is not None and test_frame.size > 0:
                     height, width = test_frame.shape[:2]
-                    print(f"=== CAMERA_THREAD: Camera {self.camera_index} initialized successfully: {width}x{height}")
+                    print(f"Camera {self.camera_index} initialized successfully: {width}x{height}")
                     return True
                 else:
-                    print(f"=== CAMERA_THREAD: Camera {self.camera_index} final stability test failed")
                     self.cap.release()
                     self.cap = None
                     self.connectionError.emit(f"Camera {self.camera_index} cannot provide stable frames")
                     return False
             except Exception as e:
-                print(f"=== CAMERA_THREAD: Camera {self.camera_index} final test exception: {e}")
                 self.cap.release()
                 self.cap = None
                 self.connectionError.emit(f"Camera {self.camera_index} final test failed: {e}")
                 return False
                 
         except Exception as e:
-            print(f"=== CAMERA_THREAD: Camera {self.camera_index} connection exception: {e}")
             if self.cap:
                 try:
                     self.cap.release()
@@ -950,25 +937,19 @@ class CameraToolOffsetCalibration(QWidget):
             return
             
         try:
-            print("=== START_CAMERA: Starting camera feed...")
             self.logger.info("Starting camera feed...")
             
             # Try to find an available camera
-            print("=== START_CAMERA: Calling find_available_camera()...")
             camera_index = self.find_available_camera()
-            print(f"=== START_CAMERA: find_available_camera() returned: {camera_index}")
             
             if camera_index is not None:
-                print(f"=== START_CAMERA: Creating CameraThread with index {camera_index}")
                 self.camera_thread = CameraThread(camera_index)
                 self.camera_thread.changePixmap.connect(self._update_camera_feed)
                 self.camera_thread.connectionError.connect(self._on_camera_error)
-                print("=== START_CAMERA: Starting camera thread...")
                 self.camera_thread.start()
                 self.camera_available = True
                 self.camera_setup_in_progress = False
                 self.logger.info(f"Camera started successfully on index {camera_index}")
-                print(f"=== START_CAMERA: Camera thread started successfully")
                 
                 # Hide loading dialog on success
                 self.hide_loading_dialog()
@@ -977,16 +958,13 @@ class CameraToolOffsetCalibration(QWidget):
                 self._clear_no_camera_layout()
                 
                 # Proceed to next step
-                print("=== START_CAMERA: Going to next step")
                 self.goto_step(self.STEP_POSITION_T0_COURSE)
             else:
-                print("=== START_CAMERA: No camera found, calling _on_camera_connection_failed")
                 self.hide_loading_dialog()
                 self.camera_setup_in_progress = False
                 self._on_camera_connection_failed()
                 
         except Exception as e:
-            print(f"=== START_CAMERA: Exception occurred: {e}")
             self.logger.error(f"Error starting camera: {e}")
             self.hide_loading_dialog()
             self.camera_setup_in_progress = False
@@ -1646,45 +1624,30 @@ class CameraToolOffsetCalibration(QWidget):
     def stop_camera(self):
         """Stop the camera feed safely using the simple CameraThread approach."""
         try:
-            print("=== STOP_CAMERA: Starting camera stop process...")
-            
             # Hide loading dialog if it's still showing
             self.hide_loading_dialog()
-            print("=== STOP_CAMERA: Loading dialog hidden")
             
             if self.camera_thread and self.camera_thread.isRunning():
                 self.logger.info("Stopping camera thread...")
-                print("=== STOP_CAMERA: Camera thread is running, stopping...")
                 
                 # Disconnect signal to prevent any remaining frames from being processed
                 try:
-                    print("=== STOP_CAMERA: Disconnecting changePixmap signal...")
                     self.camera_thread.changePixmap.disconnect()
-                    print("=== STOP_CAMERA: changePixmap signal disconnected")
-                except Exception as e:
-                    print(f"=== STOP_CAMERA: Signal disconnect warning: {e}")
+                except:
                     pass  # Signal might already be disconnected
                 
                 # Stop the thread
-                print("=== STOP_CAMERA: Calling camera_thread.stop()...")
                 self.camera_thread.stop()
-                print("=== STOP_CAMERA: camera_thread.stop() completed")
                 
                 # Clear the reference
-                print("=== STOP_CAMERA: Clearing camera_thread reference...")
                 self.camera_thread = None
                 self.camera_available = False
                 self.logger.info("Camera stopped successfully")
-                print("=== STOP_CAMERA: Camera stopped successfully")
-            else:
-                print("=== STOP_CAMERA: No running camera thread to stop")
             
             # Reset setup flag
             self.camera_setup_in_progress = False
-            print("=== STOP_CAMERA: Stop process completed")
                 
         except Exception as e:
-            print(f"=== STOP_CAMERA: Exception during stop: {e}")
             self.logger.error(f"Error stopping camera: {e}")
             # Even if there's an error, clear the reference to prevent further issues
             self.camera_thread = None

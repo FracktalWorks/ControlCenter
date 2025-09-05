@@ -170,7 +170,7 @@ QToolButton:focus {
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">
-                <normaloff>:/Icons/img/icons/magic-wand.png</normaloff>:/Icons/img/icons/magic-wand.png</iconset>
+                <normaloff>:/Icons/img/icons/Basic Bed Leveling.png</normaloff>:/Icons/img/icons/Basic Bed Leveling.png</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -184,7 +184,7 @@ QToolButton:focus {
              </widget>
             </item>
             <item>
-             <widget class="QToolButton" name="ToolZOffsetWizardButton">
+             <widget class="QToolButton" name="nozzleOffsetWizardButton">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                 <horstretch>0</horstretch>
@@ -194,14 +194,14 @@ QToolButton:focus {
               <property name="font">
                <font>
                 <family>Gotham</family>
-                <pointsize>16</pointsize>
+                <pointsize>12</pointsize>
                </font>
               </property>
               <property name="styleSheet">
                <string notr="true">QToolButton {
+
      border: 1px solid rgb(87, 87, 87);
 	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-
 }
 
 QToolButton:pressed {
@@ -222,12 +222,12 @@ QToolButton:focus {
 }</string>
               </property>
               <property name="text">
-               <string>Tool Z Offset
+               <string>Bed Probe Offset
 Calibration Wizard</string>
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">
-                <normaloff>:/Icons/img/icons/Tool Z Offset Icon.png</normaloff>:/Icons/img/icons/Tool Z Offset Icon.png</iconset>
+                <normaloff>:/Icons/img/icons/Nozzle Offset Icon.png</normaloff>:/Icons/img/icons/Nozzle Offset Icon.png</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -286,6 +286,63 @@ Offset Calibration
               <property name="icon">
                <iconset resource="../resources/resource.qrc">
                 <normaloff>:/Icons/img/icons/lens.png</normaloff>:/Icons/img/icons/lens.png</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>70</width>
+                <height>70</height>
+               </size>
+              </property>
+              <property name="toolButtonStyle">
+               <enum>Qt::ToolButtonTextUnderIcon</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QToolButton" name="ToolZOffsetWizardButton">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>16</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QToolButton {
+     border: 1px solid rgb(87, 87, 87);
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+
+}
+
+QToolButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QToolButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QToolButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QToolButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Tool Z Offset
+Calibration Wizard</string>
+              </property>
+              <property name="icon">
+               <iconset resource="../resources/resource.qrc">
+                <normaloff>:/Icons/img/icons/Tool Z Offset Icon.png</normaloff>:/Icons/img/icons/Tool Z Offset Icon.png</iconset>
               </property>
               <property name="iconSize">
                <size>
