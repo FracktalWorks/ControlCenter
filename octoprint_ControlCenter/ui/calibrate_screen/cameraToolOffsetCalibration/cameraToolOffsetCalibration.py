@@ -62,7 +62,7 @@ import time
 # Additional PyQt5 imports
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout
 from PyQt5.QtCore import QTimer, QThread, pyqtSignal, QMutex
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QPen
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QPen, QTransform
 from PyQt5.QtCore import Qt
 
 from utils.helpers import check_ui_elements
@@ -124,10 +124,8 @@ class CameraThread(QThread):
                 self.connectionError.emit(f"USB camera {self.camera_index} cannot capture frames")
                 return False
                 
-            # Set basic camera properties safely - square aspect ratio and 10 FPS
+            # Set basic camera properties safely - 10 FPS for stable operation
             try:
-                self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 480)
-                self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
                 self.cap.set(cv2.CAP_PROP_FPS, 10)
                 
                 # Disable autofocus if supported (helps prevent crashes)
@@ -195,7 +193,7 @@ class CameraThread(QThread):
                             with QtCore.QMutexLocker(self._frame_lock):
                                 self.current_frame = frame.copy()
                                 
-                                # Simple zoom (avoid complex operations that can segfault)
+                                # Apply zoom by cropping and resizing
                                 if self.zoom_factor > 1.0:
                                     h, w = frame.shape[:2]
                                     if h > 0 and w > 0:  # Safety check
@@ -542,7 +540,7 @@ class CameraToolOffsetCalibration(QWidget):
                 # Start camera with loading dialog
                 self.start_camera_with_loading_dialog()
             else:
-                # Camera already running, just update configuration if needed
+                # Camera already running, update zoom configuration
                 self._configure_camera_for_step(is_fine)
             
             # Update UI for current step
@@ -558,9 +556,11 @@ class CameraToolOffsetCalibration(QWidget):
     def _configure_camera_for_step(self, is_fine):
         """Configure camera zoom for the current step."""
         try:
-            # Simple implementation - zoom is handled by CameraThread if needed
-            zoom = 2.0 if is_fine else 1.0
-            # Note: zoom functionality can be added to CameraThread later if needed
+            if hasattr(self, 'camera_thread') and self.camera_thread:
+                # Set zoom factor: 3x for fine positioning, 1x for course
+                zoom = 3.0 if is_fine else 1.0
+                self.camera_thread.set_zoom(zoom)
+                self.logger.info(f"Set camera zoom to {zoom}x for {'fine' if is_fine else 'course'} positioning")
         except Exception as e:
             self.logger.error(f"Error configuring camera: {e}")
 
@@ -702,6 +702,9 @@ class CameraToolOffsetCalibration(QWidget):
                 # Clear any placeholder content
                 self._clear_no_camera_layout()
                 
+                # Configure initial zoom (start with 1x)
+                self.camera_thread.set_zoom(1.0)
+                
                 # Proceed to next step
                 self.goto_step(self.STEP_POSITION_T0_COURSE)
             else:
@@ -786,21 +789,6 @@ class CameraToolOffsetCalibration(QWidget):
                 pass
             return False
 
-    def _update_camera_feed(self, image):
-        """Update the camera feed label with new image."""
-        try:
-            # Scale image to fit the label while maintaining aspect ratio
-            pixmap = QPixmap.fromImage(image)
-            scaled_pixmap = pixmap.scaled(
-                self.webCamFeed.size(), 
-                QtCore.Qt.KeepAspectRatio, 
-                QtCore.Qt.SmoothTransformation
-            )
-            self.webCamFeed.setPixmap(scaled_pixmap)
-            
-        except Exception as e:
-            self.logger.error(f"Error updating camera image: {e}")
-
     def show_camera_error(self, message):
         """Show camera error message and provide retry option."""
         self.webCamFeed.setText(f"Camera Error:\n{message}")
@@ -842,8 +830,9 @@ class CameraToolOffsetCalibration(QWidget):
         if not self.webCamFeed:
             return
         
-        # Create a placeholder image
-        placeholder = QPixmap(640, 480)
+        # Create a placeholder image using the label's size
+        label_size = self.webCamFeed.size()
+        placeholder = QPixmap(label_size.width(), label_size.height())
         placeholder.fill(Qt.lightGray)
         
         # Draw text on placeholder
@@ -886,26 +875,38 @@ class CameraToolOffsetCalibration(QWidget):
         # Create pixmap from image
         pixmap = QPixmap.fromImage(qt_image)
         
-        # Draw crosshair overlay
-        painter = QPainter(pixmap)
-        painter.setPen(QPen(Qt.red, 2))
+        # Mirror the image horizontally (flip left-right)
+        mirrored_pixmap = pixmap.transformed(QTransform().scale(-1, 1))
         
-        # Draw circle and crosshair in center
-        center_x = pixmap.width() // 2
-        center_y = pixmap.height() // 2
-        radius = 15 if self.movement_step == 0.01 else 10
+        # Draw crosshair overlay on the mirrored image
+        painter = QPainter(mirrored_pixmap)
+        painter.setPen(QPen(Qt.red, 3))  # Thicker pen for better visibility
+        
+        # Draw bigger circle and crosshair in center - double the size
+        center_x = mirrored_pixmap.width() // 2
+        center_y = mirrored_pixmap.height() // 2
+        radius = 60 if self.movement_step == 0.01 else 40  # Double the radius (was 30/20)
         
         # Draw circle
         painter.drawEllipse(center_x - radius, center_y - radius, radius * 2, radius * 2)
         
-        # Draw crosshair
-        painter.drawLine(center_x - radius - 5, center_y, center_x + radius + 5, center_y)
-        painter.drawLine(center_x, center_y - radius - 5, center_x, center_y + radius + 5)
+        # Draw longer crosshair lines - double the length
+        cross_length = radius + 30  # Double the cross length (was radius + 15)
+        painter.drawLine(center_x - cross_length, center_y, center_x + cross_length, center_y)
+        painter.drawLine(center_x, center_y - cross_length, center_x, center_y + cross_length)
         
         painter.end()
         
+        # Scale to fit the label while maintaining aspect ratio
+        label_size = self.webCamFeed.size()
+        scaled_pixmap = mirrored_pixmap.scaled(
+            label_size.width(), label_size.height(),
+            QtCore.Qt.KeepAspectRatio, 
+            QtCore.Qt.SmoothTransformation
+        )
+        
         # Update the label
-        self.webCamFeed.setPixmap(pixmap)
+        self.webCamFeed.setPixmap(scaled_pixmap)
 
     def _on_camera_error(self, error_msg):
         """Handle camera connection errors with simple camera thread approach."""
