@@ -233,6 +233,11 @@ class MainController:
     def initialize_websocket(self):
         """Start websocket and bind signals to model/controller."""
         self.octoprint_websocket = OctoPrintWebSocket(ip=ip, api_key=apiKey)
+        
+        # Set main window reference for probe result forwarding to calibration wizards
+        if hasattr(self, 'main_window'):
+            self.octoprint_websocket.set_main_window_reference(self.main_window)
+        
         self.octoprint_websocket.start()
         # Model signal wiring
         self.octoprint_websocket.temperatures_signal.connect(self.printer_model.updateTemperature)
@@ -248,6 +253,8 @@ class MainController:
         self.octoprint_websocket.z_probe_offset_signal.connect(self.printer_model.updateEEPROMProbeOffset)
         self.octoprint_websocket.klipper_state_signal.connect(self.printer_model.update_klipper_state)
         self.octoprint_websocket.filament_runout_state_signal.connect(self.printer_model.filamentRunoutState)
+        # Probe accuracy results signal for MVP architecture
+        self.octoprint_websocket.probe_accuracy_signal.connect(self.printer_model.handle_probe_accuracy_result)
         # Controller signal wiring
         self.octoprint_websocket.connected_signal.connect(self.onWebSocketConnected)
         self.octoprint_websocket.filament_runout_sensor_triggered_signal.connect(self.filamentRunoutSensorTriggered)

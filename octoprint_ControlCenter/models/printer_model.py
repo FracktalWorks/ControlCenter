@@ -49,6 +49,9 @@ class PrinterModel(QObject):
     
     # Position tracking signals
     current_position_updated = pyqtSignal(dict)  # {'x': float, 'y': float, 'z': float}
+    
+    # Probe accuracy results for calibration wizards
+    probe_accuracy_result_received = pyqtSignal(str, dict)  # (tool_name, probe_data)
 
     def __init__(self):
         super(PrinterModel, self).__init__()
@@ -306,6 +309,54 @@ class PrinterModel(QObject):
         except ValueError:
             self.logger.error(f"Invalid Z probe offset value: {offset}")
             dialog.WarningOk(self, "Invalid Z probe offset value: {}".format(offset), overlay=True)
+
+    def handle_probe_accuracy_result(self, message_text):
+        """
+        Handle probe accuracy results from Klipper and emit signal to calibration wizards.
+        
+        Args:
+            message_text (str): The probe accuracy message from Klipper
+        """
+        try:
+            self.logger.info(f"PrinterModel received probe accuracy message: {message_text}")
+            
+            # Parse the probe result from the message
+            if 'probe accuracy results:' in message_text.lower():
+                import re
+                
+                # Parse essential probe accuracy values
+                probe_data = {}
+                
+                patterns = {
+                    'average': r'average\s+([-+]?\d+\.?\d*)',
+                    'standard_deviation': r'standard deviation\s+([-+]?\d+\.?\d*)'
+                }
+                
+                # Extract values
+                for key, pattern in patterns.items():
+                    match = re.search(pattern, message_text, re.IGNORECASE)
+                    if match:
+                        probe_data[key] = float(match.group(1))
+                    else:
+                        self.logger.warning(f"Could not find {key} in probe results")
+                
+                # Only proceed if we have at least the average value
+                if 'average' in probe_data:
+                    self.logger.info(f"Parsed probe data: {probe_data}")
+                    
+                    # Determine which tool based on current active extruder
+                    tool_name = f"tool{self.active_extruder}"
+                    
+                    # Emit the signal to any listening calibration wizards
+                    self.probe_accuracy_result_received.emit(tool_name, probe_data)
+                    self.logger.info(f"Emitted probe accuracy result signal for {tool_name}")
+                else:
+                    self.logger.warning("Could not parse probe accuracy data - missing average value")
+            else:
+                self.logger.debug("Message does not contain probe accuracy results")
+                
+        except Exception as e:
+            self.logger.error(f"Error handling probe accuracy result: {e}")
 
     def setToolOffset(self, M218Data):
         """ Set the tool offsets from M218 response """
