@@ -166,11 +166,126 @@ QToolButton:focus {
 }</string>
               </property>
               <property name="text">
-               <string>Calibration Wizard</string>
+               <string>Bed Level Wizard</string>
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">
                 <normaloff>:/Icons/img/icons/magic-wand.png</normaloff>:/Icons/img/icons/magic-wand.png</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>70</width>
+                <height>70</height>
+               </size>
+              </property>
+              <property name="toolButtonStyle">
+               <enum>Qt::ToolButtonTextUnderIcon</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QToolButton" name="ToolZOffsetWizardButton">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>16</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QToolButton {
+     border: 1px solid rgb(87, 87, 87);
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+
+}
+
+QToolButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QToolButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QToolButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QToolButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Tool Z Offset
+Calibration Wizard</string>
+              </property>
+              <property name="icon">
+               <iconset resource="../resources/resource.qrc">
+                <normaloff>:/Icons/img/icons/Tool Z Offset Icon.png</normaloff>:/Icons/img/icons/Tool Z Offset Icon.png</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>70</width>
+                <height>70</height>
+               </size>
+              </property>
+              <property name="toolButtonStyle">
+               <enum>Qt::ToolButtonTextUnderIcon</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QToolButton" name="cameraToolOffsetCalibrateButton">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="font">
+               <font>
+                <family>Gotham</family>
+                <pointsize>16</pointsize>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QToolButton {
+     border: 1px solid rgb(87, 87, 87);
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+
+}
+
+QToolButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QToolButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QToolButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QToolButton:focus {
+	outline: none;
+}</string>
+              </property>
+              <property name="text">
+               <string>Camera Tool XY
+Offset Calibration
+ Wizard</string>
+              </property>
+              <property name="icon">
+               <iconset resource="../resources/resource.qrc">
+                <normaloff>:/Icons/img/icons/lens.png</normaloff>:/Icons/img/icons/lens.png</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -224,69 +339,11 @@ QToolButton:focus {
               </property>
               <property name="text">
                <string>Resonance 
-Calibration</string>
+Calibration Wizard</string>
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">
                 <normaloff>:/Icons/img/icons/Input Shaper.png</normaloff>:/Icons/img/icons/Input Shaper.png</iconset>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>70</width>
-                <height>70</height>
-               </size>
-              </property>
-              <property name="toolButtonStyle">
-               <enum>Qt::ToolButtonTextUnderIcon</enum>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QToolButton" name="cameraToolOffsetCalibrateButton">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="font">
-               <font>
-                <family>Gotham</family>
-                <pointsize>16</pointsize>
-               </font>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QToolButton {
-     border: 1px solid rgb(87, 87, 87);
-	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-border-top-right-radius: 10px;
-
-}
-
-QToolButton:pressed {
-    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
-}
-
-QToolButton:flat {
-    border: none; /* no border for a flat push button */
-}
-
-QToolButton:default {
-    border-color: navy; /* make the default button prominent */
-}
-
-QToolButton:focus {
-	outline: none;
-}</string>
-              </property>
-              <property name="text">
-               <string>Camera Tool
- Offset Calibration</string>
-              </property>
-              <property name="icon">
-               <iconset resource="../resources/resource.qrc">
-                <normaloff>:/Icons/img/icons/lens.png</normaloff>:/Icons/img/icons/lens.png</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -348,7 +405,8 @@ QToolButton:focus {
 }</string>
               </property>
               <property name="text">
-               <string>Probe Offset</string>
+               <string>Change
+Probe Offset</string>
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">
@@ -406,7 +464,8 @@ QToolButton:focus {
 }</string>
               </property>
               <property name="text">
-               <string>Tool Offset X/Y</string>
+               <string>Change
+Tool Offset X/Y</string>
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">
@@ -465,7 +524,8 @@ QToolButton:focus {
 }</string>
               </property>
               <property name="text">
-               <string>Tool Offsets Z</string>
+               <string>Change
+Tool Offsets Z</string>
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">
@@ -524,7 +584,7 @@ QToolButton:focus {
 }</string>
               </property>
               <property name="text">
-               <string>IDEX Config</string>
+               <string>IDEX Setup Wizard</string>
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">

@@ -325,3 +325,21 @@ def InfoOk(parent, text, **kwargs):
 def InfoYesNo(parent, text, **kwargs):
     """Show an info dialog with Yes and No buttons."""
     return YesNo(parent, text, icon=":/Icons/img/icons/information.png", **kwargs)
+
+
+def RetrySkipCancel(parent, text, **kwargs):
+    """Show a dialog with Retry, Skip, and Cancel buttons."""
+    msgbox = dialog(parent, text, buttons=QtWidgets.QMessageBox.NoButton, **kwargs)
+    retry_button = msgbox.addButton("Retry", QtWidgets.QMessageBox.ActionRole)
+    skip_button = msgbox.addButton("Skip", QtWidgets.QMessageBox.ActionRole)
+    cancel_button = msgbox.addButton("Cancel", QtWidgets.QMessageBox.RejectRole)
+    
+    result = msgbox.exec_()
+    clicked_button = msgbox.clickedButton()
+    
+    if clicked_button == retry_button:
+        return "retry"
+    elif clicked_button == skip_button:
+        return "skip"
+    else:
+        return "cancel"
