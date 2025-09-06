@@ -327,6 +327,7 @@ class CameraToolOffsetCalibration(QWidget):
         self.tool1_position = None
         self.current_tool = 0
         self.movement_step = 0.5  # Start with course movement
+        self._waiting_for_position = None  # Track when waiting for position response
         
         # Wizard state
         self._current_step = 0
@@ -347,6 +348,7 @@ class CameraToolOffsetCalibration(QWidget):
         self.step1Page: QWidget = self.findChild(QWidget, "step1Page")
         self.step2Page: QWidget = self.findChild(QWidget, "step2Page") 
         self.step3Page: QWidget = self.findChild(QWidget, "step3Page")
+        self.resultStep: QWidget = self.findChild(QWidget, "resultStep")
         
         # Step 1 elements (Clean Nozzles)
         self.step1Label: QLabel = self.findChild(QLabel, "step1Label")
@@ -358,6 +360,9 @@ class CameraToolOffsetCalibration(QWidget):
         
         # Step 3 elements (Camera Feed)
         self.webCamFeed: QLabel = self.findChild(QLabel, "webCamFeed")
+        
+        # Results elements
+        self.resultLabel: QLabel = self.findChild(QLabel, "resultLabel")
         
         # Movement buttons (matching UI names)
         self.moveXPButton: QPushButton = self.findChild(QPushButton, "moveXPButton")
@@ -379,8 +384,8 @@ class CameraToolOffsetCalibration(QWidget):
         # Validate required elements
         required = [
             self.stackedWidget, self.stepLabel,
-            self.step1Page, self.step2Page, self.step3Page,
-            self.step1Label, self.step2Label, self.webCamFeed,
+            self.step1Page, self.step2Page, self.step3Page, self.resultStep,
+            self.step1Label, self.step2Label, self.webCamFeed, self.resultLabel,
             self.moveXPButton, self.moveXMButton, self.moveYPButton, self.moveYMButton,
             self.moveZPButton, self.moveZMButton,
             self.nextButton, self.cancelButton
@@ -421,7 +426,20 @@ class CameraToolOffsetCalibration(QWidget):
 
         self._current_step = index
         if self.stackedWidget:
-            self.stackedWidget.setCurrentIndex(min(index, 2))  # UI only has 3 pages
+            # Map logical steps to UI pages
+            if index == self.STEP_CLEAN_NOZZLES:
+                page_index = 0  # step1Page
+            elif index == self.STEP_CONNECT_CAMERA:
+                page_index = 1  # step2Page
+            elif index in [self.STEP_POSITION_T0_COURSE, self.STEP_POSITION_T0_FINE, 
+                          self.STEP_POSITION_T1_COURSE, self.STEP_POSITION_T1_FINE]:
+                page_index = 2  # step3Page (positioning page with camera and movement controls)
+            elif index == self.STEP_RESULTS:
+                page_index = 3  # resultStep
+            else:
+                page_index = 0  # fallback
+                
+            self.stackedWidget.setCurrentIndex(page_index)
         self._update_step_label()
 
         # Step-specific logic
@@ -467,9 +485,9 @@ class CameraToolOffsetCalibration(QWidget):
         try:
             # Home the printer
             self.octoprint_client.gcode("G28")
-            
-            # Set Z to 50mm
-            self.octoprint_client.gcode("G1 Z50 F3000")
+
+            # Set Z to 100mm
+            self.octoprint_client.gcode("G1 Z100 F3000")
             
             # Set IDEX mode to Mirror
             self.octoprint_client.gcode("M605 S3")
@@ -511,7 +529,7 @@ class CameraToolOffsetCalibration(QWidget):
             bed_width = build_size.get('X', 200)
             x_center = int(bed_width / 2)  # Center of bed
             self.logger.info(f"Using bed width: {bed_width}mm, positioning camera at center X{x_center}")
-            self.octoprint_client.gcode(f"G1 X{x_center} Y20 Z30 F3000")
+            self.octoprint_client.gcode(f"G1 X{x_center} Y20 Z40 F3000")
             
             self.logger.info("Camera positioning setup complete")
             
@@ -1027,11 +1045,11 @@ class CameraToolOffsetCalibration(QWidget):
                 self.goto_step(self.STEP_POSITION_T0_FINE)
                 
             elif current_step == self.STEP_POSITION_T0_FINE:
-                # Record T0 position and move to T1 setup
+                # Record T0 position and wait for position update to proceed to T1 setup
                 try:
                     self._record_tool_position(0)
-                    self._switch_to_tool(1)
-                    self.goto_step(self.STEP_POSITION_T1_COURSE)
+                    # Don't call goto_step here - let on_position_updated handle it
+                    # to avoid timing issues with M114 response
                 except Exception as e:
                     self.logger.error(f"Error recording T0 position: {e}")
                     dialog.WarningOk(self, f"Error recording T0 position: {e}")
@@ -1041,10 +1059,11 @@ class CameraToolOffsetCalibration(QWidget):
                 self.goto_step(self.STEP_POSITION_T1_FINE)
                 
             elif current_step == self.STEP_POSITION_T1_FINE:
-                # Record T1 position and show results
+                # Record T1 position and wait for position update to proceed to results
                 try:
                     self._record_tool_position(1)
-                    self.goto_step(self.STEP_RESULTS)
+                    # Don't call goto_step here - let on_position_updated handle it
+                    # to avoid timing issues with M114 response
                 except Exception as e:
                     self.logger.error(f"Error recording T1 position: {e}")
                     dialog.WarningOk(self, f"Error recording T1 position: {e}")
@@ -1075,26 +1094,11 @@ class CameraToolOffsetCalibration(QWidget):
             self.octoprint_client.gcode("M114")
             self.logger.info(f"Requesting position for tool {tool}")
             
+            # Store which tool we're waiting for to proceed to next step
+            self._waiting_for_position = tool
+            
         except Exception as e:
             self.logger.error(f"Error recording tool {tool} position: {e}")
-
-    def _switch_to_tool(self, tool):
-        """Switch to the specified tool."""
-        if not self.octoprint_client:
-            return
-            
-        try:
-            # Move Z down 5mm, switch tool, move Z back up
-            self.octoprint_client.gcode("G91")  # Relative mode
-            self.octoprint_client.gcode("G1 Z-5 F3000")  # Move down
-            self.octoprint_client.gcode(f"T{tool}")  # Switch tool
-            self.octoprint_client.gcode("G1 Z5 F3000")  # Move back up
-            self.octoprint_client.gcode("G90")  # Absolute mode
-            
-            self.logger.info(f"Switched to tool {tool}")
-            
-        except Exception as e:
-            self.logger.error(f"Error switching to tool {tool}: {e}")
 
     def on_position_updated(self, position):
         """Handle position updates from websocket."""
@@ -1108,6 +1112,26 @@ class CameraToolOffsetCalibration(QWidget):
                 elif self.current_tool == 1:
                     self.tool1_position = pos
                     self.logger.info(f"Recorded T1 position: {pos}")
+                    
+                # Check if we should proceed to next step after recording this position
+                waiting_tool = getattr(self, '_waiting_for_position', None)
+                if waiting_tool is not None and waiting_tool == self.current_tool:
+                    self._waiting_for_position = None
+                    # Proceed to next step after position is recorded
+                    if self.current_tool == 0:  # T0 position recorded, switch to T1 and go to T1 course
+                        def proceed_to_t1():
+                            # Move T0 to where T1 was positioned before switching tools
+                            if hasattr(self, 'tool1_position') and self.tool1_position:
+                                t1_x = self.tool1_position['x']
+                                t1_y = self.tool1_position['y']
+                                self.octoprint_client.gcode(f"G1 X{t1_x} Y{t1_y} F3000")
+                                self.logger.info(f"Moved T0 to T1's recorded position: X{t1_x}, Y{t1_y}")
+                            self.octoprint_client.gcode("T1")
+                            self.logger.info("Switched to tool 1")
+                            self.goto_step(self.STEP_POSITION_T1_COURSE)
+                        QTimer.singleShot(100, proceed_to_t1)
+                    elif self.current_tool == 1:  # T1 position recorded, go to results
+                        QTimer.singleShot(100, lambda: self.goto_step(self.STEP_RESULTS))
                     
                 # Reset current tool
                 self.current_tool = None
@@ -1123,19 +1147,31 @@ class CameraToolOffsetCalibration(QWidget):
         try:
             self.nextButton.setText("Apply Tool Offsets")
             
-            if self.tool0_position and self.tool1_position:
-                # Calculate offset differences
-                x_diff = self.tool1_position['x'] - self.tool0_position['x']
-                y_diff = self.tool1_position['y'] - self.tool0_position['y']
-                
-                # Get current tool offsets from printer model
+            # Debug logging to see what positions we have
+            self.logger.info(f"Checking positions - T0: {getattr(self, 'tool0_position', None)}, T1: {getattr(self, 'tool1_position', None)}")
+            
+            # More explicit check for positions
+            t0_pos = getattr(self, 'tool0_position', None)
+            t1_pos = getattr(self, 'tool1_position', None)
+            
+            if t0_pos is not None and t1_pos is not None and isinstance(t0_pos, dict) and isinstance(t1_pos, dict):
+                # Get current tool offsets from printer model for display only
                 current_x_offset = float(getattr(self.model, 'tool_offsets', {}).get('X', 0)) if self.model else 0.0
                 current_y_offset = float(getattr(self.model, 'tool_offsets', {}).get('Y', 0)) if self.model else 0.0
                 
-                # Calculate new offsets
-                new_x_offset = current_x_offset + x_diff
-                new_y_offset = current_y_offset + y_diff
+                # Use direct position differences without trying to remove current offsets
+                # Both T0 and T1 positions from M114 should be treated as logical positions
+                # For SET_GCODE_OFFSET: offset is ADDED to gcode coordinate to get mechanical position
+                # So if T1 is 5mm right of T0, we need +5mm offset so T1 moves to correct mechanical position
+                raw_x_diff = t1_pos['x'] - t0_pos['x']  # T1 - T0: if T1 is right of T0, this is positive
+                raw_y_diff = t1_pos['y'] - t0_pos['y']  # T1 - T0: if T1 is above T0, this is positive
                 
+                self.logger.info(f"Position differences (T1-T0) - X: {round(raw_x_diff, 3)}, Y: {round(raw_y_diff, 3)}")
+                
+                # The offset should be the difference directly (SET_GCODE_OFFSET adds this to gcode coords)
+                new_x_offset = round(current_x_offset + raw_x_diff, 3)
+                new_y_offset = round(current_y_offset + raw_y_diff, 3)
+
                 # Store calculated offsets
                 self.calculated_offsets = {
                     'x': new_x_offset,
@@ -1144,27 +1180,68 @@ class CameraToolOffsetCalibration(QWidget):
                 
                 self.logger.info(f"Calculated tool offsets - X: {new_x_offset}, Y: {new_y_offset}")
                 
+                # Display results in UI
+                results_text = f"""Calibration Complete!
+Recorded Positions:
+• T0 Position: X={t0_pos['x']:.2f}, Y={t0_pos['y']:.2f}
+• T1 Position (with offsets): X={t1_pos['x']:.2f}, Y={t1_pos['y']:.2f}
+• T1 Raw Position: X={t1_pos['x']:.2f}, Y={t1_pos['y']:.2f}
+Position Differences (T1-T0):
+• X Difference: {raw_x_diff:.3f}mm
+• Y Difference: {raw_y_diff:.3f}mm
+Current Tool Offsets:
+• X Offset: {current_x_offset:.3f}mm
+• Y Offset: {current_y_offset:.3f}mm
+New Tool Offsets (will be applied):
+• X Offset: {new_x_offset:.3f}mm
+• Y Offset: {new_y_offset:.3f}mm
+Click "Apply Tool Offsets" to save these settings."""
+                
+                self._display_results_text(results_text)
+                
             else:
-                dialog.WarningOk(self, "Missing position data for offset calculation")
+                self.logger.error(f"Missing position data - T0: {t0_pos}, T1: {t1_pos}")
+                error_text = f"""Calibration Error
+
+Missing position data for offset calculation.
+
+T0 Position: {t0_pos if t0_pos else 'Not recorded'}
+T1 Position: {t1_pos if t1_pos else 'Not recorded'}
+
+Please restart the calibration process."""
+                
+                self._display_results_text(error_text)
                 
         except Exception as e:
             self.logger.error(f"Error showing results: {e}")
-            dialog.WarningOk(self, f"Error calculating results: {e}")
+            error_text = f"Error calculating results: {e}"
+            self._display_results_text(error_text)
+
+    def _display_results_text(self, text):
+        """Display results text in the resultLabel."""
+        self.resultLabel.setText(text)
+        self.resultLabel.show()
+        self.logger.info("Displaying results in resultLabel")
 
     def _apply_tool_offsets(self):
         """Apply the calculated tool offsets."""
-        if not self.octoprint_client or not hasattr(self, 'calculated_offsets'):
+        if not self.octoprint_client:
+            dialog.WarningOk(self, "No printer connection available")
+            return
+            
+        if not hasattr(self, 'calculated_offsets'):
+            dialog.WarningOk(self, "No calculated offsets available. Please complete the calibration process first.")
             return
             
         try:
-            x_offset = self.calculated_offsets['x']
-            y_offset = self.calculated_offsets['y']
+            x_offset = round(self.calculated_offsets['x'], 3)
+            y_offset = round(self.calculated_offsets['y'], 3)
             
             # Apply tool offsets using M218
             self.octoprint_client.gcode(f"M218 T1 X{x_offset} Y{y_offset}")
             
-            # Save configuration
-            self.octoprint_client.gcode("SAVE_CONFIG")
+            # Save configuration using M500 (standard EEPROM save command)
+            self.octoprint_client.gcode("M500")
             
             self.logger.info(f"Applied tool offsets - X: {x_offset}, Y: {y_offset}")
             

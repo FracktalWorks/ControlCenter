@@ -137,7 +137,7 @@ background-color: rgb(40, 40, 40);
               <property name="font">
                <font>
                 <family>Gotham</family>
-                <pointsize>16</pointsize>
+                <pointsize>12</pointsize>
                </font>
               </property>
               <property name="styleSheet">
@@ -194,7 +194,7 @@ QToolButton:focus {
               <property name="font">
                <font>
                 <family>Gotham</family>
-                <pointsize>16</pointsize>
+                <pointsize>12</pointsize>
                </font>
               </property>
               <property name="styleSheet">
@@ -223,7 +223,7 @@ QToolButton:focus {
               </property>
               <property name="text">
                <string>Bed Probe Offset
-Calibration Wizard</string>
+ Wizard</string>
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">
@@ -251,7 +251,7 @@ Calibration Wizard</string>
               <property name="font">
                <font>
                 <family>Gotham</family>
-                <pointsize>16</pointsize>
+                <pointsize>12</pointsize>
                </font>
               </property>
               <property name="styleSheet">
@@ -280,8 +280,7 @@ QToolButton:focus {
               </property>
               <property name="text">
                <string>Camera Tool XY
-Offset Calibration
- Wizard</string>
+Offset Wizard</string>
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">
@@ -309,7 +308,7 @@ Offset Calibration
               <property name="font">
                <font>
                 <family>Gotham</family>
-                <pointsize>16</pointsize>
+                <pointsize>12</pointsize>
                </font>
               </property>
               <property name="styleSheet">
@@ -338,7 +337,7 @@ QToolButton:focus {
               </property>
               <property name="text">
                <string>Tool Z Offset
-Calibration Wizard</string>
+Wizard</string>
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">
@@ -366,7 +365,7 @@ Calibration Wizard</string>
               <property name="font">
                <font>
                 <family>Gotham</family>
-                <pointsize>16</pointsize>
+                <pointsize>12</pointsize>
                </font>
               </property>
               <property name="styleSheet">
@@ -396,7 +395,7 @@ QToolButton:focus {
               </property>
               <property name="text">
                <string>Resonance 
-Calibration Wizard</string>
+Wizard</string>
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">

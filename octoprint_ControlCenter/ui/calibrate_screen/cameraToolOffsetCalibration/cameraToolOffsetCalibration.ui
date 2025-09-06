@@ -732,7 +732,7 @@ border-radius: 5px;</string>
             <property name="font">
              <font>
               <family>Gotham</family>
-              <pointsize>14</pointsize>
+              <pointsize>10</pointsize>
               <weight>50</weight>
               <bold>false</bold>
              </font>
