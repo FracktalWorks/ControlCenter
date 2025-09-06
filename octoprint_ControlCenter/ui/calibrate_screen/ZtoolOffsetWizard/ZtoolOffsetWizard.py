@@ -272,7 +272,7 @@ class ZtoolOffsetWizard(QWidget):
             # Update UI with detailed progress information
             if self.calibrationLabel:
                 self.calibrationLabel.setText(
-                    "📍 STEP 1/4: Starting Tool 0 Calibration\n\n"
+                    "📍 Starting Tool 0 Calibration\n\n"
                     "• Switching to Tool 0\n"
                     "• Moving to bed center\n"
                     "• Preparing probe accuracy test\n\n"
@@ -293,13 +293,13 @@ class ZtoolOffsetWizard(QWidget):
             self.current_probing_tool = f'tool{tool_number}'
             
             # Update status for current tool being probed
-            step_num = 1 if tool_number == 0 else 3
+            tool_desc = "Tool 0" if tool_number == 0 else "Tool 1"
             if self.calibrationLabel:
-                self.calibrationLabel.setText(f"📍 STEP {step_num}/4: Tool {tool_number} Probing in Progress\n\n" +
-                                            f"• Tool {tool_number} selected and positioned\n" +
+                self.calibrationLabel.setText(f"📍 {tool_desc} Probing in Progress\n\n" +
+                                            f"• {tool_desc} selected and positioned\n" +
                                             f"• Running probe accuracy test\n" +
                                             f"• Collecting measurement data\n\n" +
-                                            f"Status: Switching to Tool {tool_number}...")
+                                            f"Status: Switching to {tool_desc}...")
             
             # Switch to the specified tool
             self.octoprint_client.gcode(command=f'T{tool_number}')
@@ -324,10 +324,10 @@ class ZtoolOffsetWizard(QWidget):
             self.logger.info(f"Moving tool {tool_number} to probe position")
             
             # Update status
-            step_num = 1 if tool_number == 0 else 3
+            tool_desc = "Tool 0" if tool_number == 0 else "Tool 1"
             if self.calibrationLabel:
-                self.calibrationLabel.setText(f"📍 STEP {step_num}/4: Tool {tool_number} Probing in Progress\n\n" +
-                                            f"• Tool {tool_number} selected and positioned\n" +
+                self.calibrationLabel.setText(f"📍 {tool_desc} Probing in Progress\n\n" +
+                                            f"• {tool_desc} selected and positioned\n" +
                                             f"• Moving to probe position\n" +
                                             f"• Collecting measurement data\n\n" +
                                             f"Status: Moving to probe position...")
@@ -348,13 +348,13 @@ class ZtoolOffsetWizard(QWidget):
             self.logger.info(f"Starting probe accuracy test for tool {tool_number}")
             
             # Update status
-            step_num = 1 if tool_number == 0 else 3
+            tool_desc = "Tool 0" if tool_number == 0 else "Tool 1"
             if self.calibrationLabel:
-                self.calibrationLabel.setText(f"📍 STEP {step_num}/4: Tool {tool_number} Probing in Progress\n\n" +
-                                            f"• Tool {tool_number} selected and positioned\n" +
+                self.calibrationLabel.setText(f"📍 {tool_desc} Probing in Progress\n\n" +
+                                            f"• {tool_desc} selected and positioned\n" +
                                             f"• Running probe accuracy test\n" +
                                             f"• Collecting measurement data\n\n" +
-                                            f"Status: Probing Tool {tool_number}... Please wait.")
+                                            f"Status: Probing {tool_desc}... Please wait.")
             
             # Run probe accuracy macro with specified speed
             self.logger.info(f"Running PROBE_ACCURACY PROBE_SPEED=3 for tool {tool_number}")
@@ -393,7 +393,7 @@ class ZtoolOffsetWizard(QWidget):
                     # Tool 0 done, now probe tool 1
                     self.logger.info("Tool 0 probing complete via signal, starting tool 1")
                     if self.calibrationLabel:
-                        self.calibrationLabel.setText(f"✅ STEP 2/4: Tool 0 Complete!\n\n" +
+                        self.calibrationLabel.setText(f"✅ Tool 0 Complete!\n\n" +
                                                     f"• Average: {average_value:.6f}mm\n" +
                                                     f"• Std Dev: {std_dev:.6f}mm\n" +
                                                     f"• Quality: {'Good' if std_dev < 0.02 else 'Acceptable' if std_dev < 0.05 else 'Poor'}\n\n" +
@@ -407,7 +407,7 @@ class ZtoolOffsetWizard(QWidget):
                     # Both tools done, calculate offset
                     self.logger.info("Tool 1 probing complete via signal, calculating offset")
                     if self.calibrationLabel:
-                        self.calibrationLabel.setText(f"✅ STEP 4/4: Tool 1 Complete!\n\n" +
+                        self.calibrationLabel.setText(f"✅ Tool 1 Complete!\n\n" +
                                                     f"• Average: {average_value:.6f}mm\n" +
                                                     f"• Std Dev: {std_dev:.6f}mm\n" +
                                                     f"• Quality: {'Good' if std_dev < 0.02 else 'Acceptable' if std_dev < 0.05 else 'Poor'}\n\n" +
