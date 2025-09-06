@@ -12,6 +12,7 @@ from ui.calibrate_screen.toolOffset.toolOffset import ToolOffset
 from ui.calibrate_screen.bedLevelingPage.bedLevelingPage import BedLeveling
 from ui.calibrate_screen.idexLevelCalibration.idexLevelCalibration import IdexLevelCalibration
 from ui.calibrate_screen.cameraToolOffsetCalibration.cameraToolOffsetCalibration import CameraToolOffsetCalibration
+from ui.calibrate_screen.zProbeOffsetPage.zProbeOffsetPage import ZProbeOffsetPage
 
 
 logger = get_logger(__name__)
@@ -42,6 +43,7 @@ class CalibrateScreen(QWidget):
         self.toolOffsetZButton = self.findChild(QToolButton, "toolOffsetZButton")
         self.toolOffsetXYButton = self.findChild(QToolButton, "toolOffsetXYButton")
         self.idexCalibrationWizardButton = self.findChild(QToolButton, "idexCalibrationWizardButton")
+        self.toolZOffsetWizardButton = self.findChild(QToolButton, "ToolZOffsetWizardButton")
 
         self.calibrateBackButton = self.findChild(QPushButton, "calibrateBackButton")
 
@@ -50,7 +52,7 @@ class CalibrateScreen(QWidget):
             self.calibration_stacked_widget, self.main_calibrate_page,
             self.calibrationWizardButton, self.inputShaperCalibrateButton,
             self.cameraToolOffsetCalibrateButton, self.nozzleOffsetButton, self.toolOffsetZButton, self.toolOffsetXYButton, self.idexCalibrationWizardButton,
-            self.calibrateBackButton
+            self.toolZOffsetWizardButton, self.calibrateBackButton
         ], "CalibrateScreen")
 
         # Initialize all sub-screens
@@ -65,6 +67,8 @@ class CalibrateScreen(QWidget):
         self.toolOffsetZButton.clicked.connect(lambda: self.show_calibrate_screen("tool_offset", tab="Z"))
         self.toolOffsetXYButton.clicked.connect(lambda: self.show_calibrate_screen("tool_offset", tab="XY"))
         self.idexCalibrationWizardButton.clicked.connect(lambda: self.show_calibrate_screen("idex_calibration"))
+        if self.toolZOffsetWizardButton:
+            self.toolZOffsetWizardButton.clicked.connect(lambda: self.show_calibrate_screen("z_probe_offset"))
         self.calibrateBackButton.clicked.connect(lambda: self.main_window.switch_to_menu_screen())
 
         # Show the main calibration page initially
@@ -96,6 +100,7 @@ class CalibrateScreen(QWidget):
             self.screens["tool_offset"] = ToolOffset(self.main_window)
             self.screens["camera_tool_offset"] = CameraToolOffsetCalibration(self.main_window)
             self.screens["idex_calibration"] = IdexLevelCalibration(self.main_window)
+            self.screens["z_probe_offset"] = ZProbeOffsetPage(self.main_window)
 
             # Add each screen to the stacked widget
             for name, screen in self.screens.items():

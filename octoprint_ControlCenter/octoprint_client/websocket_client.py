@@ -56,6 +56,9 @@ class OctoPrintWebSocket(QThread):
     
     # Position update signals
     current_position_updated_signal = pyqtSignal(dict)  # {'x': float, 'y': float, 'z': float}
+    
+    # Probe accuracy results signal for MVP architecture
+    probe_accuracy_signal = pyqtSignal(str)  # Raw probe accuracy message string
 
     def __init__(self, ip="0.0.0.0:5000", api_key=None):
         """
@@ -451,6 +454,11 @@ class OctoPrintWebSocket(QThread):
                             self.logger.error(f"Printer error detected: {item}")
                             self.printer_error_signal.emit(item)
 
+                        # Check for probe accuracy results and emit signal to model (MVP architecture)
+                        if 'probe accuracy results:' in item.lower():
+                            self.logger.info(f"Probe accuracy results detected: {item}")
+                            self.probe_accuracy_signal.emit(item)
+
                 # Process printer status
                 if data["current"]["state"]["text"]:
                     status = data["current"]["state"]["text"]
@@ -497,3 +505,13 @@ class OctoPrintWebSocket(QThread):
         except Exception as e:
             self.logger.error(f"Error processing WebSocket data: {e}")
             self.logger.exception("Full traceback:")
+            
+    def set_main_window_reference(self, main_window):
+        """
+        Set a reference to the main window.
+        
+        Args:
+            main_window: Reference to the main application window
+        """
+        self.main_window = main_window
+        self.logger.info("Main window reference set")
