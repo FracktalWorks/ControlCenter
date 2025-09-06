@@ -1,6 +1,7 @@
 import os
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel
+from PyQt5.QtCore import QTimer
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
 from utils import dialog
@@ -114,17 +115,27 @@ class ZtoolOffsetWizard(QWidget):
             
             self.logger.info("Z Tool Offset calibration started - getting latest tool offsets and homing")
             
-            # Get latest M218 tool offsets from printer (similar to camera wizard)
-            if self.octoprint_client:
-                self.octoprint_client.gcode(command='M503')
+            # Validate we have necessary components
+            if not self.octoprint_client:
+                self.logger.error("No OctoPrint client available")
+                self._show_error("Connection Error", "No OctoPrint client available. Please check connection.")
+                return
                 
+            if not self.model:
+                self.logger.error("No printer model available")
+                self._show_error("Model Error", "No printer model available. Please restart the application.")
+                return
+            
+            # Get latest M218 tool offsets from printer (similar to camera wizard)
+            self.octoprint_client.gcode(command='M503')
+            
             # Home all axes for consistent starting position
-            if self.octoprint_client:
-                self.octoprint_client.home(['x', 'y', 'z'])
-                self.octoprint_client.jog(x=0, y=0, z=5, absolute=True, speed=9000)  # Raise Z slightly
+            self.octoprint_client.home(['x', 'y', 'z'])
+            self.octoprint_client.jog(x=0, y=0, z=5, absolute=True, speed=9000)  # Raise Z slightly
             
         except Exception as e:
             self.logger.error(f"Error in ZtoolOffsetWizard showEvent: {e}")
+            self._show_error("Initialization Error", str(e))
 
     def goto_step(self, index: int):
         """
@@ -180,6 +191,9 @@ class ZtoolOffsetWizard(QWidget):
     def _setup_calibration_step(self):
         """Configure UI and start the automated calibration process."""
         try:
+            # Connect probe tracking FIRST before starting any probe operations
+            self._connect_probe_tracking()
+            
             # Update button to processing state
             if self.nextButton:
                 self.nextButton.setText("Processing...")
@@ -196,8 +210,8 @@ class ZtoolOffsetWizard(QWidget):
                 )
             
             self.logger.info("Starting automated probe sequence")
-            # Begin the automated probing process
-            self.start_probe_sequence()
+            # Use QTimer to ensure signal connection is complete before starting probe sequence
+            QTimer.singleShot(100, self.start_probe_sequence)
             
         except Exception as e:
             self.logger.error(f"Error setting up calibration step: {e}")
@@ -252,10 +266,7 @@ class ZtoolOffsetWizard(QWidget):
         try:
             self.logger.info("Starting automated probe sequence")
             
-            # Connect probe tracking for this sequence
-            self._connect_probe_tracking()
-            
-            # Reset probe state
+            # Reset probe state (probe tracking is already connected in _setup_calibration_step)
             self._reset_probe_state()
             
             # Update UI with detailed progress information
@@ -276,42 +287,82 @@ class ZtoolOffsetWizard(QWidget):
             self._show_error("Probe Sequence Error", str(e))
 
     def probe_tool(self, tool_number):
-        """Probe a specific tool"""
+        """Probe a specific tool with proper sequencing"""
         try:
             self.logger.info(f"Probing tool {tool_number}")
             self.current_probing_tool = f'tool{tool_number}'
             
             # Update status for current tool being probed
             step_num = 1 if tool_number == 0 else 3
-            self.calibrationLabel.setText(f"📍 STEP {step_num}/4: Tool {tool_number} Probing in Progress\n\n" +
-                                        f"• Tool {tool_number} selected and positioned\n" +
-                                        f"• Running probe accuracy test\n" +
-                                        f"• Collecting measurement data\n\n" +
-                                        f"Status: Probing Tool {tool_number}... Please wait.")
+            if self.calibrationLabel:
+                self.calibrationLabel.setText(f"📍 STEP {step_num}/4: Tool {tool_number} Probing in Progress\n\n" +
+                                            f"• Tool {tool_number} selected and positioned\n" +
+                                            f"• Running probe accuracy test\n" +
+                                            f"• Collecting measurement data\n\n" +
+                                            f"Status: Switching to Tool {tool_number}...")
             
             # Switch to the specified tool
             self.octoprint_client.gcode(command=f'T{tool_number}')
             
-            # Move to center of bed based on machineBuildSize
+            # Calculate bed center position
             build_size = getattr(self.model, 'machineBuildSize', {'X': 300, 'Y': 300}) if self.model else {'X': 300, 'Y': 300}
             center_x = int(build_size.get('X', 300) / 2)  # Center of bed X
             center_y = int(build_size.get('Y', 300) / 2)  # Center of bed Y
             
             self.logger.info(f"Using bed size: {build_size.get('X')}x{build_size.get('Y')}mm, probing at center X{center_x} Y{center_y}")
             
-            # Move to center position
-            self.octoprint_client.jog(x=center_x, y=center_y, absolute=True, speed=5000)
+            # Use QTimer for proper sequencing - wait for tool switch to complete
+            QTimer.singleShot(3000, lambda: self._move_and_probe(tool_number, center_x, center_y))
             
-            # Wait a moment for movement to complete, then start probe accuracy
-            time.sleep(2)
+        except Exception as e:
+            self.logger.error(f"Error probing tool {tool_number}: {e}")
+            dialog.WarningOk(self, f"Error probing tool {tool_number}: {str(e)}", overlay=True)
+
+    def _move_and_probe(self, tool_number, center_x, center_y):
+        """Move to position and start probing after tool switch completes"""
+        try:
+            self.logger.info(f"Moving tool {tool_number} to probe position")
+            
+            # Update status
+            step_num = 1 if tool_number == 0 else 3
+            if self.calibrationLabel:
+                self.calibrationLabel.setText(f"📍 STEP {step_num}/4: Tool {tool_number} Probing in Progress\n\n" +
+                                            f"• Tool {tool_number} selected and positioned\n" +
+                                            f"• Moving to probe position\n" +
+                                            f"• Collecting measurement data\n\n" +
+                                            f"Status: Moving to probe position...")
+            
+            # Move to center position
+            self.octoprint_client.jog(x=center_x, y=center_y, z=5, absolute=True, speed=8000)
+
+            # Start probing after movement delay
+            QTimer.singleShot(2000, lambda: self._start_probe_accuracy(tool_number))
+            
+        except Exception as e:
+            self.logger.error(f"Error moving tool {tool_number} to probe position: {e}")
+            dialog.WarningOk(self, f"Error moving tool {tool_number}: {str(e)}", overlay=True)
+
+    def _start_probe_accuracy(self, tool_number):
+        """Start the probe accuracy test"""
+        try:
+            self.logger.info(f"Starting probe accuracy test for tool {tool_number}")
+            
+            # Update status
+            step_num = 1 if tool_number == 0 else 3
+            if self.calibrationLabel:
+                self.calibrationLabel.setText(f"📍 STEP {step_num}/4: Tool {tool_number} Probing in Progress\n\n" +
+                                            f"• Tool {tool_number} selected and positioned\n" +
+                                            f"• Running probe accuracy test\n" +
+                                            f"• Collecting measurement data\n\n" +
+                                            f"Status: Probing Tool {tool_number}... Please wait.")
             
             # Run probe accuracy macro with specified speed
             self.logger.info(f"Running PROBE_ACCURACY PROBE_SPEED=3 for tool {tool_number}")
             self.octoprint_client.gcode(command='PROBE_ACCURACY PROBE_SPEED=3')
             
         except Exception as e:
-            self.logger.error(f"Error probing tool {tool_number}: {e}")
-            dialog.WarningOk(self, f"Error probing tool {tool_number}: {str(e)}", overlay=True)
+            self.logger.error(f"Error starting probe accuracy for tool {tool_number}: {e}")
+            dialog.WarningOk(self, f"Error starting probe for tool {tool_number}: {str(e)}", overlay=True)
 
     def on_probe_result_received(self, tool_name, probe_data):
         """
@@ -323,6 +374,11 @@ class ZtoolOffsetWizard(QWidget):
         """
         try:
             self.logger.info(f"Received probe result signal: {tool_name} = {probe_data}")
+            
+            # Validate we got results for the expected tool
+            if self.current_probing_tool != tool_name:
+                self.logger.warning(f"Received probe result for {tool_name} but expected {self.current_probing_tool}")
+                # Still process it, but log the discrepancy
             
             # Store the complete probe data for the specified tool
             if tool_name in self.probe_results:
@@ -336,26 +392,28 @@ class ZtoolOffsetWizard(QWidget):
                 if tool_name == 'tool0' and self.probe_results['tool1'] is None:
                     # Tool 0 done, now probe tool 1
                     self.logger.info("Tool 0 probing complete via signal, starting tool 1")
-                    self.calibrationLabel.setText(f"✅ STEP 2/4: Tool 0 Complete!\n\n" +
-                                                f"• Average: {average_value:.6f}mm\n" +
-                                                f"• Std Dev: {std_dev:.6f}mm\n" +
-                                                f"• Quality: {'Good' if std_dev < 0.02 else 'Acceptable' if std_dev < 0.05 else 'Poor'}\n\n" +
-                                                f"📍 Preparing Tool 1 calibration...")
+                    if self.calibrationLabel:
+                        self.calibrationLabel.setText(f"✅ STEP 2/4: Tool 0 Complete!\n\n" +
+                                                    f"• Average: {average_value:.6f}mm\n" +
+                                                    f"• Std Dev: {std_dev:.6f}mm\n" +
+                                                    f"• Quality: {'Good' if std_dev < 0.02 else 'Acceptable' if std_dev < 0.05 else 'Poor'}\n\n" +
+                                                    f"📍 Preparing Tool 1 calibration...")
                     
-                    # Small delay before starting tool 1
+                    # Use QTimer instead of blocking sleep to start tool 1 probing
                     self.logger.info("Waiting 2 seconds before probing tool 1...")
-                    time.sleep(2)
-                    self.probe_tool(1)
+                    QTimer.singleShot(2000, lambda: self.probe_tool(1))
                     
                 elif tool_name == 'tool1':
                     # Both tools done, calculate offset
                     self.logger.info("Tool 1 probing complete via signal, calculating offset")
-                    self.calibrationLabel.setText(f"✅ STEP 4/4: Tool 1 Complete!\n\n" +
-                                                f"• Average: {average_value:.6f}mm\n" +
-                                                f"• Std Dev: {std_dev:.6f}mm\n" +
-                                                f"• Quality: {'Good' if std_dev < 0.02 else 'Acceptable' if std_dev < 0.05 else 'Poor'}\n\n" +
-                                                f"🔄 Calculating final Z offset...")
-                    self.calculate_z_offset()
+                    if self.calibrationLabel:
+                        self.calibrationLabel.setText(f"✅ STEP 4/4: Tool 1 Complete!\n\n" +
+                                                    f"• Average: {average_value:.6f}mm\n" +
+                                                    f"• Std Dev: {std_dev:.6f}mm\n" +
+                                                    f"• Quality: {'Good' if std_dev < 0.02 else 'Acceptable' if std_dev < 0.05 else 'Poor'}\n\n" +
+                                                    f"🔄 Calculating final Z offset...")
+                    # Use QTimer to ensure UI updates before calculation
+                    QTimer.singleShot(500, self.calculate_z_offset)
             else:
                 self.logger.error(f"Invalid tool_name received: {tool_name}")
                 
@@ -543,9 +601,13 @@ class ZtoolOffsetWizard(QWidget):
     def _connect_probe_tracking(self):
         """Connect probe tracking when needed for receiving probe results."""
         if not self._probe_tracking_connected and self.model:
-            self.model.probe_accuracy_result_received.connect(self.on_probe_result_received)
-            self._probe_tracking_connected = True
-            self.logger.debug("Probe tracking connected")
+            try:
+                self.model.probe_accuracy_result_received.connect(self.on_probe_result_received)
+                self._probe_tracking_connected = True
+                self.logger.info("Probe tracking connected successfully")
+            except Exception as e:
+                self.logger.error(f"Failed to connect probe tracking: {e}")
+                raise
     
     def _disconnect_probe_tracking(self):
         """Disconnect probe tracking when no longer needed."""
@@ -553,7 +615,11 @@ class ZtoolOffsetWizard(QWidget):
             try:
                 self.model.probe_accuracy_result_received.disconnect(self.on_probe_result_received)
                 self._probe_tracking_connected = False
-                self.logger.debug("Probe tracking disconnected")
-            except TypeError:
-                # Signal was already disconnected
+                self.logger.info("Probe tracking disconnected successfully")
+            except (TypeError, AttributeError) as e:
+                # Signal was already disconnected or doesn't exist
+                self._probe_tracking_connected = False
+                self.logger.debug(f"Probe tracking was already disconnected: {e}")
+            except Exception as e:
+                self.logger.error(f"Error disconnecting probe tracking: {e}")
                 self._probe_tracking_connected = False
