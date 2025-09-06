@@ -551,7 +551,7 @@ class CameraToolOffsetCalibration(QWidget):
             is_fine = step_index in [self.STEP_POSITION_T0_FINE, self.STEP_POSITION_T1_FINE]
             
             # Set movement step resolution
-            self.movement_step = 0.01 if is_fine else 0.5
+            self.movement_step = 0.02 if is_fine else 0.5
             
             # Setup camera if not already running
             if not (hasattr(self, 'camera_thread') and self.camera_thread and self.camera_thread.isRunning()):
@@ -903,7 +903,7 @@ class CameraToolOffsetCalibration(QWidget):
         # Draw bigger circle and crosshair in center - double the size
         center_x = mirrored_pixmap.width() // 2
         center_y = mirrored_pixmap.height() // 2
-        radius = 60 if self.movement_step == 0.01 else 40  # Double the radius (was 30/20)
+        radius = 60 if self.movement_step == 0.02 else 40  # Double the radius (was 30/20)
         
         # Draw circle
         painter.drawEllipse(center_x - radius, center_y - radius, radius * 2, radius * 2)
@@ -1120,14 +1120,15 @@ class CameraToolOffsetCalibration(QWidget):
                     # Proceed to next step after position is recorded
                     if self.current_tool == 0:  # T0 position recorded, switch to T1 and go to T1 course
                         def proceed_to_t1():
-                            # Move T0 to where T1 was positioned before switching tools
-                            if hasattr(self, 'tool1_position') and self.tool1_position:
-                                t1_x = self.tool1_position['x']
-                                t1_y = self.tool1_position['y']
-                                self.octoprint_client.gcode(f"G1 X{t1_x} Y{t1_y} F3000")
-                                self.logger.info(f"Moved T0 to T1's recorded position: X{t1_x}, Y{t1_y}")
+
                             self.octoprint_client.gcode("T1")
                             self.logger.info("Switched to tool 1")
+                            # Move T0 to where T1 was positioned before switching tools
+                            if hasattr(self, 'tool0_position'):
+                                t0_x = self.tool0_position['x']
+                                t0_y = self.tool0_position['y']
+                                self.octoprint_client.gcode(f"G1 X{t0_x} Y{t0_y} F3000")
+                                self.logger.info(f"Moved T1 to T0's recorded position: X{t0_x}, Y{t0_y}")
                             self.goto_step(self.STEP_POSITION_T1_COURSE)
                         QTimer.singleShot(100, proceed_to_t1)
                     elif self.current_tool == 1:  # T1 position recorded, go to results
@@ -1184,8 +1185,7 @@ class CameraToolOffsetCalibration(QWidget):
                 results_text = f"""Calibration Complete!
 Recorded Positions:
 • T0 Position: X={t0_pos['x']:.2f}, Y={t0_pos['y']:.2f}
-• T1 Position (with offsets): X={t1_pos['x']:.2f}, Y={t1_pos['y']:.2f}
-• T1 Raw Position: X={t1_pos['x']:.2f}, Y={t1_pos['y']:.2f}
+• T1 Position: X={t1_pos['x']:.2f}, Y={t1_pos['y']:.2f}
 Position Differences (T1-T0):
 • X Difference: {raw_x_diff:.3f}mm
 • Y Difference: {raw_y_diff:.3f}mm

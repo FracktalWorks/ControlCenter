@@ -297,23 +297,30 @@ class OctoPrintWebSocket(QThread):
                             self.logger.error(f"Klipper error detected: {error_message}")
                             self.printer_error_signal.emit(str(error_message).strip())
 
-                        # State messages look like: ' Klipper state: Ready\n' in title/payload
+                        # Check for probe accuracy results in both title and payload
                         for key in ('title', 'payload'):
                             text = plugin_data.get(key)
                             if not isinstance(text, str):
                                 continue
+                            
+                            # Check for probe accuracy results first
+                            if 'probe accuracy results:' in text.lower():
+                                self.logger.info(f"Probe accuracy results detected in {key}: {text.strip()}")
+                                self.probe_accuracy_signal.emit(text.strip())
+                                # Don't continue here, still check for state messages
+                            
+                            # Check for Klipper state messages
                             m = re.search(r"klipper\s*state:\s*([^\n\r]+)", text, flags=re.IGNORECASE)
-                            if not m:
-                                continue
-                            state = m.group(1).strip()
-                            norm = state.lower()
-                            self.logger.info(f"Klipper state parsed from {key}: {norm}")
-                            try:
-                                self.klipper_state_signal.emit(norm)
-                                print(f"Klipper state emitted: {norm}")
-                            except Exception:
-                                pass
-                            break
+                            if m:
+                                state = m.group(1).strip()
+                                norm = state.lower()
+                                self.logger.info(f"Klipper state parsed from {key}: {norm}")
+                                try:
+                                    self.klipper_state_signal.emit(norm)
+                                    print(f"Klipper state emitted: {norm}")
+                                except Exception:
+                                    pass
+                                break
 
                 if plugin_name == 'JuliaFirmwareUpdater':
                     self.logger.info("Emitting firmware_updater_signal")
@@ -454,10 +461,8 @@ class OctoPrintWebSocket(QThread):
                             self.logger.error(f"Printer error detected: {item}")
                             self.printer_error_signal.emit(item)
 
-                        # Check for probe accuracy results and emit signal to model (MVP architecture)
-                        if 'probe accuracy results:' in item.lower():
-                            self.logger.info(f"Probe accuracy results detected: {item}")
-                            self.probe_accuracy_signal.emit(item)
+                        # Note: Probe accuracy results are now handled in Klipper plugin section above
+
 
                 # Process printer status
                 if data["current"]["state"]["text"]:
@@ -506,12 +511,3 @@ class OctoPrintWebSocket(QThread):
             self.logger.error(f"Error processing WebSocket data: {e}")
             self.logger.exception("Full traceback:")
             
-    def set_main_window_reference(self, main_window):
-        """
-        Set a reference to the main window.
-        
-        Args:
-            main_window: Reference to the main application window
-        """
-        self.main_window = main_window
-        self.logger.info("Main window reference set")

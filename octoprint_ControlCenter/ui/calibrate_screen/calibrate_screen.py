@@ -12,7 +12,7 @@ from ui.calibrate_screen.toolOffset.toolOffset import ToolOffset
 from ui.calibrate_screen.bedLevelingPage.bedLevelingPage import BedLeveling
 from ui.calibrate_screen.idexLevelCalibration.idexLevelCalibration import IdexLevelCalibration
 from ui.calibrate_screen.cameraToolOffsetCalibration.cameraToolOffsetCalibration import CameraToolOffsetCalibration
-from ui.calibrate_screen.zProbeOffsetPage.zProbeOffsetPage import ZProbeOffsetPage
+from ui.calibrate_screen.ZtoolOffsetWizard.ZtoolOffsetWizard import ZtoolOffsetWizard
 
 
 logger = get_logger(__name__)
@@ -100,7 +100,7 @@ class CalibrateScreen(QWidget):
             self.screens["tool_offset"] = ToolOffset(self.main_window)
             self.screens["camera_tool_offset"] = CameraToolOffsetCalibration(self.main_window)
             self.screens["idex_calibration"] = IdexLevelCalibration(self.main_window)
-            self.screens["z_probe_offset"] = ZProbeOffsetPage(self.main_window)
+            self.screens["z_probe_offset"] = ZtoolOffsetWizard(self.main_window)
 
             # Add each screen to the stacked widget
             for name, screen in self.screens.items():

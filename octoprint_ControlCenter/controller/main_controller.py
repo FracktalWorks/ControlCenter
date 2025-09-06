@@ -234,10 +234,6 @@ class MainController:
         """Start websocket and bind signals to model/controller."""
         self.octoprint_websocket = OctoPrintWebSocket(ip=ip, api_key=apiKey)
         
-        # Set main window reference for probe result forwarding to calibration wizards
-        if hasattr(self, 'main_window'):
-            self.octoprint_websocket.set_main_window_reference(self.main_window)
-        
         self.octoprint_websocket.start()
         # Model signal wiring
         self.octoprint_websocket.temperatures_signal.connect(self.printer_model.updateTemperature)

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ZProbeOffsetPage</class>
- <widget class="QWidget" name="ZProbeOffsetPage">
+ <class>ZtoolOffsetWizard</class>
+ <widget class="QWidget" name="ZtoolOffsetWizard">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>598</width>
-    <height>380</height>
+    <width>745</width>
+    <height>563</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Z Probe Offset Calibration</string>
+   <string>Z Tool Offset Calibration Wizard</string>
   </property>
   <property name="styleSheet">
    <string notr="true">background-color: rgb(40, 40, 40);</string>
@@ -55,6 +55,7 @@
          <font>
           <family>Gotham</family>
           <pointsize>16</pointsize>
+          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -91,16 +92,17 @@
     );</string>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="welcomePage">
-         <layout class="QHBoxLayout" name="welcomeHorizontalLayout" stretch="1,2">
+         <layout class="QHBoxLayout" name="welcomeHorizontalLayout" stretch="1">
           <item>
            <widget class="QLabel" name="welcomeLabel">
             <property name="font">
              <font>
               <family>Gotham</family>
               <pointsize>14</pointsize>
+              <weight>50</weight>
               <bold>false</bold>
              </font>
             </property>
@@ -108,11 +110,11 @@
              <string notr="true">color: rgb(255, 255, 255);</string>
             </property>
             <property name="text">
-             <string>Welcome to Z Probe Offset Calibration!
+             <string>Welcome to Z Tool Offset Calibration Wizard!
 
-This calibration helps you set the correct Z probe offset for accurate first layer printing.
+This calibration helps you set the correct Z tool offset for accurate multi-tool printing.
 
-Z Probe Offset is the distance between your probe trigger point and your nozzle tip when they are at the same Z height.
+Z Tool Offset is the difference in height between your tools when they are at the same Z position.
 
 Click Next to continue with the calibration process.</string>
             </property>
@@ -121,32 +123,17 @@ Click Next to continue with the calibration process.</string>
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QLabel" name="welcomeGif">
-            <property name="styleSheet">
-             <string notr="true">color: rgb(255, 255, 255);
-border: 2px dashed rgb(100, 100, 100);
-border-radius: 5px;</string>
-            </property>
-            <property name="text">
-             <string>GIF: Z Probe Offset Explanation
-(Placeholder)</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
          </layout>
         </widget>
         <widget class="QWidget" name="calibrationPage">
-         <layout class="QHBoxLayout" name="calibrationHorizontalLayout" stretch="1,2">
+         <layout class="QHBoxLayout" name="calibrationHorizontalLayout" stretch="1">
           <item>
            <widget class="QLabel" name="calibrationLabel">
             <property name="font">
              <font>
               <family>Gotham</family>
               <pointsize>14</pointsize>
+              <weight>50</weight>
               <bold>false</bold>
              </font>
             </property>
@@ -154,9 +141,9 @@ border-radius: 5px;</string>
              <string notr="true">color: rgb(255, 255, 255);</string>
             </property>
             <property name="text">
-             <string>Z Probe Offset Calibration - Step 2
+             <string>Z Tool Offset Calibration - Step 2
 
-Follow the instructions below to complete the Z probe offset calibration.
+Follow the instructions below to complete the Z tool offset calibration.
 
 Detailed calibration steps will be added here.
 
@@ -164,22 +151,6 @@ Ensure your printer is properly heated and ready for calibration.</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="calibrationGif">
-            <property name="styleSheet">
-             <string notr="true">color: rgb(255, 255, 255);
-border: 2px dashed rgb(100, 100, 100);
-border-radius: 5px;</string>
-            </property>
-            <property name="text">
-             <string>GIF: Z Probe Calibration Process
-(Placeholder)</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
             </property>
            </widget>
           </item>
@@ -220,7 +191,7 @@ border-radius: 5px;</string>
        <number>6</number>
       </property>
       <item>
-       <widget class="QPushButton" name="stepNextButton">
+       <widget class="QPushButton" name="nextButton">
         <property name="minimumSize">
          <size>
           <width>0</width>
@@ -270,7 +241,7 @@ QPushButton:focus {
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="stepCancelButton">
+       <widget class="QPushButton" name="cancelButton1">
         <property name="minimumSize">
          <size>
           <width>0</width>
