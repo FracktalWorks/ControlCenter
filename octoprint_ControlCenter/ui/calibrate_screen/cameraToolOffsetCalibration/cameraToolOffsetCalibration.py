@@ -1097,14 +1097,77 @@ class CameraToolOffsetCalibration(QWidget):
             # Store which tool we're waiting for to proceed to next step
             self._waiting_for_position = tool
             
+            # Set up a timeout in case position update doesn't come through
+            if hasattr(self, 'position_timeout_timer'):
+                self.position_timeout_timer.stop()
+            
+            self.position_timeout_timer = QTimer()
+            self.position_timeout_timer.setSingleShot(True)
+            self.position_timeout_timer.timeout.connect(lambda: self._handle_position_timeout(tool))
+            self.position_timeout_timer.start(5000)  # 5 second timeout
+            
         except Exception as e:
             self.logger.error(f"Error recording tool {tool} position: {e}")
+
+    def _handle_position_timeout(self, tool):
+        """Handle position recording timeout - provide retry or cancel options."""
+        try:
+            self.logger.warning(f"Position recording timeout for tool {tool}")
+            
+            # Clean up timeout timer
+            if hasattr(self, 'position_timeout_timer'):
+                self.position_timeout_timer.stop()
+                self.position_timeout_timer = None
+            
+            # Show dialog asking user what to do
+            result = dialog.RetryCancel(
+                parent=self,
+                text=f"Position Recording Timeout\n\nFailed to get position response for Tool {tool}.\n\nThis might happen if there's no movement or communication issues.\n\nWould you like to retry or cancel?",
+                overlay=True,
+                icon="warning"
+            )
+            
+            if result == "retry":
+                # Retry position recording
+                self.logger.info(f"User chose to retry position recording for tool {tool}")
+                QTimer.singleShot(500, lambda: self._record_tool_position(tool))
+            else:
+                # Cancel - exit the wizard entirely
+                self.logger.info(f"User cancelled position recording for tool {tool}")
+                self._reset_position_recording_state()
+                self.on_cancel_clicked()  # Exit the wizard
+                
+        except Exception as e:
+            self.logger.error(f"Error handling position timeout: {e}")
+            # Reset state on error and exit wizard
+            self._reset_position_recording_state()
+            self.on_cancel_clicked()  # Exit the wizard on error too
+
+    def _reset_position_recording_state(self):
+        """Reset position recording state variables."""
+        try:
+            self.current_tool = None
+            self._waiting_for_position = None
+            self._disconnect_position_tracking()
+            
+            # Clean up timeout timer
+            if hasattr(self, 'position_timeout_timer'):
+                self.position_timeout_timer.stop()
+                self.position_timeout_timer = None
+                
+        except Exception as e:
+            self.logger.error(f"Error resetting position recording state: {e}")
 
     def on_position_updated(self, position):
         """Handle position updates from websocket."""
         try:
             if self.current_tool is not None and 'x' in position and 'y' in position:
                 pos = {'x': position['x'], 'y': position['y']}
+                
+                # Cancel timeout timer since we got a position update
+                if hasattr(self, 'position_timeout_timer') and self.position_timeout_timer:
+                    self.position_timeout_timer.stop()
+                    self.position_timeout_timer = None
                 
                 if self.current_tool == 0:
                     self.tool0_position = pos
@@ -1312,6 +1375,11 @@ Please restart the calibration process."""
             
             # Disconnect position tracking
             self._disconnect_position_tracking()
+            
+            # Clean up timeout timer
+            if hasattr(self, 'position_timeout_timer') and self.position_timeout_timer:
+                self.position_timeout_timer.stop()
+                self.position_timeout_timer = None
             
             self.logger.debug("Cleanup completed successfully")
             
