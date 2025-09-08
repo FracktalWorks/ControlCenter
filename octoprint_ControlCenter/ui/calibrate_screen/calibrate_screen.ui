@@ -170,7 +170,7 @@ QToolButton:focus {
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">
-                <normaloff>:/Icons/img/icons/Basic Bed Leveling.png</normaloff>:/Icons/img/icons/Basic Bed Leveling.png</iconset>
+                <normaloff>:/Icons/img/icons/Advanced Bed Leveling.png</normaloff>:/Icons/img/icons/Advanced Bed Leveling.png</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -184,7 +184,7 @@ QToolButton:focus {
              </widget>
             </item>
             <item>
-             <widget class="QToolButton" name="nozzleOffsetWizardButton">
+             <widget class="QToolButton" name="zProbeOffsetWizardButton">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                 <horstretch>0</horstretch>
@@ -227,7 +227,7 @@ QToolButton:focus {
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">
-                <normaloff>:/Icons/img/icons/Nozzle Offset Icon.png</normaloff>:/Icons/img/icons/Nozzle Offset Icon.png</iconset>
+                <normaloff>:/Icons/img/icons/Nozzle Offset Wizard.png</normaloff>:/Icons/img/icons/Nozzle Offset Wizard.png</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -341,7 +341,7 @@ Wizard</string>
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">
-                <normaloff>:/Icons/img/icons/Tool Z Offset Icon.png</normaloff>:/Icons/img/icons/Tool Z Offset Icon.png</iconset>
+                <normaloff>:/Icons/img/icons/Tool Z Offset Wizard.png</normaloff>:/Icons/img/icons/Tool Z Offset Wizard.png</iconset>
               </property>
               <property name="iconSize">
                <size>
@@ -399,7 +399,7 @@ Wizard</string>
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">
-                <normaloff>:/Icons/img/icons/Input Shaper.png</normaloff>:/Icons/img/icons/Input Shaper.png</iconset>
+                <normaloff>:/Logos &amp; Branding/img/icons/Input Shaper.png</normaloff>:/Logos &amp; Branding/img/icons/Input Shaper.png</iconset>
               </property>
               <property name="iconSize">
                <size>

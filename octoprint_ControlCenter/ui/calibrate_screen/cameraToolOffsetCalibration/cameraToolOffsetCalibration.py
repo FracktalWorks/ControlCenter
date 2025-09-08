@@ -1,23 +1,45 @@
 """
-Camera Tool Offset Calibration
-==============================
+Camera Tool Offset Calibration Wizard
+=====================================
 
-Simplified user-guided tool offset calibration using manual positioning.
+Manual user-guided tool offset calibration using camera assistance and manual positioning.
+
+Architecture:
+- 7-step wizard: Clean Nozzles -> Connect Camera -> T0 Course -> T0 Fine -> T1 Course -> T1 Fine -> Results
+- Manual positioning workflow with camera guidance and movement controls
+- Timeout handling for robust position recording failure recovery
+- Video demonstrations for user guidance on steps 1-2
 
 Workflow:
-1. Clean Nozzles - Heat and present both nozzles for cleaning
-2. Connect Camera - Position for camera and request connection 
-3. Position T0 - Course and fine positioning of T0 nozzle center
-4. Position T1 - Course and fine positioning of T1 nozzle center  
-5. Results - Calculate and apply tool offsets
+1. Clean Nozzles - Heat both nozzles and position for cleaning (with instructional video)
+2. Connect Camera - Position for camera and establish connection (with instructional video)
+3. Position T0 Course - Manual positioning with coarse adjustment (0.5mm steps)
+4. Position T0 Fine - Manual positioning with fine adjustment (0.02mm steps)
+5. Position T1 Course - Manual positioning with coarse adjustment (0.5mm steps)
+6. Position T1 Fine - Manual positioning with fine adjustment (0.02mm steps)
+7. Results - Calculate and apply tool offsets with comprehensive validation
 
-No automatic detection - relies on user manual positioning.
+Features:
+- Camera feed with crosshair overlay and zoom control for precise positioning
+- Robust camera connection handling with retry/cancel options
+- Position recording with timeout handling and user interaction options
+- Quality offset calculation preserving existing values
+- Comprehensive error handling and user feedback
+- Instructional videos for critical steps
+
+Dependencies:
+- OpenCV for camera capture and image processing
+- OctoPrint client for G-code commands and position tracking
+- Printer model for position signals and current offset retrieval
+- PyQt5 UI framework with custom dialog utilities
 """
 
 import os
 import sys
 import time
 import subprocess
+
+# ==================== DYNAMIC OPENCV IMPORT AND INSTALLATION ====================
 
 # Dynamic OpenCV import with automatic installation
 try:
@@ -55,27 +77,51 @@ except ImportError:
                 print("Please install it manually with: sudo apt install python3-opencv or pip install opencv-python")
                 OPENCV_AVAILABLE = False
 
+# ==================== PYQT5 AND UTILITY IMPORTS ====================
+
 from PyQt5 import uic, QtCore, QtWidgets
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel, QMessageBox
-import time
-
-# Additional PyQt5 imports
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout
 from PyQt5.QtCore import QTimer, QThread, pyqtSignal, QMutex
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QPen, QTransform
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QPen, QTransform, QMovie
 from PyQt5.QtCore import Qt
 
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
 from utils import dialog
 
+# ==================== CAMERA CAPTURE THREAD ====================
+
 
 class CameraThread(QThread):
-    """Thread for handling camera capture to avoid blocking the UI."""
+    """
+    Camera Capture Thread
+    ====================
+    
+    Handles camera capture operations in a separate thread to prevent UI blocking.
+    Provides robust camera connection with segfault protection for Raspberry Pi environments.
+    
+    Features:
+    - Safe camera initialization and cleanup
+    - Zoom factor support for fine positioning
+    - Frame buffering with mutex protection
+    - Error handling and connection status reporting
+    
+    Signals:
+    - changePixmap: Emitted when new frame is available
+    - connectionError: Emitted when camera connection fails
+    """
+    
     changePixmap = pyqtSignal(QImage)
     connectionError = pyqtSignal(str)
 
     def __init__(self, camera_index=0):
+        """
+        Initialize camera thread.
+        
+        Args:
+            camera_index (int): Camera device index (default: 0)
+        """
         super().__init__()
         self.camera_index = camera_index
         self.running = False
@@ -86,7 +132,12 @@ class CameraThread(QThread):
         self.zoom_factor = 1.0
 
     def set_zoom(self, factor):
-        """Set zoom factor for display."""
+        """
+        Set zoom factor for display.
+        
+        Args:
+            factor (float): Zoom factor (1.0 = normal, 3.0 = 3x zoom)
+        """
         self.zoom_factor = factor
 
     def try_connect(self):
@@ -284,20 +335,42 @@ class CameraThread(QThread):
             self.cap = None
 
 
+# ==================== MAIN CALIBRATION WIZARD CLASS ====================
+
 class CameraToolOffsetCalibration(QWidget):
-    """Simplified Camera Tool Offset Calibration widget.
-    
-    Manual positioning workflow:
-    1. Clean Nozzles - Heat both nozzles and position for cleaning
-    2. Connect Camera - Regular mode, position camera under T0  
-    3. Position T0 Course - Manual positioning with coarse adjustment
-    4. Position T0 Fine - Manual positioning with fine adjustment
-    5. Position T1 Course - Manual positioning with coarse adjustment  
-    6. Position T1 Fine - Manual positioning with fine adjustment
-    7. Results - Calculate and apply tool offsets
     """
+    Camera Tool Offset Calibration Wizard
+    =====================================
     
-    # Step indices
+    Manual user-guided tool offset calibration using camera assistance and manual positioning.
+    
+    This wizard provides a comprehensive 7-step process:
+    1. Clean Nozzles - Heat both nozzles and position for cleaning (with instructional video)
+    2. Connect Camera - Position for camera and establish connection (with instructional video)
+    3. Position T0 Course - Manual positioning with coarse adjustment (0.5mm steps)
+    4. Position T0 Fine - Manual positioning with fine adjustment (0.02mm steps)
+    5. Position T1 Course - Manual positioning with coarse adjustment (0.5mm steps)
+    6. Position T1 Fine - Manual positioning with fine adjustment (0.02mm steps)
+    7. Results - Calculate and apply tool offsets with comprehensive validation
+    
+    Key Features:
+    - Camera feed with crosshair overlay and zoom control for precise positioning
+    - Robust camera connection handling with retry/cancel options
+    - Position recording with timeout handling and user interaction options
+    - Quality offset calculation that preserves existing offset values
+    - Comprehensive error handling with user-friendly feedback
+    - Instructional videos for critical setup steps
+    
+    Architecture:
+    - Uses MVP pattern with model signals for position tracking
+    - Timeout-based error recovery for robust operation
+    - Proper state management and cleanup on wizard exit
+    - Video playback integration for user guidance
+    """
+
+    # ==================== CONSTANTS AND CONFIGURATION ====================
+    
+    # Step indices for clarity and maintainability
     STEP_CLEAN_NOZZLES = 0
     STEP_CONNECT_CAMERA = 1  
     STEP_POSITION_T0_COURSE = 2
@@ -306,8 +379,34 @@ class CameraToolOffsetCalibration(QWidget):
     STEP_POSITION_T1_FINE = 5
     STEP_RESULTS = 6
     TOTAL_STEPS = 7
+    
+    # Movement step sizes (mm)
+    MOVEMENT_STEP_COARSE = 0.5
+    MOVEMENT_STEP_FINE = 0.02
+    
+    # Camera zoom factors
+    ZOOM_NORMAL = 1.0
+    ZOOM_FINE = 3.0
+    
+    # Timeout configuration
+    POSITION_TIMEOUT_SECONDS = 5
+    
+    # Video file names for instructional content
+    VIDEO_STEP1_FILENAME = "1_Nozzle Cleaning .gif"  # Clean nozzles instruction video
+    VIDEO_STEP2_FILENAME = "2_Camera Placement.gif"  # Camera connection instruction video
+
+    # ==================== INITIALIZATION AND SETUP ====================
 
     def __init__(self, main_window):
+        """
+        Initialize the Camera Tool Offset Calibration Wizard.
+        
+        Sets up UI components, state variables, signal connections, and video resources
+        for the manual tool offset calibration process.
+        
+        Args:
+            main_window: Main application window providing access to printer model and OctoPrint client
+        """
         super().__init__()
         self.main_window = main_window
         self.model = getattr(main_window, "printer_model", None)
@@ -315,32 +414,75 @@ class CameraToolOffsetCalibration(QWidget):
         self.logger = get_logger(self.__class__.__name__)
         self.logger.info("Initializing CameraToolOffsetCalibration")
 
+        # Initialize state variables
+        self._init_state_variables()
+        
+        # Load UI and initialize components
+        self._load_ui()
+        self._init_ui_components()
+        self._connect_signals()
+        
+        # Initialize video resources
+        self._init_video_resources()
+
+        self.logger.info("CameraToolOffsetCalibration initialized successfully")
+
+    def _init_state_variables(self):
+        """
+        Initialize all state tracking variables.
+        
+        Sets up camera state, positioning state, wizard navigation, position tracking,
+        and video playback variables.
+        """
         # Camera related attributes  
         self.camera_thread = None
         self.camera_available = False
         self.camera_setup_in_progress = False
-        self._camera_skipped = False  # Track if user chose to skip camera
         self.loading_dialog = None  # Dialog for camera loading
         
         # Positioning state
         self.tool0_position = None
         self.tool1_position = None
         self.current_tool = 0
-        self.movement_step = 0.5  # Start with course movement
+        self.movement_step = self.MOVEMENT_STEP_COARSE  # Start with coarse movement
         self._waiting_for_position = None  # Track when waiting for position response
         
-        # Wizard state
+        # Wizard navigation state
         self._current_step = 0
         
-        # Load UI
+        # Position tracking and timeout handling
+        self._position_tracking_connected = False
+        self.position_timeout_timer = None
+        
+        # Video playback state
+        self.current_video_widget = None
+        self.video_timer = None
+        self.current_movie = None  # QMovie object for GIF playback
+        self.step1_movie = None    # QMovie for step 1 GIF
+        self.step2_movie = None    # QMovie for step 2 GIF
+
+    def _load_ui(self):
+        """
+        Load the UI file with proper error handling.
+        
+        Raises:
+            Exception: If UI file cannot be loaded
+        """
         try:
             ui_file_path = os.path.join(os.path.dirname(__file__), "cameraToolOffsetCalibration.ui")
             uic.loadUi(ui_file_path, self)
             self.logger.info("CameraToolOffsetCalibration UI loaded successfully")
         except Exception as e:
             self.logger.exception(f"Failed to load CameraToolOffsetCalibration UI file: {e}")
+            raise
 
-        # Bind UI elements
+    def _init_ui_components(self):
+        """
+        Initialize and validate all UI components.
+        
+        Finds all required UI elements and validates their existence for robust operation.
+        """
+        # Main navigation components
         self.stackedWidget: QStackedWidget = self.findChild(QStackedWidget, "stackedWidget")
         self.stepLabel: QLabel = self.findChild(QLabel, "stepLabel")
         
@@ -392,7 +534,14 @@ class CameraToolOffsetCalibration(QWidget):
         ]
         check_ui_elements(self, required, "CameraToolOffsetCalibration")
 
-        # Wire signals
+    def _connect_signals(self):
+        """
+        Connect all signal handlers.
+        
+        Sets up button connections and prepares for model signal connections.
+        Note: Position tracking signals are connected only when needed for proper resource management.
+        """
+        # Navigation button connections
         self.nextButton.clicked.connect(self.on_next_clicked)
         self.cancelButton.clicked.connect(self.on_cancel_clicked)
         
@@ -404,14 +553,164 @@ class CameraToolOffsetCalibration(QWidget):
         self.moveZPButton.clicked.connect(lambda: self.move_axis('Z', self.movement_step))
         self.moveZMButton.clicked.connect(lambda: self.move_axis('Z', -self.movement_step))
 
-        # Position tracking will be connected only when needed
-        self._position_tracking_connected = False
+    def _init_video_resources(self):
+        """
+        Initialize video resources for instructional content.
+        
+        Sets up video file paths and prepares video playback capabilities for
+        steps 1 and 2 instructional content using QMovie for GIF playback.
+        """
+        try:
+            # Get directory path (videos are in the same directory as this file)
+            video_dir = os.path.dirname(__file__)
+            
+            # Set up video file paths
+            self.step1_video_path = os.path.join(video_dir, self.VIDEO_STEP1_FILENAME)
+            self.step2_video_path = os.path.join(video_dir, self.VIDEO_STEP2_FILENAME)
+            
+            # Check if video files exist
+            self.step1_video_available = os.path.exists(self.step1_video_path)
+            self.step2_video_available = os.path.exists(self.step2_video_path)
+            
+            # Create QMovie objects if files exist
+            if self.step1_video_available:
+                self.step1_movie = QMovie(self.step1_video_path)
+                self.logger.info(f"Step 1 video loaded: {self.step1_video_path}")
+            else:
+                self.logger.warning(f"Step 1 video not found: {self.step1_video_path}")
+                
+            if self.step2_video_available:
+                self.step2_movie = QMovie(self.step2_video_path)
+                self.logger.info(f"Step 2 video loaded: {self.step2_video_path}")
+            else:
+                self.logger.warning(f"Step 2 video not found: {self.step2_video_path}")
+                
+            self.logger.info(f"Video resources initialized - Step 1: {self.step1_video_available}, Step 2: {self.step2_video_available}")
+            
+        except Exception as e:
+            self.logger.error(f"Error initializing video resources: {e}")
+            self.step1_video_available = False
+            self.step2_video_available = False
 
+    # ==================== VIDEO PLAYBACK MANAGEMENT ====================
 
+    def _play_step_video(self, step_number):
+        """
+        Play instructional video for the specified step.
+        
+        Args:
+            step_number (int): Step number (1 or 2) to play video for
+        """
+        try:
+            if step_number == 1 and self.step1_video_available and self.step1_movie and hasattr(self, 'step1Gif') and self.step1Gif:
+                self._play_movie_in_label(self.step1_movie, self.step1Gif)
+                self.logger.info("Playing step 1 instructional video")
+            elif step_number == 2 and self.step2_video_available and self.step2_movie and hasattr(self, 'step2Gif') and self.step2Gif:
+                self._play_movie_in_label(self.step2_movie, self.step2Gif)
+                self.logger.info("Playing step 2 instructional video")
+            else:
+                self.logger.warning(f"Video not available for step {step_number}")
+                self._show_video_placeholder(step_number)
+        except Exception as e:
+            self.logger.error(f"Error playing step {step_number} video: {e}")
+            self._show_video_placeholder(step_number)
+
+    def _play_movie_in_label(self, movie, label_widget):
+        """
+        Play QMovie in the specified label widget.
+        
+        Args:
+            movie (QMovie): QMovie object to play
+            label_widget (QLabel): Label widget to display video in
+        """
+        try:
+            # Stop any existing video
+            self._stop_current_video()
+            
+            # Set up the movie in the label
+            label_widget.setMovie(movie)
+            self.current_movie = movie
+            self.current_video_widget = label_widget
+            
+            # Start playing the movie
+            movie.start()
+            
+            self.logger.info(f"Started playing GIF in {label_widget.objectName()}")
+            
+        except Exception as e:
+            self.logger.error(f"Error playing movie in label: {e}")
+            self._show_video_placeholder_in_label(label_widget, "Video Error")
+
+    def _stop_current_video(self):
+        """
+        Stop any currently playing video and clean up resources.
+        """
+        try:
+            if self.current_movie:
+                self.current_movie.stop()
+                self.current_movie = None
+                
+            if self.current_video_widget:
+                # Clear the movie from the label
+                self.current_video_widget.setMovie(None)
+                self.current_video_widget.clear()
+                self.current_video_widget = None
+                
+            if self.video_timer:
+                self.video_timer.stop()
+                self.video_timer = None
+                
+        except Exception as e:
+            self.logger.error(f"Error stopping current video: {e}")
+
+    def _show_video_placeholder(self, step_number):
+        """
+        Show placeholder when video is not available.
+        
+        Args:
+            step_number (int): Step number for placeholder text
+        """
+        if step_number == 1 and self.step1Gif:
+            self._show_video_placeholder_in_label(self.step1Gif, f"Step {step_number} Instructions\n(Video not available)")
+        elif step_number == 2 and self.step2Gif:
+            self._show_video_placeholder_in_label(self.step2Gif, f"Step {step_number} Instructions\n(Video not available)")
+
+    def _show_video_placeholder_in_label(self, label_widget, text):
+        """
+        Show placeholder text in video label.
+        
+        Args:
+            label_widget (QLabel): Label widget to show placeholder in
+            text (str): Placeholder text to display
+        """
+        try:
+            label_widget.setText(text)
+            label_widget.setStyleSheet("""
+                QLabel {
+                    background-color: rgb(60, 60, 60);
+                    border: 2px solid rgb(100, 100, 100);
+                    border-radius: 5px;
+                    color: white;
+                    font-size: 12px;
+                    text-align: center;
+                }
+            """)
+        except Exception as e:
+            self.logger.error(f"Error showing video placeholder: {e}")
+
+    # ==================== WIZARD LIFECYCLE AND NAVIGATION ====================
         self.logger.info("CameraToolOffsetCalibration initialized successfully")
 
     def showEvent(self, event):
-        """Reset the wizard UI to Step 1 each time the widget is shown."""
+        """
+        Handle wizard activation - reset state and prepare UI.
+        
+        Called when the wizard widget becomes visible. Resets wizard to step 1
+        and ensures proper initial state.
+        
+        Args:
+            event: Qt show event
+        """
         super().showEvent(event)
         try:
             self.goto_step(self.STEP_CLEAN_NOZZLES)
@@ -420,9 +719,21 @@ class CameraToolOffsetCalibration(QWidget):
             self.logger.warning(f"Error resetting wizard on show: {e}")
 
     def goto_step(self, index: int):
-        """Switch to the given step index and run step-entry hooks."""
+        """
+        Navigate to the specified wizard step with proper setup.
+        
+        Handles step bounds checking, UI page switching, video management,
+        and step-specific initialization. Each step has its own setup method
+        for clean separation of concerns.
+        
+        Args:
+            index (int): Step index to navigate to (0-based, will be bounds-checked)
+        """
         index = max(0, min(index, self.TOTAL_STEPS - 1))
         prev_step = getattr(self, "_current_step", 0)
+
+        # Stop any currently playing video before switching steps
+        self._stop_current_video()
 
         self._current_step = index
         if self.stackedWidget:
@@ -442,13 +753,14 @@ class CameraToolOffsetCalibration(QWidget):
             self.stackedWidget.setCurrentIndex(page_index)
         self._update_step_label()
 
-        # Step-specific logic
+        # Step-specific logic and video handling
         if index == self.STEP_CLEAN_NOZZLES:
             # Step 1: Clean Nozzles - Heat both nozzles in mirror mode
             self.nextButton.setText("Next")
             self.nextButton.setEnabled(True)
             self.step1Label.setText("Please clean both nozzle tips with a wire brush for best calibration results.\n\nBoth nozzles are heated to 80°C and positioned for easy cleaning.")
             self._start_nozzle_cleaning()
+            self._play_step_video(1)  # Show cleaning video
             
         elif index == self.STEP_CONNECT_CAMERA:
             # Step 2: Connect Camera
@@ -456,6 +768,7 @@ class CameraToolOffsetCalibration(QWidget):
             self.nextButton.setEnabled(True)
             self.step2Label.setText("Connect the USB calibration camera and place it exactly below the nozzle.\n\nThe printer is positioned at the center front for easy camera placement.")
             self._position_for_camera()
+            self._play_step_video(2)  # Show camera connection video
             # Don't auto-start camera here - wait for user to click Next
             
         elif index in [self.STEP_POSITION_T0_COURSE, self.STEP_POSITION_T0_FINE, 
@@ -501,8 +814,8 @@ class CameraToolOffsetCalibration(QWidget):
             self.octoprint_client.gcode(f"G1 X{x_position} Y20 F3000")
             
             # Heat both nozzles to 80C
-            self.octoprint_client.gcode("M104 T0 S80")
-            self.octoprint_client.gcode("M104 T1 S80")
+            self.octoprint_client.gcode("M104 T0 S100")
+            self.octoprint_client.gcode("M104 T1 S100")
             
             # Get latest M218 tool offsets from websockets
             self.octoprint_client.gcode("M503")
@@ -530,6 +843,8 @@ class CameraToolOffsetCalibration(QWidget):
             x_center = int(bed_width / 2)  # Center of bed
             self.logger.info(f"Using bed width: {bed_width}mm, positioning camera at center X{x_center}")
             self.octoprint_client.gcode(f"G1 X{x_center} Y20 Z40 F3000")
+            self.octoprint_client.gcode("M104 T0 S0")
+            self.octoprint_client.gcode("M104 T1 S0")
             
             self.logger.info("Camera positioning setup complete")
             
@@ -570,6 +885,28 @@ class CameraToolOffsetCalibration(QWidget):
         except Exception as e:
             self.logger.error(f"Error setting up positioning step: {e}")
             dialog.WarningOk(self, f"Error setting up positioning: {e}")
+
+    def on_cancel_clicked(self):
+        """Handle cancel button clicks and return to main calibrate screen."""
+        try:
+            # Stop camera
+            self.stop_camera()
+            self.octoprint_client.gcode("M104 T0 S0")
+            self.octoprint_client.gcode("M104 T1 S0")
+            
+            # Return to main calibrate screen (similar to NozzleChangeWizard pattern)
+            self.main_window.calibrate_screen.show_calibrate_screen()
+                        
+        except Exception as e:
+            self.logger.error(f"Error in cancel handler: {e}")
+            # Even if there's an error, try to return to calibrate screen
+            self.main_window.calibrate_screen.show_calibrate_screen()
+
+    # ========================================================================================
+    # SECTION 4: CAMERA HANDLING
+    # ========================================================================================
+    # Functions for camera initialization, connection management, error handling,
+    # and video feed processing. Includes retry logic for connection failures.
 
     def _configure_camera_for_step(self, is_fine):
         """Configure camera zoom for the current step."""
@@ -617,10 +954,10 @@ class CameraToolOffsetCalibration(QWidget):
             # Hide loading dialog if it exists
             self.hide_loading_dialog()
             
-            # Show retry dialog using RetrySkipCancel
-            result = dialog.RetrySkipCancel(
+            # Show retry dialog using RetryCancel
+            result = dialog.RetryCancel(
                 parent=self,
-                text="Camera Connection Failed\n\nNo camera was detected. Please check your camera connection.\n\nWould you like to retry, skip camera setup, or cancel?",
+                text="Camera Connection Failed\n\nNo camera was detected. Please check your camera connection.\n\nWould you like to retry or cancel?",
                 overlay=True,
                 icon="warning"
             )
@@ -629,24 +966,15 @@ class CameraToolOffsetCalibration(QWidget):
                 # User wants to retry - attempt connection again with small delay
                 self.logger.info("User chose to retry camera connection")
                 QTimer.singleShot(500, self.start_camera_with_loading_dialog)
-            elif result == "skip":
-                # Continue without camera
-                self.logger.info("User chose to skip camera setup")
-                self.camera_available = False
-                self._camera_skipped = True
-                self._show_camera_placeholder()
-                self.goto_step(self.STEP_POSITION_T0_COURSE)
             else:
-                # User cancelled - stay on current step
+                # User cancelled - exit the wizard entirely
                 self.logger.info("User cancelled camera setup")
-                pass
+                self.on_cancel_clicked()  # Exit the wizard
                 
         except Exception as e:
             self.logger.error(f"Error handling camera connection failure: {e}")
-            # Fallback - continue without camera
-            self.camera_available = False
-            self._camera_skipped = True
-            self._show_camera_placeholder()
+            # Fallback - exit wizard on error
+            self.on_cancel_clicked()
 
     def start_camera_with_loading_dialog(self):
         """Show loading dialog and start camera initialization."""
@@ -823,9 +1151,9 @@ class CameraToolOffsetCalibration(QWidget):
         self.camera_available = False
         
         # Show retry dialog
-        result = dialog.RetrySkipCancel(
+        result = dialog.RetryCancel(
             parent=self,
-            text=f"Camera Error\n\n{message}\n\nWould you like to retry, skip camera setup, or cancel?",
+            text=f"Camera Error\n\n{message}\n\nWould you like to retry or cancel?",
             overlay=True,
             icon="warning"
         )
@@ -833,15 +1161,9 @@ class CameraToolOffsetCalibration(QWidget):
         if result == "retry":
             # User wants to retry
             QTimer.singleShot(500, self.start_camera_with_loading_dialog)
-        elif result == "skip":
-            # Continue without camera
-            self.camera_available = False
-            self._camera_skipped = True
-            self._show_camera_placeholder()
-            self.goto_step(self.STEP_POSITION_T0_COURSE)
         else:
-            # User cancelled - stay on current step
-            pass
+            # User cancelled - exit the wizard entirely
+            self.on_cancel_clicked()  # Exit the wizard
 
     def _show_camera_placeholder(self):
         """Show a placeholder when camera is not available."""
@@ -954,17 +1276,17 @@ class CameraToolOffsetCalibration(QWidget):
             # Fallback - reset state
             self.camera_setup_in_progress = False
             self.camera_available = False
-            # Fallback - show placeholder and continue
-            self._show_camera_placeholder()
+            # Fallback - exit wizard on error
+            self.on_cancel_clicked()
     
     def _show_camera_error_dialog(self, error_msg):
-        """Show camera error dialog with retry/skip/cancel options using utils.dialog."""
+        """Show camera error dialog with retry/cancel options using utils.dialog."""
         try:
             # Format the error message for better display
             formatted_msg = f"Camera Error\n\n{error_msg}\n\nWhat would you like to do?"
             
-            # Use RetrySkipCancel from utils.dialog for consistent styling
-            result = dialog.RetrySkipCancel(
+            # Use RetryCancel from utils.dialog for consistent styling
+            result = dialog.RetryCancel(
                 parent=self,
                 text=formatted_msg,
                 overlay=True,
@@ -974,22 +1296,15 @@ class CameraToolOffsetCalibration(QWidget):
             if result == "retry":
                 self.logger.info("User chose to retry after camera error")
                 QTimer.singleShot(500, self.start_camera_with_loading_dialog)
-            elif result == "skip":
-                self.logger.info("User chose to continue without camera after error")
-                self.camera_available = False
-                self._camera_skipped = True
-                self._show_camera_placeholder()
-                # Continue to positioning steps
-                self.goto_step(self.STEP_POSITION_T0_COURSE)
             else:
                 self.logger.info("User cancelled after camera error")
-                # Stay on current step - user can try again or cancel wizard
-                pass
+                # Cancel - exit the wizard entirely
+                self.on_cancel_clicked()  # Exit the wizard
                 
         except Exception as e:
             self.logger.error(f"Error showing camera error dialog: {e}")
-            # Fallback - show placeholder and continue
-            self._show_camera_placeholder()
+            # Fallback - exit wizard on error
+            self.on_cancel_clicked()
     
     def _connect_position_tracking(self):
         """Connect position tracking when needed for recording tool positions."""
@@ -1008,6 +1323,12 @@ class CameraToolOffsetCalibration(QWidget):
             except TypeError:
                 # Signal was already disconnected
                 self._position_tracking_connected = False
+
+    # ========================================================================================
+    # SECTION 5: POSITIONING AND MOVEMENT CONTROL
+    # ========================================================================================
+    # Functions for nozzle positioning, movement control, position recording,
+    # and coordinate system management for tool offset calculations.
 
     def move_axis(self, axis, distance):
         """Move the specified axis by the given distance."""
@@ -1206,6 +1527,12 @@ class CameraToolOffsetCalibration(QWidget):
         except Exception as e:
             self.logger.error(f"Error handling position update: {e}")
 
+    # ========================================================================================
+    # SECTION 6: RESULTS AND CALCULATIONS
+    # ========================================================================================
+    # Functions for displaying calibration results, calculating tool offsets,
+    # and applying the final offset values to the printer configuration.
+
     def _show_results(self):
         """Show the results and calculated offsets."""
         try:
@@ -1317,20 +1644,6 @@ Please restart the calibration process."""
             self.logger.error(f"Error applying tool offsets: {e}")
             dialog.WarningOk(self, f"Error applying tool offsets: {e}")
 
-    def on_cancel_clicked(self):
-        """Handle cancel button clicks and return to main calibrate screen."""
-        try:
-            # Stop camera
-            self.stop_camera()
-            
-            # Return to main calibrate screen (similar to NozzleChangeWizard pattern)
-            self.main_window.calibrate_screen.show_calibrate_screen()
-                        
-        except Exception as e:
-            self.logger.error(f"Error in cancel handler: {e}")
-            # Even if there's an error, try to return to calibrate screen
-            self.main_window.calibrate_screen.show_calibrate_screen()
-
     def stop_camera(self):
         """Stop the camera feed safely using the simple CameraThread approach."""
         try:
@@ -1364,11 +1677,27 @@ Please restart the calibration process."""
             self.camera_available = False
             self.camera_setup_in_progress = False
 
+    # ========================================================================================
+    # SECTION 7: CLEANUP AND UTILITY METHODS
+    # ========================================================================================
+    # Functions for resource cleanup, event handling, and utility operations
+    # for proper widget lifecycle management.
 
     def cleanup(self):
         """Cleanup resources when widget is destroyed."""
         try:
             self.logger.debug("Starting cleanup...")
+            
+            # Stop any playing videos
+            self._stop_current_video()
+            
+            # Clean up QMovie objects
+            if hasattr(self, 'step1_movie') and self.step1_movie:
+                self.step1_movie.stop()
+                self.step1_movie = None
+            if hasattr(self, 'step2_movie') and self.step2_movie:
+                self.step2_movie.stop()
+                self.step2_movie = None
             
             # Stop camera using simple method
             self.stop_camera()

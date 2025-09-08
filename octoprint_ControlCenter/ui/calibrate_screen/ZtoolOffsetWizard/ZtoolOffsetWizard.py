@@ -1,3 +1,32 @@
+"""
+Z Tool Offset Calibration Wizard
+================================
+
+Automated Z tool offset calibration wizard for IDEX printers using probe accuracy testing.
+
+Architecture:
+- MVP pattern with model signals for probe result communication
+- 2-step wizard: Welcome → Automated Calibration
+- Timeout handling for robust probe operation failure recovery
+- Proper offset calculation that adds to existing offsets rather than replacing
+
+Workflow:
+1. Welcome - Introduction and preparation (homing, tool offset retrieval)
+2. Calibration - Automated probe sequence for both tools with quality assessment
+
+Features:
+- Automatic probe sequencing with proper tool switching
+- Quality assessment based on standard deviation
+- Timeout handling with retry/cancel options
+- Proper offset calculation preserving existing values
+- Comprehensive error handling and user feedback
+
+Dependencies:
+- OctoPrint client for G-code commands
+- Printer model for probe result signals and current offset retrieval
+- PyQt5 UI framework with custom dialog utilities
+"""
+
 import os
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QLabel
@@ -10,23 +39,61 @@ import time
 
 class ZtoolOffsetWizard(QWidget):
     """
-    Z Tool Offset calibration wizard that guides the user through Z tool offset calibration.
+    Z Tool Offset Calibration Wizard
+    ===============================
     
-    This wizard uses a 2-step process:
-    1. Welcome - Introduction and preparation
-    2. Calibration - Automated probe sequence for both tools
+    Automated calibration wizard for Z tool offsets using probe accuracy testing.
     
-    Uses MVP architecture - receives probe results via model signals from printer_model.
-    Properly handles existing tool offsets by adding measured differences to current values.
+    This wizard provides a streamlined 2-step process:
+    1. Welcome - Introduction, preparation, and axis homing
+    2. Calibration - Automated probe sequence for both tools with quality assessment
+    
+    Key Features:
+    - Automatic probe sequencing with proper tool switching and positioning
+    - Quality assessment based on probe standard deviation
+    - Timeout handling for probe operation failures
+    - Proper offset calculation that preserves existing offset values
+    - Comprehensive error handling with user-friendly feedback
+    
+    Architecture:
+    - Uses MVP pattern with model signals for probe result communication
+    - Timeout-based error recovery for robust operation
+    - Proper state management and cleanup on wizard exit
+    
+    Probe Quality Assessment:
+    - Excellent: std_dev < 0.01mm
+    - Good: std_dev < 0.02mm  
+    - Acceptable: std_dev < 0.05mm
+    - Poor: std_dev >= 0.05mm
     """
 
+    # ==================== CONSTANTS AND CONFIGURATION ====================
+    
     # Step indices for clarity and maintainability
     STEP_WELCOME = 0
     STEP_CALIBRATION = 1
     TOTAL_STEPS = 2
+    
+    # Timeout configuration
+    PROBE_TIMEOUT_SECONDS = 30  # Timeout for probe operations
+    
+    # Quality thresholds for probe standard deviation (mm)
+    QUALITY_EXCELLENT = 0.01
+    QUALITY_GOOD = 0.02
+    QUALITY_ACCEPTABLE = 0.05
+
+    # ==================== INITIALIZATION AND SETUP ====================
 
     def __init__(self, main_window):
-        """Initialize the Z Tool Offset Wizard with UI and connections."""
+        """
+        Initialize the Z Tool Offset Wizard.
+        
+        Sets up UI components, state variables, and signal connections for the automated
+        Z tool offset calibration process.
+        
+        Args:
+            main_window: Main application window providing access to printer model and OctoPrint client
+        """
         super().__init__()
         self.main_window = main_window
         self.model = main_window.printer_model
@@ -45,23 +112,37 @@ class ZtoolOffsetWizard(QWidget):
         self.logger.info("Z Tool Offset Wizard initialized successfully")
 
     def _init_state_variables(self):
-        """Initialize all state tracking variables."""
+        """
+        Initialize all state tracking variables.
+        
+        Sets up probe result storage, signal connection tracking, wizard navigation state,
+        and timeout handling variables.
+        """
         # Probe result storage
         self.probe_results = {
-            'tool0': None,
-            'tool1': None
+            'tool0': None,  # Will store complete probe data dict
+            'tool1': None   # Will store complete probe data dict
         }
-        self.current_probing_tool = None
-        self.probe_data_collected = False
+        self.current_probing_tool = None    # Currently active probing tool
+        self.probe_data_collected = False   # Flag indicating if calibration is complete
 
         # Signal connection tracking
         self._probe_tracking_connected = False
 
         # Wizard navigation state
         self._current_step = 0
+        
+        # Probe timeout handling
+        self.probe_timeout_timer = None         # QTimer for probe operation timeouts
+        self._waiting_for_probe_result = None   # Track which tool we're waiting for results from
 
     def _load_ui(self):
-        """Load the UI file with proper error handling."""
+        """
+        Load the UI file with proper error handling.
+        
+        Raises:
+            Exception: If UI file cannot be loaded
+        """
         try:
             ui_file_path = os.path.join(os.path.dirname(__file__), "ZtoolOffsetWizard.ui")
             uic.loadUi(ui_file_path, self)
@@ -71,7 +152,11 @@ class ZtoolOffsetWizard(QWidget):
             raise
 
     def _init_ui_components(self):
-        """Initialize and validate all UI components."""
+        """
+        Initialize and validate all UI components.
+        
+        Finds all required UI elements and validates their existence for robust operation.
+        """
         # Main navigation components
         self.stackedWidget = self.findChild(QStackedWidget, "stackedWidget")
         self.welcomePage = self.findChild(QWidget, "welcomePage")
@@ -93,21 +178,31 @@ class ZtoolOffsetWizard(QWidget):
         check_ui_elements(self, required_components, "ZtoolOffsetWizard")
 
     def _connect_signals(self):
-        """Connect all signal handlers."""
+        """
+        Connect all signal handlers.
+        
+        Sets up button connections and prepares for model signal connections.
+        Note: probe_accuracy_result_received signal is connected only when needed
+        during probe sequence for proper resource management.
+        """
         # Button connections
         if self.nextButton:
             self.nextButton.clicked.connect(self.on_next_clicked)
         if self.cancelButton:
             self.cancelButton.clicked.connect(self.on_cancel_clicked)
 
-        # Note: probe_accuracy_result_received signal is connected only when needed
-        # during probe sequence, similar to how cameraToolOffsetCalibration 
-        # handles current_position_updated
-
-    # ==================== WIZARD NAVIGATION METHODS ====================
+    # ==================== WIZARD LIFECYCLE AND NAVIGATION ====================
 
     def showEvent(self, event):
-        """Reset wizard state and home axes when widget is shown."""
+        """
+        Handle wizard activation - reset state and prepare printer.
+        
+        Called when the wizard widget becomes visible. Resets wizard to welcome step,
+        retrieves current tool offsets, and homes the printer for consistent starting position.
+        
+        Args:
+            event: Qt show event
+        """
         super().showEvent(event)
         try:
             # Reset to welcome step
@@ -130,6 +225,9 @@ class ZtoolOffsetWizard(QWidget):
             self.octoprint_client.gcode(command='M503')
             
             # Home all axes for consistent starting position
+                        # Heat both nozzles to 80C
+            self.octoprint_client.gcode("M104 T0 S180")
+            self.octoprint_client.gcode("M104 T1 S180")
             self.octoprint_client.home(['x', 'y', 'z'])
             self.octoprint_client.jog(x=0, y=0, z=5, absolute=True, speed=9000)  # Raise Z slightly
             
@@ -139,10 +237,13 @@ class ZtoolOffsetWizard(QWidget):
 
     def goto_step(self, index: int):
         """
-        Switch to the specified step with proper bounds checking and setup.
+        Navigate to the specified wizard step with proper setup.
+        
+        Handles step bounds checking, UI page switching, and step-specific initialization.
+        Each step has its own setup method for clean separation of concerns.
         
         Args:
-            index (int): Step index to navigate to
+            index (int): Step index to navigate to (0-based, will be bounds-checked)
         """
         index = max(0, min(index, self.TOTAL_STEPS - 1))
         prev_step = getattr(self, "_current_step", 0)
@@ -168,7 +269,11 @@ class ZtoolOffsetWizard(QWidget):
         self.logger.info(f"Switched to step {index + 1}/{self.TOTAL_STEPS}")
 
     def _update_step_label(self):
-        """Update the step progress indicator."""
+        """
+        Update the step progress indicator.
+        
+        Shows current step number and total steps for user orientation.
+        """
         if not self.stepLabel:
             return
         
@@ -177,10 +282,14 @@ class ZtoolOffsetWizard(QWidget):
         except Exception as e:
             self.logger.error(f"Error updating step label: {e}")
 
-    # ==================== STEP SETUP METHODS ====================
+    # ==================== STEP SETUP AND CONFIGURATION ====================
 
     def _setup_welcome_step(self):
-        """Configure UI for the welcome step."""
+        """
+        Configure UI for the welcome step.
+        
+        Sets up the initial welcome interface with appropriate button text and state.
+        """
         try:
             if self.nextButton:
                 self.nextButton.setText("Start Calibration")
@@ -189,7 +298,12 @@ class ZtoolOffsetWizard(QWidget):
             self.logger.error(f"Error setting up welcome step: {e}")
 
     def _setup_calibration_step(self):
-        """Configure UI and start the automated calibration process."""
+        """
+        Configure UI and start the automated calibration process.
+        
+        Connects probe tracking, updates UI to processing state, and initiates the
+        automated probe sequence after a short delay to ensure signal connections are ready.
+        """
         try:
             # Connect probe tracking FIRST before starting any probe operations
             self._connect_probe_tracking()
@@ -217,10 +331,16 @@ class ZtoolOffsetWizard(QWidget):
             self.logger.error(f"Error setting up calibration step: {e}")
             self._show_error("Error starting calibration", str(e))
 
-    # ==================== BUTTON HANDLERS ====================
+    # ==================== USER INTERACTION HANDLERS ====================
 
     def on_next_clicked(self):
-        """Handle next button clicks with step-based navigation."""
+        """
+        Handle next button clicks with step-based navigation.
+        
+        Provides different behavior based on current wizard step:
+        - Welcome: Advance to calibration step
+        - Calibration: Finish calibration (only if probe data is collected)
+        """
         self.logger.info("Next button clicked")
         try:
             if self._current_step == self.STEP_WELCOME:
@@ -238,7 +358,12 @@ class ZtoolOffsetWizard(QWidget):
             self._show_error("Navigation Error", str(e))
 
     def on_cancel_clicked(self):
-        """Handle cancel button - reset wizard and return to main screen."""
+        """
+        Handle cancel button - reset wizard and return to main screen.
+        
+        Performs complete cleanup including wizard state reset, printer homing,
+        and navigation back to the main calibration screen.
+        """
         self.logger.info("Cancel button clicked")
         try:
             # Reset wizard state
@@ -248,6 +373,8 @@ class ZtoolOffsetWizard(QWidget):
             if self.octoprint_client:
                 self.octoprint_client.gcode(command='T0')
                 self.octoprint_client.home(['x', 'y', 'z'])
+                self.octoprint_client.gcode("M104 T0 S0")
+                self.octoprint_client.gcode("M104 T1 S0")
             
             # Return to main calibration screen
             if hasattr(self.main_window, 'calibrate_screen'):
@@ -259,10 +386,16 @@ class ZtoolOffsetWizard(QWidget):
             if hasattr(self.main_window, 'calibrate_screen'):
                 self.main_window.calibrate_screen.show_calibrate_screen()
 
-    # ==================== PROBE SEQUENCE METHODS ====================
+    # ==================== AUTOMATED PROBE SEQUENCE ====================
 
     def start_probe_sequence(self):
-        """Initialize and start the automated probe sequence for both tools."""
+        """
+        Initialize and start the automated probe sequence for both tools.
+        
+        Resets probe state, updates UI with progress information, and begins the
+        sequence with Tool 0. The sequence will automatically proceed to Tool 1
+        after Tool 0 completes successfully.
+        """
         try:
             self.logger.info("Starting automated probe sequence")
             
@@ -287,7 +420,15 @@ class ZtoolOffsetWizard(QWidget):
             self._show_error("Probe Sequence Error", str(e))
 
     def probe_tool(self, tool_number):
-        """Probe a specific tool with proper sequencing"""
+        """
+        Probe a specific tool with proper sequencing.
+        
+        Handles tool switching, positioning, and probe initiation for the specified tool.
+        Uses timed sequencing to ensure proper tool switching before movement and probing.
+        
+        Args:
+            tool_number (int): Tool number to probe (0 or 1)
+        """
         try:
             self.logger.info(f"Probing tool {tool_number}")
             self.current_probing_tool = f'tool{tool_number}'
@@ -319,7 +460,14 @@ class ZtoolOffsetWizard(QWidget):
             dialog.WarningOk(self, f"Error probing tool {tool_number}: {str(e)}", overlay=True)
 
     def _move_and_probe(self, tool_number, center_x, center_y):
-        """Move to position and start probing after tool switch completes"""
+        """
+        Move to position and start probing after tool switch completes.
+        
+        Args:
+            tool_number (int): Tool number being probed
+            center_x (int): X coordinate for probe position
+            center_y (int): Y coordinate for probe position
+        """
         try:
             self.logger.info(f"Moving tool {tool_number} to probe position")
             
@@ -343,7 +491,15 @@ class ZtoolOffsetWizard(QWidget):
             dialog.WarningOk(self, f"Error moving tool {tool_number}: {str(e)}", overlay=True)
 
     def _start_probe_accuracy(self, tool_number):
-        """Start the probe accuracy test"""
+        """
+        Start the probe accuracy test with timeout handling.
+        
+        Initiates the PROBE_ACCURACY command and sets up timeout monitoring to handle
+        cases where probe results are not received within the expected timeframe.
+        
+        Args:
+            tool_number (int): Tool number being probed (0 or 1)
+        """
         try:
             self.logger.info(f"Starting probe accuracy test for tool {tool_number}")
             
@@ -356,6 +512,16 @@ class ZtoolOffsetWizard(QWidget):
                                             f"• Collecting measurement data\n\n" +
                                             f"Status: Probing {tool_desc}... Please wait.")
             
+            # Set up timeout for probe result
+            self._waiting_for_probe_result = f'tool{tool_number}'
+            if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
+                self.probe_timeout_timer.stop()
+            
+            self.probe_timeout_timer = QTimer()
+            self.probe_timeout_timer.setSingleShot(True)
+            self.probe_timeout_timer.timeout.connect(lambda: self._handle_probe_timeout(tool_number))
+            self.probe_timeout_timer.start(self.PROBE_TIMEOUT_SECONDS * 1000)  # Convert to milliseconds
+            
             # Run probe accuracy macro with specified speed
             self.logger.info(f"Running PROBE_ACCURACY PROBE_SPEED=3 for tool {tool_number}")
             self.octoprint_client.gcode(command='PROBE_ACCURACY PROBE_SPEED=3')
@@ -364,16 +530,30 @@ class ZtoolOffsetWizard(QWidget):
             self.logger.error(f"Error starting probe accuracy for tool {tool_number}: {e}")
             dialog.WarningOk(self, f"Error starting probe for tool {tool_number}: {str(e)}", overlay=True)
 
+    # ==================== PROBE RESULT PROCESSING ====================
+
     def on_probe_result_received(self, tool_name, probe_data):
         """
-        Handle the probe result signal - this replaces the old websocket message handler
+        Handle probe result signals from the printer model.
+        
+        Processes complete probe data, updates UI with results and quality assessment,
+        and automatically proceeds to the next tool or final calculation phase.
         
         Args:
-            tool_name (str): "tool0" or "tool1"
-            probe_data (dict): Complete probe data with keys: maximum, minimum, range, average, median, standard_deviation
+            tool_name (str): Tool identifier ("tool0" or "tool1")
+            probe_data (dict): Complete probe data with keys: maximum, minimum, range, 
+                             average, median, standard_deviation
         """
         try:
             self.logger.info(f"Received probe result signal: {tool_name} = {probe_data}")
+            
+            # Cancel timeout timer since we got a probe result
+            if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
+                self.probe_timeout_timer.stop()
+                self.probe_timeout_timer = None
+            
+            # Clear waiting state
+            self._waiting_for_probe_result = None
             
             # Validate we got results for the expected tool
             if self.current_probing_tool != tool_name:
@@ -388,6 +568,9 @@ class ZtoolOffsetWizard(QWidget):
                 average_value = probe_data.get('average', 0.0)
                 std_dev = probe_data.get('standard_deviation', 0.0)
                 
+                # Determine quality based on standard deviation
+                quality = self._assess_probe_quality(std_dev)
+                
                 # Update UI and proceed based on which tool was just probed
                 if tool_name == 'tool0' and self.probe_results['tool1'] is None:
                     # Tool 0 done, now probe tool 1
@@ -396,7 +579,7 @@ class ZtoolOffsetWizard(QWidget):
                         self.calibrationLabel.setText(f"✅ Tool 0 Complete!\n\n" +
                                                     f"• Average: {average_value:.6f}mm\n" +
                                                     f"• Std Dev: {std_dev:.6f}mm\n" +
-                                                    f"• Quality: {'Good' if std_dev < 0.02 else 'Acceptable' if std_dev < 0.05 else 'Poor'}\n\n" +
+                                                    f"• Quality: {quality}\n\n" +
                                                     f"📍 Preparing Tool 1 calibration...")
                     
                     # Use QTimer instead of blocking sleep to start tool 1 probing
@@ -410,7 +593,7 @@ class ZtoolOffsetWizard(QWidget):
                         self.calibrationLabel.setText(f"✅ Tool 1 Complete!\n\n" +
                                                     f"• Average: {average_value:.6f}mm\n" +
                                                     f"• Std Dev: {std_dev:.6f}mm\n" +
-                                                    f"• Quality: {'Good' if std_dev < 0.02 else 'Acceptable' if std_dev < 0.05 else 'Poor'}\n\n" +
+                                                    f"• Quality: {quality}\n\n" +
                                                     f"🔄 Calculating final Z offset...")
                     # Use QTimer to ensure UI updates before calculation
                     QTimer.singleShot(500, self.calculate_z_offset)
@@ -423,8 +606,64 @@ class ZtoolOffsetWizard(QWidget):
             self._disconnect_probe_tracking()
             dialog.WarningOk(self, f"Error processing probe result: {str(e)}", overlay=True)
 
+    # ==================== TIMEOUT AND ERROR HANDLING ====================
+
+    def _handle_probe_timeout(self, tool_number):
+        """
+        Handle probe result timeout with user interaction.
+        
+        Provides retry/cancel options when probe results are not received within
+        the expected timeframe. Ensures proper cleanup and user guidance.
+        
+        Args:
+            tool_number (int): Tool number that timed out (0 or 1)
+        """
+        try:
+            self.logger.warning(f"Probe result timeout for tool {tool_number}")
+            
+            # Clean up timeout timer
+            if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
+                self.probe_timeout_timer.stop()
+                self.probe_timeout_timer = None
+            
+            # Clear waiting state
+            self._waiting_for_probe_result = None
+            
+            # Show dialog asking user what to do
+            tool_desc = "Tool 0" if tool_number == 0 else "Tool 1"
+            result = dialog.RetryCancel(
+                parent=self,
+                text=f"Probe Timeout for {tool_desc}\n\nFailed to receive probe results for {tool_desc}.\n\nThis might happen due to communication issues or probe problems.\n\nWould you like to retry the probe or cancel calibration?",
+                overlay=True,
+                icon="warning"
+            )
+            
+            if result == "retry":
+                # Retry probing the same tool
+                self.logger.info(f"User chose to retry probing for tool {tool_number}")
+                QTimer.singleShot(1000, lambda: self.probe_tool(tool_number))
+            else:
+                # Cancel - exit the wizard entirely
+                self.logger.info(f"User cancelled calibration due to probe timeout for tool {tool_number}")
+                self._reset_wizard_state()
+                self.on_cancel_clicked()  # Exit the wizard
+                
+        except Exception as e:
+            self.logger.error(f"Error handling probe timeout: {e}")
+            # Reset state on error and exit wizard
+            self._reset_wizard_state()
+            self.on_cancel_clicked()  # Exit the wizard on error too
+
+    # ==================== OFFSET CALCULATION AND APPLICATION ====================
+
     def calculate_z_offset(self):
-        """Calculate the Z offset between the two tools using complete probe data"""
+        """
+        Calculate the Z offset between tools using complete probe data.
+        
+        Performs comprehensive offset calculation including quality assessment,
+        current offset preservation, and detailed result presentation to the user.
+        Enables the apply button once calculation is complete.
+        """
         try:
             if self.probe_results['tool0'] is not None and self.probe_results['tool1'] is not None:
                 tool0_data = self.probe_results['tool0']
@@ -451,9 +690,9 @@ class ZtoolOffsetWizard(QWidget):
                 self.logger.info(f"Current Z offset: {current_z_offset:.6f}")
                 self.logger.info(f"New Z offset to apply: {new_z_offset:.6f}")
                 
-                # Determine quality indicators
-                tool0_quality = 'Excellent' if tool0_std < 0.01 else 'Good' if tool0_std < 0.02 else 'Acceptable' if tool0_std < 0.05 else 'Poor'
-                tool1_quality = 'Excellent' if tool1_std < 0.01 else 'Good' if tool1_std < 0.02 else 'Acceptable' if tool1_std < 0.05 else 'Poor'
+                # Determine quality indicators using helper method
+                tool0_quality = self._assess_probe_quality(tool0_std)
+                tool1_quality = self._assess_probe_quality(tool1_std)
                 
                 # Update UI with comprehensive results including offset information
                 self.calibrationLabel.setText(f"🎯 CALIBRATION COMPLETE!\n\n" +
@@ -484,7 +723,14 @@ class ZtoolOffsetWizard(QWidget):
             dialog.WarningOk(self, f"Error calculating Z offset: {str(e)}", overlay=True)
 
     def apply_z_offset(self, z_offset):
-        """Apply the calculated Z offset to the printer configuration"""
+        """
+        Apply the calculated Z offset to the printer configuration.
+        
+        Sends M218 command to set the tool offset and saves to EEPROM using M500.
+        
+        Args:
+            z_offset (float): Z offset value to apply in millimeters
+        """
         try:
             self.logger.info(f"Applying Z offset: {z_offset:.6f}")
             
@@ -503,7 +749,12 @@ class ZtoolOffsetWizard(QWidget):
             dialog.WarningOk(self, f"Error applying Z offset: {str(e)}", overlay=True)
 
     def finish_calibration(self):
-        """Finish the calibration and return to main calibration screen."""
+        """
+        Complete the calibration process and return to main screen.
+        
+        Applies the calculated Z offset, performs cleanup, and navigates back to
+        the main calibration screen with proper printer state restoration.
+        """
         self.logger.info("ZtoolOffsetWizard.finish_calibration started")
         try:
             # Disconnect probe tracking since calibration is complete
@@ -551,7 +802,9 @@ class ZtoolOffsetWizard(QWidget):
             if self.octoprint_client:
                 self.octoprint_client.gcode(command='T0')
                 self.octoprint_client.home(['x', 'y', 'z'])
-            
+                self.octoprint_client.gcode("M104 T0 S0")
+                self.octoprint_client.gcode("M104 T1 S0")
+
             # Return to main calibration screen
             if hasattr(self.main_window, 'calibrate_screen'):
                 self.main_window.calibrate_screen.show_calibrate_screen()
@@ -560,10 +813,15 @@ class ZtoolOffsetWizard(QWidget):
             self.logger.error(f"Error in ZtoolOffsetWizard.finish_calibration: {e}")
             self._show_error("Calibration Finish Error", str(e))
 
-    # ==================== UTILITY AND HELPER METHODS ====================
+    # ==================== STATE MANAGEMENT AND CLEANUP ====================
 
     def _reset_wizard_state(self):
-        """Reset all wizard state variables to initial values."""
+        """
+        Reset all wizard state variables to initial values.
+        
+        Performs complete state cleanup including probe tracking disconnection,
+        step reset, and probe data clearing.
+        """
         # Disconnect probe tracking if connected
         self._disconnect_probe_tracking()
         
@@ -574,18 +832,61 @@ class ZtoolOffsetWizard(QWidget):
         self._reset_probe_state()
 
     def _reset_probe_state(self):
-        """Reset probe-related state variables."""
+        """
+        Reset probe-related state variables and cleanup timers.
+        
+        Clears all probe results, resets collection flags, and ensures
+        proper timeout timer cleanup.
+        """
         self.probe_results = {'tool0': None, 'tool1': None}
         self.probe_data_collected = False
         self.current_probing_tool = None
+        self._waiting_for_probe_result = None
+        
+        # Clean up timeout timer
+        if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
+            self.probe_timeout_timer.stop()
+            self.probe_timeout_timer = None
+
+    # ==================== UTILITY AND HELPER METHODS ====================
+
+    def _assess_probe_quality(self, std_deviation):
+        """
+        Assess probe quality based on standard deviation.
+        
+        Args:
+            std_deviation (float): Standard deviation from probe results
+            
+        Returns:
+            str: Quality assessment string
+        """
+        if std_deviation < self.QUALITY_EXCELLENT:
+            return 'Excellent'
+        elif std_deviation < self.QUALITY_GOOD:
+            return 'Good'
+        elif std_deviation < self.QUALITY_ACCEPTABLE:
+            return 'Acceptable'
+        else:
+            return 'Poor'
 
     def _show_error(self, title, message):
-        """Show error dialog with consistent styling."""
+        """
+        Show error dialog with consistent styling.
+        
+        Args:
+            title (str): Error dialog title
+            message (str): Error message content
+        """
         self.logger.error(f"{title}: {message}")
         dialog.WarningOk(self, f"{title}\n\n{message}", overlay=True)
 
     def _get_current_z_offset(self):
-        """Get the current Z tool offset from the printer model."""
+        """
+        Get the current Z tool offset from the printer model.
+        
+        Returns:
+            float: Current Z tool offset in millimeters, defaults to 0.0 if unavailable
+        """
         try:
             if self.model and hasattr(self.model, 'tool_offsets'):
                 current_z_offset = float(self.model.tool_offsets.get('Z', 0))
@@ -598,8 +899,18 @@ class ZtoolOffsetWizard(QWidget):
             self.logger.warning(f"Error getting current Z offset: {e}, using 0.0")
             return 0.0
 
+    # ==================== SIGNAL CONNECTION MANAGEMENT ====================
+
     def _connect_probe_tracking(self):
-        """Connect probe tracking when needed for receiving probe results."""
+        """
+        Connect probe tracking for receiving probe results.
+        
+        Establishes connection to the printer model's probe_accuracy_result_received
+        signal for automated probe result processing.
+        
+        Raises:
+            Exception: If probe tracking connection fails
+        """
         if not self._probe_tracking_connected and self.model:
             try:
                 self.model.probe_accuracy_result_received.connect(self.on_probe_result_received)
@@ -610,7 +921,12 @@ class ZtoolOffsetWizard(QWidget):
                 raise
     
     def _disconnect_probe_tracking(self):
-        """Disconnect probe tracking when no longer needed."""
+        """
+        Disconnect probe tracking when no longer needed.
+        
+        Safely disconnects from the printer model's probe result signals
+        with proper error handling for various disconnect scenarios.
+        """
         if self._probe_tracking_connected and self.model:
             try:
                 self.model.probe_accuracy_result_received.disconnect(self.on_probe_result_received)
