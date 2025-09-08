@@ -640,7 +640,8 @@ QToolButton:focus {
 }</string>
               </property>
               <property name="text">
-               <string>IDEX Setup Wizard</string>
+               <string>IDEX Setup
+Wizard</string>
               </property>
               <property name="icon">
                <iconset resource="../resources/resource.qrc">
