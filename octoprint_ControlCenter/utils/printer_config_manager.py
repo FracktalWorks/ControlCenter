@@ -487,7 +487,7 @@ class PrinterConfigManager:
     # ========================================================================
     
     def update_printer_cfg(self, source_path: str, dest_path: str, selected_printer: str, preserve_mcu: bool = True) -> bool:
-        """Update printer.cfg with new printer selection while preserving MCU config."""
+        """Update printer.cfg with new printer selection while preserving MCU config and SAVE_CONFIG sections."""
         try:
             if not os.path.exists(source_path):
                 logger.error(f"Source file not found: {source_path}")
@@ -524,28 +524,35 @@ class PrinterConfigManager:
                             logger.debug(f"SAVE_CONFIG marker position: {save_config_start}")
                             
                             if mcu_start != -1 and save_config_start != -1 and mcu_start < save_config_start:
-                                # Extract MCU section (everything between MCU Config marker and SAVE_CONFIG marker)
+                                # Extract MCU section (from MCU Config marker to just before SAVE_CONFIG marker)
                                 existing_mcu_section = existing_content[mcu_start:save_config_start].rstrip()
-                                logger.info(f"Extracted existing MCU configuration section ({len(existing_mcu_section)} chars)")
-                                logger.debug(f"MCU section preview: {existing_mcu_section[:200]}...")
-                        
-                        # Extract SAVE_CONFIG section (everything from SAVE_CONFIG marker to end)
+                                logger.info(f"Preserved MCU config section ({len(existing_mcu_section)} chars)")
+                            else:
+                                # If SAVE_CONFIG comes before MCU (unusual), extract MCU to end
+                                existing_mcu_section = existing_content[mcu_start:].rstrip()
+                                logger.warning("SAVE_CONFIG found before MCU marker, extracting MCU to end of file")
+                        else:
+                            # No SAVE_CONFIG marker, extract MCU section to end of file
+                            existing_mcu_section = existing_content[mcu_start:].rstrip()
+                            logger.info(f"No SAVE_CONFIG found, preserved MCU config to end ({len(existing_mcu_section)} chars)")
+                            
+                        # Extract SAVE_CONFIG section separately (everything from SAVE_CONFIG marker to end)
                         if save_config_marker in existing_content:
                             save_config_start = existing_content.find(save_config_marker)
                             if save_config_start != -1:
-                                existing_save_config_section = existing_content[save_config_start:]
-                                logger.info(f"Extracted existing SAVE_CONFIG section ({len(existing_save_config_section)} chars)")
+                                existing_save_config_section = existing_content[save_config_start:].rstrip()
+                                logger.info(f"Preserved SAVE_CONFIG section ({len(existing_save_config_section)} chars)")
                     else:
                         logger.warning("MCU Config marker not found in existing file")
                     
                 except Exception as e:
-                    logger.warning(f"Could not extract existing MCU config: {e}")
-                    # Continue without preserving MCU config
+                    logger.warning(f"Could not extract existing MCU config and SAVE_CONFIG: {e}")
+                    # Continue without preserving sections
                     existing_mcu_section = ""
                     existing_save_config_section = ""
             else:
                 if not preserve_mcu:
-                    logger.info("MCU preservation disabled")
+                    logger.info("MCU and SAVE_CONFIG preservation disabled")
                 else:
                     logger.info(f"Destination file does not exist: {dest_path}")
             
@@ -577,40 +584,48 @@ class PrinterConfigManager:
             # Reconstruct the final content
             final_content = '\n'.join(updated_lines)
             
-            # If we have preserved MCU config, replace the template MCU section with the existing one
-            if existing_mcu_section:
-                logger.info("Replacing template MCU section with preserved one")
+            # If we have preserved sections, replace the template sections with the existing ones
+            if existing_mcu_section or existing_save_config_section:
+                logger.info("Replacing template sections with preserved ones")
                 mcu_start_marker = "########################################\n# MCU Config\n########################################"
                 save_config_marker = "#*# <---------------------- SAVE_CONFIG ---------------------->"
                 
-                if mcu_start_marker in final_content:
+                if existing_mcu_section and mcu_start_marker in final_content:
                     mcu_start = final_content.find(mcu_start_marker)
                     logger.debug(f"MCU marker position in template: {mcu_start}")
                     
                     if save_config_marker in final_content:
-                        # Replace from MCU Config marker to end with preserved MCU + SAVE_CONFIG
-                        save_config_start = final_content.find(save_config_marker)
-                        logger.debug(f"SAVE_CONFIG marker position in template: {save_config_start}")
-                        if mcu_start != -1 and save_config_start != -1:
-                            # Replace from MCU section to end with preserved sections
-                            final_content = (
-                                final_content[:mcu_start] + 
-                                existing_mcu_section + 
-                                "\n\n" +
-                                existing_save_config_section
-                            )
-                            logger.info("Successfully replaced MCU and SAVE_CONFIG sections")
-                    else:
-                        # No SAVE_CONFIG in template, append preserved MCU section and SAVE_CONFIG
-                        final_content = (
-                            final_content[:mcu_start] + 
-                            existing_mcu_section
-                        )
+                        # Template has both MCU and SAVE_CONFIG sections
+                        # Replace everything from MCU marker to end with preserved sections
+                        final_content = final_content[:mcu_start] + existing_mcu_section
+                        
+                        # Add preserved SAVE_CONFIG if we have it
                         if existing_save_config_section:
                             final_content += "\n\n" + existing_save_config_section
-                        logger.info("Appended preserved MCU and SAVE_CONFIG sections")
+                        logger.info("Replaced template MCU and SAVE_CONFIG with preserved sections")
+                    else:
+                        # Template has MCU but no SAVE_CONFIG
+                        # Replace from MCU marker to end with preserved MCU
+                        final_content = final_content[:mcu_start] + existing_mcu_section
+                        
+                        # Append preserved SAVE_CONFIG if we have it
+                        if existing_save_config_section:
+                            final_content += "\n\n" + existing_save_config_section
+                        logger.info("Replaced template MCU and appended preserved SAVE_CONFIG")
+                        
+                elif existing_save_config_section:
+                    # We only have SAVE_CONFIG to preserve (no MCU section to preserve)
+                    if save_config_marker in final_content:
+                        # Replace template SAVE_CONFIG with preserved one
+                        save_config_start = final_content.find(save_config_marker)
+                        final_content = final_content[:save_config_start] + existing_save_config_section
+                        logger.info("Replaced template SAVE_CONFIG with preserved section")
+                    else:
+                        # No SAVE_CONFIG in template, append preserved one
+                        final_content += "\n\n" + existing_save_config_section
+                        logger.info("Appended preserved SAVE_CONFIG section")
             
-            # If we have preserved SAVE_CONFIG section and it's not already included, append it
+            # If we only have SAVE_CONFIG section preserved and it's not already included, append it
             elif existing_save_config_section and "#*# <---------------------- SAVE_CONFIG ---------------------->" not in final_content:
                 final_content += "\n\n" + existing_save_config_section
                 logger.info("Appended preserved SAVE_CONFIG section")
@@ -619,8 +634,15 @@ class PrinterConfigManager:
             with open(dest_path, 'w') as f:
                 f.write(final_content)
                 
+            # Log success with details about what was preserved
+            preserved_sections = []
             if existing_mcu_section:
-                logger.info(f"Updated printer.cfg for {selected_printer} while preserving MCU configuration")
+                preserved_sections.append("MCU configuration")
+            if existing_save_config_section:
+                preserved_sections.append("SAVE_CONFIG calibration data")
+                
+            if preserved_sections:
+                logger.info(f"Updated printer.cfg for {selected_printer} while preserving: {', '.join(preserved_sections)}")
             else:
                 logger.info(f"Updated printer.cfg for {selected_printer}")
             return True

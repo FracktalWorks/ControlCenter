@@ -26,7 +26,31 @@ The version is specified as `# Version: X` where X is an integer version number.
 1. **Startup Check**: During application startup, after Klipper configuration validation
 2. **Version Comparison**: Compares the version in `/home/pi/printer.cfg` with the template in `octoprint_ControlCenter/firmware/printer.cfg`
 3. **User Prompt**: If a newer version is detected, shows a dialog asking if the user wants to update
-4. **Update Process**: If accepted, performs the same update process as "Restore Print Settings"
+4. **Update Process**: If accepted, performs the firmware update while preserving user data
+
+### Data Preservation During Updates
+
+The firmware update process is designed to preserve critical user data:
+
+#### MCU Configuration Preservation
+- **CAN Bus UUIDs**: Hardware identifiers for main MCU and toolhead MCUs
+- **Serial Port Settings**: Communication parameters for connected hardware
+- **Hardware-Specific Settings**: Any custom MCU configuration
+
+#### SAVE_CONFIG Section Preservation  
+- **Probe Calibration**: Z-offset values and probe accuracy settings
+- **Bed Mesh Data**: Auto bed leveling mesh points and calibration
+- **Temperature Calibration**: PID tuning values for hotends and heated bed
+- **Stepper Calibration**: Steps per mm and other motor calibration data
+- **All Klipper Auto-Generated Settings**: Any configuration automatically saved by Klipper
+
+#### Update Process Flow
+1. **Extract User Data**: Parse and preserve both MCU Config and SAVE_CONFIG sections from current file
+2. **Apply New Firmware**: Copy latest firmware template with new features and improvements  
+3. **Merge Preserved Data**: Intelligently merge user's hardware and calibration data into new firmware
+4. **Restart System**: Apply updated configuration while maintaining all user customizations
+
+This ensures users get the latest firmware features without losing their hardware setup or calibration work.
 
 ### File Locations
 
