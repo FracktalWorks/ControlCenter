@@ -388,27 +388,29 @@ class MainController:
                     self.logger.warning("Failed to restore OctoPrint configs, but Klipper config was successful")
             
             if success:
-                self.logger.info("Firmware files updated successfully, executing printer restart")
+                self.logger.info("Firmware files updated successfully, executing printer reset commands")
                 
-                # Restart Klipper firmware
+                # Reset printer firmware settings (same as restore_print_settings)
                 try:
-                    self.octoprint_client.gcode(command='FIRMWARE_RESTART')
+                    self.octoprint_client.gcode(command='M502')  # Load factory defaults
+                    self.octoprint_client.gcode(command='M500')  # Save settings to EEPROM
+                    self.octoprint_client.gcode(command='FIRMWARE_RESTART')  # Restart Klipper
                     
                     self.logger.info("Firmware update completed successfully")
                     
-                    # Show success message
-                    success_msg = (
+                    # Show success message with restart dialog (same as restore_print_settings)
+                    restart_msg = (
                         f"Firmware updated successfully!\n\n"
                         f"'{printer_display_name}' has been updated to the latest version.\n\n"
-                        "The printer has been restarted with the new configuration."
+                        "The printer will restart now for changes to take effect."
                     )
-                    dialog.WarningOk(self.main_window, success_msg, overlay=True)
+                    self.restart_printer_system(restart_msg)
                     
                 except Exception as e:
-                    self.logger.error(f"Error executing firmware restart: {e}")
+                    self.logger.error(f"Error executing printer reset commands: {e}")
                     dialog.WarningOk(
                         self.main_window, 
-                        f"Firmware files updated but failed to restart printer: {e}\n"
+                        f"Firmware files updated but failed to reset printer firmware: {e}\n"
                         "Please manually restart the printer.",
                         overlay=True
                     )
@@ -424,6 +426,21 @@ class MainController:
         except Exception as e:
             self.logger.error(f"Error performing firmware update: {e}")
             dialog.WarningOk(self.main_window, f"Error updating firmware: {e}", overlay=True)
+
+    def restart_printer_system(self, msg="Printer configuration applied successfully!\n\nThe printer needs to restart for changes to take effect.", overlay=True):
+        """Show restart dialog and restart the printer system when OK is pressed."""
+        try:
+            # Use WarningOk which only has an OK button - when clicked, restart immediately
+            if dialog.WarningOk(self.main_window, msg, overlay=overlay):
+                self.logger.info("User confirmed printer restart - restarting now")
+                # Restart the printer system
+                os.system('sudo reboot now')
+                return True
+            return False
+        except Exception as e:
+            self.logger.error(f"Error during printer restart: {e}")
+            dialog.WarningOk(self.main_window, f"Error during restart: {e}", overlay=True)
+            return False
 
     # =========================================================================
     # SECTION: Print Restore Management
