@@ -957,7 +957,7 @@ class CameraToolOffsetCalibration(QWidget):
             # Show retry dialog using RetryCancel
             result = dialog.RetryCancel(
                 parent=self,
-                text="Camera Connection Failed\n\nNo camera was detected. Please check your camera connection.\n\nWould you like to retry or cancel?",
+                text="Camera Connection Failed\n\nNo camera detected.\nPlease check camera connection.\n\nRetry or cancel?",
                 overlay=True,
                 icon="warning"
             )
@@ -1153,7 +1153,7 @@ class CameraToolOffsetCalibration(QWidget):
         # Show retry dialog
         result = dialog.RetryCancel(
             parent=self,
-            text=f"Camera Error\n\n{message}\n\nWould you like to retry or cancel?",
+            text=f"Camera Error\n\n{message}\n\nRetry or cancel?",
             overlay=True,
             icon="warning"
         )
@@ -1282,8 +1282,8 @@ class CameraToolOffsetCalibration(QWidget):
     def _show_camera_error_dialog(self, error_msg):
         """Show camera error dialog with retry/cancel options using utils.dialog."""
         try:
-            # Format the error message for better display
-            formatted_msg = f"Camera Error\n\n{error_msg}\n\nWhat would you like to do?"
+            # Format the error message for better display with more concise text
+            formatted_msg = f"Camera Error\n\n{error_msg}\n\nRetry or cancel?"
             
             # Use RetryCancel from utils.dialog for consistent styling
             result = dialog.RetryCancel(
@@ -1419,7 +1419,7 @@ class CameraToolOffsetCalibration(QWidget):
             self._waiting_for_position = tool
             
             # Set up a timeout in case position update doesn't come through
-            if hasattr(self, 'position_timeout_timer'):
+            if hasattr(self, 'position_timeout_timer') and self.position_timeout_timer:
                 self.position_timeout_timer.stop()
             
             self.position_timeout_timer = QTimer()
@@ -1436,14 +1436,14 @@ class CameraToolOffsetCalibration(QWidget):
             self.logger.warning(f"Position recording timeout for tool {tool}")
             
             # Clean up timeout timer
-            if hasattr(self, 'position_timeout_timer'):
+            if hasattr(self, 'position_timeout_timer') and self.position_timeout_timer:
                 self.position_timeout_timer.stop()
                 self.position_timeout_timer = None
             
-            # Show dialog asking user what to do
+            # Show dialog asking user what to do with more concise text
             result = dialog.RetryCancel(
                 parent=self,
-                text=f"Position Recording Timeout\n\nFailed to get position response for Tool {tool}.\n\nThis might happen if there's no movement or communication issues.\n\nWould you like to retry or cancel?",
+                text=f"Position Recording Timeout\n\nNo response from Tool {tool}.\n\nRetry or cancel the calibration?",
                 overlay=True,
                 icon="warning"
             )
@@ -1472,7 +1472,7 @@ class CameraToolOffsetCalibration(QWidget):
             self._disconnect_position_tracking()
             
             # Clean up timeout timer
-            if hasattr(self, 'position_timeout_timer'):
+            if hasattr(self, 'position_timeout_timer') and self.position_timeout_timer:
                 self.position_timeout_timer.stop()
                 self.position_timeout_timer = None
                 
@@ -1573,15 +1573,9 @@ class CameraToolOffsetCalibration(QWidget):
                 
                 # Display results in UI
                 results_text = f"""Calibration Complete!
-Recorded Positions:
-• T0 Position: X={t0_pos['x']:.2f}, Y={t0_pos['y']:.2f}
-• T1 Position: X={t1_pos['x']:.2f}, Y={t1_pos['y']:.2f}
 Position Differences (T1-T0):
 • X Difference: {raw_x_diff:.3f}mm
 • Y Difference: {raw_y_diff:.3f}mm
-Current Tool Offsets:
-• X Offset: {current_x_offset:.3f}mm
-• Y Offset: {current_y_offset:.3f}mm
 New Tool Offsets (will be applied):
 • X Offset: {new_x_offset:.3f}mm
 • Y Offset: {new_y_offset:.3f}mm

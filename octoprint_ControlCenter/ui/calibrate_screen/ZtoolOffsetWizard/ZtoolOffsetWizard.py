@@ -371,7 +371,6 @@ class ZtoolOffsetWizard(QWidget):
             
             # Return to tool 0 and home
             if self.octoprint_client:
-                self.octoprint_client.gcode(command='T0')
                 self.octoprint_client.home(['x', 'y', 'z'])
                 self.octoprint_client.gcode("M104 T0 S0")
                 self.octoprint_client.gcode("M104 T1 S0")
@@ -430,8 +429,20 @@ class ZtoolOffsetWizard(QWidget):
             tool_number (int): Tool number to probe (0 or 1)
         """
         try:
+            tool_name = f'tool{tool_number}'
+            
+            # Check if we already have results for this tool
+            if self.probe_results.get(tool_name) is not None:
+                self.logger.warning(f"Already have probe results for {tool_name} - skipping duplicate probe operation")
+                return
+            
+            # Check if we're already waiting for results from this tool
+            if self._waiting_for_probe_result == tool_name:
+                self.logger.warning(f"Already waiting for probe results from {tool_name} - skipping duplicate probe operation")
+                return
+            
             self.logger.info(f"Probing tool {tool_number}")
-            self.current_probing_tool = f'tool{tool_number}'
+            self.current_probing_tool = tool_name
             
             # Update status for current tool being probed
             tool_desc = "Tool 0" if tool_number == 0 else "Tool 1"
@@ -469,6 +480,13 @@ class ZtoolOffsetWizard(QWidget):
             center_y (int): Y coordinate for probe position
         """
         try:
+            tool_name = f'tool{tool_number}'
+            
+            # Double-check we should still be probing this tool
+            if self.probe_results.get(tool_name) is not None:
+                self.logger.warning(f"Already have probe results for {tool_name} - skipping movement and probe")
+                return
+            
             self.logger.info(f"Moving tool {tool_number} to probe position")
             
             # Update status
@@ -501,6 +519,18 @@ class ZtoolOffsetWizard(QWidget):
             tool_number (int): Tool number being probed (0 or 1)
         """
         try:
+            tool_name = f'tool{tool_number}'
+            
+            # Final check - ensure we should still be probing this tool
+            if self.probe_results.get(tool_name) is not None:
+                self.logger.warning(f"Already have probe results for {tool_name} - skipping probe accuracy test")
+                return
+            
+            # Check if we're already waiting for results from this tool
+            if self._waiting_for_probe_result == tool_name:
+                self.logger.warning(f"Already waiting for probe results from {tool_name} - skipping duplicate probe")
+                return
+            
             self.logger.info(f"Starting probe accuracy test for tool {tool_number}")
             
             # Update status
@@ -513,7 +543,7 @@ class ZtoolOffsetWizard(QWidget):
                                             f"Status: Probing {tool_desc}... Please wait.")
             
             # Set up timeout for probe result
-            self._waiting_for_probe_result = f'tool{tool_number}'
+            self._waiting_for_probe_result = tool_name
             if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
                 self.probe_timeout_timer.stop()
             
@@ -546,6 +576,16 @@ class ZtoolOffsetWizard(QWidget):
         """
         try:
             self.logger.info(f"Received probe result signal: {tool_name} = {probe_data}")
+            
+            # Validate we're waiting for a probe result and it's for the expected tool
+            if self._waiting_for_probe_result != tool_name:
+                self.logger.warning(f"Received probe result for {tool_name} but waiting for {self._waiting_for_probe_result} - ignoring")
+                return
+            
+            # Check if we already have results for this tool to prevent duplicates
+            if self.probe_results.get(tool_name) is not None:
+                self.logger.warning(f"Already have probe results for {tool_name} - ignoring duplicate")
+                return
             
             # Cancel timeout timer since we got a probe result
             if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
@@ -678,7 +718,7 @@ class ZtoolOffsetWizard(QWidget):
                 current_z_offset = self._get_current_z_offset()
                 
                 # Calculate new Z offset (current + measured difference)
-                new_z_offset = round(current_z_offset + raw_z_diff, 6)
+                new_z_offset = round(raw_z_diff, 3)
                 
                 # Extract standard deviations for quality assessment
                 tool0_std = tool0_data.get('standard_deviation', 0.0)
@@ -687,24 +727,22 @@ class ZtoolOffsetWizard(QWidget):
                 self.logger.info(f"Probe results - Tool 0: avg={tool0_avg:.6f}, std={tool0_std:.6f}")
                 self.logger.info(f"Probe results - Tool 1: avg={tool1_avg:.6f}, std={tool1_std:.6f}")
                 self.logger.info(f"Raw Z difference (T0-T1): {raw_z_diff:.6f}")
-                self.logger.info(f"Current Z offset: {current_z_offset:.6f}")
-                self.logger.info(f"New Z offset to apply: {new_z_offset:.6f}")
+                self.logger.info(f"Current Z offset: {current_z_offset:.3f}")
+                self.logger.info(f"New Z offset to apply: {new_z_offset:.3f}")
                 
                 # Determine quality indicators using helper method
                 tool0_quality = self._assess_probe_quality(tool0_std)
                 tool1_quality = self._assess_probe_quality(tool1_std)
                 
                 # Update UI with comprehensive results including offset information
-                self.calibrationLabel.setText(f"🎯 CALIBRATION COMPLETE!\n\n" +
-                                            f"📊 PROBE RESULTS:\n" +
+                self.calibrationLabel.setText(f"PROBE RESULTS:\n" +
                                             f"Tool 0: {tool0_avg:.6f}mm (±{tool0_std:.6f}) [{tool0_quality}]\n" +
                                             f"Tool 1: {tool1_avg:.6f}mm (±{tool1_std:.6f}) [{tool1_quality}]\n\n" +
-                                            f"� HEIGHT DIFFERENCE:\n" +
+                                            f"HEIGHT DIFFERENCE:\n" +
                                             f"Raw Difference (T0-T1): {raw_z_diff:.6f}mm\n\n" +
-                                            f"🔧 Z TOOL OFFSETS:\n" +
-                                            f"Current Z Offset: {current_z_offset:.6f}mm\n" +
-                                            f"New Z Offset: {new_z_offset:.6f}mm\n\n" +
-                                            f"✅ Ready to apply new offset to printer configuration.\n" +
+                                            f"Z TOOL OFFSETS:\n" +
+                                            f"Current Z Offset: {current_z_offset:.3f}mm\n" +
+                                            f"New Z Offset: {new_z_offset:.3f}mm\n\n" +
                                             f"Click 'Apply Offset' to save and return to menu.")
                 
                 # Enable the finish button with new text
@@ -714,7 +752,7 @@ class ZtoolOffsetWizard(QWidget):
                 
                 # Mark data as collected
                 self.probe_data_collected = True
-                self.logger.info(f"Z offset calculation complete: raw_diff={raw_z_diff:.6f}mm, new_offset={new_z_offset:.6f}mm")
+                self.logger.info(f"Z offset calculation complete: raw_diff={raw_z_diff:.6f}mm, new_offset={new_z_offset:.3f}mm")
             else:
                 self.logger.warning("Cannot calculate Z offset - missing probe data for one or both tools")
                 
@@ -732,17 +770,17 @@ class ZtoolOffsetWizard(QWidget):
             z_offset (float): Z offset value to apply in millimeters
         """
         try:
-            self.logger.info(f"Applying Z offset: {z_offset:.6f}")
+            self.logger.info(f"Applying Z offset: {z_offset:.3f}")
             
             # Set the tool offset using M218 command
-            offset_command = f"M218 T1 Z{z_offset:.6f}"
+            offset_command = f"M218 T1 Z{z_offset:.3f}"
             self.logger.info(f"Setting tool Z offset with command: {offset_command}")
             self.octoprint_client.gcode(command=offset_command)
             
             # Save to EEPROM
             self.octoprint_client.gcode(command='M500')
             
-            self.logger.info(f"Z offset {z_offset:.6f} applied and saved to EEPROM")
+            self.logger.info(f"Z offset {z_offset:.3f} applied and saved to EEPROM")
             
         except Exception as e:
             self.logger.error(f"Error applying Z offset: {e}")
@@ -763,7 +801,7 @@ class ZtoolOffsetWizard(QWidget):
             # Update status to show applying offset
             if self.calibrationLabel:
                 self.calibrationLabel.setText(
-                    "🔧 APPLYING Z OFFSET...\n\n"
+                    "• APPLYING Z OFFSET...\n\n"
                     "• Saving offset to printer configuration\n"
                     "• Writing to EEPROM\n"
                     "• Returning to Tool 0\n"
@@ -788,11 +826,11 @@ class ZtoolOffsetWizard(QWidget):
                 current_z_offset = self._get_current_z_offset()
                 
                 # Add the measured difference to the existing offset
-                new_z_offset = round(current_z_offset + raw_z_diff, 6)
+                new_z_offset = round(raw_z_diff, 3)
                 
-                self.logger.info(f"Current Z offset: {current_z_offset:.6f}mm")
-                self.logger.info(f"Measured Z difference: {raw_z_diff:.6f}mm")
-                self.logger.info(f"New Z offset to apply: {new_z_offset:.6f}mm")
+                self.logger.info(f"Current Z offset: {current_z_offset:.3f}mm")
+                self.logger.info(f"Measured Z difference: {raw_z_diff:.3f}mm")
+                self.logger.info(f"New Z offset to apply: {new_z_offset:.3f}mm")
                 
                 self.apply_z_offset(new_z_offset)
             else:
@@ -800,7 +838,6 @@ class ZtoolOffsetWizard(QWidget):
             
             # Return to tool 0 and home
             if self.octoprint_client:
-                self.octoprint_client.gcode(command='T0')
                 self.octoprint_client.home(['x', 'y', 'z'])
                 self.octoprint_client.gcode("M104 T0 S0")
                 self.octoprint_client.gcode("M104 T1 S0")

@@ -190,7 +190,7 @@ class ZProbeOffsetWizard(QWidget):
         # Labels for user feedback
         self.stepLabel = self.findChild(QLabel, "stepLabel")
         self.calibrationLabel = self.findChild(QLabel, "calibrationLabel")
-        self.calibrationLabel_2 = self.findChild(QLabel, "calibrationLabel_2")
+        self.automaticProbingStepLabel = self.findChild(QLabel, "automaticProbingStepLabel")
         self.bedUpDownLabel = self.findChild(QLabel, "bedUpDownLabel")
         self.restulsLabel = self.findChild(QLabel, "restulsLabel")
         self.step1Gif = self.findChild(QLabel, "step1Gif")
@@ -371,8 +371,8 @@ class ZProbeOffsetWizard(QWidget):
                 self.nextButton.setEnabled(False)
             
             # Show initial status
-            if self.calibrationLabel_2:
-                self.calibrationLabel_2.setText(
+            if self.automaticProbingStepLabel:
+                self.automaticProbingStepLabel.setText(
                     "🔧 Running Probe Accuracy Test...\n\n"
                     "• Moving to bed center\n"
                     "• Running probe accuracy sequence\n"
@@ -557,8 +557,8 @@ class ZProbeOffsetWizard(QWidget):
             self.logger.info(f"Using bed size: {build_size.get('X')}x{build_size.get('Y')}mm, probing at center X{center_x} Y{center_y}")
             
             # Update status
-            if self.calibrationLabel_2:
-                self.calibrationLabel_2.setText(
+            if self.automaticProbingStepLabel:
+                self.automaticProbingStepLabel.setText(
                     "🔧 Running Probe Accuracy Test...\n\n"
                     "• Moving to bed center\n"
                     "• Positioning for probe test\n"
@@ -586,8 +586,8 @@ class ZProbeOffsetWizard(QWidget):
             self.logger.info("Starting probe accuracy test")
             
             # Update status
-            if self.calibrationLabel_2:
-                self.calibrationLabel_2.setText(
+            if self.automaticProbingStepLabel:
+                self.automaticProbingStepLabel.setText(
                     "🔧 Running Probe Accuracy Test...\n\n"
                     "• Probe positioned at bed center\n"
                     "• Running accuracy test sequence\n"
@@ -647,8 +647,8 @@ class ZProbeOffsetWizard(QWidget):
             self.logger.info(f"Probe complete - Average Z: {self.probe_average_z:.6f}mm, Quality: {quality}")
             
             # Update UI with completion status
-            if self.calibrationLabel_2:
-                self.calibrationLabel_2.setText(
+            if self.automaticProbingStepLabel:
+                self.automaticProbingStepLabel.setText(
                     f"✅ Probe Test Complete!\n\n"
                     f"• Reference Position: {self.probe_average_z:.6f}mm\n"
                     f"• Standard Deviation: {std_dev:.6f}mm\n"
@@ -780,7 +780,6 @@ class ZProbeOffsetWizard(QWidget):
                     f"Manual Position: {self.manual_z:.6f}mm\n\n"
                     f"🔧 PROBE OFFSET CALCULATION:\n"
                     f"Offset Difference: {offset_difference:.6f}mm\n\n"
-                    f"This offset will be applied using M851 command.\n"
                     f"A negative value means the probe triggers below the nozzle.\n"
                     f"A positive value means the probe triggers above the nozzle.\n\n"
                     f"✅ Ready to apply the new probe offset.\n"

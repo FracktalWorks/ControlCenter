@@ -731,10 +731,7 @@ border-radius: 5px;</string>
            <widget class="QLabel" name="resultLabel">
             <property name="font">
              <font>
-              <family>Gotham</family>
-              <pointsize>10</pointsize>
-              <weight>50</weight>
-              <bold>false</bold>
+              <pointsize>14</pointsize>
              </font>
             </property>
             <property name="styleSheet">

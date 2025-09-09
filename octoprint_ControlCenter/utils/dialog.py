@@ -343,3 +343,18 @@ def RetrySkipCancel(parent, text, **kwargs):
         return "skip"
     else:
         return "cancel"
+
+
+def RetryCancel(parent, text, **kwargs):
+    """Show a dialog with Retry and Cancel buttons."""
+    msgbox = dialog(parent, text, buttons=QtWidgets.QMessageBox.NoButton, **kwargs)
+    retry_button = msgbox.addButton("Retry", QtWidgets.QMessageBox.ActionRole)
+    cancel_button = msgbox.addButton("Cancel", QtWidgets.QMessageBox.RejectRole)
+    
+    result = msgbox.exec_()
+    clicked_button = msgbox.clickedButton()
+    
+    if clicked_button == retry_button:
+        return "retry"
+    else:
+        return "cancel"

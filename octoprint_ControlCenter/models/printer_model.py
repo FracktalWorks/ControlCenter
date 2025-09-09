@@ -224,19 +224,30 @@ class PrinterModel(QObject):
         try:
             # Validate and update position data
             updated = False
+            valid_data_received = False
+            
             for axis in ['x', 'y', 'z']:
                 if axis in position_data:
                     try:
                         new_value = float(position_data[axis])
+                        valid_data_received = True
                         if self.current_position[axis] != new_value:
                             self.current_position[axis] = new_value
                             updated = True
+                        else:
+                            # Even if position didn't change, we still received valid data
+                            self.current_position[axis] = new_value
                     except (ValueError, TypeError):
                         self.logger.warning(f"Invalid {axis} position value: {position_data[axis]}")
             
-            if updated:
+            # Always emit signal when valid position data is received, regardless of whether it changed
+            # This ensures calibration wizards receive position confirmations even when printer is stationary
+            if valid_data_received:
                 self.position_timestamp = time.time()
-                self.logger.debug(f"Position updated: {self.current_position}")
+                if updated:
+                    self.logger.debug(f"Position updated: {self.current_position}")
+                else:
+                    self.logger.debug(f"Position confirmed (unchanged): {self.current_position}")
                 self.current_position_updated.emit(self.current_position.copy())
                 
         except Exception as e:
