@@ -349,8 +349,7 @@ class ZProbeOffsetWizard(QWidget):
                     "• Heating tool 0 and homing the printer\n"
                     "• Running probe accuracy test for reference\n"
                     "• Manual bed adjustment using paper as feeler gauge\n"
-                    "• Calculating and applying the correct Z offset\n\n"
-                    "Ensure your printer is properly prepared and ready for calibration."
+                    "Wait for moves to finish before clicking Next."
                 )
         except Exception as e:
             self.logger.error(f"Error setting up welcome step: {e}")
