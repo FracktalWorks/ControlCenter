@@ -38,12 +38,12 @@ class NozzleOffsetPage(QWidget):
         self.nozzleOffsetBackButton = self.findChild(QPushButton, "nozzleOffsetBackButton")
         self.nozzleOffsetSetButton = self.findChild(QPushButton, "nozzleOffsetSetButton")
         self.nozzleOffsetDoubleSpinBox = self.findChild(QDoubleSpinBox, "nozzleOffsetDoubleSpinBox")
-        self.currentNozzleOffsetLabel = self.findChild(QLabel, "currentNozzleOffset_2")
+        # self.currentNozzleOffsetLabel = self.findChild(QLabel, "currentNozzleOffset_2")
 
         # Validate UI elements
         check_ui_elements(self, [
             self.nozzleOffsetBackButton, self.nozzleOffsetSetButton,
-            self.nozzleOffsetDoubleSpinBox, self.currentNozzleOffsetLabel
+            self.nozzleOffsetDoubleSpinBox
         ], "Nozzle Offset Page")
 
         # Connect buttons to their respective methods
@@ -52,8 +52,8 @@ class NozzleOffsetPage(QWidget):
             lambda: self.setZProbeOffset(self.nozzleOffsetDoubleSpinBox.value())
         )
 
-        # Initialize the current nozzle offset display
-        self.currentNozzleOffsetLabel.setText(f"{self.current_nozzle_offset:.2f} mm")
+        # # Initialize the current nozzle offset display
+        # self.currentNozzleOffsetLabel.setText(f"{self.current_nozzle_offset:.2f} mm")
 
         # Configure spinbox
         self._configure_spinbox(self.nozzleOffsetDoubleSpinBox)
@@ -71,8 +71,8 @@ class NozzleOffsetPage(QWidget):
         """
         logger.info("NozzleOffsetPage.updateEEPROMProbeOffset started")
         try:
-            self.currentNozzleOffsetLabel.setText(str(float(offset)))
-            self.nozzleOffsetDoubleSpinBox.setValue(0)
+            # self.currentNozzleOffsetLabel.setText(str(float(offset)))
+            self.nozzleOffsetDoubleSpinBox.setValue(float(offset))
         except Exception as e:
             logger.error("Error in NozzleOffsetPage.updateEEPROMProbeOffset: {}".format(e))
             dialog.WarningOk(self, "Error in NozzleOffsetPage.updateEEPROMProbeOffset: {}".format(e), overlay=True)
@@ -88,10 +88,10 @@ class NozzleOffsetPage(QWidget):
             self.octoprint_client.gcode(command='M500')
             self.octoprint_client.gcode(command='RESTART')
 
-            # Reset spin box and update UI
-            self.nozzleOffsetDoubleSpinBox.setValue(0)
-            current_offset = float(self.currentNozzleOffsetLabel.text().replace("mm", "").strip()) + rounded_offset
-            self.currentNozzleOffsetLabel.setText(f"{current_offset:.2f} mm")
+            # # Reset spin box and update UI
+            # self.nozzleOffsetDoubleSpinBox.setValue(0)
+            # current_offset = float(self.currentNozzleOffsetLabel.text().replace("mm", "").strip()) + rounded_offset
+            # self.currentNozzleOffsetLabel.setText(f"{current_offset:.2f} mm")
         except Exception as e:
             logger.error("Error in NozzleOffsetPage.setZProbeOffset: {}".format(e))
             dialog.WarningOk(self, "Error in NozzleOffsetPage.setZProbeOffset: {}".format(e), overlay=True)

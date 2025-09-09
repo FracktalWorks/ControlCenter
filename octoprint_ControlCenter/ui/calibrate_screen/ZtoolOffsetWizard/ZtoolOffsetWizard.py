@@ -125,6 +125,7 @@ class ZtoolOffsetWizard(QWidget):
         }
         self.current_probing_tool = None    # Currently active probing tool
         self.probe_data_collected = False   # Flag indicating if calibration is complete
+        self.calculated_z_offset = None     # Calculated Z offset ready for application
 
         # Signal connection tracking
         self._probe_tracking_connected = False
@@ -712,13 +713,16 @@ class ZtoolOffsetWizard(QWidget):
                 # Extract average values for offset calculation
                 tool0_avg = tool0_data.get('average', 0.0)
                 tool1_avg = tool1_data.get('average', 0.0)
-                raw_z_diff = tool0_avg - tool1_avg
+                raw_z_diff =  tool1_avg - tool0_avg
                 
                 # Get current Z tool offset from printer model
                 current_z_offset = self._get_current_z_offset()
                 
                 # Calculate new Z offset (current + measured difference)
-                new_z_offset = round(raw_z_diff, 3)
+                new_z_offset = round(current_z_offset + raw_z_diff, 3)
+                
+                # Store calculated offset for use in finish_calibration
+                self.calculated_z_offset = new_z_offset
                 
                 # Extract standard deviations for quality assessment
                 tool0_std = tool0_data.get('standard_deviation', 0.0)
@@ -814,25 +818,10 @@ class ZtoolOffsetWizard(QWidget):
                 self.nextButton.setEnabled(False)
                 self.nextButton.setText("Applying...")
             
-            # Apply the calculated Z offset if both tools were probed
-            if (self.probe_results.get('tool0') is not None and 
-                self.probe_results.get('tool1') is not None):
-                
-                tool0_avg = self.probe_results['tool0'].get('average', 0.0)
-                tool1_avg = self.probe_results['tool1'].get('average', 0.0)
-                raw_z_diff = tool0_avg - tool1_avg
-                
-                # Get current Z tool offset from printer model (similar to camera wizard)
-                current_z_offset = self._get_current_z_offset()
-                
-                # Add the measured difference to the existing offset
-                new_z_offset = round(raw_z_diff, 3)
-                
-                self.logger.info(f"Current Z offset: {current_z_offset:.3f}mm")
-                self.logger.info(f"Measured Z difference: {raw_z_diff:.3f}mm")
-                self.logger.info(f"New Z offset to apply: {new_z_offset:.3f}mm")
-                
-                self.apply_z_offset(new_z_offset)
+            # Apply the calculated Z offset if available
+            if hasattr(self, 'calculated_z_offset') and self.calculated_z_offset is not None:
+                self.logger.info(f"Applying previously calculated Z offset: {self.calculated_z_offset:.3f}mm")
+                self.apply_z_offset(self.calculated_z_offset)
             else:
                 self.logger.warning("Cannot apply Z offset - missing probe data")
             
@@ -879,6 +868,7 @@ class ZtoolOffsetWizard(QWidget):
         self.probe_data_collected = False
         self.current_probing_tool = None
         self._waiting_for_probe_result = None
+        self.calculated_z_offset = None
         
         # Clean up timeout timer
         if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:

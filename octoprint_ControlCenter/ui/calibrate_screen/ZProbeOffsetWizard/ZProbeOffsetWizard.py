@@ -141,6 +141,7 @@ class ZProbeOffsetWizard(QWidget):
         self.manual_position = None        # Will store manual M114 position
         self.probe_average_z = None        # Average Z from probe accuracy
         self.manual_z = None               # Manual Z position from M114
+        self.calculated_offset = None      # Calculated probe offset ready for application
 
         # Signal connection tracking
         self._probe_tracking_connected = False
@@ -759,7 +760,10 @@ class ZProbeOffsetWizard(QWidget):
             # Calculate the offset difference
             # Offset = manual position - probe position
             # This represents how much higher/lower the manual position is compared to probe
-            offset_difference = self.manual_z - self.probe_average_z
+            offset_difference =  self.probe_average_z - self.manual_z 
+            
+            # Store calculated offset for use in apply_and_finish
+            self.calculated_offset = offset_difference 
             
             self.logger.info(f"Probe position: {self.probe_average_z:.6f}mm")
             self.logger.info(f"Manual position: {self.manual_z:.6f}mm")
@@ -780,8 +784,6 @@ class ZProbeOffsetWizard(QWidget):
                     f"Manual Position: {self.manual_z:.6f}mm\n\n"
                     f"🔧 PROBE OFFSET CALCULATION:\n"
                     f"Offset Difference: {offset_difference:.6f}mm\n\n"
-                    f"A negative value means the probe triggers below the nozzle.\n"
-                    f"A positive value means the probe triggers above the nozzle.\n\n"
                     f"✅ Ready to apply the new probe offset.\n"
                     f"Click 'Apply Offset' to save and complete calibration."
                 )
@@ -799,15 +801,12 @@ class ZProbeOffsetWizard(QWidget):
         Applies M851 command with calculated offset and returns to main screen.
         """
         try:
-            if self.probe_average_z is None or self.manual_z is None:
-                self.logger.error("Cannot apply offset - missing position data")
-                self._show_error("Error", "Missing position data. Cannot apply offset.")
+            if not hasattr(self, 'calculated_offset') or self.calculated_offset is None:
+                self.logger.error("Cannot apply offset - no calculated offset available")
+                self._show_error("Error", "No calculated offset available. Please complete the calibration process first.")
                 return
             
-            # Calculate offset to apply
-            offset_difference = self.manual_z - self.probe_average_z
-            
-            self.logger.info(f"Applying probe offset: {offset_difference:.6f}mm")
+            self.logger.info(f"Applying previously calculated probe offset: {self.calculated_offset:.6f}mm")
             
             # Update status
             if self.restulsLabel:
@@ -825,14 +824,14 @@ class ZProbeOffsetWizard(QWidget):
                 self.nextButton.setText("Applying...")
             
             # Apply the probe offset using M851
-            offset_command = f"M851 Z{offset_difference:.6f}"
+            offset_command = f"M851 Z{self.calculated_offset:.6f}"
             self.logger.info(f"Setting probe offset with command: {offset_command}")
             self.octoprint_client.gcode(command=offset_command)
             
             # Save to EEPROM
             self.octoprint_client.gcode(command='M500')
             
-            self.logger.info(f"Probe offset {offset_difference:.6f}mm applied and saved")
+            self.logger.info(f"Probe offset {self.calculated_offset:.6f}mm applied and saved")
             
             # Clean up and return to main screen
             self._reset_wizard_state()
@@ -1009,6 +1008,7 @@ class ZProbeOffsetWizard(QWidget):
         self.manual_position = None
         self.probe_average_z = None
         self.manual_z = None
+        self.calculated_offset = None
         self.calibration_complete = False
         self._waiting_for_probe_result = False
         self._waiting_for_position = False

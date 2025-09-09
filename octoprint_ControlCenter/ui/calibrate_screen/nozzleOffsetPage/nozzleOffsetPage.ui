@@ -26,7 +26,7 @@
    <string>Form</string>
   </property>
   <property name="autoFillBackground">
-   <bool>true</bool>
+   <bool>false</bool>
   </property>
   <property name="styleSheet">
    <string notr="true">background-color: rgb(40, 40, 40);</string>
@@ -50,6 +50,7 @@
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
+     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -105,32 +106,6 @@ url(:/icons/img/chevron-pointing-to-the-left.png)</string>
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QLabel" name="feedRateLabelControlPage_5">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>320</y>
-     <width>211</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Gotham</family>
-     <pointsize>16</pointsize>
-     <bold>false</bold>
-    </font>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">color: rgb(255, 255, 255);</string>
-   </property>
-   <property name="text">
-    <string>Current Z Offset: </string>
-   </property>
-   <property name="wordWrap">
-    <bool>true</bool>
-   </property>
-  </widget>
   <widget class="QPushButton" name="nozzleOffsetSetButton">
    <property name="geometry">
     <rect>
@@ -144,6 +119,7 @@ url(:/icons/img/chevron-pointing-to-the-left.png)</string>
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
+     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -199,6 +175,7 @@ QPushButton:focus {
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
+     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -303,6 +280,7 @@ QDoubleSpinBox::down-button:pressed {
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
+     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -332,6 +310,7 @@ QDoubleSpinBox::down-button:pressed {
     <font>
      <family>Gotham</family>
      <pointsize>16</pointsize>
+     <weight>50</weight>
      <bold>false</bold>
     </font>
    </property>
@@ -339,39 +318,10 @@ QDoubleSpinBox::down-button:pressed {
     <string notr="true">color: rgb(255, 255, 255);</string>
    </property>
    <property name="text">
-    <string>Change the initial height for the first layer of the print. +ve value increases height, -ve value reduces it.</string>
+    <string>Change the initial height for the first layer of the print. -ve value increases height, +ve value reduces it.</string>
    </property>
    <property name="wordWrap">
     <bool>true</bool>
-   </property>
-  </widget>
-  <widget class="QLabel" name="currentNozzleOffset_2">
-   <property name="geometry">
-    <rect>
-     <x>240</x>
-     <y>320</y>
-     <width>541</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Gotham</family>
-     <pointsize>16</pointsize>
-     <bold>false</bold>
-    </font>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">color: rgb(255, 255, 255);</string>
-   </property>
-   <property name="text">
-    <string>0</string>
-   </property>
-   <property name="wordWrap">
-    <bool>true</bool>
-   </property>
-   <property name="margin">
-    <number>2</number>
    </property>
   </widget>
  </widget>
