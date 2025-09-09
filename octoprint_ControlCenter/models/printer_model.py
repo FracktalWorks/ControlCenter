@@ -123,6 +123,9 @@ class PrinterModel(QObject):
         self.print_restore_enabled = bool(prefs.get("print_restore_enabled", True))  # Default to enabled
         self.auto_resume_enabled = bool(prefs.get("auto_resume_enabled", False))  # Default to disabled
         
+        # Firmware update preferences
+        self.firmware_update_check_enabled = bool(prefs.get("firmware_update_check_enabled", True))  # Default to enabled
+        
         self.filament_runout_state_map = {}  # {sensor: bool}
         
         # Note: Printer configuration now managed by printer.cfg file directly
@@ -173,6 +176,13 @@ class PrinterModel(QObject):
         self.auto_resume_enabled = bool(enabled)
         if persist and prev != enabled:
             self._config_store.set_preference('auto_resume_enabled', bool(enabled))
+
+    def set_firmware_update_check_pref(self, enabled: bool, persist: bool = True):
+        """Set firmware update check preference and persist if requested."""
+        prev = self.firmware_update_check_enabled
+        self.firmware_update_check_enabled = bool(enabled)
+        if persist and prev != enabled:
+            self._config_store.set_preference('firmware_update_check_enabled', bool(enabled))
 
     def update_print_restore_settings_from_octoprint(self, settings_data):
         """Update print restore settings from OctoPrint plugin response."""

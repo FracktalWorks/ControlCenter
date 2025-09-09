@@ -754,6 +754,81 @@ class PrinterConfigManager:
         status = self.check_klipper_config_files()
         return [file for file, exists in status.items() if not exists]
 
+    # ========================================================================
+    # VERSION CHECKING AND FIRMWARE UPDATE MANAGEMENT
+    # ========================================================================
+    
+    def get_config_version(self, config_path: str) -> Optional[int]:
+        """Extract version number from a printer.cfg file.
+        
+        Args:
+            config_path: Path to the printer.cfg file
+            
+        Returns:
+            Version number as integer, or None if not found/invalid
+        """
+        try:
+            if not os.path.exists(config_path):
+                logger.warning(f"Config file not found: {config_path}")
+                return None
+                
+            with open(config_path, 'r', encoding='utf-8') as file:
+                for line_num, line in enumerate(file, 1):
+                    line = line.strip()
+                    if line.startswith('# Version:'):
+                        # Extract version number from "# Version: 2"
+                        try:
+                            version_str = line.split(':')[1].strip()
+                            version = int(version_str)
+                            logger.debug(f"Found version {version} in {config_path}")
+                            return version
+                        except (IndexError, ValueError) as e:
+                            logger.warning(f"Invalid version format at line {line_num} in {config_path}: {line} - {e}")
+                            return None
+                            
+            logger.debug(f"No version found in {config_path}")
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error reading config version from {config_path}: {e}")
+            return None
+    
+    def get_current_config_version(self) -> Optional[int]:
+        """Get version of currently active printer.cfg."""
+        return self.get_config_version(self.printer_cfg_path)
+    
+    def get_firmware_config_version(self) -> Optional[int]:
+        """Get version of firmware template printer.cfg."""
+        firmware_config_path = os.path.join(self.firmware_path, "printer.cfg")
+        return self.get_config_version(firmware_config_path)
+    
+    def is_firmware_update_available(self) -> bool:
+        """Check if firmware template has a newer version than current config.
+        
+        Returns:
+            True if firmware version is newer than current version
+        """
+        try:
+            current_version = self.get_current_config_version()
+            firmware_version = self.get_firmware_config_version()
+            
+            # If either version is missing, assume no update needed
+            if current_version is None or firmware_version is None:
+                logger.debug(f"Version check skipped - current: {current_version}, firmware: {firmware_version}")
+                return False
+                
+            is_newer = firmware_version > current_version
+            if is_newer:
+                logger.info(f"Firmware update available: current version {current_version}, firmware version {firmware_version}")
+            else:
+                logger.debug(f"Firmware up to date: current version {current_version}, firmware version {firmware_version}")
+                
+            return is_newer
+            
+        except Exception as e:
+            logger.error(f"Error checking firmware update availability: {e}")
+            return False
+
 
 # ============================================================================
 # SINGLETON INSTANCE AND CONVENIENCE FUNCTIONS
@@ -806,3 +881,15 @@ def extract_printer_configuration(variables: Dict[str, Any]) -> Dict[str, Any]:
 def restore_octoprint_configs(printer_name: str) -> bool:
     """Restore all OctoPrint configuration files for the selected printer."""
     return get_printer_config_manager().restore_octoprint_configs(printer_name)
+
+def is_firmware_update_available() -> bool:
+    """Check if firmware template has a newer version than current config."""
+    return get_printer_config_manager().is_firmware_update_available()
+
+def get_current_config_version() -> Optional[int]:
+    """Get version of currently active printer.cfg."""
+    return get_printer_config_manager().get_current_config_version()
+
+def get_firmware_config_version() -> Optional[int]:
+    """Get version of firmware template printer.cfg."""
+    return get_printer_config_manager().get_firmware_config_version()

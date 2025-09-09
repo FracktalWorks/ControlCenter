@@ -63,6 +63,7 @@ class ControlScreen(QWidget):
         self.toggleAutoResumeButton = self.findChild(QPushButton, "toggleAutoResumeButton")
         self.toggleCheckPrintCompatibilityButton = self.findChild(QPushButton, "toggleCheckPrintCompatibilityButton")
         self.togglePrintRestoreButton = self.findChild(QPushButton, "togglePrintRestoreButton")
+        self.toggleFirmwareUpdateButton = self.findChild(QPushButton, "toggleFirmwareUpdateButton")
 
         # Temperature controls
         self.fanOnButton = self.findChild(QPushButton, "fanOnButton")
@@ -97,7 +98,7 @@ class ControlScreen(QWidget):
 
 
         # Validate UI components
-        check_ui_elements(self, [
+        required_components = [
             self.controlTabWidget, self.controlBackButton, self.feedRateSpinBox,
             self.setFeedRateButton, self.moveZPBabyStep, self.moveZMBabyStep,
             self.fanOnButton, self.fanOffButton, self.cooldownButton,
@@ -110,7 +111,13 @@ class ControlScreen(QWidget):
             self.toggleFilamentRunoutButton, self.toggleFilamentJamButton,
             self.toggleAutoResumeButton, self.toggleCheckPrintCompatibilityButton,
             self.togglePrintRestoreButton
-        ], "ControlScreen")
+        ]
+        
+        # Add firmware update check button if it exists (optional for backward compatibility)
+        if self.toggleFirmwareUpdateButton:
+            required_components.append(self.toggleFirmwareUpdateButton)
+            
+        check_ui_elements(self, required_components, "ControlScreen")
 
         # set the active extruder to 0 initially
         self.setActiveExtruder(0)  # Default to extruder 0
@@ -165,6 +172,8 @@ class ControlScreen(QWidget):
         self.toggleAutoResumeButton.clicked.connect(self.toggleAutoResume)
         self.toggleCheckPrintCompatibilityButton.clicked.connect(self.toggleCheckPrintCompatibility)
         self.togglePrintRestoreButton.clicked.connect(self.togglePrintRestore)
+        if self.toggleFirmwareUpdateButton:
+            self.toggleFirmwareUpdateButton.clicked.connect(self.toggleFirmwareUpdate)
 
         # Configure spinboxes
         for spinbox in [self.feedRateSpinBox, self.toolTempSpinBox, self.bedTempSpinBox, self.flowRateSpinBox]:
@@ -196,6 +205,10 @@ class ControlScreen(QWidget):
             self.togglePrintRestoreButton.setChecked(print_restore_enabled)
             auto_resume_enabled = bool(self.main_window.printer_model.auto_resume_enabled)
             self.toggleAutoResumeButton.setChecked(auto_resume_enabled)
+            # Initialize firmware update check preference
+            firmware_update_check_enabled = bool(self.main_window.printer_model.firmware_update_check_enabled)
+            if self.toggleFirmwareUpdateButton:
+                self.toggleFirmwareUpdateButton.setChecked(firmware_update_check_enabled)
             # Set auto resume button state based on print restore being enabled
             self.toggleAutoResumeButton.setEnabled(print_restore_enabled)
         except Exception as e:
@@ -566,3 +579,15 @@ class ControlScreen(QWidget):
         except Exception as e:
             logger.error(f"Error in ControlScreen.toggleCheckPrintCompatibility: {e}")
             dialog.WarningOk(self, f"Error in ControlScreen.toggleCheckPrintCompatibility: {e}", overlay=True)
+
+    def toggleFirmwareUpdate(self):
+        """Toggle firmware update check preference and persist the setting."""
+        logger.info("ControlScreen.toggleFirmwareUpdate started")
+        try:
+            enabled = self.toggleFirmwareUpdateButton.isChecked()
+            # Update model preference (persists)
+            self.main_window.printer_model.set_firmware_update_check_pref(enabled, persist=True)
+            self.logger.info(f"Firmware update check {'enabled' if enabled else 'disabled'}")
+        except Exception as e:
+            logger.error(f"Error in ControlScreen.toggleFirmwareUpdate: {e}")
+            dialog.WarningOk(self, f"Error in ControlScreen.toggleFirmwareUpdate: {e}", overlay=True)

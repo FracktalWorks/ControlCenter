@@ -180,6 +180,8 @@ class MainController:
             self.initialize_websocket()
             self.updateLoadingProgress(99, "Checking Klipper configuration...")
             self.checkKlipperPrinterCFG()
+            # Check for firmware updates during startup if enabled
+            self.check_firmware_update()
             self.updateLoadingProgress(100, "Startup complete!")
             self.main_window.switch_to_home_screen()
         except Exception as e:
@@ -310,9 +312,118 @@ class MainController:
             else:
                 self.logger.info("Printer Config File OK")
                 manager.cleanup_old_backups()
+                
         except Exception as e:
             self.logger.error(f"Error in MainController.checkKlipperPrinterCFG: {e}")
             dialog.WarningOk(self.main_window, f"Error in MainController.checkKlipperPrinterCFG: {e}", overlay=True)
+
+    def check_firmware_update(self):
+        """Check if firmware update is available and prompt user if enabled."""
+        try:
+            # Check if firmware update checking is enabled
+            if not self.printer_model.firmware_update_check_enabled:
+                self.logger.debug("Firmware update check disabled by user preference")
+                return
+                
+            from utils.printer_config_manager import (
+                is_firmware_update_available,
+                get_current_config_version,
+                get_firmware_config_version,
+                get_current_printer_selection,
+                get_printer_display_name,
+                copy_firmware_files,
+                restore_octoprint_configs
+            )
+            
+            # Check if update is available
+            if not is_firmware_update_available():
+                self.logger.debug("No firmware update available")
+                return
+                
+            current_version = get_current_config_version()
+            firmware_version = get_firmware_config_version()
+            current_printer = get_current_printer_selection()
+            
+            if not current_printer:
+                self.logger.warning("No printer configured, skipping firmware update check")
+                return
+                
+            printer_display_name = get_printer_display_name(current_printer)
+            
+            self.logger.info(f"Firmware update available: v{current_version} -> v{firmware_version}")
+            
+            # Show update dialog
+            update_msg = (
+                f"Firmware Update Available!\n\n"
+                f"Current version: {current_version or 'Unknown'}\n"
+                f"New version: {firmware_version}\n\n"
+                f"This will update the configuration for '{printer_display_name}' and restart the printer.\n\n"
+                f"Do you want to update now?"
+            )
+            
+            if dialog.WarningYesNo(self.main_window, update_msg, overlay=True):
+                self.logger.info("User accepted firmware update")
+                self.perform_firmware_update(current_printer, printer_display_name)
+            else:
+                self.logger.info("User declined firmware update")
+                
+        except Exception as e:
+            self.logger.error(f"Error checking firmware update: {e}")
+
+    def perform_firmware_update(self, current_printer: str, printer_display_name: str):
+        """Perform the firmware update by copying files and restarting."""
+        try:
+            from utils.printer_config_manager import copy_firmware_files, restore_octoprint_configs
+            
+            self.logger.info(f"Performing firmware update for {current_printer}")
+            
+            # Copy firmware files (same as restore_print_settings)
+            success = copy_firmware_files(current_printer)
+            
+            # Also restore OctoPrint configurations
+            if success:
+                self.logger.info("Restoring OctoPrint configurations...")
+                octoprint_success = restore_octoprint_configs(current_printer)
+                if not octoprint_success:
+                    self.logger.warning("Failed to restore OctoPrint configs, but Klipper config was successful")
+            
+            if success:
+                self.logger.info("Firmware files updated successfully, executing printer restart")
+                
+                # Restart Klipper firmware
+                try:
+                    self.octoprint_client.gcode(command='FIRMWARE_RESTART')
+                    
+                    self.logger.info("Firmware update completed successfully")
+                    
+                    # Show success message
+                    success_msg = (
+                        f"Firmware updated successfully!\n\n"
+                        f"'{printer_display_name}' has been updated to the latest version.\n\n"
+                        "The printer has been restarted with the new configuration."
+                    )
+                    dialog.WarningOk(self.main_window, success_msg, overlay=True)
+                    
+                except Exception as e:
+                    self.logger.error(f"Error executing firmware restart: {e}")
+                    dialog.WarningOk(
+                        self.main_window, 
+                        f"Firmware files updated but failed to restart printer: {e}\n"
+                        "Please manually restart the printer.",
+                        overlay=True
+                    )
+                    
+            else:
+                self.logger.error("Failed to update firmware files")
+                dialog.WarningOk(
+                    self.main_window,
+                    "Failed to update firmware. Please check the logs for details.",
+                    overlay=True
+                )
+                
+        except Exception as e:
+            self.logger.error(f"Error performing firmware update: {e}")
+            dialog.WarningOk(self.main_window, f"Error updating firmware: {e}", overlay=True)
 
     # =========================================================================
     # SECTION: Print Restore Management
