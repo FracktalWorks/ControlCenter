@@ -33,6 +33,25 @@ except ImportError:
                 "Please install it manually with: pip install PyYAML or sudo pip install PyYAML"
             ) from e
 
+try:
+    from packaging import version
+except ImportError:
+    print("packaging not found. Attempting to install...")
+    try:
+        # Try to install packaging automatically
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'packaging'])
+        from packaging import version
+        print("✓ packaging installed successfully!")
+    except subprocess.CalledProcessError:
+        # If pip install fails, try with sudo
+        try:
+            subprocess.check_call(['sudo', 'pip', 'install', 'packaging'])
+            from packaging import version
+            print("✓ packaging installed successfully with sudo!")
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            print("Warning: packaging module not available. Version comparison will use string comparison as fallback.")
+            version = None
+
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -780,14 +799,14 @@ class PrinterConfigManager:
     # VERSION CHECKING AND FIRMWARE UPDATE MANAGEMENT
     # ========================================================================
     
-    def get_config_version(self, config_path: str) -> Optional[int]:
+    def get_config_version(self, config_path: str) -> Optional[str]:
         """Extract version number from a printer.cfg file.
         
         Args:
             config_path: Path to the printer.cfg file
             
         Returns:
-            Version number as integer, or None if not found/invalid
+            Version number as string, or None if not found/invalid
         """
         try:
             if not os.path.exists(config_path):
@@ -798,12 +817,16 @@ class PrinterConfigManager:
                 for line_num, line in enumerate(file, 1):
                     line = line.strip()
                     if line.startswith('# Version:'):
-                        # Extract version number from "# Version: 2"
+                        # Extract version number from "# Version: 2.1" or "# Version: 2.2.2"
                         try:
                             version_str = line.split(':')[1].strip()
-                            version = int(version_str)
-                            logger.debug(f"Found version {version} in {config_path}")
-                            return version
+                            # Validate that it's a reasonable version format
+                            if re.match(r'^\d+(\.\d+)*$', version_str):
+                                logger.debug(f"Found version {version_str} in {config_path}")
+                                return version_str
+                            else:
+                                logger.warning(f"Invalid version format at line {line_num} in {config_path}: {line} - version must be numeric (e.g., '2', '2.1', '2.2.2')")
+                                return None
                         except (IndexError, ValueError) as e:
                             logger.warning(f"Invalid version format at line {line_num} in {config_path}: {line} - {e}")
                             return None
@@ -815,11 +838,11 @@ class PrinterConfigManager:
             logger.error(f"Error reading config version from {config_path}: {e}")
             return None
     
-    def get_current_config_version(self) -> Optional[int]:
+    def get_current_config_version(self) -> Optional[str]:
         """Get version of currently active printer.cfg."""
         return self.get_config_version(self.printer_cfg_path)
     
-    def get_firmware_config_version(self) -> Optional[int]:
+    def get_firmware_config_version(self) -> Optional[str]:
         """Get version of firmware template printer.cfg."""
         firmware_config_path = os.path.join(self.firmware_path, "printer.cfg")
         return self.get_config_version(firmware_config_path)
@@ -838,8 +861,21 @@ class PrinterConfigManager:
             if current_version is None or firmware_version is None:
                 logger.debug(f"Version check skipped - current: {current_version}, firmware: {firmware_version}")
                 return False
-                
-            is_newer = firmware_version > current_version
+            
+            # Use packaging.version for proper semantic version comparison
+            if version is not None:
+                try:
+                    current_ver = version.Version(current_version)
+                    firmware_ver = version.Version(firmware_version)
+                    is_newer = firmware_ver > current_ver
+                except Exception as e:
+                    logger.warning(f"Error parsing versions with packaging module: {e}. Falling back to string comparison.")
+                    # Fallback to string comparison (works for simple cases like "2.1" vs "2.0")
+                    is_newer = self._compare_version_strings(firmware_version, current_version)
+            else:
+                # Fallback to string comparison when packaging module is not available
+                is_newer = self._compare_version_strings(firmware_version, current_version)
+            
             if is_newer:
                 logger.info(f"Firmware update available: current version {current_version}, firmware version {firmware_version}")
             else:
@@ -850,6 +886,41 @@ class PrinterConfigManager:
         except Exception as e:
             logger.error(f"Error checking firmware update availability: {e}")
             return False
+    
+    def _compare_version_strings(self, version1: str, version2: str) -> bool:
+        """Compare two version strings using basic semantic version logic.
+        
+        Args:
+            version1: First version string (e.g., "2.1" or "2.2.2")
+            version2: Second version string (e.g., "2.0" or "2.1.1")
+            
+        Returns:
+            True if version1 is greater than version2
+        """
+        try:
+            # Split versions into components and pad with zeros if needed
+            v1_parts = [int(x) for x in version1.split('.')]
+            v2_parts = [int(x) for x in version2.split('.')]
+            
+            # Pad shorter version with zeros
+            max_len = max(len(v1_parts), len(v2_parts))
+            v1_parts.extend([0] * (max_len - len(v1_parts)))
+            v2_parts.extend([0] * (max_len - len(v2_parts)))
+            
+            # Compare component by component
+            for i in range(max_len):
+                if v1_parts[i] > v2_parts[i]:
+                    return True
+                elif v1_parts[i] < v2_parts[i]:
+                    return False
+            
+            # Versions are equal
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error comparing version strings {version1} and {version2}: {e}")
+            # Fallback to simple string comparison
+            return version1 > version2
 
 
 # ============================================================================
@@ -908,10 +979,10 @@ def is_firmware_update_available() -> bool:
     """Check if firmware template has a newer version than current config."""
     return get_printer_config_manager().is_firmware_update_available()
 
-def get_current_config_version() -> Optional[int]:
+def get_current_config_version() -> Optional[str]:
     """Get version of currently active printer.cfg."""
     return get_printer_config_manager().get_current_config_version()
 
-def get_firmware_config_version() -> Optional[int]:
+def get_firmware_config_version() -> Optional[str]:
     """Get version of firmware template printer.cfg."""
     return get_printer_config_manager().get_firmware_config_version()
