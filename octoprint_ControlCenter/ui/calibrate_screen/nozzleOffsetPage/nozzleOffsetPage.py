@@ -86,6 +86,7 @@ class NozzleOffsetPage(QWidget):
             # Send G-code commands
             self.octoprint_client.gcode(command=f'M851 Z{rounded_offset}')
             self.octoprint_client.gcode(command='M500')
+            self.octoprint_client.gcode(command='RESTART')
 
             # Reset spin box and update UI
             self.nozzleOffsetDoubleSpinBox.setValue(0)

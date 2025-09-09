@@ -838,10 +838,10 @@ class ZProbeOffsetWizard(QWidget):
             self._reset_wizard_state()
             
             # Turn off heating and home
-            if self.octoprint_client:
-                self.octoprint_client.gcode("M104 T0 S0")  # Turn off tool 0 heater
-                self.octoprint_client.home(['x', 'y', 'z'])
-            
+            self.octoprint_client.gcode("M104 T0 S0")  # Turn off tool 0 heater
+            self.octoprint_client.home(['x', 'y', 'z'])
+            self.octoprint_client.gcode("RESTART")
+
             # Return to main calibration screen
             if hasattr(self.main_window, 'calibrate_screen'):
                 self.main_window.calibrate_screen.show_calibrate_screen()
