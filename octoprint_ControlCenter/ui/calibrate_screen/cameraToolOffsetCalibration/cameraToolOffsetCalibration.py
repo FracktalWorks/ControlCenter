@@ -705,18 +705,20 @@ class CameraToolOffsetCalibration(QWidget):
         """
         Handle wizard activation - reset state and prepare UI.
         
-        Called when the wizard widget becomes visible. Resets wizard to step 1
-        and ensures proper initial state.
+        Called when the wizard widget becomes visible. Performs complete state
+        reset including signal disconnections and data cleanup to ensure
+        reliable operation across multiple wizard sessions.
         
         Args:
             event: Qt show event
         """
         super().showEvent(event)
         try:
-            self.goto_step(self.STEP_CLEAN_NOZZLES)
-            self.logger.debug("Reset wizard to step 1 on show")
+            # Complete state reset including signal disconnections
+            self._reset_wizard_state()
+            self.logger.debug("🏠✨ Reset camera wizard state and UI on show")
         except Exception as e:
-            self.logger.warning(f"Error resetting wizard on show: {e}")
+            self.logger.warning(f"⚠️ Error resetting wizard on show: {e}")
 
     def goto_step(self, index: int):
         """
@@ -889,7 +891,10 @@ class CameraToolOffsetCalibration(QWidget):
     def on_cancel_clicked(self):
         """Handle cancel button clicks and return to main calibrate screen."""
         try:
-            # Stop camera
+            # Cleanup resources without restarting wizard
+            self.cleanup()
+            
+            # Stop camera and turn off heaters
             self.stop_camera()
             self.octoprint_client.gcode("M104 T0 S0")
             self.octoprint_client.gcode("M104 T1 S0")
@@ -901,6 +906,80 @@ class CameraToolOffsetCalibration(QWidget):
             self.logger.error(f"Error in cancel handler: {e}")
             # Even if there's an error, try to return to calibrate screen
             self.main_window.calibrate_screen.show_calibrate_screen()
+
+    def on_next_clicked(self):
+        """Handle next button clicks with proper validation and error handling."""
+        try:
+            current_step = self._current_step
+            
+            if current_step == self.STEP_CLEAN_NOZZLES:
+                # Move to camera connection step
+                self.goto_step(self.STEP_CONNECT_CAMERA)
+                
+            elif current_step == self.STEP_CONNECT_CAMERA:
+                # Show loading dialog and try to connect camera
+                try:
+                    self.start_camera_with_loading_dialog()
+                except Exception as e:
+                    self.logger.error(f"Error starting camera connection: {e}")
+                    # Show camera error with retry option
+                    self.show_camera_error(f"Connection error: {str(e)}")
+                return  # Don't proceed to next step until camera is handled
+                
+            elif current_step == self.STEP_POSITION_T0_COURSE:
+                # Validate camera is available before proceeding
+                if not self.camera_available:
+                    dialog.WarningOk(self, "Camera is not available. Please ensure camera is connected and working.")
+                    return
+                # Move to T0 fine positioning
+                self.goto_step(self.STEP_POSITION_T0_FINE)
+                
+            elif current_step == self.STEP_POSITION_T0_FINE:
+                # Record T0 position and wait for position update to proceed to T1 setup
+                try:
+                    self._record_tool_position(0)
+                    # Don't call goto_step here - let on_position_updated handle it
+                    # to avoid timing issues with M114 response
+                except Exception as e:
+                    self.logger.error(f"Error recording T0 position: {e}")
+                    dialog.WarningOk(self, f"Error recording T0 position: {e}")
+                
+            elif current_step == self.STEP_POSITION_T1_COURSE:
+                # Validate T0 was recorded before proceeding
+                if not hasattr(self, 'tool0_position') or self.tool0_position is None:
+                    dialog.WarningOk(self, "T0 position not recorded. Please go back and complete T0 positioning.")
+                    return
+                # Move to T1 fine positioning
+                self.goto_step(self.STEP_POSITION_T1_FINE)
+                
+            elif current_step == self.STEP_POSITION_T1_FINE:
+                # Record T1 position and wait for position update to proceed to results
+                try:
+                    self._record_tool_position(1)
+                    # Don't call goto_step here - let on_position_updated handle it
+                    # to avoid timing issues with M114 response
+                except Exception as e:
+                    self.logger.error(f"Error recording T1 position: {e}")
+                    dialog.WarningOk(self, f"Error recording T1 position: {e}")
+                
+            elif current_step == self.STEP_RESULTS:
+                # Validate both positions are recorded before applying offsets
+                if not hasattr(self, 'tool0_position') or self.tool0_position is None:
+                    dialog.WarningOk(self, "T0 position not recorded. Please complete the calibration process.")
+                    return
+                if not hasattr(self, 'tool1_position') or self.tool1_position is None:
+                    dialog.WarningOk(self, "T1 position not recorded. Please complete the calibration process.")
+                    return
+                # Apply tool offsets and finish
+                try:
+                    self._apply_tool_offsets()
+                except Exception as e:
+                    self.logger.error(f"Error applying tool offsets: {e}")
+                    dialog.WarningOk(self, f"Error applying tool offsets: {e}")
+                
+        except Exception as e:
+            self.logger.error(f"Error in next button handler: {e}")
+            dialog.WarningOk(self, f"An error occurred: {e}")
 
     # ========================================================================================
     # SECTION 4: CAMERA HANDLING
@@ -919,33 +998,6 @@ class CameraToolOffsetCalibration(QWidget):
         except Exception as e:
             self.logger.error(f"Error configuring camera: {e}")
 
-    def _on_camera_connection_success(self, camera_index):
-        """Handle successful camera connection with segfault protection."""
-        try:
-            # Close any existing connecting dialog
-            if hasattr(self, 'connecting_dialog') and self.connecting_dialog:
-                self.connecting_dialog.close()
-                self.connecting_dialog = None
-            
-            # Camera feed is already started by _perform_camera_detection, so just configure
-            self.camera_available = True
-            self.camera_setup_in_progress = False
-            self.logger.info(f"Camera connected successfully on index {camera_index}")
-            
-            # Clear any placeholder content
-            self._clear_no_camera_layout()
-            
-            # Proceed to next step
-            self.goto_step(self.STEP_POSITION_T0_COURSE)
-                
-        except Exception as e:
-            self.logger.error(f"Error in camera connection success: {e}")
-            # Close dialog if it exists
-            if hasattr(self, 'connecting_dialog') and self.connecting_dialog:
-                self.connecting_dialog.close()
-                self.connecting_dialog = None
-            self._on_camera_connection_failed()
-    
     def _on_camera_connection_failed(self):
         """Handle failed camera connection with retry dialog."""
         try:
@@ -967,13 +1019,15 @@ class CameraToolOffsetCalibration(QWidget):
                 self.logger.info("User chose to retry camera connection")
                 QTimer.singleShot(500, self.start_camera_with_loading_dialog)
             else:
-                # User cancelled - exit the wizard entirely
+                # User cancelled - cleanup and exit the wizard entirely
                 self.logger.info("User cancelled camera setup")
+                self.cleanup()
                 self.on_cancel_clicked()  # Exit the wizard
                 
         except Exception as e:
             self.logger.error(f"Error handling camera connection failure: {e}")
-            # Fallback - exit wizard on error
+            # Fallback - cleanup and exit wizard on error
+            self.cleanup()
             self.on_cancel_clicked()
 
     def start_camera_with_loading_dialog(self):
@@ -1045,13 +1099,10 @@ class CameraToolOffsetCalibration(QWidget):
                 # Hide loading dialog on success
                 self.hide_loading_dialog()
                 
-                # Clear any placeholder content
-                self._clear_no_camera_layout()
-                
                 # Configure initial zoom (start with 1x)
                 self.camera_thread.set_zoom(1.0)
                 
-                # Proceed to next step
+                # Camera ready - proceed to positioning step
                 self.goto_step(self.STEP_POSITION_T0_COURSE)
             else:
                 self.hide_loading_dialog()
@@ -1162,50 +1213,9 @@ class CameraToolOffsetCalibration(QWidget):
             # User wants to retry
             QTimer.singleShot(500, self.start_camera_with_loading_dialog)
         else:
-            # User cancelled - exit the wizard entirely
+            # User cancelled - cleanup and exit the wizard entirely
+            self.cleanup()
             self.on_cancel_clicked()  # Exit the wizard
-
-    def _show_camera_placeholder(self):
-        """Show a placeholder when camera is not available."""
-        if not self.webCamFeed:
-            return
-        
-        # Create a placeholder image using the label's size
-        label_size = self.webCamFeed.size()
-        placeholder = QPixmap(label_size.width(), label_size.height())
-        placeholder.fill(Qt.lightGray)
-        
-        # Draw text on placeholder
-        painter = QPainter(placeholder)
-        painter.setPen(Qt.black)
-        painter.drawText(placeholder.rect(), Qt.AlignCenter, 
-                        "Camera Not Available\nPosition nozzle manually\nusing movement controls")
-        painter.end()
-        
-        self.webCamFeed.setPixmap(placeholder)
-        self.logger.info("Showing camera placeholder - manual positioning mode")
-
-    def _clear_no_camera_layout(self):
-        """Clear the no-camera layout if it exists."""
-        try:
-            if hasattr(self, 'webCamFeed') and self.webCamFeed and self.webCamFeed.layout():
-                # Clear the layout
-                while self.webCamFeed.layout().count():
-                    item = self.webCamFeed.layout().takeAt(0)
-                    if item.widget():
-                        item.widget().deleteLater()
-                self.webCamFeed.layout().deleteLater()
-                self.webCamFeed.setLayout(None)
-                
-                # Reset camera feed to normal style
-                self.webCamFeed.setStyleSheet("")
-                self.webCamFeed.setText("")
-        except Exception as e:
-            self.logger.error(f"Error clearing no-camera layout: {e}")
-
-    def _on_camera_failed(self):
-        """Legacy method - redirect to new failure handler."""
-        self._on_camera_connection_failed()
 
     def _update_camera_feed(self, qt_image):
         """Update the camera feed with crosshair overlay."""
@@ -1273,10 +1283,10 @@ class CameraToolOffsetCalibration(QWidget):
             
         except Exception as e:
             self.logger.error(f"Error in camera error handler: {e}")
-            # Fallback - reset state
+            # Fallback - reset state and cleanup
             self.camera_setup_in_progress = False
             self.camera_available = False
-            # Fallback - exit wizard on error
+            self.cleanup()
             self.on_cancel_clicked()
     
     def _show_camera_error_dialog(self, error_msg):
@@ -1298,12 +1308,14 @@ class CameraToolOffsetCalibration(QWidget):
                 QTimer.singleShot(500, self.start_camera_with_loading_dialog)
             else:
                 self.logger.info("User cancelled after camera error")
-                # Cancel - exit the wizard entirely
+                # Cancel - cleanup and exit the wizard entirely
+                self.cleanup()
                 self.on_cancel_clicked()  # Exit the wizard
                 
         except Exception as e:
             self.logger.error(f"Error showing camera error dialog: {e}")
-            # Fallback - exit wizard on error
+            # Fallback - cleanup and exit wizard on error
+            self.cleanup()
             self.on_cancel_clicked()
     
     def _connect_position_tracking(self):
@@ -1341,65 +1353,6 @@ class CameraToolOffsetCalibration(QWidget):
             self.logger.debug(f"Moving {axis} by {distance}mm")
         except Exception as e:
             self.logger.error(f"Error moving {axis} axis: {e}")
-
-    def on_next_clicked(self):
-        """Handle next button clicks with segfault protection."""
-        try:
-            current_step = self._current_step
-            
-            if current_step == self.STEP_CLEAN_NOZZLES:
-                # Move to camera connection step
-                self.goto_step(self.STEP_CONNECT_CAMERA)
-                
-            elif current_step == self.STEP_CONNECT_CAMERA:
-                # Show loading dialog and try to connect camera
-                try:
-                    self.start_camera_with_loading_dialog()
-                except Exception as e:
-                    self.logger.error(f"Error starting camera connection: {e}")
-                    # Show camera error with retry option
-                    self.show_camera_error(f"Connection error: {str(e)}")
-                return  # Don't proceed to next step until camera is handled
-                
-            elif current_step == self.STEP_POSITION_T0_COURSE:
-                # Move to T0 fine positioning
-                self.goto_step(self.STEP_POSITION_T0_FINE)
-                
-            elif current_step == self.STEP_POSITION_T0_FINE:
-                # Record T0 position and wait for position update to proceed to T1 setup
-                try:
-                    self._record_tool_position(0)
-                    # Don't call goto_step here - let on_position_updated handle it
-                    # to avoid timing issues with M114 response
-                except Exception as e:
-                    self.logger.error(f"Error recording T0 position: {e}")
-                    dialog.WarningOk(self, f"Error recording T0 position: {e}")
-                
-            elif current_step == self.STEP_POSITION_T1_COURSE:
-                # Move to T1 fine positioning
-                self.goto_step(self.STEP_POSITION_T1_FINE)
-                
-            elif current_step == self.STEP_POSITION_T1_FINE:
-                # Record T1 position and wait for position update to proceed to results
-                try:
-                    self._record_tool_position(1)
-                    # Don't call goto_step here - let on_position_updated handle it
-                    # to avoid timing issues with M114 response
-                except Exception as e:
-                    self.logger.error(f"Error recording T1 position: {e}")
-                    dialog.WarningOk(self, f"Error recording T1 position: {e}")
-                
-            elif current_step == self.STEP_RESULTS:
-                # Apply tool offsets and finish
-                try:
-                    self._apply_tool_offsets()
-                except Exception as e:
-                    self.logger.error(f"Error applying tool offsets: {e}")
-                    dialog.WarningOk(self, f"Error applying tool offsets: {e}")
-                
-        except Exception as e:
-            self.logger.error(f"Error in next button handler: {e}")
-            dialog.WarningOk(self, f"An error occurred: {e}")
 
     def _record_tool_position(self, tool):
         """Record the current position for the specified tool."""
@@ -1453,15 +1406,17 @@ class CameraToolOffsetCalibration(QWidget):
                 self.logger.info(f"User chose to retry position recording for tool {tool}")
                 QTimer.singleShot(500, lambda: self._record_tool_position(tool))
             else:
-                # Cancel - exit the wizard entirely
+                # Cancel - cleanup and exit the wizard entirely
                 self.logger.info(f"User cancelled position recording for tool {tool}")
                 self._reset_position_recording_state()
+                self.cleanup()
                 self.on_cancel_clicked()  # Exit the wizard
                 
         except Exception as e:
             self.logger.error(f"Error handling position timeout: {e}")
             # Reset state on error and exit wizard
             self._reset_position_recording_state()
+            self.cleanup()
             self.on_cancel_clicked()  # Exit the wizard on error too
 
     def _reset_position_recording_state(self):
@@ -1471,7 +1426,7 @@ class CameraToolOffsetCalibration(QWidget):
             self._waiting_for_position = None
             self._disconnect_position_tracking()
             
-            # Clean up timeout timer
+            # Clean up timeout timer with proper null checking
             if hasattr(self, 'position_timeout_timer') and self.position_timeout_timer:
                 self.position_timeout_timer.stop()
                 self.position_timeout_timer = None
@@ -1504,7 +1459,6 @@ class CameraToolOffsetCalibration(QWidget):
                     # Proceed to next step after position is recorded
                     if self.current_tool == 0:  # T0 position recorded, switch to T1 and go to T1 course
                         def proceed_to_t1():
-
                             self.octoprint_client.gcode("T1")
                             self.logger.info("Switched to tool 1")
                             # Move T0 to where T1 was positioned before switching tools
@@ -1638,76 +1592,133 @@ Please restart the calibration process."""
             self.logger.error(f"Error applying tool offsets: {e}")
             dialog.WarningOk(self, f"Error applying tool offsets: {e}")
 
-    def stop_camera(self):
-        """Stop the camera feed safely using the simple CameraThread approach."""
-        try:
-            # Hide loading dialog if it's still showing
-            self.hide_loading_dialog()
-            
-            if self.camera_thread and self.camera_thread.isRunning():
-                self.logger.info("Stopping camera thread...")
-                
-                # Disconnect signal to prevent any remaining frames from being processed
-                try:
-                    self.camera_thread.changePixmap.disconnect()
-                except:
-                    pass  # Signal might already be disconnected
-                
-                # Stop the thread
-                self.camera_thread.stop()
-                
-                # Clear the reference
-                self.camera_thread = None
-                self.camera_available = False
-                self.logger.info("Camera stopped successfully")
-            
-            # Reset setup flag
-            self.camera_setup_in_progress = False
-                
-        except Exception as e:
-            self.logger.error(f"Error stopping camera: {e}")
-            # Even if there's an error, clear the reference to prevent further issues
-            self.camera_thread = None
-            self.camera_available = False
-            self.camera_setup_in_progress = False
+    # ========================================================================================
+    # SECTION 7: STATE MANAGEMENT AND CLEANUP
+    # ========================================================================================
+    # Functions for wizard state management, resource cleanup, and lifecycle management.
 
-    # ========================================================================================
-    # SECTION 7: CLEANUP AND UTILITY METHODS
-    # ========================================================================================
-    # Functions for resource cleanup, event handling, and utility operations
-    # for proper widget lifecycle management.
+    def _reset_wizard_state(self):
+        """
+        Reset all wizard state variables to initial values.
+        
+        Performs complete state cleanup including signal disconnections,
+        step reset, and data clearing. This is called when the wizard
+        is opened to ensure clean starting state.
+        
+        ⚠️  DO NOT call this when exiting/canceling - use cleanup() instead!
+        """
+        try:
+            # Core resource cleanup (shared with cleanup)
+            self._cleanup_core_resources()
+            
+            # Reset to first step (only for wizard restart, not exit!)
+            self.goto_step(self.STEP_CLEAN_NOZZLES)
+            
+            # Reset wizard-specific state variables
+            self._reset_state_variables()
+                
+            self.logger.debug("🔄✨ Camera wizard state reset complete")
+            
+        except Exception as e:
+            self.logger.error(f"Error resetting wizard state: {e}")
 
     def cleanup(self):
-        """Cleanup resources when widget is destroyed."""
+        """
+        Cleanup resources WITHOUT restarting the wizard.
+        
+        Use this when canceling, exiting, or handling errors where
+        you want to clean up but NOT restart the wizard.
+        """
         try:
-            self.logger.debug("Starting cleanup...")
+            # Core resource cleanup only - no goto_step call
+            self._cleanup_core_resources()
             
-            # Stop any playing videos
-            self._stop_current_video()
-            
-            # Clean up QMovie objects
+            # Additional cleanup for widget destruction - video cleanup
             if hasattr(self, 'step1_movie') and self.step1_movie:
                 self.step1_movie.stop()
                 self.step1_movie = None
             if hasattr(self, 'step2_movie') and self.step2_movie:
-                self.step2_movie.stop()
+                self.step2_movie.stop() 
                 self.step2_movie = None
             
-            # Stop camera using simple method
-            self.stop_camera()
-            
-            # Disconnect position tracking
-            self._disconnect_position_tracking()
-            
-            # Clean up timeout timer
-            if hasattr(self, 'position_timeout_timer') and self.position_timeout_timer:
-                self.position_timeout_timer.stop()
-                self.position_timeout_timer = None
-            
-            self.logger.debug("Cleanup completed successfully")
+            # Reset state variables only - no wizard restart
+            self._reset_state_variables()
+                
+            self.logger.debug("🧹 Camera wizard cleanup complete (no restart)")
             
         except Exception as e:
             self.logger.error(f"Error during cleanup: {e}")
+
+    def _reset_state_variables(self):
+        """Reset all state variables to initial values."""
+        self.tool0_position = None
+        self.tool1_position = None
+        self.current_tool = 0
+        self.movement_step = self.MOVEMENT_STEP_COARSE
+        self._waiting_for_position = None
+        self._current_step = 0
+
+    def _cleanup_core_resources(self):
+        """
+        Cleanup core resources (cameras, signals, timers, videos).
+        
+        This is the shared cleanup logic used by both _reset_wizard_state()
+        and cleanup() to avoid code duplication.
+        """
+        # Disconnect all tracking
+        self._disconnect_position_tracking()
+        
+        # Stop any video playback
+        self._stop_current_video()
+        
+        # Stop camera
+        self._stop_camera_resources()
+        
+        # Clean up timeout timer with proper null checking
+        if hasattr(self, 'position_timeout_timer') and self.position_timeout_timer:
+            self.position_timeout_timer.stop()
+            self.position_timeout_timer = None
+
+    def _stop_camera_resources(self):
+        """Stop camera and clean up camera-related resources."""
+        # Hide loading dialog if it's still showing
+        self.hide_loading_dialog()
+        
+        if hasattr(self, 'camera_thread') and self.camera_thread and self.camera_thread.isRunning():
+            self.logger.debug("Stopping camera thread...")
+            
+            # Disconnect signal to prevent any remaining frames from being processed
+            try:
+                self.camera_thread.changePixmap.disconnect()
+            except:
+                pass  # Signal might already be disconnected
+            
+            # Stop the thread
+            self.camera_thread.stop()
+            
+            # Clear the reference
+            self.camera_thread = None
+            self.camera_available = False
+        
+        # Reset setup flag
+        self.camera_setup_in_progress = False
+
+    # ========================================================================================
+    # SECTION 8: UTILITY AND LIFECYCLE METHODS
+    # ========================================================================================
+    # Functions for camera utilities and widget lifecycle management.
+
+    def stop_camera(self):
+        """Stop the camera feed safely - public interface."""
+        try:
+            self._stop_camera_resources()
+            self.logger.info("Camera stopped successfully")
+        except Exception as e:
+            self.logger.error(f"Error stopping camera: {e}")
+            # Even if there's an error, ensure state is reset
+            self.camera_thread = None
+            self.camera_available = False
+            self.camera_setup_in_progress = False
 
     def closeEvent(self, event):
         """Handle widget close event with full cleanup."""

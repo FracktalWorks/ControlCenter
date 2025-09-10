@@ -206,8 +206,8 @@ class ZtoolOffsetWizard(QWidget):
         """
         super().showEvent(event)
         try:
-            # Reset to welcome step
-            self.goto_step(self.STEP_WELCOME)
+            # Reset all wizard state variables and disconnect any existing connections
+            self._reset_wizard_state()
             
             self.logger.info("Z Tool Offset calibration started - getting latest tool offsets and homing")
             
@@ -336,15 +336,22 @@ class ZtoolOffsetWizard(QWidget):
 
     def on_next_clicked(self):
         """
-        Handle next button clicks with step-based navigation.
+        Handle next button clicks with step-based navigation and validation.
         
         Provides different behavior based on current wizard step:
-        - Welcome: Advance to calibration step
+        - Welcome: Validate components and advance to calibration step
         - Calibration: Finish calibration (only if probe data is collected)
         """
         self.logger.info("Next button clicked")
         try:
             if self._current_step == self.STEP_WELCOME:
+                # Validate essential components before proceeding
+                if not self.octoprint_client:
+                    dialog.WarningOk(self, "No OctoPrint connection available. Please check connection.", overlay=True)
+                    return
+                if not self.model:
+                    dialog.WarningOk(self, "No printer model available. Please restart the application.", overlay=True)
+                    return
                 # Move to calibration step
                 self.goto_step(self.STEP_CALIBRATION)
             elif self._current_step == self.STEP_CALIBRATION:
@@ -367,8 +374,8 @@ class ZtoolOffsetWizard(QWidget):
         """
         self.logger.info("Cancel button clicked")
         try:
-            # Reset wizard state
-            self._reset_wizard_state()
+            # Cleanup only - do NOT restart wizard when canceling
+            self.cleanup()
             
             # Return to tool 0 and home
             if self.octoprint_client:
@@ -400,7 +407,7 @@ class ZtoolOffsetWizard(QWidget):
             self.logger.info("Starting automated probe sequence")
             
             # Reset probe state (probe tracking is already connected in _setup_calibration_step)
-            self._reset_probe_state()
+            self._reset_state_variables()
             
             # Update UI with detailed progress information
             if self.calibrationLabel:
@@ -576,16 +583,18 @@ class ZtoolOffsetWizard(QWidget):
                              average, median, standard_deviation
         """
         try:
-            self.logger.info(f"Received probe result signal: {tool_name} = {probe_data}")
+            self.logger.info(f"🔍 PROBE RESULT RECEIVED: tool={tool_name}, data={probe_data}")
+            self.logger.info(f"📊 Current state: waiting_for={self._waiting_for_probe_result}, tracking_connected={self._probe_tracking_connected}")
+            self.logger.info(f"📦 Current probe_results: {self.probe_results}")
             
             # Validate we're waiting for a probe result and it's for the expected tool
             if self._waiting_for_probe_result != tool_name:
-                self.logger.warning(f"Received probe result for {tool_name} but waiting for {self._waiting_for_probe_result} - ignoring")
+                self.logger.warning(f"❌ Received probe result for {tool_name} but waiting for {self._waiting_for_probe_result} - ignoring")
                 return
             
             # Check if we already have results for this tool to prevent duplicates
             if self.probe_results.get(tool_name) is not None:
-                self.logger.warning(f"Already have probe results for {tool_name} - ignoring duplicate")
+                self.logger.warning(f"❌ Already have probe results for {tool_name} - ignoring duplicate. Current: {self.probe_results[tool_name]}")
                 return
             
             # Cancel timeout timer since we got a probe result
@@ -686,14 +695,13 @@ class ZtoolOffsetWizard(QWidget):
             else:
                 # Cancel - exit the wizard entirely
                 self.logger.info(f"User cancelled calibration due to probe timeout for tool {tool_number}")
-                self._reset_wizard_state()
-                self.on_cancel_clicked()  # Exit the wizard
+                # Just call on_cancel_clicked which handles cleanup and exit
+                self.on_cancel_clicked()
                 
         except Exception as e:
             self.logger.error(f"Error handling probe timeout: {e}")
-            # Reset state on error and exit wizard
-            self._reset_wizard_state()
-            self.on_cancel_clicked()  # Exit the wizard on error too
+            # Call on_cancel_clicked which handles cleanup and exit
+            self.on_cancel_clicked()
 
     # ==================== OFFSET CALCULATION AND APPLICATION ====================
 
@@ -846,31 +854,57 @@ class ZtoolOffsetWizard(QWidget):
         Reset all wizard state variables to initial values.
         
         Performs complete state cleanup including probe tracking disconnection,
-        step reset, and probe data clearing.
-        """
-        # Disconnect probe tracking if connected
-        self._disconnect_probe_tracking()
+        step reset, and probe data clearing. This is called when the wizard
+        is opened to ensure clean starting state.
         
-        # Reset to welcome step
+        ⚠️  DO NOT call this when exiting/canceling - use cleanup() instead!
+        """
+        # Core resource cleanup (signals and timers)
+        self._cleanup_core_resources()
+        
+        # Reset to welcome step (only for wizard restart, not exit!)
         self.goto_step(self.STEP_WELCOME)
         
-        # Reset probe data
-        self._reset_probe_state()
+        # Reset wizard-specific state variables
+        self._reset_state_variables()
 
-    def _reset_probe_state(self):
+    def cleanup(self):
         """
-        Reset probe-related state variables and cleanup timers.
+        Cleanup resources WITHOUT restarting the wizard.
         
-        Clears all probe results, resets collection flags, and ensures
-        proper timeout timer cleanup.
+        Use this when canceling, exiting, or handling errors where
+        you want to clean up but NOT restart the wizard.
+        """
+        # Core resource cleanup only - no goto_step call
+        self._cleanup_core_resources()
+        
+        # Reset state variables only - no wizard restart
+        self._reset_state_variables()
+
+    def _reset_state_variables(self):
+        """
+        Reset probe-related state variables to initial values.
+        
+        Clears all probe results, resets collection flags, and resets
+        probing state for clean wizard restart.
         """
         self.probe_results = {'tool0': None, 'tool1': None}
         self.probe_data_collected = False
         self.current_probing_tool = None
         self._waiting_for_probe_result = None
         self.calculated_z_offset = None
+
+    def _cleanup_core_resources(self):
+        """
+        Cleanup core resources (signals and timers).
         
-        # Clean up timeout timer
+        This is the shared cleanup logic used by _reset_wizard_state()
+        and potentially other cleanup methods.
+        """
+        # Disconnect probe tracking if connected
+        self._disconnect_probe_tracking()
+        
+        # Clean up timeout timer with proper null checking
         if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
             self.probe_timeout_timer.stop()
             self.probe_timeout_timer = None
@@ -933,19 +967,26 @@ class ZtoolOffsetWizard(QWidget):
         Connect probe tracking for receiving probe results.
         
         Establishes connection to the printer model's probe_accuracy_result_received
-        signal for automated probe result processing.
+        signal for automated probe result processing. Ensures no duplicate connections.
         
         Raises:
             Exception: If probe tracking connection fails
         """
-        if not self._probe_tracking_connected and self.model:
-            try:
-                self.model.probe_accuracy_result_received.connect(self.on_probe_result_received)
-                self._probe_tracking_connected = True
-                self.logger.info("Probe tracking connected successfully")
-            except Exception as e:
-                self.logger.error(f"Failed to connect probe tracking: {e}")
-                raise
+        if not self.model:
+            self.logger.error("No model available for probe tracking connection")
+            return
+            
+        # Always try to disconnect first to prevent duplicate connections
+        self._disconnect_probe_tracking()
+        
+        try:
+            self.model.probe_accuracy_result_received.connect(self.on_probe_result_received)
+            self._probe_tracking_connected = True
+            self.logger.info("Probe tracking connected successfully")
+        except Exception as e:
+            self.logger.error(f"Failed to connect probe tracking: {e}")
+            self._probe_tracking_connected = False
+            raise
     
     def _disconnect_probe_tracking(self):
         """
@@ -953,16 +994,22 @@ class ZtoolOffsetWizard(QWidget):
         
         Safely disconnects from the printer model's probe result signals
         with proper error handling for various disconnect scenarios.
+        Always resets connection flag regardless of success/failure.
         """
-        if self._probe_tracking_connected and self.model:
-            try:
-                self.model.probe_accuracy_result_received.disconnect(self.on_probe_result_received)
-                self._probe_tracking_connected = False
-                self.logger.info("Probe tracking disconnected successfully")
-            except (TypeError, AttributeError) as e:
-                # Signal was already disconnected or doesn't exist
-                self._probe_tracking_connected = False
-                self.logger.debug(f"Probe tracking was already disconnected: {e}")
-            except Exception as e:
-                self.logger.error(f"Error disconnecting probe tracking: {e}")
-                self._probe_tracking_connected = False
+        if not self.model:
+            self._probe_tracking_connected = False
+            return
+            
+        try:
+            # Try to disconnect regardless of connection flag state
+            self.model.probe_accuracy_result_received.disconnect(self.on_probe_result_received)
+            self.logger.info("Probe tracking disconnected successfully")
+        except (TypeError, AttributeError) as e:
+            # Signal was already disconnected or doesn't exist - this is normal
+            self.logger.debug(f"Probe tracking was already disconnected: {e}")
+        except Exception as e:
+            # Log error but don't fail - we want to continue cleanup
+            self.logger.warning(f"Error disconnecting probe tracking (continuing cleanup): {e}")
+        finally:
+            # Always reset connection flag to ensure clean state
+            self._probe_tracking_connected = False

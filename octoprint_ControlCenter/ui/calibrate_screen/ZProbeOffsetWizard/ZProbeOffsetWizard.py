@@ -198,8 +198,8 @@ class ZProbeOffsetWizard(QWidget):
 
         # Navigation buttons
         self.nextButton = self.findChild(QPushButton, "nextButton")
-        self.stepCancelButton = self.findChild(QPushButton, "stepCancelButton")
-        
+        self.cancelButton = self.findChild(QPushButton, "cancelButton")
+
         # Manual movement buttons
         self.bedUpButton = self.findChild(QPushButton, "bedUpButton")
         self.bedDownButton = self.findChild(QPushButton, "bedDownButton")
@@ -208,7 +208,7 @@ class ZProbeOffsetWizard(QWidget):
         required_components = [
             self.stackedWidget, self.welcomePage, self.automaticProbingStep, 
             self.calibrationPage, self.resultsPage, self.nextButton, 
-            self.stepCancelButton, self.stepLabel
+            self.cancelButton, self.stepLabel
         ]
         check_ui_elements(self, required_components, "ZProbeOffsetWizard")
 
@@ -223,9 +223,9 @@ class ZProbeOffsetWizard(QWidget):
         # Navigation button connections
         if self.nextButton:
             self.nextButton.clicked.connect(self.on_next_clicked)
-        if self.stepCancelButton:
-            self.stepCancelButton.clicked.connect(self.on_cancel_clicked)
-            
+        if self.cancelButton:
+            self.cancelButton.clicked.connect(self.on_cancel_clicked)
+
         # Manual movement button connections
         if self.bedUpButton:
             self.bedUpButton.clicked.connect(self.on_bed_up_clicked)
@@ -238,18 +238,19 @@ class ZProbeOffsetWizard(QWidget):
         """
         Handle wizard activation - reset state and prepare printer.
         
-        Called when the wizard widget becomes visible. Resets wizard to welcome step,
-        heats tool 0, and homes the printer for consistent starting position.
+        Called when the wizard widget becomes visible. Performs complete state
+        reset including signal disconnections and data cleanup, then resets wizard
+        to welcome step, heats tool 0, and homes the printer for consistent starting position.
         
         Args:
             event: Qt show event
         """
         super().showEvent(event)
         try:
-            # Reset to welcome step
-            self.goto_step(self.STEP_WELCOME)
+            # Complete state reset including signal disconnections
+            self._reset_wizard_state()
             
-            self.logger.info("Z Probe Offset calibration started - heating tool 0 and homing")
+            self.logger.info("🔄✨ Z Probe Offset calibration started - complete state reset, heating tool 0 and homing")
             
             # Validate we have necessary components
             if not self.octoprint_client:
@@ -454,10 +455,10 @@ class ZProbeOffsetWizard(QWidget):
 
     def on_next_clicked(self):
         """
-        Handle next button clicks with step-based navigation.
+        Handle next button clicks with step-based navigation and validation.
         
         Provides different behavior based on current wizard step:
-        - Welcome: Advance to probe step
+        - Welcome: Validate components and advance to probe step
         - Probe: Advance to manual step (only if probe data is collected)
         - Manual: Record current position and advance to results
         - Results: Apply offset and finish calibration
@@ -465,6 +466,13 @@ class ZProbeOffsetWizard(QWidget):
         self.logger.info("Next button clicked")
         try:
             if self._current_step == self.STEP_WELCOME:
+                # Validate essential components before proceeding
+                if not self.octoprint_client:
+                    dialog.WarningOk(self, "No OctoPrint connection available. Please check connection.", overlay=True)
+                    return
+                if not self.model:
+                    dialog.WarningOk(self, "No printer model available. Please restart the application.", overlay=True)
+                    return
                 # Move to probe step
                 self.goto_step(self.STEP_PROBE)
             elif self._current_step == self.STEP_PROBE:
@@ -474,6 +482,10 @@ class ZProbeOffsetWizard(QWidget):
                 else:
                     dialog.WarningOk(self, "Please wait for probe test to complete.", overlay=True)
             elif self._current_step == self.STEP_MANUAL:
+                # Validate we're not already waiting for a position recording
+                if self._waiting_for_position:
+                    dialog.WarningOk(self, "Position recording in progress. Please wait.", overlay=True)
+                    return
                 # Record current position and move to results
                 self.record_manual_position()
             elif self._current_step == self.STEP_RESULTS:
@@ -496,8 +508,8 @@ class ZProbeOffsetWizard(QWidget):
         """
         self.logger.info("Cancel button clicked")
         try:
-            # Reset wizard state
-            self._reset_wizard_state()
+            # Cleanup only - do NOT restart wizard when canceling
+            self.cleanup()
             
             # Turn off heating and home
             if self.octoprint_client:
@@ -519,8 +531,18 @@ class ZProbeOffsetWizard(QWidget):
         Handle bed up button - move bed up by increment.
         
         Moves the bed up (nozzle relatively down) by the configured increment.
+        Only works during the manual calibration step.
         """
         try:
+            # Only allow movement during manual step
+            if self._current_step != self.STEP_MANUAL:
+                self.logger.warning("Bed movement only allowed during manual calibration step")
+                return
+                
+            if not self.octoprint_client:
+                dialog.WarningOk(self, "No OctoPrint connection available.", overlay=True)
+                return
+                
             self.logger.info(f"Moving bed up by {self.MOVEMENT_INCREMENT}mm")
             self.octoprint_client.jog(z=-self.MOVEMENT_INCREMENT, speed=300)
         except Exception as e:
@@ -531,8 +553,18 @@ class ZProbeOffsetWizard(QWidget):
         Handle bed down button - move bed down by increment.
         
         Moves the bed down (nozzle relatively up) by the configured increment.
+        Only works during the manual calibration step.
         """
         try:
+            # Only allow movement during manual step
+            if self._current_step != self.STEP_MANUAL:
+                self.logger.warning("Bed movement only allowed during manual calibration step")
+                return
+                
+            if not self.octoprint_client:
+                dialog.WarningOk(self, "No OctoPrint connection available.", overlay=True)
+                return
+                
             self.logger.info(f"Moving bed down by {self.MOVEMENT_INCREMENT}mm")
             self.octoprint_client.jog(z=self.MOVEMENT_INCREMENT, speed=300)
         except Exception as e:
@@ -832,8 +864,8 @@ class ZProbeOffsetWizard(QWidget):
             
             self.logger.info(f"Probe offset {self.calculated_offset:.6f}mm applied and saved")
             
-            # Clean up and return to main screen
-            self._reset_wizard_state()
+            # Clean up and return to main screen (cleanup only, no restart)
+            self.cleanup()
             
             # Turn off heating and home
             self.octoprint_client.gcode("M104 T0 S0")  # Turn off tool 0 heater
@@ -882,12 +914,12 @@ class ZProbeOffsetWizard(QWidget):
             else:
                 # Cancel - exit the wizard entirely
                 self.logger.info("User cancelled calibration due to probe timeout")
-                self._reset_wizard_state()
+                # Just call on_cancel_clicked which handles cleanup and exit
                 self.on_cancel_clicked()
                 
         except Exception as e:
             self.logger.error(f"Error handling probe timeout: {e}")
-            self._reset_wizard_state()
+            # Call on_cancel_clicked which handles cleanup and exit
             self.on_cancel_clicked()
 
     def _handle_position_timeout(self):
@@ -922,12 +954,12 @@ class ZProbeOffsetWizard(QWidget):
             else:
                 # Cancel - exit the wizard entirely
                 self.logger.info("User cancelled calibration due to position timeout")
-                self._reset_wizard_state()
+                # Just call on_cancel_clicked which handles cleanup and exit
                 self.on_cancel_clicked()
                 
         except Exception as e:
             self.logger.error(f"Error handling position timeout: {e}")
-            self._reset_wizard_state()
+            # Call on_cancel_clicked which handles cleanup and exit
             self.on_cancel_clicked()
 
     # ==================== VIDEO PLAYBACK MANAGEMENT ====================
@@ -984,25 +1016,35 @@ class ZProbeOffsetWizard(QWidget):
         Reset all wizard state variables to initial values.
         
         Performs complete state cleanup including signal disconnections,
-        step reset, and data clearing.
+        step reset, and data clearing. This is called when the wizard
+        is opened to ensure clean starting state. 
+        
+        ⚠️  DO NOT call this when exiting/canceling - use cleanup() instead!
         """
-        # Disconnect all tracking
-        self._disconnect_probe_tracking()
-        self._disconnect_position_tracking()
+        # Core resource cleanup (shared pattern)
+        self._cleanup_core_resources()
         
-        # Stop any video playback
-        self._stop_current_video()
-        
-        # Reset to welcome step
+        # Reset to welcome step (only for wizard restart, not exit!)
         self.goto_step(self.STEP_WELCOME)
         
-        # Reset state variables
+        # Reset wizard-specific state variables
+        self._reset_state_variables()
+
+    def cleanup(self):
+        """
+        Cleanup resources WITHOUT restarting the wizard.
+        
+        Use this when canceling, exiting, or handling errors where
+        you want to clean up but NOT restart the wizard.
+        """
+        # Core resource cleanup only - no goto_step call
+        self._cleanup_core_resources()
+        
+        # Reset state variables only - no wizard restart
         self._reset_state_variables()
 
     def _reset_state_variables(self):
-        """
-        Reset state variables and cleanup timers.
-        """
+        """Reset state variables to initial values."""
         self.probe_result = None
         self.manual_position = None
         self.probe_average_z = None
@@ -1011,8 +1053,21 @@ class ZProbeOffsetWizard(QWidget):
         self.calibration_complete = False
         self._waiting_for_probe_result = False
         self._waiting_for_position = False
+
+    def _cleanup_core_resources(self):
+        """
+        Cleanup core resources (signals, timers, videos).
         
-        # Clean up timeout timers
+        This is the shared cleanup logic for consistent resource management.
+        """
+        # Disconnect all tracking
+        self._disconnect_probe_tracking()
+        self._disconnect_position_tracking()
+        
+        # Stop any video playback
+        self._stop_current_video()
+        
+        # Clean up timeout timers with proper null checking
         if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
             self.probe_timeout_timer.stop()
             self.probe_timeout_timer = None
