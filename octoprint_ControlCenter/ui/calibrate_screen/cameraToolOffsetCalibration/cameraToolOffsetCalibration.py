@@ -141,7 +141,7 @@ class CameraThread(QThread):
         self.zoom_factor = factor
 
     def try_connect(self):
-        """Try to connect to USB camera with segfault protection."""
+        """Try to connect to USB camera with enhanced V4L2 support and segfault protection."""
         if not OPENCV_AVAILABLE:
             self.connectionError.emit("OpenCV not available")
             return False
@@ -154,21 +154,31 @@ class CameraThread(QThread):
                 except:
                     pass
                 self.cap = None
-                time.sleep(0.3)  # Give time for cleanup
+                time.sleep(0.5)  # Give V4L2 more time for cleanup
             
-            # Try to connect with safety measures for older OpenCV
-            self.cap = cv2.VideoCapture(self.camera_index)
+            # Try to connect with V4L2 backend first for better Linux support
+            try:
+                self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
+                if not self.cap.isOpened():
+                    # Fall back to default backend
+                    self.cap = cv2.VideoCapture(self.camera_index)
+            except (AttributeError, Exception):
+                # OpenCV without V4L2 support or other error
+                self.cap = cv2.VideoCapture(self.camera_index)
             
             if not self.cap.isOpened():
                 self.connectionError.emit(f"USB camera {self.camera_index} not found or in use")
                 return False
+            
+            # Give camera more time to initialize (important for V4L2)
+            time.sleep(0.5)
             
             # Test reading a frame with safety checks
             for attempt in range(3):  # Try multiple times
                 ret, frame = self.cap.read()
                 if ret and frame is not None and frame.size > 0:
                     break
-                time.sleep(0.1)
+                time.sleep(0.2)  # Longer wait between attempts for V4L2
             else:
                 self.cap.release()
                 self.cap = None
@@ -300,7 +310,7 @@ class CameraThread(QThread):
                 self.cap = None
 
     def stop(self):
-        """Stop the camera thread safely - prevent segfaults."""
+        """Stop the camera thread safely with enhanced V4L2 resource management."""
         self.running = False
         
         # Immediately stop any ongoing frame capture
@@ -318,7 +328,7 @@ class CameraThread(QThread):
                 self.terminate()
                 self.wait(1000)  # Wait for termination
         
-        # Clean up camera resource safely with multiple attempts
+        # Clean up camera resource safely with multiple attempts and enhanced V4L2 handling
         if self.cap:
             for attempt in range(3):  # Try multiple times
                 try:
@@ -333,6 +343,13 @@ class CameraThread(QThread):
             
             # Force cleanup even if release failed
             self.cap = None
+            
+        # Give V4L2 extra time to fully release camera resources
+        # This helps prevent resource conflicts for subsequent camera operations
+        try:
+            time.sleep(0.5)
+        except:
+            pass
 
 
 # ==================== MAIN CALIBRATION WIZARD CLASS ====================
@@ -1123,6 +1140,9 @@ class CameraToolOffsetCalibration(QWidget):
         import cv2
         import time
         
+        # Force cleanup any existing camera resources first
+        self._ensure_camera_cleanup_before_search()
+        
         # Check indices 1-5 first (USB cameras typically start at 1 if CSI is at 0)
         for i in range(1, 6):
             if self._test_camera_index(i):
@@ -1134,20 +1154,51 @@ class CameraToolOffsetCalibration(QWidget):
             
         return None
 
+    def _ensure_camera_cleanup_before_search(self):
+        """Ensure any existing camera resources are fully cleaned up before searching."""
+        try:
+            # Stop any existing camera thread
+            if hasattr(self, 'camera_thread') and self.camera_thread:
+                self.logger.info("Cleaning up existing camera thread before search")
+                self.camera_thread.stop()
+                if self.camera_thread.isRunning():
+                    self.camera_thread.wait(2000)  # Wait up to 2 seconds
+                self.camera_thread = None
+                
+            # Reset state
+            self.camera_available = False
+            self.camera_setup_in_progress = False
+            
+            # Give extra time for V4L2 resources to be fully released
+            import time
+            time.sleep(0.5)
+            
+        except Exception as e:
+            self.logger.warning(f"Error during camera cleanup before search: {e}")
+
     def _test_camera_index(self, index):
-        """Test if a camera at the given index is accessible with better V4L2 handling."""
+        """Test if a camera at the given index is accessible with enhanced V4L2 handling."""
         try:
             import cv2
             import time
             
+            self.logger.debug(f"Testing camera index {index}")
+            
             # For V4L2 cameras, try to open with CAP_V4L2 backend if available
+            cap = None
             try:
                 cap = cv2.VideoCapture(index, cv2.CAP_V4L2)
             except (AttributeError, Exception):
                 cap = cv2.VideoCapture(index)
             
-            # Give camera time to initialize (important for V4L2)
-            time.sleep(0.3)
+            if not cap.isOpened():
+                self.logger.debug(f"Camera index {index} failed to open")
+                if cap:
+                    cap.release()
+                return False
+            
+            # Give camera more time to initialize (important for V4L2)
+            time.sleep(0.5)
             
             success_count = 0
             
@@ -1161,27 +1212,32 @@ class CameraToolOffsetCalibration(QWidget):
                             height, width = frame.shape[:2]
                             if height > 0 and width > 0:
                                 success_count += 1
+                                self.logger.debug(f"Camera index {index} read success {success_count}/3")
                                 break  # One successful read is enough
-                except Exception:
-                    pass
+                except Exception as e:
+                    self.logger.debug(f"Camera index {index} read attempt {attempt + 1} failed: {e}")
                 
                 time.sleep(0.1)
             
-            # Cleanup
+            # Proper cleanup with more time for V4L2
             try:
                 cap.release()
-            except Exception:
-                pass
+            except Exception as e:
+                self.logger.debug(f"Error releasing camera {index}: {e}")
             
-            time.sleep(0.2)  # Allow camera to be released
+            # Give V4L2 more time to release the resource
+            time.sleep(0.5)
             
-            # Camera is working if we got at least one successful read
-            return success_count > 0
+            is_working = success_count > 0
+            self.logger.debug(f"Camera index {index} test result: {'working' if is_working else 'not working'}")
+            return is_working
                 
-        except Exception:
+        except Exception as e:
+            self.logger.debug(f"Exception testing camera index {index}: {e}")
             try:
-                if 'cap' in locals():
+                if 'cap' in locals() and cap:
                     cap.release()
+                    time.sleep(0.3)  # Extra time after exception
             except:
                 pass
             return False
@@ -1680,7 +1736,7 @@ Please restart the calibration process."""
             self.position_timeout_timer = None
 
     def _stop_camera_resources(self):
-        """Stop camera and clean up camera-related resources."""
+        """Stop camera and clean up camera-related resources with enhanced V4L2 handling."""
         # Hide loading dialog if it's still showing
         self.hide_loading_dialog()
         
@@ -1696,12 +1752,24 @@ Please restart the calibration process."""
             # Stop the thread
             self.camera_thread.stop()
             
+            # Wait for thread to actually stop (important for V4L2)
+            if self.camera_thread.isRunning():
+                self.camera_thread.wait(3000)  # Wait up to 3 seconds
+            
             # Clear the reference
             self.camera_thread = None
             self.camera_available = False
         
         # Reset setup flag
         self.camera_setup_in_progress = False
+        
+        # Give V4L2 extra time to fully release camera resources
+        # This helps prevent resource conflicts on subsequent wizard runs
+        try:
+            import time
+            time.sleep(0.5)
+        except:
+            pass
 
     # ========================================================================================
     # SECTION 8: UTILITY AND LIFECYCLE METHODS
