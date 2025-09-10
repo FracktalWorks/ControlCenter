@@ -535,11 +535,6 @@ class CameraToolOffsetCalibration(QWidget):
         self.nextButton: QPushButton = self.findChild(QPushButton, "stepNextButton")
         self.cancelButton: QPushButton = self.findChild(QPushButton, "stepCancelButton")
 
-        # Create camera retry button (will be added dynamically when needed)
-        self.camera_retry_button = QPushButton("Retry Camera")
-        self.camera_retry_button.clicked.connect(self.start_camera_with_loading_dialog)
-        self.camera_retry_button.hide()  # Hidden by default
-
         # Validate required elements
         required = [
             self.stackedWidget, self.stepLabel,
@@ -739,7 +734,7 @@ class CameraToolOffsetCalibration(QWidget):
 
     def goto_step(self, index: int):
         """
-        Navigate to the specified wizard step with proper setup.
+        Navigate to the specified wizard step with proper setup and validation.
         
         Handles step bounds checking, UI page switching, video management,
         and step-specific initialization. Each step has its own setup method
@@ -749,8 +744,6 @@ class CameraToolOffsetCalibration(QWidget):
             index (int): Step index to navigate to (0-based, will be bounds-checked)
         """
         index = max(0, min(index, self.TOTAL_STEPS - 1))
-        prev_step = getattr(self, "_current_step", 0)
-
         # Stop any currently playing video before switching steps
         self._stop_current_video()
 
@@ -872,7 +865,7 @@ class CameraToolOffsetCalibration(QWidget):
             dialog.WarningOk(self, f"Error positioning for camera: {e}")
 
     def _setup_positioning_step(self, step_index):
-        """Setup positioning steps (3-6)."""
+        """Setup positioning steps (3-6) with enhanced validation."""
         try:
             # Determine current tool and step type
             if step_index in [self.STEP_POSITION_T0_COURSE, self.STEP_POSITION_T0_FINE]:
@@ -883,6 +876,13 @@ class CameraToolOffsetCalibration(QWidget):
                 tool_name = "T1"
                 
             is_fine = step_index in [self.STEP_POSITION_T0_FINE, self.STEP_POSITION_T1_FINE]
+            
+            # Validate prerequisites for T1 steps
+            if tool == 1 and not hasattr(self, 'tool0_position'):
+                self.logger.error("T1 positioning attempted without T0 position recorded")
+                dialog.WarningOk(self, "T0 position must be recorded before T1 positioning. Please restart the calibration.")
+                self.goto_step(self.STEP_CLEAN_NOZZLES)
+                return
             
             # Set movement step resolution
             self.movement_step = 0.02 if is_fine else 0.5
@@ -904,6 +904,7 @@ class CameraToolOffsetCalibration(QWidget):
         except Exception as e:
             self.logger.error(f"Error setting up positioning step: {e}")
             dialog.WarningOk(self, f"Error setting up positioning: {e}")
+
 
     def on_cancel_clicked(self):
         """Handle cancel button clicks and return to main calibrate screen."""
@@ -939,8 +940,8 @@ class CameraToolOffsetCalibration(QWidget):
                     self.start_camera_with_loading_dialog()
                 except Exception as e:
                     self.logger.error(f"Error starting camera connection: {e}")
-                    # Show camera error with retry option
-                    self.show_camera_error(f"Connection error: {str(e)}")
+                    # Use unified camera error handling
+                    self._handle_camera_error_with_retry(f"Connection error: {str(e)}")
                 return  # Don't proceed to next step until camera is handled
                 
             elif current_step == self.STEP_POSITION_T0_COURSE:
@@ -1242,37 +1243,6 @@ class CameraToolOffsetCalibration(QWidget):
                 pass
             return False
 
-    def show_camera_error(self, message):
-        """Show camera error message and provide retry option."""
-        self.webCamFeed.setText(f"Camera Error:\n{message}")
-        self.webCamFeed.setStyleSheet("""
-            QLabel {
-                color: rgb(255, 100, 100);
-                background-color: rgb(60, 60, 60);
-                border: 2px solid rgb(150, 100, 100);
-                border-radius: 5px;
-                font-size: 12px;
-                text-align: center;
-            }
-        """)
-        self.camera_available = False
-        
-        # Show retry dialog
-        result = dialog.RetryCancel(
-            parent=self,
-            text=f"Camera Error\n\n{message}\n\nRetry or cancel?",
-            overlay=True,
-            icon="warning"
-        )
-        
-        if result == "retry":
-            # User wants to retry
-            QTimer.singleShot(500, self.start_camera_with_loading_dialog)
-        else:
-            # User cancelled - cleanup and exit the wizard entirely
-            self.cleanup()
-            self.on_cancel_clicked()  # Exit the wizard
-
     def _update_camera_feed(self, qt_image):
         """Update the camera feed with crosshair overlay."""
         if not self.webCamFeed:
@@ -1315,7 +1285,7 @@ class CameraToolOffsetCalibration(QWidget):
         self.webCamFeed.setPixmap(scaled_pixmap)
 
     def _on_camera_error(self, error_msg):
-        """Handle camera connection errors with simple camera thread approach."""
+        """Handle camera connection errors - unified error handling."""
         try:
             self.logger.error(f"Camera error: {error_msg}")
             
@@ -1334,8 +1304,8 @@ class CameraToolOffsetCalibration(QWidget):
             # Reset setup flag
             self.camera_setup_in_progress = False
             
-            # Show retry dialog
-            self._on_camera_connection_failed()
+            # Show retry dialog using consistent pattern
+            self._handle_camera_error_with_retry(error_msg)
             
         except Exception as e:
             self.logger.error(f"Error in camera error handler: {e}")
@@ -1345,11 +1315,11 @@ class CameraToolOffsetCalibration(QWidget):
             self.cleanup()
             self.on_cancel_clicked()
     
-    def _show_camera_error_dialog(self, error_msg):
-        """Show camera error dialog with retry/cancel options using utils.dialog."""
+    def _handle_camera_error_with_retry(self, error_msg):
+        """Show camera error dialog with retry/cancel options."""
         try:
-            # Format the error message for better display with more concise text
-            formatted_msg = f"Camera Error\n\n{error_msg}\n\nRetry or cancel?"
+            # Format the error message for better display
+            formatted_msg = f"Camera Error\n\n{error_msg}\n\nRetry or cancel the calibration?"
             
             # Use RetryCancel from utils.dialog for consistent styling
             result = dialog.RetryCancel(
@@ -1399,20 +1369,35 @@ class CameraToolOffsetCalibration(QWidget):
     # and coordinate system management for tool offset calculations.
 
     def move_axis(self, axis, distance):
-        """Move the specified axis by the given distance."""
+        """Move the specified axis by the given distance"""
         if not self.octoprint_client:
+            self.logger.warning("No OctoPrint client available for movement")
             return
             
-        try:
+        try:    
             command = f"G91\nG1 {axis}{distance} F3000\nG90"
             self.octoprint_client.gcode(command)
             self.logger.debug(f"Moving {axis} by {distance}mm")
         except Exception as e:
             self.logger.error(f"Error moving {axis} axis: {e}")
+            dialog.WarningOk(self, f"Error moving {axis} axis: {e}")
 
     def _record_tool_position(self, tool):
-        """Record the current position for the specified tool."""
+        """Record the current position for the specified tool with validation."""
         if not self.octoprint_client:
+            self.logger.error("No OctoPrint client available for position recording")
+            dialog.WarningOk(self, "No printer connection available")
+            return
+            
+        # Validate tool number
+        if tool not in [0, 1]:
+            self.logger.error(f"Invalid tool number: {tool}")
+            return
+            
+        # Validate we're in a fine positioning step
+        if (tool == 0 and self._current_step != self.STEP_POSITION_T0_FINE) or \
+           (tool == 1 and self._current_step != self.STEP_POSITION_T1_FINE):
+            self.logger.warning(f"Position recording for tool {tool} attempted in wrong step: {self._current_step}")
             return
             
         try:
@@ -1434,10 +1419,11 @@ class CameraToolOffsetCalibration(QWidget):
             self.position_timeout_timer = QTimer()
             self.position_timeout_timer.setSingleShot(True)
             self.position_timeout_timer.timeout.connect(lambda: self._handle_position_timeout(tool))
-            self.position_timeout_timer.start(5000)  # 5 second timeout
+            self.position_timeout_timer.start(self.POSITION_TIMEOUT_SECONDS * 1000)  # Convert to milliseconds
             
         except Exception as e:
             self.logger.error(f"Error recording tool {tool} position: {e}")
+            dialog.WarningOk(self, f"Error recording position: {e}")
 
     def _handle_position_timeout(self, tool):
         """Handle position recording timeout - provide retry or cancel options."""
