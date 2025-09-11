@@ -116,7 +116,7 @@ This calibration helps you set the correct Z tool offset for accurate multi-tool
 
 Z Tool Offset is the difference in height between your tools when they are at the same Z position.
 
-Click Next to continue with the calibration process.</string>
+Wait for movements to finish, and then click Next to continue with the calibration process.</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
