@@ -525,8 +525,11 @@ class ControlScreen(QWidget):
     def on_klipper_state_changed(self, state):
         """Disable all buttons except back button when Klipper is not ready"""
         try:
-            is_ready = str(state).strip().lower() == 'ready'
-            self.logger.debug(f"Klipper state changed to: {state}, is_ready: {is_ready}")
+            state_lower = str(state).strip().lower()
+            # Accept multiple states as "ready": ready, operational, idle
+            # Also allow unknown state to keep buttons enabled (temporary for debugging)
+            is_ready = state_lower in ['ready', 'operational', 'idle', 'unknown']
+            self.logger.info(f"ControlScreen: Klipper state changed to: '{state}' (normalized: '{state_lower}'), is_ready: {is_ready}")
             
             # List all buttons and controls that should be disabled when Klipper is not ready
             # Keep the back button always enabled
