@@ -64,6 +64,7 @@ class ControlScreen(QWidget):
         self.toggleCheckPrintCompatibilityButton = self.findChild(QPushButton, "toggleCheckPrintCompatibilityButton")
         self.togglePrintRestoreButton = self.findChild(QPushButton, "togglePrintRestoreButton")
         self.toggleFirmwareUpdateButton = self.findChild(QPushButton, "toggleFirmwareUpdateButton")
+        self.advaceDebuggingModeButton = self.findChild(QPushButton, "advaceDebuggingModeButton")
 
         # Temperature controls
         self.fanOnButton = self.findChild(QPushButton, "fanOnButton")
@@ -116,6 +117,10 @@ class ControlScreen(QWidget):
         # Add firmware update check button if it exists (optional for backward compatibility)
         if self.toggleFirmwareUpdateButton:
             required_components.append(self.toggleFirmwareUpdateButton)
+            
+        # Add advanced debugging button if it exists (optional for backward compatibility) 
+        if self.advaceDebuggingModeButton:
+            required_components.append(self.advaceDebuggingModeButton)
             
         check_ui_elements(self, required_components, "ControlScreen")
 
@@ -174,6 +179,8 @@ class ControlScreen(QWidget):
         self.togglePrintRestoreButton.clicked.connect(self.togglePrintRestore)
         if self.toggleFirmwareUpdateButton:
             self.toggleFirmwareUpdateButton.clicked.connect(self.toggleFirmwareUpdate)
+        if self.advaceDebuggingModeButton:
+            self.advaceDebuggingModeButton.clicked.connect(self.toggleAdvancedDebugging)
 
         # Configure spinboxes
         for spinbox in [self.feedRateSpinBox, self.toolTempSpinBox, self.bedTempSpinBox, self.flowRateSpinBox]:
@@ -209,6 +216,10 @@ class ControlScreen(QWidget):
             firmware_update_check_enabled = bool(self.main_window.printer_model.firmware_update_check_enabled)
             if self.toggleFirmwareUpdateButton:
                 self.toggleFirmwareUpdateButton.setChecked(firmware_update_check_enabled)
+            # Initialize advanced debugging mode preference
+            advanced_debugging_enabled = bool(self.main_window.printer_model.advanced_debugging_enabled)
+            if self.advaceDebuggingModeButton:
+                self.advaceDebuggingModeButton.setChecked(advanced_debugging_enabled)
             # Set auto resume button state based on print restore being enabled
             self.toggleAutoResumeButton.setEnabled(print_restore_enabled)
         except Exception as e:
@@ -658,3 +669,15 @@ class ControlScreen(QWidget):
         except Exception as e:
             logger.error(f"Error in ControlScreen.toggleFirmwareUpdate: {e}")
             dialog.WarningOk(self, f"Error in ControlScreen.toggleFirmwareUpdate: {e}", overlay=True)
+
+    def toggleAdvancedDebugging(self):
+        """Toggle advanced debugging mode preference and persist the setting."""
+        logger.info("ControlScreen.toggleAdvancedDebugging started")
+        try:
+            enabled = self.advaceDebuggingModeButton.isChecked()
+            # Update model preference (persists and applies logging changes immediately)
+            self.main_window.printer_model.set_advanced_debugging_pref(enabled, persist=True)
+            self.logger.info(f"Advanced debugging mode {'enabled' if enabled else 'disabled'}")
+        except Exception as e:
+            logger.error(f"Error in ControlScreen.toggleAdvancedDebugging: {e}")
+            dialog.WarningOk(self, f"Error in ControlScreen.toggleAdvancedDebugging: {e}", overlay=True)

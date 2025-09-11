@@ -32,6 +32,7 @@ DEFAULT_STATE = {
         "print_restore_enabled": True,  # Default to enabled
         "auto_resume_enabled": False,  # Default to disabled
         "firmware_update_check_enabled": True,  # Default to enabled
+        "advanced_debugging_enabled": False,  # Default to disabled
     }
     # Note: printer_config section removed - all printer configuration now handled by printer_config_manager
 }

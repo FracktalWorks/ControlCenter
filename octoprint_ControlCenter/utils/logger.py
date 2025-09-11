@@ -5,6 +5,32 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
 
+# Global flag for advanced debugging mode
+ADVANCED_DEBUG_MODE = False
+
+def set_advanced_debug_mode(enabled: bool):
+    """Enable or disable advanced debugging mode globally."""
+    global ADVANCED_DEBUG_MODE
+    ADVANCED_DEBUG_MODE = enabled
+    
+    # Update all existing loggers
+    root_logger = logging.getLogger()
+    target_level = logging.DEBUG if enabled else logging.INFO
+    
+    # Update all handlers in all loggers
+    for logger_name in logging.Logger.manager.loggerDict:
+        logger = logging.getLogger(logger_name)
+        logger.setLevel(target_level)
+        for handler in logger.handlers:
+            if isinstance(handler, RotatingFileHandler):
+                handler.setLevel(target_level)
+
+def get_advanced_debug_mode() -> bool:
+    """Get the current advanced debugging mode state."""
+    global ADVANCED_DEBUG_MODE
+    return ADVANCED_DEBUG_MODE
+
+
 
 # Try to use OctoPrint's logs directory, fallback to project root logs directory if not accessible
 def get_log_dir():
@@ -32,8 +58,13 @@ def get_logger(name=None, log_file=LOG_FILE, level=logging.INFO):
     """Get a logger named for the module or class, with a rotating file handler."""
     if name is None:
         name = __name__
+    
+    # Use DEBUG level if advanced debugging is enabled
+    global ADVANCED_DEBUG_MODE
+    effective_level = logging.DEBUG if ADVANCED_DEBUG_MODE else level
+    
     logger = logging.getLogger(name)
-    logger.setLevel(level)
+    logger.setLevel(effective_level)
     logger.propagate = False  # Prevent duplicate logs if root logger is configured
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     # File handler (rotating)
@@ -44,7 +75,7 @@ def get_logger(name=None, log_file=LOG_FILE, level=logging.INFO):
             maxBytes=5*1024*1024,
             backupCount=10
         )
-        file_handler.setLevel(level)
+        file_handler.setLevel(effective_level)
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
     # Stream handler (terminal)

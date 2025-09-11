@@ -126,6 +126,13 @@ class PrinterModel(QObject):
         # Firmware update preferences
         self.firmware_update_check_enabled = bool(prefs.get("firmware_update_check_enabled", True))  # Default to enabled
         
+        # Advanced debugging mode preference
+        self.advanced_debugging_enabled = bool(prefs.get("advanced_debugging_enabled", False))  # Default to disabled
+        
+        # Initialize the logging mode based on the preference
+        from utils.logger import set_advanced_debug_mode
+        set_advanced_debug_mode(self.advanced_debugging_enabled)
+        
         self.filament_runout_state_map = {}  # {sensor: bool}
         
         # Note: Printer configuration now managed by printer.cfg file directly
@@ -183,6 +190,16 @@ class PrinterModel(QObject):
         self.firmware_update_check_enabled = bool(enabled)
         if persist and prev != enabled:
             self._config_store.set_preference('firmware_update_check_enabled', bool(enabled))
+
+    def set_advanced_debugging_pref(self, enabled: bool, persist: bool = True):
+        """Set advanced debugging mode preference and persist if requested."""
+        from utils.logger import set_advanced_debug_mode
+        prev = self.advanced_debugging_enabled
+        self.advanced_debugging_enabled = bool(enabled)
+        # Immediately apply the debugging mode to the logging system
+        set_advanced_debug_mode(bool(enabled))
+        if persist and prev != enabled:
+            self._config_store.set_preference('advanced_debugging_enabled', bool(enabled))
 
     def update_print_restore_settings_from_octoprint(self, settings_data):
         """Update print restore settings from OctoPrint plugin response."""
