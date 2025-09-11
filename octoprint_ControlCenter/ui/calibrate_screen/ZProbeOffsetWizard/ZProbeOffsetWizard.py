@@ -263,6 +263,10 @@ class ZProbeOffsetWizard(QWidget):
                 self._show_error("Model Error", "No printer model available. Please restart the application.")
                 return
             
+            # Get latest configuration from printer (similar to camera wizard)
+            self.logger.info("Getting latest probe offset configuration")
+            self.octoprint_client.gcode(command='M503')
+            
             # Heat tool 0 only (no tool switching needed)
             self.octoprint_client.gcode(f"M104 T0 S{self.NOZZLE_HEATING_TEMP}")
             
@@ -363,6 +367,22 @@ class ZProbeOffsetWizard(QWidget):
         probe accuracy sequence after a short delay to ensure signal connections are ready.
         """
         try:
+            self.logger.info("Setting up probe step")
+            
+            # Reset probe state in case of retry
+            self._waiting_for_probe_result = False
+            self.probe_result = None
+            self.probe_average_z = None
+            
+            # Stop any existing timeout timer
+            if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
+                self.probe_timeout_timer.stop()
+                self.probe_timeout_timer = None
+                self.logger.debug("Cleaned up existing probe timeout timer")
+            
+            # Disconnect any existing probe tracking before connecting new one
+            self._disconnect_probe_tracking()
+            
             # Connect probe tracking FIRST before starting any probe operations
             self._connect_probe_tracking()
             
@@ -631,11 +651,13 @@ class ZProbeOffsetWizard(QWidget):
             self._waiting_for_probe_result = True
             if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
                 self.probe_timeout_timer.stop()
+                self.logger.debug("Stopped existing probe timeout timer")
             
             self.probe_timeout_timer = QTimer()
             self.probe_timeout_timer.setSingleShot(True)
             self.probe_timeout_timer.timeout.connect(self._handle_probe_timeout)
             self.probe_timeout_timer.start(self.PROBE_TIMEOUT_SECONDS * 1000)  # Convert to milliseconds
+            self.logger.info(f"Started probe timeout timer for {self.PROBE_TIMEOUT_SECONDS} seconds")
             
             # Run probe accuracy macro
             self.logger.info("Running PROBE_ACCURACY PROBE_SPEED=3")
@@ -660,13 +682,19 @@ class ZProbeOffsetWizard(QWidget):
         try:
             self.logger.info(f"Received probe result signal: {tool_name} = {probe_data}")
             
+            # Check if we're even waiting for probe results (prevent duplicate processing)
+            if not self._waiting_for_probe_result:
+                self.logger.debug("Ignoring probe result - not waiting for results")
+                return
+            
+            # Clear waiting state FIRST to prevent race conditions with timeout
+            self._waiting_for_probe_result = False
+            
             # Cancel timeout timer since we got a probe result
             if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
                 self.probe_timeout_timer.stop()
                 self.probe_timeout_timer = None
-            
-            # Clear waiting state
-            self._waiting_for_probe_result = False
+                self.logger.debug("Probe timeout timer stopped successfully")
             
             # Store the probe data
             self.probe_result = probe_data
@@ -693,6 +721,9 @@ class ZProbeOffsetWizard(QWidget):
             if self.nextButton:
                 self.nextButton.setText("Next")
                 self.nextButton.setEnabled(True)
+            
+            # Disconnect probe tracking since we got the result we needed
+            self._disconnect_probe_tracking()
                 
         except Exception as e:
             self.logger.error(f"Error in on_probe_result_received: {e}")
@@ -709,6 +740,9 @@ class ZProbeOffsetWizard(QWidget):
         """
         try:
             self.logger.info("Recording manual position")
+            
+            # Disconnect any existing position tracking before connecting new one
+            self._disconnect_position_tracking()
             
             # Connect position tracking
             self._connect_position_tracking()
@@ -745,17 +779,19 @@ class ZProbeOffsetWizard(QWidget):
         """
         try:
             if not self._waiting_for_position:
+                self.logger.debug("Ignoring position update - not waiting for position")
                 return  # Ignore if we're not waiting for position
                 
             self.logger.info(f"Received position update: {position_data}")
+            
+            # Clear waiting state FIRST to prevent race conditions with timeout
+            self._waiting_for_position = False
             
             # Cancel timeout timer
             if hasattr(self, 'position_timeout_timer') and self.position_timeout_timer:
                 self.position_timeout_timer.stop()
                 self.position_timeout_timer = None
-            
-            # Clear waiting state
-            self._waiting_for_position = False
+                self.logger.debug("Position timeout timer stopped successfully")
             
             # Store position data
             self.manual_position = position_data
@@ -889,15 +925,23 @@ class ZProbeOffsetWizard(QWidget):
         Provides retry/cancel options when probe results are not received.
         """
         try:
+            # Check if we're still actually waiting for probe results
+            if not self._waiting_for_probe_result:
+                self.logger.debug("Probe timeout triggered but not waiting for results - ignoring")
+                return
+                
             self.logger.warning("Probe result timeout")
+            
+            # Clear waiting state FIRST to prevent race conditions
+            self._waiting_for_probe_result = False
+            
+            # Disconnect probe tracking to prevent further signals
+            self._disconnect_probe_tracking()
             
             # Clean up timeout timer
             if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
                 self.probe_timeout_timer.stop()
                 self.probe_timeout_timer = None
-            
-            # Clear waiting state
-            self._waiting_for_probe_result = False
             
             # Show retry/cancel dialog
             result = dialog.RetryCancel(
@@ -910,6 +954,10 @@ class ZProbeOffsetWizard(QWidget):
             if result == "retry":
                 # Retry probe sequence
                 self.logger.info("User chose to retry probe test")
+                # Reset state before retrying
+                self._waiting_for_probe_result = False
+                self.probe_result = None
+                self.probe_average_z = None
                 QTimer.singleShot(1000, self.start_probe_sequence)
             else:
                 # Cancel - exit the wizard entirely
@@ -929,15 +977,23 @@ class ZProbeOffsetWizard(QWidget):
         Provides retry/cancel options when M114 position is not received.
         """
         try:
+            # Check if we're still actually waiting for position recording
+            if not self._waiting_for_position:
+                self.logger.debug("Position timeout triggered but not waiting for position - ignoring")
+                return
+                
             self.logger.warning("Position recording timeout")
+            
+            # Clear waiting state FIRST to prevent race conditions
+            self._waiting_for_position = False
+            
+            # Disconnect position tracking to prevent further signals
+            self._disconnect_position_tracking()
             
             # Clean up timeout timer
             if hasattr(self, 'position_timeout_timer') and self.position_timeout_timer:
                 self.position_timeout_timer.stop()
                 self.position_timeout_timer = None
-            
-            # Clear waiting state
-            self._waiting_for_position = False
             
             # Show retry/cancel dialog
             result = dialog.RetryCancel(
@@ -950,6 +1006,10 @@ class ZProbeOffsetWizard(QWidget):
             if result == "retry":
                 # Retry position recording
                 self.logger.info("User chose to retry position recording")
+                # Reset state before retrying
+                self._waiting_for_position = False
+                self.manual_position = None
+                self.manual_z = None
                 QTimer.singleShot(1000, self.record_manual_position)
             else:
                 # Cancel - exit the wizard entirely
@@ -1116,56 +1176,86 @@ class ZProbeOffsetWizard(QWidget):
         
         Establishes connection to the printer model's probe_accuracy_result_received signal.
         """
-        if not self._probe_tracking_connected and self.model:
-            try:
-                self.model.probe_accuracy_result_received.connect(self.on_probe_result_received)
-                self._probe_tracking_connected = True
-                self.logger.info("Probe tracking connected successfully")
-            except Exception as e:
-                self.logger.error(f"Failed to connect probe tracking: {e}")
-                raise
+        if self._probe_tracking_connected:
+            self.logger.debug("Probe tracking already connected - skipping")
+            return
+            
+        if not self.model:
+            self.logger.error("No printer model available for probe tracking")
+            return
+            
+        try:
+            self.model.probe_accuracy_result_received.connect(self.on_probe_result_received)
+            self._probe_tracking_connected = True
+            self.logger.info("Probe tracking connected successfully")
+        except Exception as e:
+            self.logger.error(f"Failed to connect probe tracking: {e}")
+            raise
     
     def _disconnect_probe_tracking(self):
         """
         Disconnect probe tracking when no longer needed.
         """
-        if self._probe_tracking_connected and self.model:
-            try:
-                self.model.probe_accuracy_result_received.disconnect(self.on_probe_result_received)
-                self._probe_tracking_connected = False
-                self.logger.info("Probe tracking disconnected successfully")
-            except (TypeError, AttributeError) as e:
-                self._probe_tracking_connected = False
-                self.logger.debug(f"Probe tracking was already disconnected: {e}")
-            except Exception as e:
-                self.logger.error(f"Error disconnecting probe tracking: {e}")
-                self._probe_tracking_connected = False
+        if not self._probe_tracking_connected:
+            self.logger.debug("Probe tracking already disconnected - skipping")
+            return
+            
+        if not self.model:
+            self.logger.debug("No model available for probe tracking disconnect")
+            self._probe_tracking_connected = False
+            return
+            
+        try:
+            self.model.probe_accuracy_result_received.disconnect(self.on_probe_result_received)
+            self._probe_tracking_connected = False
+            self.logger.info("Probe tracking disconnected successfully")
+        except (TypeError, AttributeError) as e:
+            self._probe_tracking_connected = False
+            self.logger.debug(f"Probe tracking was already disconnected: {e}")
+        except Exception as e:
+            self.logger.error(f"Error disconnecting probe tracking: {e}")
+            self._probe_tracking_connected = False
 
     def _connect_position_tracking(self):
         """
         Connect position tracking for receiving M114 responses.
         """
-        if not self._position_tracking_connected and self.model:
-            try:
-                self.model.current_position_updated.connect(self.on_position_updated)
-                self._position_tracking_connected = True
-                self.logger.info("Position tracking connected successfully")
-            except Exception as e:
-                self.logger.error(f"Failed to connect position tracking: {e}")
-                raise
+        if self._position_tracking_connected:
+            self.logger.debug("Position tracking already connected - skipping")
+            return
+            
+        if not self.model:
+            self.logger.error("No printer model available for position tracking")
+            return
+            
+        try:
+            self.model.current_position_updated.connect(self.on_position_updated)
+            self._position_tracking_connected = True
+            self.logger.info("Position tracking connected successfully")
+        except Exception as e:
+            self.logger.error(f"Failed to connect position tracking: {e}")
+            raise
     
     def _disconnect_position_tracking(self):
         """
         Disconnect position tracking when no longer needed.
         """
-        if self._position_tracking_connected and self.model:
-            try:
-                self.model.current_position_updated.disconnect(self.on_position_updated)
-                self._position_tracking_connected = False
-                self.logger.info("Position tracking disconnected successfully")
-            except (TypeError, AttributeError) as e:
-                self._position_tracking_connected = False
-                self.logger.debug(f"Position tracking was already disconnected: {e}")
-            except Exception as e:
-                self.logger.error(f"Error disconnecting position tracking: {e}")
-                self._position_tracking_connected = False
+        if not self._position_tracking_connected:
+            self.logger.debug("Position tracking already disconnected - skipping")
+            return
+            
+        if not self.model:
+            self.logger.debug("No model available for position tracking disconnect")
+            self._position_tracking_connected = False
+            return
+            
+        try:
+            self.model.current_position_updated.disconnect(self.on_position_updated)
+            self._position_tracking_connected = False
+            self.logger.info("Position tracking disconnected successfully")
+        except (TypeError, AttributeError) as e:
+            self._position_tracking_connected = False
+            self.logger.debug(f"Position tracking was already disconnected: {e}")
+        except Exception as e:
+            self.logger.error(f"Error disconnecting position tracking: {e}")
+            self._position_tracking_connected = False
