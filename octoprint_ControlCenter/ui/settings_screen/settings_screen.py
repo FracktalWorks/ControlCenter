@@ -1,4 +1,8 @@
 import os
+import subprocess
+import shutil
+import glob
+from datetime import datetime
 import importlib.util
 from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QVBoxLayout, QScrollArea
@@ -47,6 +51,7 @@ class SettingsScreen(QWidget):
         self.softwareUpdateButton = self.findChild(QPushButton, "softwareUpdateButton")
         self.printerSetupButton = self.findChild(QPushButton, "printerSetupButton")
         self.restorePrintSettingsButton = self.findChild(QPushButton, "restorePrintSettingsButton")
+        self.saveLogsToUSBButton = self.findChild(QPushButton, "saveLogsToUSBButton")
         self.restoreFactoryDefaultsButton = self.findChild(QPushButton, "restoreFactoryDefaultsButton")
         self.restartButton = self.findChild(QPushButton, "restartButton")
 
@@ -61,6 +66,7 @@ class SettingsScreen(QWidget):
             self.softwareUpdateButton,
             self.printerSetupButton,
             self.restorePrintSettingsButton,
+            self.saveLogsToUSBButton,
             self.restoreFactoryDefaultsButton,
             self.restartButton
             ], "Settings Screen")
@@ -71,6 +77,7 @@ class SettingsScreen(QWidget):
         self.softwareUpdateButton.clicked.connect(self.navigate_to_software_update)
         self.printerSetupButton.clicked.connect(self.navigate_to_printer_setup)
         self.restorePrintSettingsButton.clicked.connect(self.restore_print_settings)
+        self.saveLogsToUSBButton.clicked.connect(self.save_logs_to_usb)
         self.restoreFactoryDefaultsButton.clicked.connect(self.restore_factory_defaults)
         self.restartButton.clicked.connect(self.restart_system)
 
@@ -280,6 +287,155 @@ class SettingsScreen(QWidget):
         except Exception as e:
             self.logger.error(f"Error during restart: {e}")
             WarningOk(self, f"Error during restart: {e}", overlay=True)
+
+    def save_logs_to_usb(self):
+        """Save OctoPrint and Klipper logs to connected USB drive."""
+        self.logger.info("Save logs to USB initiated")
+        
+        try:
+            # Check if USB drive is connected and accessible
+            usb_path = "/media/usb0"
+            
+            # First check if mount point exists
+            if not os.path.exists(usb_path):
+                self.logger.warning("USB mount point not found")
+                dialog.WarningOk(
+                    self,
+                    "USB drive not detected!\n\n"
+                    "Please insert a USB drive and try again.",
+                    overlay=True
+                )
+                return
+            
+            # Check if something is actually mounted at the USB path
+            try:
+                # Try to list contents to verify USB is accessible  
+                subprocess.check_output(["ls", usb_path], stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError:
+                self.logger.warning("USB drive not accessible")
+                dialog.WarningOk(
+                    self,
+                    "USB drive not accessible!\n\n"
+                    "Please ensure the USB drive is properly connected and try again.",
+                    overlay=True
+                )
+                return
+                
+            # Create logs directory on USB with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            logs_dir = os.path.join(usb_path, f"printer_logs_{timestamp}")
+            
+            try:
+                os.makedirs(logs_dir, exist_ok=True)
+                self.logger.info(f"Created logs directory: {logs_dir}")
+            except Exception as e:
+                self.logger.error(f"Failed to create logs directory: {e}")
+                dialog.WarningOk(
+                    self,
+                    f"Failed to create logs directory on USB:\n{e}\n\n"
+                    "The USB drive may be read-only or full.",
+                    overlay=True
+                )
+                return
+            
+            copied_files = []
+            skipped_files = []
+            
+            # Define log file paths to copy
+            log_paths = [
+                # Current Klipper log
+                "/tmp/klippy.log",
+                # Alternative Klipper log location
+                os.path.expanduser("~/printer_data/logs/klippy.log"),
+                # OctoPrint logs directory
+                os.path.expanduser("~/.octoprint/logs")
+            ]
+            
+            for log_path in log_paths:
+                try:
+                    if os.path.exists(log_path):
+                        if os.path.isfile(log_path):
+                            # Copy single log file
+                            filename = os.path.basename(log_path)
+                            dest_path = os.path.join(logs_dir, filename)
+                            shutil.copy2(log_path, dest_path)
+                            copied_files.append(filename)
+                            self.logger.info(f"Copied log file: {filename}")
+                            
+                        elif os.path.isdir(log_path):
+                            # Copy all log files from directory
+                            log_files = glob.glob(os.path.join(log_path, "*.log"))
+                            if log_files:
+                                octoprint_dir = os.path.join(logs_dir, "octoprint_logs")
+                                os.makedirs(octoprint_dir, exist_ok=True)
+                                
+                                for log_file in log_files:
+                                    filename = os.path.basename(log_file)
+                                    dest_path = os.path.join(octoprint_dir, filename)
+                                    shutil.copy2(log_file, dest_path)
+                                    copied_files.append(f"octoprint_logs/{filename}")
+                                    self.logger.info(f"Copied OctoPrint log: {filename}")
+                    else:
+                        skipped_files.append(log_path)
+                        self.logger.debug(f"Log path not found, skipping: {log_path}")
+                        
+                except Exception as e:
+                    self.logger.error(f"Error copying log from {log_path}: {e}")
+                    skipped_files.append(f"{log_path} (Error: {str(e)})")
+            
+            # Create a summary file
+            try:
+                summary_path = os.path.join(logs_dir, "log_collection_summary.txt")
+                with open(summary_path, 'w') as f:
+                    f.write(f"Log Collection Summary\n")
+                    f.write(f"{'=' * 40}\n")
+                    f.write(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                    f.write(f"Collection Directory: {logs_dir}\n\n")
+                    
+                    f.write(f"Successfully Copied Files ({len(copied_files)}):\n")
+                    for file in copied_files:
+                        f.write(f"  ✓ {file}\n")
+                    
+                    if skipped_files:
+                        f.write(f"\nSkipped/Failed Files ({len(skipped_files)}):\n")
+                        for file in skipped_files:
+                            f.write(f"  ✗ {file}\n")
+                
+                self.logger.info("Created log collection summary")
+                
+            except Exception as e:
+                self.logger.error(f"Failed to create summary file: {e}")
+            
+            # Show success message
+            if copied_files:
+                message = (
+                    f"Successfully saved logs to USB drive!\n\n"
+                    f"Location: printer_logs_{timestamp}/\n"
+                    f"Files copied: {len(copied_files)}\n"
+                )
+                if skipped_files:
+                    message += f"Files skipped: {len(skipped_files)}\n"
+                    message += "\nSee log_collection_summary.txt for details."
+                
+                dialog.WarningOk(self, message, overlay=True)
+                self.logger.info(f"Log collection completed successfully. {len(copied_files)} files copied.")
+            else:
+                dialog.WarningOk(
+                    self,
+                    "No log files were found to copy.\n\n"
+                    "This may indicate that the log paths are different or logs haven't been created yet.\n"
+                    "Check log_collection_summary.txt on the USB drive for details.",
+                    overlay=True
+                )
+                self.logger.warning("No log files found to copy")
+                
+        except Exception as e:
+            self.logger.error(f"Error in save_logs_to_usb: {e}")
+            dialog.WarningOk(
+                self,
+                f"Error saving logs to USB:\n{e}",
+                overlay=True
+            )
 
     def _initialize_sub_screens(self):
         """Initialize all settings sub-screens"""
