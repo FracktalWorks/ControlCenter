@@ -218,7 +218,16 @@ class ControlScreen(QWidget):
         # Connect to printer model for status updates
         self.main_window.printer_model.status_updated.connect(self.buttonStatusUpdate)
         self.main_window.printer_model.active_extruder_changed.connect(self.setActiveExtruder)
+        # Connect to Klipper state changes to disable buttons when not ready
+        self.main_window.printer_model.klipper_state_changed.connect(self.on_klipper_state_changed)
         self.logger.debug("Connected ControlScreen to printer model status updates")
+        
+        # Initialize Klipper state UI
+        try:
+            current_klipper_state = getattr(self.main_window.printer_model, 'klipper_state', 'unknown')
+            self.on_klipper_state_changed(current_klipper_state)
+        except Exception as e:
+            self.logger.debug(f"Could not initialize Klipper state UI: {e}")
 
         # Initialize spinboxes with current values from printer model
         try:
@@ -501,6 +510,64 @@ class ControlScreen(QWidget):
         except Exception as e:
             logger.error(f"Error updating ControlScreen UI for status {status}: {e}")
             dialog.WarningOk(self, f"Error updating ControlScreen UI for status {status}: {e}", overlay=True)
+
+    def on_klipper_state_changed(self, state):
+        """Disable all buttons except back button when Klipper is not ready"""
+        try:
+            is_ready = str(state).strip().lower() == 'ready'
+            self.logger.debug(f"Klipper state changed to: {state}, is_ready: {is_ready}")
+            
+            # List all buttons and controls that should be disabled when Klipper is not ready
+            # Keep the back button always enabled
+            controls_to_disable = [
+                # Feed Rate controls
+                self.setFeedRateButton, self.moveZPBabyStep, self.moveZMBabyStep,
+                
+                # Flow rate controls
+                self.setFlowRateButton,
+                
+                # Temperature controls
+                self.fanOnButton, self.fanOffButton, self.cooldownButton,
+                self.setToolTempButton, self.setBedTempButton, self.toolToggleTemperatureButton,
+                self.tool180PreheatButton, self.tool250PreheatButton,
+                self.bed60PreheatButton, self.bed100PreheatButton,
+                
+                # Motion controls
+                self.step1mmButton, self.step10mmButton, self.step100mmButton,
+                self.moveXPButton, self.moveXMButton, self.moveYPButton, self.moveYMButton,
+                self.motorOffButton, self.homeXYButton, self.moveZMButton, self.moveZPButton,
+                self.homeZButton, self.toolToggleMotionButton, self.extruderButton, self.retractButton,
+                
+                # Preference controls
+                self.toggleFilamentRunoutButton, self.toggleFilamentJamButton,
+                self.toggleAutoResumeButton, self.toggleCheckPrintCompatibilityButton,
+                self.togglePrintRestoreButton, self.toggleFirmwareUpdateButton,
+                
+                # Spinboxes
+                self.feedRateSpinBox, self.flowRateSpinBox, self.toolTempSpinBox, self.bedTempSpinBox
+            ]
+            
+            # Enable/disable controls based on Klipper state
+            for control in controls_to_disable:
+                if control:  # Check if control exists (some may be None)
+                    control.setEnabled(is_ready)
+            
+            # Also disable entire tabs when not ready for better visual feedback
+            if hasattr(self, 'tuneTab') and self.tuneTab:
+                self.tuneTab.setEnabled(is_ready)
+            if hasattr(self, 'temperatureTab') and self.temperatureTab:
+                self.temperatureTab.setEnabled(is_ready)
+            if hasattr(self, 'motionTab') and self.motionTab:
+                # Motion tab has additional logic in buttonStatusUpdate, so only apply if not printing
+                if hasattr(self.main_window.printer_model, 'printer_status'):
+                    status = getattr(self.main_window.printer_model, 'printer_status', '')
+                    if status != "Printing":  # Don't override printing restriction
+                        self.motionTab.setEnabled(is_ready)
+            if hasattr(self, 'preferencesTab') and self.preferencesTab:
+                self.preferencesTab.setEnabled(is_ready)
+                
+        except Exception as e:
+            self.logger.error(f"Error updating ControlScreen UI for Klipper state {state}: {e}")
 
     def toggleFilamentRunout(self):
         """Toggle filament runout sensor persistent preference and apply live state."""

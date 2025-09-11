@@ -82,6 +82,17 @@ class CalibrateScreen(QWidget):
         # Apply nozzle configuration
         self.apply_nozzle_configuration()
 
+        # Connect to Klipper state changes to disable buttons when not ready
+        self.main_window.printer_model.klipper_state_changed.connect(self.on_klipper_state_changed)
+        self.logger.debug("Connected CalibrateScreen to Klipper state updates")
+        
+        # Initialize Klipper state UI
+        try:
+            current_klipper_state = getattr(self.main_window.printer_model, 'klipper_state', 'unknown')
+            self.on_klipper_state_changed(current_klipper_state)
+        except Exception as e:
+            self.logger.debug(f"Could not initialize Klipper state UI: {e}")
+
     def apply_nozzle_configuration(self):
         """Hide dual nozzle elements for single nozzle configuration."""
         apply_nozzle_config_to_screen(self, 'calibrate_screen')
@@ -174,3 +185,31 @@ class CalibrateScreen(QWidget):
                     self.logger.warning(f"Unrecognized or unavailable tab '{tab}' for tool_offset")
             except Exception as e:
                 self.logger.error(f"Error setting tool_offset tab '{tab}': {e}")
+
+    def on_klipper_state_changed(self, state):
+        """Disable all calibration buttons except back button when Klipper is not ready"""
+        try:
+            is_ready = str(state).strip().lower() == 'ready'
+            self.logger.debug(f"Klipper state changed to: {state}, is_ready: {is_ready}")
+            
+            # List all calibration buttons that should be disabled when Klipper is not ready
+            # Keep the back button always enabled
+            calibration_buttons = [
+                self.calibrationWizardButton,
+                self.inputShaperCalibrateButton, 
+                self.cameraToolOffsetCalibrateButton,
+                self.nozzleOffsetButton,
+                self.toolOffsetZButton,
+                self.toolOffsetXYButton,
+                self.idexCalibrationWizardButton,
+                self.toolZOffsetWizardButton,
+                self.zProbeOffsetWizardButton
+            ]
+            
+            # Enable/disable calibration buttons based on Klipper state
+            for button in calibration_buttons:
+                if button:  # Check if button exists (some may be None)
+                    button.setEnabled(is_ready)
+                    
+        except Exception as e:
+            self.logger.error(f"Error updating CalibrateScreen UI for Klipper state {state}: {e}")
