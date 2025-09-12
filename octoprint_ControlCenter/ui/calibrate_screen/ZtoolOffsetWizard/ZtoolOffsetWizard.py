@@ -135,7 +135,6 @@ class ZtoolOffsetWizard(QWidget):
         
         # Probe timeout handling
         self.probe_timeout_timer = None         # QTimer for probe operation timeouts
-        self._waiting_for_probe_result = None   # Track which tool we're waiting for results from
 
     def _load_ui(self):
         """
@@ -306,6 +305,9 @@ class ZtoolOffsetWizard(QWidget):
         automated probe sequence after a short delay to ensure signal connections are ready.
         """
         try:
+            # Disconnect any existing probe tracking before connecting new one
+            self._disconnect_probe_tracking()
+            
             # Connect probe tracking FIRST before starting any probe operations
             self._connect_probe_tracking()
             
@@ -409,6 +411,12 @@ class ZtoolOffsetWizard(QWidget):
             # Reset probe state (probe tracking is already connected in _setup_calibration_step)
             self._reset_state_variables()
             
+            # Stop any existing timeout timers
+            if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
+                self.probe_timeout_timer.stop()
+                self.probe_timeout_timer = None
+                self.logger.debug("Cleaned up existing probe timeout timer")
+            
             # Update UI with detailed progress information
             if self.calibrationLabel:
                 self.calibrationLabel.setText(
@@ -442,11 +450,6 @@ class ZtoolOffsetWizard(QWidget):
             # Check if we already have results for this tool
             if self.probe_results.get(tool_name) is not None:
                 self.logger.warning(f"Already have probe results for {tool_name} - skipping duplicate probe operation")
-                return
-            
-            # Check if we're already waiting for results from this tool
-            if self._waiting_for_probe_result == tool_name:
-                self.logger.warning(f"Already waiting for probe results from {tool_name} - skipping duplicate probe operation")
                 return
             
             self.logger.info(f"Probing tool {tool_number}")
@@ -534,11 +537,6 @@ class ZtoolOffsetWizard(QWidget):
                 self.logger.warning(f"Already have probe results for {tool_name} - skipping probe accuracy test")
                 return
             
-            # Check if we're already waiting for results from this tool
-            if self._waiting_for_probe_result == tool_name:
-                self.logger.warning(f"Already waiting for probe results from {tool_name} - skipping duplicate probe")
-                return
-            
             self.logger.info(f"Starting probe accuracy test for tool {tool_number}")
             
             # Update status
@@ -551,14 +549,15 @@ class ZtoolOffsetWizard(QWidget):
                                             f"Status: Probing {tool_desc}... Please wait.")
             
             # Set up timeout for probe result
-            self._waiting_for_probe_result = tool_name
             if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
                 self.probe_timeout_timer.stop()
+                self.logger.debug("Stopped existing probe timeout timer")
             
             self.probe_timeout_timer = QTimer()
             self.probe_timeout_timer.setSingleShot(True)
             self.probe_timeout_timer.timeout.connect(lambda: self._handle_probe_timeout(tool_number))
             self.probe_timeout_timer.start(self.PROBE_TIMEOUT_SECONDS * 1000)  # Convert to milliseconds
+            self.logger.info(f"Started probe timeout timer for tool {tool_number} ({self.PROBE_TIMEOUT_SECONDS} seconds)")
             
             # Run probe accuracy macro with specified speed
             self.logger.info(f"Running PROBE_ACCURACY PROBE_SPEED=3 for tool {tool_number}")
@@ -574,45 +573,36 @@ class ZtoolOffsetWizard(QWidget):
         """
         Handle probe result signals from the printer model.
         
-        Processes complete probe data, updates UI with results and quality assessment,
-        and automatically proceeds to the next tool or final calculation phase.
+        Simplified approach: Use current_probing_tool instead of complex tool checking.
+        This matches the approach used in the camera tool offset wizard.
         
         Args:
-            tool_name (str): Tool identifier ("tool0" or "tool1")
+            tool_name (str): Tool identifier from printer model (may not be accurate)
             probe_data (dict): Complete probe data with keys: maximum, minimum, range, 
                              average, median, standard_deviation
         """
         try:
-            self.logger.info(f"🔍 PROBE RESULT RECEIVED: tool={tool_name}, data={probe_data}")
-            self.logger.info(f"📊 Current state: waiting_for={self._waiting_for_probe_result}, tracking_connected={self._probe_tracking_connected}")
-            self.logger.info(f"📦 Current probe_results: {self.probe_results}")
+            self.logger.info(f"🔍 PROBE RESULT RECEIVED: current_probing_tool={self.current_probing_tool}, data={probe_data}")
             
-            # Validate we're waiting for a probe result and it's for the expected tool
-            if self._waiting_for_probe_result != tool_name:
-                self.logger.warning(f"❌ Received probe result for {tool_name} but waiting for {self._waiting_for_probe_result} - ignoring")
+            # Use current_probing_tool instead of tool_name from signal - this is more reliable
+            if not self.current_probing_tool:
+                self.logger.warning("❌ Received probe result but no current_probing_tool set - ignoring")
                 return
             
             # Check if we already have results for this tool to prevent duplicates
-            if self.probe_results.get(tool_name) is not None:
-                self.logger.warning(f"❌ Already have probe results for {tool_name} - ignoring duplicate. Current: {self.probe_results[tool_name]}")
+            if self.probe_results.get(self.current_probing_tool) is not None:
+                self.logger.warning(f"❌ Already have probe results for {self.current_probing_tool} - ignoring duplicate")
                 return
             
             # Cancel timeout timer since we got a probe result
             if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
                 self.probe_timeout_timer.stop()
                 self.probe_timeout_timer = None
+                self.logger.debug("Probe timeout timer stopped successfully")
             
-            # Clear waiting state
-            self._waiting_for_probe_result = None
-            
-            # Validate we got results for the expected tool
-            if self.current_probing_tool != tool_name:
-                self.logger.warning(f"Received probe result for {tool_name} but expected {self.current_probing_tool}")
-                # Still process it, but log the discrepancy
-            
-            # Store the complete probe data for the specified tool
-            if tool_name in self.probe_results:
-                self.probe_results[tool_name] = probe_data
+            # Store the complete probe data for the current probing tool
+            if self.current_probing_tool in self.probe_results:
+                self.probe_results[self.current_probing_tool] = probe_data
                 
                 # Get the average value for display and calculations
                 average_value = probe_data.get('average', 0.0)
@@ -622,7 +612,7 @@ class ZtoolOffsetWizard(QWidget):
                 quality = self._assess_probe_quality(std_dev)
                 
                 # Update UI and proceed based on which tool was just probed
-                if tool_name == 'tool0' and self.probe_results['tool1'] is None:
+                if self.current_probing_tool == 'tool0' and self.probe_results['tool1'] is None:
                     # Tool 0 done, now probe tool 1
                     self.logger.info("Tool 0 probing complete via signal, starting tool 1")
                     if self.calibrationLabel:
@@ -636,9 +626,13 @@ class ZtoolOffsetWizard(QWidget):
                     self.logger.info("Waiting 2 seconds before probing tool 1...")
                     QTimer.singleShot(2000, lambda: self.probe_tool(1))
                     
-                elif tool_name == 'tool1':
-                    # Both tools done, calculate offset
+                elif self.current_probing_tool == 'tool1':
+                    # Both tools done, disconnect tracking and calculate offset
                     self.logger.info("Tool 1 probing complete via signal, calculating offset")
+                    
+                    # Disconnect probe tracking since we're done with all probing
+                    self._disconnect_probe_tracking()
+                    
                     if self.calibrationLabel:
                         self.calibrationLabel.setText(f"✅ Tool 1 Complete!\n\n" +
                                                     f"• Average: {average_value:.6f}mm\n" +
@@ -648,7 +642,7 @@ class ZtoolOffsetWizard(QWidget):
                     # Use QTimer to ensure UI updates before calculation
                     QTimer.singleShot(500, self.calculate_z_offset)
             else:
-                self.logger.error(f"Invalid tool_name received: {tool_name}")
+                self.logger.error(f"Unexpected current_probing_tool: {self.current_probing_tool}")
                 
         except Exception as e:
             self.logger.error(f"Error in on_probe_result_received: {e}")
@@ -662,22 +656,28 @@ class ZtoolOffsetWizard(QWidget):
         """
         Handle probe result timeout with user interaction.
         
-        Provides retry/cancel options when probe results are not received within
-        the expected timeframe. Ensures proper cleanup and user guidance.
+        Simplified timeout handler without complex tool checking.
         
         Args:
             tool_number (int): Tool number that timed out (0 or 1)
         """
         try:
+            tool_name = f'tool{tool_number}'
+            
+            # Check if we already have results for this tool (timeout may be stale)
+            if self.probe_results.get(tool_name) is not None:
+                self.logger.debug(f"Probe timeout triggered but already have results for {tool_name} - ignoring")
+                return
+                
             self.logger.warning(f"Probe result timeout for tool {tool_number}")
+            
+            # Disconnect probe tracking to prevent further signals
+            self._disconnect_probe_tracking()
             
             # Clean up timeout timer
             if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
                 self.probe_timeout_timer.stop()
                 self.probe_timeout_timer = None
-            
-            # Clear waiting state
-            self._waiting_for_probe_result = None
             
             # Show dialog asking user what to do
             tool_desc = "Tool 0" if tool_number == 0 else "Tool 1"
@@ -691,6 +691,9 @@ class ZtoolOffsetWizard(QWidget):
             if result == "retry":
                 # Retry probing the same tool
                 self.logger.info(f"User chose to retry probing for tool {tool_number}")
+                # Reset state before retrying
+                tool_name = f'tool{tool_number}'
+                self.probe_results[tool_name] = None
                 QTimer.singleShot(1000, lambda: self.probe_tool(tool_number))
             else:
                 # Cancel - exit the wizard entirely
@@ -727,7 +730,7 @@ class ZtoolOffsetWizard(QWidget):
                 current_z_offset = self._get_current_z_offset()
                 
                 # Calculate new Z offset (current + measured difference)
-                new_z_offset = round(current_z_offset + raw_z_diff, 3)
+                new_z_offset = round(raw_z_diff, 3)
                 
                 # Store calculated offset for use in finish_calibration
                 self.calculated_z_offset = new_z_offset
@@ -891,7 +894,6 @@ class ZtoolOffsetWizard(QWidget):
         self.probe_results = {'tool0': None, 'tool1': None}
         self.probe_data_collected = False
         self.current_probing_tool = None
-        self._waiting_for_probe_result = None
         self.calculated_z_offset = None
 
     def _cleanup_core_resources(self):
@@ -972,12 +974,13 @@ class ZtoolOffsetWizard(QWidget):
         Raises:
             Exception: If probe tracking connection fails
         """
+        if self._probe_tracking_connected:
+            self.logger.debug("Probe tracking already connected - skipping")
+            return
+            
         if not self.model:
             self.logger.error("No model available for probe tracking connection")
             return
-            
-        # Always try to disconnect first to prevent duplicate connections
-        self._disconnect_probe_tracking()
         
         try:
             self.model.probe_accuracy_result_received.connect(self.on_probe_result_received)
@@ -996,20 +999,22 @@ class ZtoolOffsetWizard(QWidget):
         with proper error handling for various disconnect scenarios.
         Always resets connection flag regardless of success/failure.
         """
+        if not self._probe_tracking_connected:
+            self.logger.debug("Probe tracking already disconnected - skipping")
+            return
+            
         if not self.model:
+            self.logger.debug("No model available for probe tracking disconnect")
             self._probe_tracking_connected = False
             return
             
         try:
-            # Try to disconnect regardless of connection flag state
             self.model.probe_accuracy_result_received.disconnect(self.on_probe_result_received)
+            self._probe_tracking_connected = False
             self.logger.info("Probe tracking disconnected successfully")
         except (TypeError, AttributeError) as e:
-            # Signal was already disconnected or doesn't exist - this is normal
+            self._probe_tracking_connected = False
             self.logger.debug(f"Probe tracking was already disconnected: {e}")
         except Exception as e:
-            # Log error but don't fail - we want to continue cleanup
-            self.logger.warning(f"Error disconnecting probe tracking (continuing cleanup): {e}")
-        finally:
-            # Always reset connection flag to ensure clean state
+            self.logger.error(f"Error disconnecting probe tracking: {e}")
             self._probe_tracking_connected = False

@@ -154,8 +154,6 @@ class ZProbeOffsetWizard(QWidget):
         # Timeout handling
         self.probe_timeout_timer = None         # QTimer for probe operation timeouts
         self.position_timeout_timer = None      # QTimer for position recording timeouts
-        self._waiting_for_probe_result = False  # Track if waiting for probe results
-        self._waiting_for_position = False      # Track if waiting for M114 position
         
         # Video playback
         self.current_movie = None               # Current QMovie instance
@@ -370,7 +368,6 @@ class ZProbeOffsetWizard(QWidget):
             self.logger.info("Setting up probe step")
             
             # Reset probe state in case of retry
-            self._waiting_for_probe_result = False
             self.probe_result = None
             self.probe_average_z = None
             
@@ -502,9 +499,9 @@ class ZProbeOffsetWizard(QWidget):
                 else:
                     dialog.WarningOk(self, "Please wait for probe test to complete.", overlay=True)
             elif self._current_step == self.STEP_MANUAL:
-                # Validate we're not already waiting for a position recording
-                if self._waiting_for_position:
-                    dialog.WarningOk(self, "Position recording in progress. Please wait.", overlay=True)
+                # Validate we don't already have position data (prevent duplicates)
+                if self.manual_position is not None:
+                    dialog.WarningOk(self, "Position already recorded. Please proceed to next step.", overlay=True)
                     return
                 # Record current position and move to results
                 self.record_manual_position()
@@ -648,7 +645,6 @@ class ZProbeOffsetWizard(QWidget):
                 )
             
             # Set up timeout for probe result
-            self._waiting_for_probe_result = True
             if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
                 self.probe_timeout_timer.stop()
                 self.logger.debug("Stopped existing probe timeout timer")
@@ -673,7 +669,7 @@ class ZProbeOffsetWizard(QWidget):
         """
         Handle probe result signals from the printer model.
         
-        Processes probe data and prepares for manual calibration step.
+        Simplified approach: Process probe results only if we don't already have them.
         
         Args:
             tool_name (str): Tool identifier (should be "tool0" for this wizard)
@@ -682,13 +678,10 @@ class ZProbeOffsetWizard(QWidget):
         try:
             self.logger.info(f"Received probe result signal: {tool_name} = {probe_data}")
             
-            # Check if we're even waiting for probe results (prevent duplicate processing)
-            if not self._waiting_for_probe_result:
-                self.logger.debug("Ignoring probe result - not waiting for results")
+            # Check if we already have probe results (prevent duplicate processing)
+            if self.probe_result is not None:
+                self.logger.debug("Ignoring probe result - already have results")
                 return
-            
-            # Clear waiting state FIRST to prevent race conditions with timeout
-            self._waiting_for_probe_result = False
             
             # Cancel timeout timer since we got a probe result
             if hasattr(self, 'probe_timeout_timer') and self.probe_timeout_timer:
@@ -753,7 +746,6 @@ class ZProbeOffsetWizard(QWidget):
                 self.nextButton.setEnabled(False)
             
             # Set up timeout for position recording
-            self._waiting_for_position = True
             if hasattr(self, 'position_timeout_timer') and self.position_timeout_timer:
                 self.position_timeout_timer.stop()
             
@@ -774,18 +766,18 @@ class ZProbeOffsetWizard(QWidget):
         """
         Handle position update from M114 response.
         
+        Simplified approach: Only process if we're in manual step and don't have position yet.
+        
         Args:
             position_data (dict): Position data with 'x', 'y', 'z' keys
         """
         try:
-            if not self._waiting_for_position:
-                self.logger.debug("Ignoring position update - not waiting for position")
-                return  # Ignore if we're not waiting for position
+            # Only process position updates during manual step and if we don't have position yet
+            if self._current_step != self.STEP_MANUAL or self.manual_position is not None:
+                self.logger.debug("Ignoring position update - not in manual step or already have position")
+                return
                 
             self.logger.info(f"Received position update: {position_data}")
-            
-            # Clear waiting state FIRST to prevent race conditions with timeout
-            self._waiting_for_position = False
             
             # Cancel timeout timer
             if hasattr(self, 'position_timeout_timer') and self.position_timeout_timer:
@@ -922,18 +914,15 @@ class ZProbeOffsetWizard(QWidget):
         """
         Handle probe result timeout with user interaction.
         
-        Provides retry/cancel options when probe results are not received.
+        Simplified timeout handler - only check if we already have results.
         """
         try:
-            # Check if we're still actually waiting for probe results
-            if not self._waiting_for_probe_result:
-                self.logger.debug("Probe timeout triggered but not waiting for results - ignoring")
+            # Check if we already have probe results (timeout may be stale)
+            if self.probe_result is not None:
+                self.logger.debug("Probe timeout triggered but already have results - ignoring")
                 return
                 
             self.logger.warning("Probe result timeout")
-            
-            # Clear waiting state FIRST to prevent race conditions
-            self._waiting_for_probe_result = False
             
             # Disconnect probe tracking to prevent further signals
             self._disconnect_probe_tracking()
@@ -955,7 +944,6 @@ class ZProbeOffsetWizard(QWidget):
                 # Retry probe sequence
                 self.logger.info("User chose to retry probe test")
                 # Reset state before retrying
-                self._waiting_for_probe_result = False
                 self.probe_result = None
                 self.probe_average_z = None
                 QTimer.singleShot(1000, self.start_probe_sequence)
@@ -974,18 +962,15 @@ class ZProbeOffsetWizard(QWidget):
         """
         Handle position recording timeout with user interaction.
         
-        Provides retry/cancel options when M114 position is not received.
+        Simplified timeout handler - only check if we already have position.
         """
         try:
-            # Check if we're still actually waiting for position recording
-            if not self._waiting_for_position:
-                self.logger.debug("Position timeout triggered but not waiting for position - ignoring")
+            # Check if we already have position data (timeout may be stale)
+            if self.manual_position is not None:
+                self.logger.debug("Position timeout triggered but already have position - ignoring")
                 return
                 
             self.logger.warning("Position recording timeout")
-            
-            # Clear waiting state FIRST to prevent race conditions
-            self._waiting_for_position = False
             
             # Disconnect position tracking to prevent further signals
             self._disconnect_position_tracking()
@@ -1007,7 +992,6 @@ class ZProbeOffsetWizard(QWidget):
                 # Retry position recording
                 self.logger.info("User chose to retry position recording")
                 # Reset state before retrying
-                self._waiting_for_position = False
                 self.manual_position = None
                 self.manual_z = None
                 QTimer.singleShot(1000, self.record_manual_position)
@@ -1111,8 +1095,6 @@ class ZProbeOffsetWizard(QWidget):
         self.manual_z = None
         self.calculated_offset = None
         self.calibration_complete = False
-        self._waiting_for_probe_result = False
-        self._waiting_for_position = False
 
     def _cleanup_core_resources(self):
         """

@@ -68,7 +68,8 @@
     <bool>false</bool>
    </property>
    <property name="styleSheet">
-    <string notr="true">QTabWidget::pane { /* The tab widget frame */
+    <string notr="true">
+QTabWidget::pane { /* The tab widget frame */
     position: absolute;
 
 }
@@ -3140,56 +3141,74 @@ QPushButton:focus {
          </font>
         </property>
         <property name="styleSheet">
-         <string notr="true">
-QScrollArea QWidget {
-    background-color: transparent;
-}
- QScrollBar:vertical {
-     border: 1px solid black;
-border-radius: 5px;
-	background-color: rgb(40,40,40);
-     width: 80px;
-     margin: 70px 0 70px 0;
- }
- QScrollBar::handle:vertical {
-border-radius: 5px;
-background: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-min-height: 20px;
- }
- QScrollBar::add-line:vertical {
-     border: 1px solid black;
-background: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-     height:65px;
-border-radius: 5px;
-     subcontrol-position: bottom;
-     subcontrol-origin: margin;
- }
-
- QScrollBar::sub-line:vertical {
-     border: 1px solid black;
-background: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
-     height: 65px;
-border-radius: 5px;
-     subcontrol-position: top;
-     subcontrol-origin: margin;
- }
-
-QScrollBar::up-arrow:vertical {
- image: url(:/Navigation/img/Navigation/arrows.png);
-    width: 40px;
-    height: 40px;
- padding: 5px;
- }
-QScrollBar::down-arrow:vertical {
- image: url(:/Navigation/img/Navigation/arrows-5.png);
-    width: 40px;
-    height: 40px;
- padding: 5px;
- }
-
- QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-     background: none;
- }</string>
+         <string notr="true">            QScrollArea {
+                background-color: transparent !important;
+                border: none !important;
+            }
+            
+            QScrollArea &gt; QWidget {
+                background-color: transparent !important;
+            }
+            
+            QScrollArea &gt; QWidget &gt; QWidget {
+                background-color: transparent !important;
+            }
+            
+            QScrollBar:vertical {
+                border: 1px solid black !important;
+                border-radius: 5px !important;
+                background-color: rgb(40,40,40) !important;
+                width: 80px !important;
+                margin: 70px 0 70px 0 !important;
+            }
+            
+            QScrollBar::handle:vertical {
+                border-radius: 5px !important;
+                background: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255)) !important;
+                min-height: 20px !important;
+            }
+            
+            QScrollBar::add-line:vertical {
+                border: 1px solid black !important;
+                background: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255)) !important;
+                height: 65px !important;
+                border-radius: 5px !important;
+                subcontrol-position: bottom !important;
+                subcontrol-origin: margin !important;
+            }
+            
+            QScrollBar::sub-line:vertical {
+                border: 1px solid black !important;
+                background: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255)) !important;
+                height: 65px !important;
+                border-radius: 5px !important;
+                subcontrol-position: top !important;
+                subcontrol-origin: margin !important;
+            }
+            
+            QScrollBar::up-arrow:vertical {
+                image: url(:/Navigation/img/Navigation/arrows.png) !important;
+                width: 40px !important;
+                height: 40px !important;
+                padding: 5px !important;
+            }
+            
+            QScrollBar::down-arrow:vertical {
+                image: url(:/Navigation/img/Navigation/arrows-5.png) !important;
+                width: 40px !important;
+                height: 40px !important;
+                padding: 5px !important;
+            }
+            
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: none !important;
+            }</string>
+        </property>
+        <property name="verticalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOn</enum>
+        </property>
+        <property name="horizontalScrollBarPolicy">
+         <enum>Qt::ScrollBarAlwaysOff</enum>
         </property>
         <property name="widgetResizable">
          <bool>true</bool>
@@ -3198,7 +3217,7 @@ QScrollBar::down-arrow:vertical {
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>-148</y>
+           <y>0</y>
            <width>691</width>
            <height>499</height>
           </rect>

@@ -22,7 +22,7 @@ class PrinterModel(QObject):
     temperatures_updated = pyqtSignal(dict)  # done
     status_updated = pyqtSignal(str)  # done
     print_status_updated = pyqtSignal('PyQt_PyObject')  # ! done
-    active_extruder_changed = pyqtSignal(str)  # ! done
+    active_extruder_changed = pyqtSignal(int)  # ! done
     z_probe_offset_updated = pyqtSignal(str)  # ! done
     tool_offset_data = pyqtSignal(str)  # done
     printer_error_signal = pyqtSignal(str)  # done
@@ -334,8 +334,8 @@ class PrinterModel(QObject):
     def setActiveExtruder(self, extruder):
         """Sets the active extruder"""
         try:
-            self.active_extruder = extruder
-            self.active_extruder_changed.emit(self.active_extruder)
+            self.active_extruder = int(extruder)
+            self.active_extruder_changed.emit(int(self.active_extruder))
         except ValueError:
             self.logger.error(f"Invalid extruder value: {extruder}")
 

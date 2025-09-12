@@ -243,111 +243,203 @@ class CameraThread(QThread):
         
         try:
             while self.running:
-                if self.cap and self.cap.isOpened():
-                    ret, frame = self.cap.read()
-                    if ret and self.running and frame is not None:
-                        try:
-                            # Basic safety checks for OpenCV 3.2.0 on Pi
-                            if frame.size == 0:
-                                continue
-                                
-                            with QtCore.QMutexLocker(self._frame_lock):
-                                self.current_frame = frame.copy()
-                                
-                                # Apply zoom by cropping and resizing
-                                if self.zoom_factor > 1.0:
-                                    h, w = frame.shape[:2]
-                                    if h > 0 and w > 0:  # Safety check
-                                        center_x, center_y = w // 2, h // 2
-                                        new_w, new_h = max(1, int(w / self.zoom_factor)), max(1, int(h / self.zoom_factor))
-                                        x1 = max(0, center_x - new_w // 2)
-                                        y1 = max(0, center_y - new_h // 2)
-                                        x2 = min(w, x1 + new_w)
-                                        y2 = min(h, y1 + new_h)
-                                        
-                                        if x2 > x1 and y2 > y1:  # Ensure valid crop
-                                            cropped = frame[y1:y2, x1:x2]
-                                            if cropped.size > 0:  # Safety check
-                                                frame = cv2.resize(cropped, (w, h))
-                                
-                                self.display_frame = frame.copy()
+                # Extra safety check - ensure we're still supposed to be running
+                if not self.running:
+                    break
+                    
+                if self.cap and hasattr(self.cap, 'isOpened') and self.cap.isOpened():
+                    try:
+                        ret, frame = self.cap.read()
+                        
+                        # Check running flag again after potentially blocking read operation
+                        if not self.running:
+                            break
                             
-                            # Convert to QImage safely
-                            if frame.size > 0 and len(frame.shape) == 3:
-                                rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                                h, w, ch = rgb_image.shape
-                                
-                                if h > 0 and w > 0 and ch > 0:  # Safety checks
-                                    bytes_per_line = ch * w
-                                    # Make a copy to avoid memory issues
-                                    rgb_copy = rgb_image.copy()
-                                    qt_image = QImage(rgb_copy.data, w, h, bytes_per_line, QImage.Format_RGB888).copy()
+                        if ret and frame is not None:
+                            try:
+                                # Basic safety checks for OpenCV 3.2.0 on Pi
+                                if frame.size == 0 or not self.running:
+                                    continue
                                     
-                                    if self.running:  # Check again before emit
-                                        self.changePixmap.emit(qt_image)
+                                with QtCore.QMutexLocker(self._frame_lock):
+                                    # Check running flag inside mutex too
+                                    if not self.running:
+                                        break
+                                        
+                                    self.current_frame = frame.copy()
+                                    
+                                    # Apply zoom by cropping and resizing
+                                    if self.zoom_factor > 1.0 and self.running:
+                                        h, w = frame.shape[:2]
+                                        if h > 0 and w > 0:  # Safety check
+                                            center_x, center_y = w // 2, h // 2
+                                            new_w, new_h = max(1, int(w / self.zoom_factor)), max(1, int(h / self.zoom_factor))
+                                            x1 = max(0, center_x - new_w // 2)
+                                            y1 = max(0, center_y - new_h // 2)
+                                            x2 = min(w, x1 + new_w)
+                                            y2 = min(h, y1 + new_h)
+                                            
+                                            if x2 > x1 and y2 > y1 and self.running:  # Ensure valid crop and still running
+                                                cropped = frame[y1:y2, x1:x2]
+                                                if cropped.size > 0:  # Safety check
+                                                    frame = cv2.resize(cropped, (w, h))
+                                    
+                                    if self.running:  # Final check before storing
+                                        self.display_frame = frame.copy()
+                                
+                                # Convert to QImage safely - only if still running
+                                if self.running and frame.size > 0 and len(frame.shape) == 3:
+                                    rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                                    h, w, ch = rgb_image.shape
+                                    
+                                    if h > 0 and w > 0 and ch > 0 and self.running:  # Safety checks
+                                        bytes_per_line = ch * w
+                                        # Make a copy to avoid memory issues
+                                        rgb_copy = rgb_image.copy()
+                                        qt_image = QImage(rgb_copy.data, w, h, bytes_per_line, QImage.Format_RGB888).copy()
+                                        
+                                        # Final check before emitting - prevent signals during shutdown
+                                        if self.running and not self.signalsBlocked():
+                                            self.changePixmap.emit(qt_image)
+                            
+                            except Exception as e:
+                                # Don't emit errors for every frame to avoid spam
+                                frame_count += 1
+                                if frame_count % 30 == 0 and self.running:  # Log every 30 frames only, and only if still running
+                                    print(f"Frame processing error: {e}")
                         
-                        except Exception as e:
-                            # Don't emit errors for every frame to avoid spam
-                            frame_count += 1
-                            if frame_count % 30 == 0:  # Log every 30 frames only
-                                print(f"Frame processing error: {e}")
+                    except Exception as e:
+                        # Handle camera read errors
+                        if self.running:  # Only log if we're supposed to be running
+                            print(f"Camera read error: {e}")
+                        break  # Exit loop on camera errors
                         
-                    # Controlled frame rate with safety
-                    self.msleep(100)  # 10 FPS
+                    # Controlled frame rate with safety - check running flag before sleep
+                    if self.running:
+                        self.msleep(100)  # 10 FPS
                 else:
-                    self.msleep(100)  # Longer wait if camera not available
+                    # Camera not available - check if we should keep trying or exit
+                    if self.running:
+                        self.msleep(100)  # Longer wait if camera not available
+                    else:
+                        break  # Exit if not running
                     
         except Exception as e:
-            self.connectionError.emit(f"Camera thread error: {e}")
-        finally:
-            # Ensure cleanup
-            self.running = False
-            if self.cap:
+            # Only emit error if we're still supposed to be running (not during shutdown)
+            if self.running and not self.signalsBlocked():
                 try:
-                    self.cap.release()
+                    self.connectionError.emit(f"Camera thread error: {e}")
                 except:
-                    pass  # Ignore cleanup errors
-                self.cap = None
-
-    def stop(self):
-        """Stop the camera thread safely with enhanced V4L2 resource management."""
-        self.running = False
-        
-        # Immediately stop any ongoing frame capture
-        if self.cap:
+                    pass  # Ignore emit errors during shutdown
+        finally:
+            # Ensure complete cleanup even if there were errors
+            self.running = False
+            
+            # Clear frame references to prevent memory access issues
             try:
-                # Try to read one more frame to clear buffer (helps with some cameras)
-                self.cap.read()
+                with QtCore.QMutexLocker(self._frame_lock):
+                    self.current_frame = None
+                    self.display_frame = None
             except:
                 pass
-        
-        # Give thread time to finish current operation
-        if self.isRunning():
-            if not self.wait(2000):  # Wait up to 2 seconds
-                print("Warning: Camera thread did not stop cleanly, terminating...")
-                self.terminate()
-                self.wait(1000)  # Wait for termination
-        
-        # Clean up camera resource safely with multiple attempts and enhanced V4L2 handling
-        if self.cap:
-            for attempt in range(3):  # Try multiple times
+            
+            # Clean up camera resource with enhanced error handling
+            if self.cap:
                 try:
-                    self.cap.release()
+                    # Multiple cleanup attempts for maximum reliability
+                    for attempt in range(3):
+                        try:
+                            if hasattr(self.cap, 'release') and callable(self.cap.release):
+                                self.cap.release()
+                            break
+                        except Exception as cleanup_e:
+                            if attempt == 2:  # Last attempt
+                                print(f"Warning: Final camera cleanup attempt failed: {cleanup_e}")
+                            else:
+                                time.sleep(0.1)  # Brief pause before retry
+                except:
+                    pass  # Ignore all cleanup errors to prevent segfaults
+                finally:
+                    # Always set to None regardless of release success
+                    self.cap = None
+                    
+            # Block any remaining signals to prevent callbacks after cleanup
+            try:
+                self.blockSignals(True)
+            except:
+                pass
+
+    def stop(self):
+        """Stop the camera thread safely with enhanced V4L2 resource management and segfault prevention."""
+        # Set running flag to False first to stop the main loop
+        self.running = False
+        
+        # Immediately disconnect from any signals to prevent callback issues
+        try:
+            self.blockSignals(True)
+        except:
+            pass
+        
+        # Clear any pending frames to prevent processing during shutdown
+        try:
+            with QtCore.QMutexLocker(self._frame_lock):
+                self.current_frame = None
+                self.display_frame = None
+        except:
+            pass
+        
+        # Stop any ongoing frame capture operations
+        if self.cap and hasattr(self.cap, 'isOpened'):
+            try:
+                if self.cap.isOpened():
+                    # Try to read one frame to clear buffer (helps with some cameras)
+                    self.cap.read()
+            except:
+                pass  # Ignore any errors during buffer clearing
+        
+        # Give thread time to finish current operation gracefully
+        if self.isRunning():
+            # First try waiting normally
+            if not self.wait(3000):  # Wait up to 3 seconds
+                print("Warning: Camera thread did not stop cleanly, attempting forced termination...")
+                try:
+                    self.terminate()
+                    # Give more time after termination
+                    if not self.wait(2000):
+                        print("Warning: Camera thread termination may not have completed properly")
+                except:
+                    print("Warning: Could not terminate camera thread cleanly")
+        
+        # Clean up camera resource safely with multiple attempts and enhanced error handling
+        if self.cap:
+            for attempt in range(5):  # Increased attempts for more robust cleanup
+                try:
+                    # Double-check if cap is still valid before releasing
+                    if hasattr(self.cap, 'release') and callable(self.cap.release):
+                        self.cap.release()
                     self.cap = None
                     break
                 except Exception as e:
-                    if attempt == 2:  # Last attempt
+                    if attempt == 4:  # Last attempt
                         print(f"Warning: Camera cleanup error after {attempt + 1} attempts: {e}")
+                        # Force set to None even if release failed to prevent further access
+                        self.cap = None
                     else:
-                        time.sleep(0.1)  # Brief pause before retry
+                        time.sleep(0.2)  # Longer pause between attempts
             
-            # Force cleanup even if release failed
-            self.cap = None
+        # Ensure cap is None regardless of release success
+        self.cap = None
             
-        # Give V4L2 extra time to fully release camera resources
-        # This helps prevent resource conflicts for subsequent camera operations
+        # Give system extra time to fully release camera resources and prevent segfaults
+        # This is especially important for V4L2 and preventing resource conflicts
         try:
-            time.sleep(0.5)
+            time.sleep(0.8)  # Increased delay for more robust cleanup
+        except:
+            pass
+        
+        # Re-enable signals after cleanup
+        try:
+            self.blockSignals(False)
         except:
             pass
 
@@ -462,7 +554,6 @@ class CameraToolOffsetCalibration(QWidget):
         self.tool1_position = None
         self.current_tool = 0
         self.movement_step = self.MOVEMENT_STEP_COARSE  # Start with coarse movement
-        self._waiting_for_position = None  # Track when waiting for position response
         
         # Wizard navigation state
         self._current_step = 0
@@ -587,12 +678,16 @@ class CameraToolOffsetCalibration(QWidget):
             # Create QMovie objects if files exist
             if self.step1_video_available:
                 self.step1_movie = QMovie(self.step1_video_path)
+                # Set to loop indefinitely for continuous playback
+                self.step1_movie.setCacheMode(QMovie.CacheAll)
                 self.logger.info(f"Step 1 video loaded: {self.step1_video_path}")
             else:
                 self.logger.warning(f"Step 1 video not found: {self.step1_video_path}")
                 
             if self.step2_video_available:
                 self.step2_movie = QMovie(self.step2_video_path)
+                # Set to loop indefinitely for continuous playback
+                self.step2_movie.setCacheMode(QMovie.CacheAll)
                 self.logger.info(f"Step 2 video loaded: {self.step2_video_path}")
             else:
                 self.logger.warning(f"Step 2 video not found: {self.step2_video_path}")
@@ -639,6 +734,13 @@ class CameraToolOffsetCalibration(QWidget):
             # Stop any existing video
             self._stop_current_video()
             
+            # Ensure movie is in stopped state before starting (fixes replay issues)
+            if movie.state() != QMovie.NotRunning:
+                movie.stop()
+            
+            # Jump to start of animation for proper replay
+            movie.jumpToFrame(0)
+            
             # Set up the movie in the label
             label_widget.setMovie(movie)
             self.current_movie = movie
@@ -655,22 +757,31 @@ class CameraToolOffsetCalibration(QWidget):
 
     def _stop_current_video(self):
         """
-        Stop any currently playing video and clean up resources.
+        Stop any currently playing video and clean up display references.
+        
+        Note: This only stops playback and clears display references, 
+        but keeps QMovie objects intact for reuse.
         """
         try:
             if self.current_movie:
                 self.current_movie.stop()
-                self.current_movie = None
+                # Reset to beginning for next play
+                self.current_movie.jumpToFrame(0)
+                # Don't set current_movie to None - keep reference for tracking
                 
             if self.current_video_widget:
-                # Clear the movie from the label
+                # Clear the movie from the label but don't destroy the widget reference
                 self.current_video_widget.setMovie(None)
                 self.current_video_widget.clear()
-                self.current_video_widget = None
+                # Don't set current_video_widget to None - keep for tracking
                 
             if self.video_timer:
                 self.video_timer.stop()
                 self.video_timer = None
+                
+            # Only clear the current references, don't destroy the objects
+            self.current_movie = None
+            self.current_video_widget = None
                 
         except Exception as e:
             self.logger.error(f"Error stopping current video: {e}")
@@ -909,21 +1020,41 @@ class CameraToolOffsetCalibration(QWidget):
     def on_cancel_clicked(self):
         """Handle cancel button clicks and return to main calibrate screen."""
         try:
-            # Cleanup resources without restarting wizard
+            self.logger.info("Camera wizard cancel clicked - performing cleanup")
+            
+            # Comprehensive cleanup to prevent segfaults
             self.cleanup()
             
-            # Stop camera and turn off heaters
-            self.stop_camera()
-            self.octoprint_client.gcode("M104 T0 S0")
-            self.octoprint_client.gcode("M104 T1 S0")
+            # Additional safety cleanup (stop_camera is now part of cleanup, but being extra safe)
+            try:
+                self.stop_camera()
+            except Exception as e:
+                self.logger.warning(f"Additional camera stop error (non-critical): {e}")
+            
+            # Turn off heaters for safety
+            if hasattr(self, 'octoprint_client') and self.octoprint_client:
+                try:
+                    self.octoprint_client.gcode("M104 T0 S0")
+                    self.octoprint_client.gcode("M104 T1 S0")
+                except Exception as e:
+                    self.logger.warning(f"Error turning off heaters (non-critical): {e}")
             
             # Return to main calibrate screen (similar to NozzleChangeWizard pattern)
             self.main_window.calibrate_screen.show_calibrate_screen()
                         
         except Exception as e:
             self.logger.error(f"Error in cancel handler: {e}")
-            # Even if there's an error, try to return to calibrate screen
-            self.main_window.calibrate_screen.show_calibrate_screen()
+            # Even if there's an error, ensure some cleanup and try to return to calibrate screen
+            try:
+                # Force cleanup attempt even if main cleanup failed
+                self._stop_camera_resources()
+            except:
+                pass
+            # Always try to return to calibrate screen
+            try:
+                self.main_window.calibrate_screen.show_calibrate_screen()
+            except Exception as return_e:
+                self.logger.error(f"Critical error: Could not return to calibrate screen: {return_e}")
 
     def on_next_clicked(self):
         """Handle next button clicks with proper validation and error handling."""
@@ -1346,21 +1477,43 @@ class CameraToolOffsetCalibration(QWidget):
     
     def _connect_position_tracking(self):
         """Connect position tracking when needed for recording tool positions."""
-        if not self._position_tracking_connected and self.model:
+        if self._position_tracking_connected:
+            self.logger.debug("Position tracking already connected - skipping")
+            return
+            
+        if not self.model:
+            self.logger.error("No printer model available for position tracking")
+            return
+            
+        try:
             self.model.current_position_updated.connect(self.on_position_updated)
             self._position_tracking_connected = True
             self.logger.debug("Position tracking connected")
+        except Exception as e:
+            self.logger.error(f"Failed to connect position tracking: {e}")
+            raise
     
     def _disconnect_position_tracking(self):
         """Disconnect position tracking when no longer needed."""
-        if self._position_tracking_connected and self.model:
-            try:
-                self.model.current_position_updated.disconnect(self.on_position_updated)
-                self._position_tracking_connected = False
-                self.logger.debug("Position tracking disconnected")
-            except TypeError:
-                # Signal was already disconnected
-                self._position_tracking_connected = False
+        if not self._position_tracking_connected:
+            self.logger.debug("Position tracking already disconnected - skipping")
+            return
+            
+        if not self.model:
+            self.logger.debug("No model available for position tracking disconnect")
+            self._position_tracking_connected = False
+            return
+            
+        try:
+            self.model.current_position_updated.disconnect(self.on_position_updated)
+            self._position_tracking_connected = False
+            self.logger.debug("Position tracking disconnected")
+        except (TypeError, AttributeError) as e:
+            self._position_tracking_connected = False
+            self.logger.debug(f"Position tracking was already disconnected: {e}")
+        except Exception as e:
+            self.logger.error(f"Error disconnecting position tracking: {e}")
+            self._position_tracking_connected = False
 
     # ========================================================================================
     # SECTION 5: POSITIONING AND MOVEMENT CONTROL
@@ -1401,6 +1554,9 @@ class CameraToolOffsetCalibration(QWidget):
             return
             
         try:
+            # Disconnect any existing position tracking before connecting new one
+            self._disconnect_position_tracking()
+            
             # Connect position tracking for this recording
             self._connect_position_tracking()
             
@@ -1409,26 +1565,34 @@ class CameraToolOffsetCalibration(QWidget):
             self.octoprint_client.gcode("M114")
             self.logger.info(f"Requesting position for tool {tool}")
             
-            # Store which tool we're waiting for to proceed to next step
-            self._waiting_for_position = tool
-            
             # Set up a timeout in case position update doesn't come through
             if hasattr(self, 'position_timeout_timer') and self.position_timeout_timer:
                 self.position_timeout_timer.stop()
+                self.logger.debug("Stopped existing position timeout timer")
             
             self.position_timeout_timer = QTimer()
             self.position_timeout_timer.setSingleShot(True)
             self.position_timeout_timer.timeout.connect(lambda: self._handle_position_timeout(tool))
             self.position_timeout_timer.start(self.POSITION_TIMEOUT_SECONDS * 1000)  # Convert to milliseconds
+            self.logger.info(f"Started position timeout timer for tool {tool} ({self.POSITION_TIMEOUT_SECONDS} seconds)")
             
         except Exception as e:
             self.logger.error(f"Error recording tool {tool} position: {e}")
             dialog.WarningOk(self, f"Error recording position: {e}")
 
     def _handle_position_timeout(self, tool):
-        """Handle position recording timeout - provide retry or cancel options."""
+        """Handle position recording timeout - simplified approach."""
         try:
+            # Check if we already have position for this tool (timeout may be stale)
+            if ((tool == 0 and self.tool0_position is not None) or
+                (tool == 1 and self.tool1_position is not None)):
+                self.logger.debug(f"Position timeout triggered but already have position for tool {tool} - ignoring")
+                return
+                
             self.logger.warning(f"Position recording timeout for tool {tool}")
+            
+            # Disconnect position tracking to prevent further signals
+            self._disconnect_position_tracking()
             
             # Clean up timeout timer
             if hasattr(self, 'position_timeout_timer') and self.position_timeout_timer:
@@ -1446,6 +1610,8 @@ class CameraToolOffsetCalibration(QWidget):
             if result == "retry":
                 # Retry position recording
                 self.logger.info(f"User chose to retry position recording for tool {tool}")
+                # Reset state before retrying
+                self.current_tool = None
                 QTimer.singleShot(500, lambda: self._record_tool_position(tool))
             else:
                 # Cancel - cleanup and exit the wizard entirely
@@ -1465,7 +1631,6 @@ class CameraToolOffsetCalibration(QWidget):
         """Reset position recording state variables."""
         try:
             self.current_tool = None
-            self._waiting_for_position = None
             self._disconnect_position_tracking()
             
             # Clean up timeout timer with proper null checking
@@ -1477,42 +1642,54 @@ class CameraToolOffsetCalibration(QWidget):
             self.logger.error(f"Error resetting position recording state: {e}")
 
     def on_position_updated(self, position):
-        """Handle position updates from websocket."""
+        """Handle position updates from websocket. Simplified approach using current_tool only."""
         try:
-            if self.current_tool is not None and 'x' in position and 'y' in position:
-                pos = {'x': position['x'], 'y': position['y']}
+            # Only process if we have a current tool and are in FINE positioning steps (where position recording happens)
+            fine_positioning_steps = [self.STEP_POSITION_T0_FINE, self.STEP_POSITION_T1_FINE]
+            
+            if (self.current_tool is None or 
+                self._current_step not in fine_positioning_steps or
+                'x' not in position or 'y' not in position):
+                self.logger.debug(f"Ignoring position update - current_tool={self.current_tool}, step={self._current_step}, fine_steps={fine_positioning_steps}")
+                return
                 
-                # Cancel timeout timer since we got a position update
-                if hasattr(self, 'position_timeout_timer') and self.position_timeout_timer:
-                    self.position_timeout_timer.stop()
-                    self.position_timeout_timer = None
+            # Check if we already have position for this tool
+            if ((self.current_tool == 0 and self.tool0_position is not None) or
+                (self.current_tool == 1 and self.tool1_position is not None)):
+                self.logger.debug(f"Ignoring position update - already have position for tool {self.current_tool}")
+                return
                 
-                if self.current_tool == 0:
-                    self.tool0_position = pos
-                    self.logger.info(f"Recorded T0 position: {pos}")
-                elif self.current_tool == 1:
-                    self.tool1_position = pos
-                    self.logger.info(f"Recorded T1 position: {pos}")
-                    
-                # Check if we should proceed to next step after recording this position
-                waiting_tool = getattr(self, '_waiting_for_position', None)
-                if waiting_tool is not None and waiting_tool == self.current_tool:
-                    self._waiting_for_position = None
-                    # Proceed to next step after position is recorded
-                    if self.current_tool == 0:  # T0 position recorded, switch to T1 and go to T1 course
-                        def proceed_to_t1():
-                            self.octoprint_client.gcode("T1")
-                            self.logger.info("Switched to tool 1")
-                            # Move T0 to where T1 was positioned before switching tools
-                            if hasattr(self, 'tool0_position'):
-                                t0_x = self.tool0_position['x']
-                                t0_y = self.tool0_position['y']
-                                self.octoprint_client.gcode(f"G1 X{t0_x} Y{t0_y} F3000")
-                                self.logger.info(f"Moved T1 to T0's recorded position: X{t0_x}, Y{t0_y}")
-                            self.goto_step(self.STEP_POSITION_T1_COURSE)
-                        QTimer.singleShot(100, proceed_to_t1)
-                    elif self.current_tool == 1:  # T1 position recorded, go to results
-                        QTimer.singleShot(100, lambda: self.goto_step(self.STEP_RESULTS))
+            pos = {'x': position['x'], 'y': position['y']}
+            self.logger.info(f"Processing position update for tool {self.current_tool}: {pos}")
+            
+            # Cancel timeout timer since we got a position update
+            if hasattr(self, 'position_timeout_timer') and self.position_timeout_timer:
+                self.position_timeout_timer.stop()
+                self.position_timeout_timer = None
+                self.logger.debug("Position timeout timer stopped successfully")
+                
+            if self.current_tool == 0:
+                self.tool0_position = pos
+                self.logger.info(f"Recorded T0 position: {pos}")
+            elif self.current_tool == 1:
+                self.tool1_position = pos
+                self.logger.info(f"Recorded T1 position: {pos}")
+                
+            # Proceed to next step after position is recorded
+            if self.current_tool == 0:  # T0 position recorded, switch to T1 and go to T1 course
+                def proceed_to_t1():
+                    self.octoprint_client.gcode("T1")
+                    self.logger.info("Switched to tool 1")
+                    # Move T1 to where T0 was positioned before switching tools
+                    if hasattr(self, 'tool0_position'):
+                        t0_x = self.tool0_position['x']
+                        t0_y = self.tool0_position['y']
+                        self.octoprint_client.gcode(f"G1 X{t0_x} Y{t0_y} F3000")
+                        self.logger.info(f"Moved T1 to T0's recorded position: X{t0_x}, Y{t0_y}")
+                    self.goto_step(self.STEP_POSITION_T1_COURSE)
+                QTimer.singleShot(100, proceed_to_t1)
+            elif self.current_tool == 1:  # T1 position recorded, go to results
+                QTimer.singleShot(100, lambda: self.goto_step(self.STEP_RESULTS))
                     
                 # Reset current tool
                 self.current_tool = None
@@ -1627,8 +1804,11 @@ Please restart the calibration process."""
             
             dialog.InfoOk(self, f"Tool offsets applied successfully!\nX: {x_offset:.3f}mm\nY: {y_offset:.3f}mm")
             
+            # Ensure complete cleanup before finishing
+            self.cleanup()
+            
             # Return to main calibrate screen
-            self.on_cancel_clicked()
+            self.main_window.calibrate_screen.show_calibrate_screen()
             
         except Exception as e:
             self.logger.error(f"Error applying tool offsets: {e}")
@@ -1675,13 +1855,13 @@ Please restart the calibration process."""
             # Core resource cleanup only - no goto_step call
             self._cleanup_core_resources()
             
-            # Additional cleanup for widget destruction - video cleanup
+            # Stop video playback but don't destroy QMovie objects (so they can be reused)
             if hasattr(self, 'step1_movie') and self.step1_movie:
                 self.step1_movie.stop()
-                self.step1_movie = None
+                # Don't set to None - keep QMovie objects for reuse
             if hasattr(self, 'step2_movie') and self.step2_movie:
                 self.step2_movie.stop() 
-                self.step2_movie = None
+                # Don't set to None - keep QMovie objects for reuse
             
             # Reset state variables only - no wizard restart
             self._reset_state_variables()
@@ -1697,7 +1877,6 @@ Please restart the calibration process."""
         self.tool1_position = None
         self.current_tool = 0
         self.movement_step = self.MOVEMENT_STEP_COARSE
-        self._waiting_for_position = None
         self._current_step = 0
 
     def _cleanup_core_resources(self):
@@ -1722,40 +1901,86 @@ Please restart the calibration process."""
             self.position_timeout_timer = None
 
     def _stop_camera_resources(self):
-        """Stop camera and clean up camera-related resources with enhanced V4L2 handling."""
+        """Stop camera and clean up camera-related resources with enhanced V4L2 handling and segfault prevention."""
         # Hide loading dialog if it's still showing
         self.hide_loading_dialog()
         
-        if hasattr(self, 'camera_thread') and self.camera_thread and self.camera_thread.isRunning():
-            self.logger.debug("Stopping camera thread...")
+        # Clear camera feed display immediately to prevent accessing freed memory
+        try:
+            if hasattr(self, 'webCamFeed') and self.webCamFeed:
+                self.webCamFeed.clear()
+                self.webCamFeed.setText("Camera stopped")
+        except:
+            pass
+        
+        if hasattr(self, 'camera_thread') and self.camera_thread:
+            self.logger.debug("Stopping camera thread with enhanced cleanup...")
             
-            # Disconnect signal to prevent any remaining frames from being processed
+            # Disconnect ALL signals to prevent any callbacks during shutdown
             try:
                 self.camera_thread.changePixmap.disconnect()
+                self.camera_thread.connectionError.disconnect()
             except:
-                pass  # Signal might already be disconnected
+                pass  # Signals might already be disconnected
             
-            # Stop the thread
-            self.camera_thread.stop()
+            # Block any new signals from the thread
+            try:
+                self.camera_thread.blockSignals(True)
+            except:
+                pass
             
-            # Wait for thread to actually stop (important for V4L2)
+            # Check if thread is running before attempting to stop
             if self.camera_thread.isRunning():
-                self.camera_thread.wait(3000)  # Wait up to 3 seconds
+                # Stop the thread with enhanced error handling
+                try:
+                    self.camera_thread.stop()
+                    
+                    # Wait for thread to actually stop with multiple attempts
+                    max_wait_attempts = 3
+                    for attempt in range(max_wait_attempts):
+                        if not self.camera_thread.isRunning():
+                            break
+                        wait_time = (attempt + 1) * 1000  # 1s, 2s, 3s
+                        if not self.camera_thread.wait(wait_time):
+                            self.logger.warning(f"Camera thread did not stop after {wait_time}ms (attempt {attempt + 1}/{max_wait_attempts})")
+                            if attempt == max_wait_attempts - 1:
+                                # Last attempt - force termination
+                                try:
+                                    self.logger.warning("Forcing camera thread termination")
+                                    self.camera_thread.terminate()
+                                    self.camera_thread.wait(2000)
+                                except Exception as e:
+                                    self.logger.error(f"Error during forced camera thread termination: {e}")
+                        else:
+                            self.logger.debug(f"Camera thread stopped successfully on attempt {attempt + 1}")
+                            break
+                            
+                except Exception as e:
+                    self.logger.error(f"Error during camera thread shutdown: {e}")
+                    # Even if there's an error, continue with cleanup
             
-            # Clear the reference
+            # Clear the reference and reset state
+            try:
+                # Delete the thread object to free memory
+                del self.camera_thread
+            except:
+                pass
             self.camera_thread = None
             self.camera_available = False
         
-        # Reset setup flag
+        # Reset all camera-related flags
         self.camera_setup_in_progress = False
         
-        # Give V4L2 extra time to fully release camera resources
-        # This helps prevent resource conflicts on subsequent wizard runs
+        # Give system significant time to fully release camera resources and prevent segfaults
+        # This is critical for V4L2 cameras and preventing resource conflicts
         try:
             import time
-            time.sleep(0.5)
+            self.logger.debug("Waiting for camera resources to be fully released...")
+            time.sleep(1.0)  # Increased delay for maximum stability
         except:
             pass
+        
+        self.logger.debug("Camera resources cleanup completed")
 
     # ========================================================================================
     # SECTION 8: UTILITY AND LIFECYCLE METHODS
@@ -1775,10 +2000,57 @@ Please restart the calibration process."""
             self.camera_setup_in_progress = False
 
     def closeEvent(self, event):
-        """Handle widget close event with full cleanup."""
+        """Handle widget close event with comprehensive cleanup to prevent segfaults."""
         try:
+            self.logger.info("Camera wizard closeEvent triggered - performing comprehensive cleanup")
+            
+            # Perform comprehensive cleanup first
             self.cleanup()
+            
+            # Additional safety measures for closeEvent
+            try:
+                # Ensure all timers are stopped
+                for child in self.findChildren(QTimer):
+                    if child and child.isActive():
+                        child.stop()
+                        
+                # Clear any remaining video resources
+                if hasattr(self, 'webCamFeed') and self.webCamFeed:
+                    self.webCamFeed.clear()
+                    
+                # Permanently destroy QMovie objects only on final close
+                if hasattr(self, 'step1_movie') and self.step1_movie:
+                    self.step1_movie.stop()
+                    self.step1_movie = None
+                if hasattr(self, 'step2_movie') and self.step2_movie:
+                    self.step2_movie.stop()
+                    self.step2_movie = None
+                    
+                # Turn off heaters as safety measure
+                if hasattr(self, 'octoprint_client') and self.octoprint_client:
+                    try:
+                        self.octoprint_client.gcode("M104 T0 S0")
+                        self.octoprint_client.gcode("M104 T1 S0")
+                    except:
+                        pass  # Non-critical if this fails
+                        
+            except Exception as cleanup_e:
+                self.logger.warning(f"Additional cleanup error (non-critical): {cleanup_e}")
+            
+            # Give extra time for all resources to be fully released
+            try:
+                import time
+                time.sleep(0.2)  # Brief additional delay for complete resource release
+            except:
+                pass
+                
             super().closeEvent(event)
+            self.logger.info("Camera wizard closeEvent completed successfully")
+            
         except Exception as e:
-            print(f"Close event error (non-critical): {e}")
-            super().closeEvent(event)
+            # Even if cleanup fails, always call parent closeEvent to prevent hanging
+            self.logger.error(f"Close event error: {e}")
+            try:
+                super().closeEvent(event)
+            except:
+                pass  # Prevent any exceptions from blocking widget closure

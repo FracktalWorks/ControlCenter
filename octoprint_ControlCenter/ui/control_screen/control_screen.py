@@ -124,6 +124,9 @@ class ControlScreen(QWidget):
             
         check_ui_elements(self, required_components, "ControlScreen")
 
+        # Apply scrollbar styling - find and style all scroll areas
+        self.apply_scrollbar_styling()
+
         # set the active extruder to 0 initially
         self.setActiveExtruder(0)  # Default to extruder 0
 
@@ -684,3 +687,111 @@ class ControlScreen(QWidget):
         except Exception as e:
             logger.error(f"Error in ControlScreen.toggleAdvancedDebugging: {e}")
             dialog.WarningOk(self, f"Error in ControlScreen.toggleAdvancedDebugging: {e}", overlay=True)
+
+    def apply_scrollbar_styling(self):
+        """Apply custom scrollbar styling to all scroll areas in the control screen."""
+        try:
+            # Import QScrollArea and QScrollBar here to avoid import issues
+            from PyQt5.QtWidgets import QScrollArea, QScrollBar
+            from PyQt5.QtCore import QTimer
+            
+            # Find all scroll areas in the widget
+            scroll_areas = self.findChildren(QScrollArea)
+            
+            # More aggressive scrollbar style with higher specificity
+            scrollbar_style = """
+            QScrollArea {
+                background-color: transparent !important;
+                border: none !important;
+            }
+            
+            QScrollArea > QWidget {
+                background-color: transparent !important;
+            }
+            
+            QScrollArea > QWidget > QWidget {
+                background-color: transparent !important;
+            }
+            
+            QScrollBar:vertical {
+                border: 1px solid black !important;
+                border-radius: 5px !important;
+                background-color: rgb(40,40,40) !important;
+                width: 80px !important;
+                margin: 70px 0 70px 0 !important;
+            }
+            
+            QScrollBar::handle:vertical {
+                border-radius: 5px !important;
+                background: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255)) !important;
+                min-height: 20px !important;
+            }
+            
+            QScrollBar::add-line:vertical {
+                border: 1px solid black !important;
+                background: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255)) !important;
+                height: 65px !important;
+                border-radius: 5px !important;
+                subcontrol-position: bottom !important;
+                subcontrol-origin: margin !important;
+            }
+            
+            QScrollBar::sub-line:vertical {
+                border: 1px solid black !important;
+                background: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255)) !important;
+                height: 65px !important;
+                border-radius: 5px !important;
+                subcontrol-position: top !important;
+                subcontrol-origin: margin !important;
+            }
+            
+            QScrollBar::up-arrow:vertical {
+                image: url(:/Navigation/img/Navigation/arrows.png) !important;
+                width: 40px !important;
+                height: 40px !important;
+                padding: 5px !important;
+            }
+            
+            QScrollBar::down-arrow:vertical {
+                image: url(:/Navigation/img/Navigation/arrows-5.png) !important;
+                width: 40px !important;
+                height: 40px !important;
+                padding: 5px !important;
+            }
+            
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: none !important;
+            }
+            """
+            
+            # Apply the style to each scroll area
+            for scroll_area in scroll_areas:
+                scroll_area.setStyleSheet(scrollbar_style)
+                
+                # Also try to find and style scrollbars directly
+                scrollbars = scroll_area.findChildren(QScrollBar)
+                for scrollbar in scrollbars:
+                    scrollbar.setStyleSheet(scrollbar_style)
+                    
+                self.logger.info(f"Applied scrollbar styling to scroll area: {scroll_area.objectName()}")
+            
+            # Schedule a delayed re-application to catch scrollbars that appear later
+            def reapply_scrollbar_styling():
+                try:
+                    current_scroll_areas = self.findChildren(QScrollArea)
+                    for scroll_area in current_scroll_areas:
+                        scroll_area.setStyleSheet(scrollbar_style)
+                        scrollbars = scroll_area.findChildren(QScrollBar)
+                        for scrollbar in scrollbars:
+                            scrollbar.setStyleSheet(scrollbar_style)
+                except Exception as e:
+                    self.logger.error(f"Error in delayed scrollbar styling: {e}")
+            
+            # Apply after a short delay to catch dynamically created scrollbars
+            QTimer.singleShot(1000, reapply_scrollbar_styling)
+                
+            if scroll_areas:
+                self.logger.info(f"Applied scrollbar styling to {len(scroll_areas)} scroll areas with tab widget context")
+                
+        except Exception as e:
+            self.logger.error(f"Error applying scrollbar styling: {e}", exc_info=True)
