@@ -126,27 +126,160 @@ class SelfCenteringMessageBox(QtWidgets.QMessageBox):
 
         objLabel = self.findChild(QtWidgets.QLabel, 'qt_msgbox_label')
         if objLabel:
-            objLabel.setStyleSheet(styles.msgbox_label)
-            objLabel.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
-            objLabel.setMinimumSize(350, 120)
-            objLabel.setMaximumSize(450, 500)  # Reduced width from 500 to 450
-            objLabel.setWordWrap(True)  # Enable word wrapping
-            objLabel.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
-            
-            # Set text eliding and additional properties to ensure proper wrapping
-            objLabel.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
-            objLabel.setScaledContents(False)
-            
-            # If text is very long, add scroll area
+            # Check if text is long enough to require scrolling
             text_length = len(objLabel.text())
-            if text_length > 500:  # Threshold for very long text
-                objLabel.setMaximumSize(450, 500)  # Reduce height for scroll and use consistent width
+            needs_scrolling = text_length > 500 or objLabel.text().count('\n') > 8
+            
+            if needs_scrolling:
+                # Create scroll area for long text
+                self._create_scrollable_content(objLabel)
+            else:
+                # Standard label setup for shorter text
+                objLabel.setStyleSheet(styles.msgbox_label)
+                objLabel.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+                objLabel.setMinimumSize(350, 120)
+                objLabel.setMaximumSize(450, 400)  # Reasonable max height
+                objLabel.setWordWrap(True)
+                objLabel.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+                objLabel.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+                objLabel.setScaledContents(False)
                 
         # Set size policy for the message box itself to allow proper resizing
         self.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         
         # Ensure the dialog doesn't exceed screen bounds
         self.setMaximumSize(500, 500)
+
+    def _create_scrollable_content(self, objLabel):
+        """
+        Replace the standard message box label with a scrollable text area.
+        Creates a scroll area with large scroll buttons for touch-friendly interaction.
+        
+        Args:
+            objLabel: The original QLabel to be replaced with scrollable content
+        """
+        # Store the original text and parent
+        text = objLabel.text()
+        label_parent = objLabel.parent()
+        
+        # Create scroll area
+        scroll_area = QtWidgets.QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)  # We'll use custom buttons
+        scroll_area.setMinimumSize(400, 200)
+        scroll_area.setMaximumSize(450, 350)
+        
+        # Create content widget with text
+        content_widget = QtWidgets.QWidget()
+        content_layout = QtWidgets.QVBoxLayout(content_widget)
+        content_layout.setContentsMargins(10, 10, 10, 10)
+        
+        # Create text label for scrollable content
+        text_label = QtWidgets.QLabel(text)
+        text_label.setStyleSheet(styles.msgbox_label)
+        text_label.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+        text_label.setWordWrap(True)
+        text_label.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+        text_label.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.MinimumExpanding)
+        
+        content_layout.addWidget(text_label)
+        content_layout.addStretch()  # Push content to top
+        scroll_area.setWidget(content_widget)
+        
+        # Create container widget for scroll area and buttons
+        container_widget = QtWidgets.QWidget()
+        container_layout = QtWidgets.QVBoxLayout(container_widget)
+        container_layout.setContentsMargins(0, 0, 0, 0)
+        container_layout.setSpacing(5)
+        
+        # Create scroll up button with large touch target
+        scroll_up_button = QtWidgets.QPushButton("▲")
+        scroll_up_button.setMinimumHeight(44)  # Touch-friendly size
+        scroll_up_button.setMaximumHeight(44)
+        scroll_up_button.setStyleSheet("""
+            QPushButton {
+                border: 1px solid rgb(87, 87, 87);
+                background-color: rgb(200, 200, 200);
+                border-radius: 5px;
+                font-size: 18px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: rgb(220, 220, 220);
+            }
+            QPushButton:pressed {
+                background-color: rgb(180, 180, 180);
+            }
+        """)
+        
+        # Create scroll down button
+        scroll_down_button = QtWidgets.QPushButton("▼")
+        scroll_down_button.setMinimumHeight(44)
+        scroll_down_button.setMaximumHeight(44)
+        scroll_down_button.setStyleSheet(scroll_up_button.styleSheet())
+        
+        # Connect scroll buttons
+        scroll_up_button.clicked.connect(lambda: self._scroll_content(scroll_area, -50))
+        scroll_down_button.clicked.connect(lambda: self._scroll_content(scroll_area, 50))
+        
+        # Add components to container
+        container_layout.addWidget(scroll_up_button)
+        container_layout.addWidget(scroll_area)
+        container_layout.addWidget(scroll_down_button)
+        
+        # Replace the original label with our scrollable container
+        # Find the label's layout and replace it
+        if label_parent and hasattr(label_parent, 'layout') and label_parent.layout():
+            parent_layout = label_parent.layout()
+            
+            # Find and remove the original label
+            for i in range(parent_layout.count()):
+                item = parent_layout.itemAt(i)
+                if item and item.widget() == objLabel:
+                    parent_layout.removeItem(item)
+                    objLabel.setParent(None)
+                    # Insert our container at the same position
+                    parent_layout.insertWidget(i, container_widget)
+                    break
+        else:
+            # Fallback: try to find messagebox layout directly
+            for widget in self.findChildren(QtWidgets.QWidget):
+                if hasattr(widget, 'layout') and widget.layout():
+                    layout = widget.layout()
+                    for i in range(layout.count()):
+                        item = layout.itemAt(i)
+                        if item and item.widget() == objLabel:
+                            layout.removeItem(item)
+                            objLabel.setParent(None)
+                            layout.insertWidget(i, container_widget)
+                            return
+        
+        # Store references for potential future use
+        self._scroll_area = scroll_area
+        self._scroll_up_button = scroll_up_button
+        self._scroll_down_button = scroll_down_button
+        
+    def _scroll_content(self, scroll_area, delta_y):
+        """
+        Scroll the content in the scroll area by the specified amount.
+        
+        Args:
+            scroll_area: The QScrollArea to scroll
+            delta_y: Amount to scroll (positive = down, negative = up)
+        """
+        scrollbar = scroll_area.verticalScrollBar()
+        current_value = scrollbar.value()
+        scrollbar.setValue(current_value + delta_y)
+        
+        # Update button states based on scroll position
+        if hasattr(self, '_scroll_up_button') and hasattr(self, '_scroll_down_button'):
+            # Enable/disable buttons based on scroll position
+            at_top = scrollbar.value() <= scrollbar.minimum()
+            at_bottom = scrollbar.value() >= scrollbar.maximum()
+            
+            self._scroll_up_button.setEnabled(not at_top)
+            self._scroll_down_button.setEnabled(not at_bottom)
 
     def setLocalIcon(self, icon=None):
         """Set an icon using a Qt resource path.
@@ -166,15 +299,36 @@ class SelfCenteringMessageBox(QtWidgets.QMessageBox):
         """Show the dialog centered on the active screen and apply styles."""
         # Apply label settings just before showing, in case the label wasn't found during init
         objLabel = self.findChild(QtWidgets.QLabel, 'qt_msgbox_label')
-        if objLabel:
-            objLabel.setStyleSheet(styles.msgbox_label)
-            objLabel.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
-            objLabel.setMinimumSize(350, 120)
-            objLabel.setMaximumSize(450, 300)  # Consistent with __init__
-            objLabel.setWordWrap(True)
-            objLabel.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
-            objLabel.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
-            objLabel.setScaledContents(False)
+        if objLabel and not hasattr(self, '_scroll_area'):  # Only if we haven't created scroll area yet
+            # Check if text is long enough to require scrolling
+            text_length = len(objLabel.text())
+            needs_scrolling = text_length > 500 or objLabel.text().count('\n') > 8
+            
+            if needs_scrolling:
+                # Create scroll area for long text
+                self._create_scrollable_content(objLabel)
+            else:
+                # Standard label setup for shorter text
+                objLabel.setStyleSheet(styles.msgbox_label)
+                objLabel.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+                objLabel.setMinimumSize(250, 120)
+                objLabel.setMaximumSize(600, 400)  # Consistent with __init__
+                objLabel.setWordWrap(True)
+                objLabel.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
+                objLabel.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
+                objLabel.setScaledContents(False)
+        
+        # Update scroll button states if scroll area exists
+        if hasattr(self, '_scroll_area'):
+            # Initialize scroll button states
+            scrollbar = self._scroll_area.verticalScrollBar()
+            at_top = scrollbar.value() <= scrollbar.minimum()
+            at_bottom = scrollbar.value() >= scrollbar.maximum()
+            
+            if hasattr(self, '_scroll_up_button'):
+                self._scroll_up_button.setEnabled(not at_top)
+            if hasattr(self, '_scroll_down_button'):
+                self._scroll_down_button.setEnabled(not at_bottom)
         
         if self._showOverlay:
             self.overlay.show()

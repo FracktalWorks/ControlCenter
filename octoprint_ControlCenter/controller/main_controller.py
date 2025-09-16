@@ -548,29 +548,55 @@ class MainController:
             if gcode_metadata.get('nozzle_t0') is not None:
                 expected_nozzle = gcode_metadata['nozzle_t0']
                 current_nozzle = current_config['tool0']['nozzle']
-                if current_nozzle != 'Unknown' and expected_nozzle != current_nozzle:
-                    mismatches.append(f"Tool0 nozzle mismatch: GCODE expects {expected_nozzle}mm, printer has {current_nozzle}mm")
+                # Skip validation if GCODE has N/A (tool not used)
+                if expected_nozzle != 'N/A' and current_nozzle != 'Unknown':
+                    # Convert both to float for comparison to handle different string formats
+                    try:
+                        expected_size = float(expected_nozzle)
+                        current_size = float(current_nozzle)
+                        if expected_size != current_size:
+                            mismatches.append(f"Tool0 nozzle mismatch: GCODE expects {expected_nozzle}mm, printer has {current_nozzle}mm")
+                    except ValueError:
+                        # Fallback to string comparison if conversion fails
+                        if expected_nozzle != current_nozzle:
+                            mismatches.append(f"Tool0 nozzle mismatch: GCODE expects {expected_nozzle}mm, printer has {current_nozzle}mm")
 
             # Check tool1 nozzle
             if gcode_metadata.get('nozzle_t1') is not None:
                 expected_nozzle = gcode_metadata['nozzle_t1']
                 current_nozzle = current_config['tool1']['nozzle']
-                if current_nozzle != 'Unknown' and expected_nozzle != current_nozzle:
-                    mismatches.append(f"Tool1 nozzle mismatch: GCODE expects {expected_nozzle}mm, printer has {current_nozzle}mm")
+                # Skip validation if GCODE has N/A (tool not used)
+                if expected_nozzle != 'N/A' and current_nozzle != 'Unknown':
+                    # Convert both to float for comparison to handle different string formats
+                    try:
+                        expected_size = float(expected_nozzle)
+                        current_size = float(current_nozzle)
+                        if expected_size != current_size:
+                            mismatches.append(f"Tool1 nozzle mismatch: GCODE expects {expected_nozzle}mm, printer has {current_nozzle}mm")
+                    except ValueError:
+                        # Fallback to string comparison if conversion fails
+                        if expected_nozzle != current_nozzle:
+                            mismatches.append(f"Tool1 nozzle mismatch: GCODE expects {expected_nozzle}mm, printer has {current_nozzle}mm")
 
             # Check tool0 material
             if gcode_metadata.get('material_t0') is not None:
                 expected_material = gcode_metadata['material_t0']
                 current_material = current_config['tool0']['material']
-                if current_material is not None and expected_material != current_material:
-                    mismatches.append(f"Tool0 material mismatch: GCODE expects {expected_material}, printer has {current_material}")
+                # Skip validation if GCODE has N/A (no material/tool not used)
+                if expected_material != 'N/A' and current_material is not None:
+                    # Use partial string matching - check if current material is contained in expected material string
+                    if not self._materials_compatible(current_material, expected_material):
+                        mismatches.append(f"Tool0 material mismatch: GCODE expects {expected_material}, printer has {current_material}")
 
             # Check tool1 material
             if gcode_metadata.get('material_t1') is not None:
                 expected_material = gcode_metadata['material_t1']
                 current_material = current_config['tool1']['material']
-                if current_material is not None and expected_material != current_material:
-                    mismatches.append(f"Tool1 material mismatch: GCODE expects {expected_material}, printer has {current_material}")
+                # Skip validation if GCODE has N/A (no material/tool not used)
+                if expected_material != 'N/A' and current_material is not None:
+                    # Use partial string matching - check if current material is contained in expected material string
+                    if not self._materials_compatible(current_material, expected_material):
+                        mismatches.append(f"Tool1 material mismatch: GCODE expects {expected_material}, printer has {current_material}")
 
             is_compatible = len(mismatches) == 0
             self.logger.info(f"GCODE compatibility check for {filename}: {'PASS' if is_compatible else 'FAIL'}")
@@ -582,6 +608,43 @@ class MainController:
         except Exception as e:
             self.logger.error(f"Error validating GCODE compatibility: {e}")
             return True, []  # Default to compatible on error
+
+    def _materials_compatible(self, current_material, expected_material):
+        """
+        Check if current material is compatible with expected material from GCODE.
+        Uses case-insensitive partial matching to handle cases where:
+        - Current: "PLA+" vs Expected: "Fracktal Works PLA+"
+        - Current: "Generic ABS" vs Expected: "Generic ABS"
+        
+        Args:
+            current_material (str): Material currently loaded in printer
+            expected_material (str): Material expected by GCODE file
+            
+        Returns:
+            bool: True if materials are compatible, False otherwise
+        """
+        if not current_material or not expected_material:
+            return False
+            
+        # Convert to lowercase for case-insensitive comparison
+        current_lower = current_material.lower().strip()
+        expected_lower = expected_material.lower().strip()
+        
+        # Direct match
+        if current_lower == expected_lower:
+            return True
+            
+        # Check if current material is contained in expected material string
+        # Example: "pla+" in "fracktal works pla+"
+        if current_lower in expected_lower:
+            return True
+            
+        # Check if expected material is contained in current material string
+        # Example: "generic abs" in "generic abs premium"
+        if expected_lower in current_lower:
+            return True
+            
+        return False
 
     def onPrintStarted(self, event):
         try:

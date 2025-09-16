@@ -234,8 +234,8 @@ class octoprintAPI:
                 content = response.content
                 
                 # Find the file data section
-                start = content.find(b'; file data begin')
-                end = content.find(b'; file data end')
+                start = content.find(b';file data begin')
+                end = content.find(b';file data end')
                 
                 if start != -1 and end != -1:
                     # Extract the metadata section
@@ -257,33 +257,50 @@ class octoprintAPI:
                             try:
                                 # Extract value between = and next ; or end of line
                                 value = line.split('nozzle_t0=')[1].split(';')[0].strip()
-                                # Remove 'mm' if present and convert to float then back to string for consistency
-                                if value.endswith('mm'):
-                                    value = value[:-2]
-                                metadata['nozzle_t0'] = str(float(value))
+                                # Check for N/A first
+                                if value.upper() == 'N/A':
+                                    metadata['nozzle_t0'] = 'N/A'
+                                else:
+                                    # Remove 'mm' if present and convert to float then back to string for consistency
+                                    if value.endswith('mm'):
+                                        value = value[:-2]
+                                    metadata['nozzle_t0'] = str(float(value))
                             except (IndexError, ValueError) as e:
                                 logger.warning(f"Failed to parse nozzle_t0 from line: {line} - {e}")
                         
                         elif 'nozzle_t1=' in line:
                             try:
                                 value = line.split('nozzle_t1=')[1].split(';')[0].strip()
-                                if value.endswith('mm'):
-                                    value = value[:-2]
-                                metadata['nozzle_t1'] = str(float(value))
+                                # Check for N/A first
+                                if value.upper() == 'N/A':
+                                    metadata['nozzle_t1'] = 'N/A'
+                                else:
+                                    # Remove 'mm' if present and convert to float then back to string for consistency
+                                    if value.endswith('mm'):
+                                        value = value[:-2]
+                                    metadata['nozzle_t1'] = str(float(value))
                             except (IndexError, ValueError) as e:
                                 logger.warning(f"Failed to parse nozzle_t1 from line: {line} - {e}")
                         
                         elif 'material_t0=' in line:
                             try:
                                 value = line.split('material_t0=')[1].split(';')[0].strip()
-                                metadata['material_t0'] = value
+                                # Check for N/A first
+                                if value.upper() == 'N/A':
+                                    metadata['material_t0'] = 'N/A'
+                                else:
+                                    metadata['material_t0'] = value
                             except IndexError as e:
                                 logger.warning(f"Failed to parse material_t0 from line: {line} - {e}")
                         
                         elif 'material_t1=' in line:
                             try:
                                 value = line.split('material_t1=')[1].split(';')[0].strip()
-                                metadata['material_t1'] = value
+                                # Check for N/A first
+                                if value.upper() == 'N/A':
+                                    metadata['material_t1'] = 'N/A'
+                                else:
+                                    metadata['material_t1'] = value
                             except IndexError as e:
                                 logger.warning(f"Failed to parse material_t1 from line: {line} - {e}")
                     
