@@ -138,7 +138,7 @@ class SelfCenteringMessageBox(QtWidgets.QMessageBox):
                 objLabel.setStyleSheet(styles.msgbox_label)
                 objLabel.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
                 objLabel.setMinimumSize(350, 120)
-                objLabel.setMaximumSize(450, 400)  # Reasonable max height
+                objLabel.setMaximumSize(650, 400)  # Reasonable max height
                 objLabel.setWordWrap(True)
                 objLabel.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
                 objLabel.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse)
