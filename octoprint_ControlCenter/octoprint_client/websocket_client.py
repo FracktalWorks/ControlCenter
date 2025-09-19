@@ -29,10 +29,10 @@ class OctoPrintWebSocket(QThread):
     status_signal = pyqtSignal(str) #! done
     print_status_signal = pyqtSignal('PyQt_PyObject') #! done
     # Use class-level logger for all logging
-    update_started_signal = pyqtSignal(dict) #! done
-    update_log_signal = pyqtSignal(dict) #! done
-    update_log_result_signal = pyqtSignal(dict) #! done
-    update_failed_signal = pyqtSignal(dict) #! done
+    update_started_signal = pyqtSignal('PyQt_PyObject') #! done
+    update_log_signal = pyqtSignal('PyQt_PyObject') #! done
+    update_log_result_signal = pyqtSignal('PyQt_PyObject') #! done
+    update_failed_signal = pyqtSignal('PyQt_PyObject') #! done
     connected_signal = pyqtSignal() #! done
     # firmware_updater_signal = pyqtSignal(dict) ... likely not to be used, but can be added later
     tool_offset_signal = pyqtSignal(str) # done

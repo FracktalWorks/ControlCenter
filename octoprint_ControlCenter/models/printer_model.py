@@ -31,10 +31,10 @@ class PrinterModel(QObject):
     filament_jam_sensor_triggered = pyqtSignal(str)
     filament_runout_state = pyqtSignal(str, bool)
     z_probing_failed = pyqtSignal()  # done
-    update_started_signal = pyqtSignal(dict)
-    update_log_signal = pyqtSignal(dict)  # ! REMAINING
-    update_log_result_signal = pyqtSignal(dict)  # ! REMAINING
-    update_failed_signal = pyqtSignal(dict)  # ! REMAINING
+    update_started_signal = pyqtSignal('PyQt_PyObject')
+    update_log_signal = pyqtSignal('PyQt_PyObject')  # ! REMAINING
+    update_log_result_signal = pyqtSignal('PyQt_PyObject')  # ! REMAINING
+    update_failed_signal = pyqtSignal('PyQt_PyObject')  # ! REMAINING
     connected_signal = pyqtSignal()  # done
     # Klipper state propagated from websocket via controller
     klipper_state_changed = pyqtSignal(str)

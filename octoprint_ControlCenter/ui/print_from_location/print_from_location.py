@@ -356,7 +356,7 @@ class PrintFromLocation(QWidget):
         try:
             file = '/media/usb0/' + str(self.fileListWidgetUSB.currentItem().text())
 
-            self.uploadThread = ThreadFileUpload(file, prnt=prnt)
+            self.uploadThread = ThreadFileUpload(file, print_after_upload=prnt)
             self.uploadThread.start()
             if prnt:
                 self.main_window.switch_to_home_screen()
