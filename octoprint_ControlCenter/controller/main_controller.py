@@ -702,6 +702,8 @@ class MainController:
         try:
             self.logger.info("MainController.onPrintResumed invoked")
             self.apply_filament_sensor_state()
+            if self.octoprint_client:
+                self.octoprint_client.gcode(command='RESUME')
         except Exception as e:
             self.logger.error(f"Error in onPrintResumed: {e}")
 
@@ -711,6 +713,7 @@ class MainController:
             if self.octoprint_client:
                 self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S=0')
                 self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S=0')
+                self.octoprint_client.gcode(command='PAUSE')
         except Exception as e:
             self.logger.error(f"Error in onPrintPaused: {e}")
 
