@@ -48,6 +48,8 @@ class OctoPrintWebSocket(QThread):
     print_started_signal = pyqtSignal(dict)
     print_resumed_signal = pyqtSignal(dict)
     print_paused_signal = pyqtSignal(dict)
+    print_complete_signal = pyqtSignal(dict)
+
 
     # Filament sensor related signals
     filament_runout_sensor_triggered_signal = pyqtSignal(str) #! done
@@ -280,6 +282,12 @@ class OctoPrintWebSocket(QThread):
                     self.logger.info("Emitting print_paused_signal")
                     try:
                         self.print_paused_signal.emit(data["event"])  # pass entire event payload
+                    except Exception:
+                        pass
+                elif data["event"]["type"] == "PrintDone":
+                    self.logger.info("Emitting print_complete_signal")
+                    try:
+                        self.print_complete_signal.emit(data["event"])  # pass entire event payload
                     except Exception:
                         pass
             

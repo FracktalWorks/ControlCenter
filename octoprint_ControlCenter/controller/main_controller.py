@@ -265,6 +265,8 @@ class MainController:
         self.octoprint_websocket.print_started_signal.connect(self.onPrintStarted)
         self.octoprint_websocket.print_resumed_signal.connect(self.onPrintResumed)
         self.octoprint_websocket.print_paused_signal.connect(self.onPrintPaused)
+        self.octoprint_websocket.print_complete_signal.connect(self.onPrintCompleted)
+
 
     def onWebSocketConnected(self):
         """Respond to websocket connection with status sync & sensor setup."""
@@ -725,6 +727,15 @@ class MainController:
                 self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S=0')
         except Exception as e:
             self.logger.error(f"Error in onPrintCancelled: {e}")
+
+    def onPrintCompleted(self, event):
+        try:
+            self.logger.info("MainController.onPrintCompleted invoked")
+            if self.octoprint_client:
+                self.octoprint_client.gcode(command='G28')  # Home all axes
+        except Exception as e:
+            self.logger.error(f"Error in onPrintCompleted: {e}")
+        #self.octoprint_websocket.print_paused_signal.connect(self.onPrintPaused)
 
     # =========================================================================
     # SECTION: Error & Recovery Dialogs
