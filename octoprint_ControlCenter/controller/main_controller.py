@@ -696,6 +696,7 @@ class MainController:
             
             # Apply filament sensor state if print continues
             self.apply_filament_sensor_state()
+            self.octoprint_client.gcode(command='M514 S0')
             
         except Exception as e:
             self.logger.error(f"Error in onPrintStarted: {e}")
@@ -706,6 +707,7 @@ class MainController:
             self.apply_filament_sensor_state()
             if self.octoprint_client:
                 self.octoprint_client.gcode(command='RESUME')
+                self.octoprint_client.gcode(command='M514 S1')
         except Exception as e:
             self.logger.error(f"Error in onPrintResumed: {e}")
 
@@ -716,6 +718,7 @@ class MainController:
                 self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S=0')
                 self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S=0')
                 self.octoprint_client.gcode(command='PAUSE')
+                self.octoprint_client.gcode(command='M514 S0')
         except Exception as e:
             self.logger.error(f"Error in onPrintPaused: {e}")
 
