@@ -696,7 +696,7 @@ class MainController:
             
             # Apply filament sensor state if print continues
             self.apply_filament_sensor_state()
-            self.octoprint_client.gcode(command='M514 S0')
+            self.octoprint_client.gcode(command='M514 S1')
             
         except Exception as e:
             self.logger.error(f"Error in onPrintStarted: {e}")
@@ -726,8 +726,12 @@ class MainController:
         try:
             self.logger.info("MainController.onPrintCancelled invoked")
             if self.octoprint_client:
+                self.octoprint_client.gcode(command='G28')  # Home all axes
+                self.octoprint_client.gcode(command='M84')  # Disable motors
+                self.octoprint_client.gcode(command='M514 S0')  # open Door
                 self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S=0')
                 self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S=0')
+                self.coolDownAction()
         except Exception as e:
             self.logger.error(f"Error in onPrintCancelled: {e}")
 
@@ -736,6 +740,11 @@ class MainController:
             self.logger.info("MainController.onPrintCompleted invoked")
             if self.octoprint_client:
                 self.octoprint_client.gcode(command='G28')  # Home all axes
+                self.octoprint_client.gcode(command='M84')  # Disable motors
+                self.octoprint_client.gcode(command='M514 S0')  # open Door
+                self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S=0')
+                self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S=0')
+                self.coolDownAction()
         except Exception as e:
             self.logger.error(f"Error in onPrintCompleted: {e}")
         #self.octoprint_websocket.print_paused_signal.connect(self.onPrintPaused)

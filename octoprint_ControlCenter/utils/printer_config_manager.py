@@ -488,12 +488,40 @@ class PrinterConfigManager:
             if not self.update_octoprint_printer_profile(printer_name):
                 success = False
                 
-            # Clean up old files
+            # Clean up old files and create default gcode scripts
             try:
                 os.system('sudo rm -rf /home/pi/.octoprint/scripts/gcode')
                 os.system('sudo rm -rf /home/pi/.octoprint/print_restore.json')
+                
+                # Create gcode scripts directory
+                gcode_scripts_dir = '/home/pi/.octoprint/scripts/gcode'
+                os.makedirs(gcode_scripts_dir, exist_ok=True)
+                # Set proper ownership for the directory
+                os.system(f'sudo chown -R pi:pi "{os.path.dirname(gcode_scripts_dir)}"')
+                
+                # Create default gcode script files to override existing ones
+                default_scripts = {
+                    'beforePrintResumed': ';pass',
+                    'afterPrintPaused': ';pass', 
+                    'afterPrintDone': ';pass',
+                    'afterPrintCancelled': ';pass'
+                }
+                
+                for script_name, script_content in default_scripts.items():
+                    script_path = os.path.join(gcode_scripts_dir, script_name)
+                    try:
+                        with open(script_path, 'w') as f:
+                            f.write(script_content)
+                        # Set proper ownership for the script file
+                        os.system(f'sudo chown pi:pi "{script_path}"')
+                        logger.debug(f"Created default gcode script: {script_name}")
+                    except Exception as e:
+                        logger.error(f"Error creating gcode script {script_name}: {e}")
+                        success = False
+                        
             except Exception as e:
-                logger.warning(f"Error cleaning up old files: {e}")
+                logger.warning(f"Error cleaning up old files and creating gcode scripts: {e}")
+                success = False
                 
             return success
             
