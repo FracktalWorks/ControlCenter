@@ -500,9 +500,7 @@ class CameraToolOffsetCalibration(QWidget):
     # Timeout configuration
     POSITION_TIMEOUT_SECONDS = 5
     
-    # Video file names for instructional content
-    VIDEO_STEP1_FILENAME = "1_Nozzle Cleaning .gif"  # Clean nozzles instruction video
-    VIDEO_STEP2_FILENAME = "2_Camera Placement.gif"  # Camera connection instruction video
+    # Removed VIDEO_SPECS - will be defined as instance variable for consistency
 
     # ==================== INITIALIZATION AND SETUP ====================
 
@@ -562,12 +560,19 @@ class CameraToolOffsetCalibration(QWidget):
         self._position_tracking_connected = False
         self.position_timeout_timer = None
         
-        # Video playback state
+        # Video playback state (unified system like NozzleChangeWizard)
         self.current_video_widget = None
         self.video_timer = None
-        self.current_movie = None  # QMovie object for GIF playback
-        self.step1_movie = None    # QMovie for step 1 GIF
-        self.step2_movie = None    # QMovie for step 2 GIF
+        self.current_movie = None  # Currently playing QMovie object
+        
+        # Unified naming scheme to match NozzleChangeWizard
+        self._video_movies = {}    # step_number -> QMovie mapping (same as _gif_movies pattern)
+        
+        # Video configuration (step_number, target_label_name, filename) - matches NozzleChangeWizard pattern
+        self._video_specs = [
+            (1, "step1Gif", "1_Nozzle Cleaning .gif"),      # Clean nozzles instruction video
+            (2, "step2Gif", "2_Camera Placement.gif"),      # Camera connection instruction video
+        ]
 
     def _load_ui(self):
         """
@@ -657,72 +662,73 @@ class CameraToolOffsetCalibration(QWidget):
         self.moveZMButton.clicked.connect(lambda: self.move_axis('Z', -self.movement_step))
 
     def _init_video_resources(self):
-        """
-        Initialize video resources for instructional content.
-        
-        Sets up video file paths and prepares video playback capabilities for
-        steps 1 and 2 instructional content using QMovie for GIF playback.
-        """
-        try:
-            # Get directory path (videos are in the same directory as this file)
-            video_dir = os.path.dirname(__file__)
-            
-            # Set up video file paths
-            self.step1_video_path = os.path.join(video_dir, self.VIDEO_STEP1_FILENAME)
-            self.step2_video_path = os.path.join(video_dir, self.VIDEO_STEP2_FILENAME)
-            
-            # Check if video files exist
-            self.step1_video_available = os.path.exists(self.step1_video_path)
-            self.step2_video_available = os.path.exists(self.step2_video_path)
-            
-            # Create QMovie objects if files exist
-            if self.step1_video_available:
-                self.step1_movie = QMovie(self.step1_video_path)
-                # Set to loop indefinitely for continuous playback
-                self.step1_movie.setCacheMode(QMovie.CacheAll)
-                self.logger.info(f"Step 1 video loaded: {self.step1_video_path}")
-            else:
-                self.logger.warning(f"Step 1 video not found: {self.step1_video_path}")
-                
-            if self.step2_video_available:
-                self.step2_movie = QMovie(self.step2_video_path)
-                # Set to loop indefinitely for continuous playback
-                self.step2_movie.setCacheMode(QMovie.CacheAll)
-                self.logger.info(f"Step 2 video loaded: {self.step2_video_path}")
-            else:
-                self.logger.warning(f"Step 2 video not found: {self.step2_video_path}")
-                
-            self.logger.info(f"Video resources initialized - Step 1: {self.step1_video_available}, Step 2: {self.step2_video_available}")
-            
-        except Exception as e:
-            self.logger.error(f"Error initializing video resources: {e}")
-            self.step1_video_available = False
-            self.step2_video_available = False
+        """Initialize video storage for lazy loading."""
+        self._video_movies.clear()
+        self.logger.info(f"Initialized video system with {len(self._video_specs)} video specifications")
 
     # ==================== VIDEO PLAYBACK MANAGEMENT ====================
 
-    def _play_step_video(self, step_number):
+    def _ensure_video_loaded(self, step_number):
         """
-        Play instructional video for the specified step.
+        Ensure video is loaded on-demand for the specified step (unified system).
+        
+        Uses the same configuration-driven approach as NozzleChangeWizard for consistency.
         
         Args:
-            step_number (int): Step number (1 or 2) to play video for
+            step_number (int): Step number to ensure video is loaded for
+            
+        Returns:
+            QMovie: Loaded QMovie object if successful, None otherwise
         """
+        if step_number in self._video_movies:
+            return self._video_movies[step_number]  # Already loaded
+            
         try:
-            if step_number == 1 and self.step1_video_available and self.step1_movie and hasattr(self, 'step1Gif') and self.step1Gif:
-                self._play_movie_in_label(self.step1_movie, self.step1Gif)
-                self.logger.info("Playing step 1 instructional video")
-            elif step_number == 2 and self.step2_video_available and self.step2_movie and hasattr(self, 'step2Gif') and self.step2Gif:
-                self._play_movie_in_label(self.step2_movie, self.step2Gif)
-                self.logger.info("Playing step 2 instructional video")
-            else:
-                self.logger.warning(f"Video not available for step {step_number}")
-                self._show_video_placeholder(step_number)
+            # Find the video spec for this step (unified approach)
+            for spec_step_number, label_name, filename in self._video_specs:
+                if spec_step_number == step_number:
+                    video_dir = os.path.dirname(__file__)
+                    video_path = os.path.join(video_dir, filename)
+                    
+                    if not os.path.exists(video_path):
+                        self.logger.warning(f"Video file not found for step {step_number}: {video_path}")
+                        return None
+                    
+                    # Create QMovie with unified configuration
+                    movie = QMovie(video_path)
+                    if not movie.isValid():
+                        self.logger.warning(f"Video not valid for step {step_number}: {video_path}")
+                        return None
+                    
+                    # Use CacheNone to avoid loading entire video into memory
+                    movie.setCacheMode(QMovie.CacheNone)
+                    
+                    # Store in unified dictionary
+                    self._video_movies[step_number] = movie
+                    self.logger.info(f"Video loaded on-demand for step {step_number}: {filename}")
+                    return movie
+                    
         except Exception as e:
-            self.logger.error(f"Error playing step {step_number} video: {e}")
-            self._show_video_placeholder(step_number)
+            self.logger.error(f"Error loading video for step {step_number}: {e}")
+            
+        return None
 
-    def _play_movie_in_label(self, movie, label_widget):
+    def _find_video_label(self, step_number):
+        """Find the label widget for a given step number."""
+        for spec_step_number, label_name, _ in self._video_specs:
+            if spec_step_number == step_number:
+                return getattr(self, label_name, None)
+        return None
+
+    def _play_step_video(self, step_number):
+        """Play instructional video for the specified step."""
+        movie = self._ensure_video_loaded(step_number)
+        if movie:
+            label_widget = self._find_video_label(step_number)
+            if label_widget:
+                self._play_movie_in_label(movie, label_widget)
+
+    # Removed redundant _play_page_video alias - use _play_step_video directly    def _play_movie_in_label(self, movie, label_widget):
         """
         Play QMovie in the specified label widget.
         
@@ -753,73 +759,32 @@ class CameraToolOffsetCalibration(QWidget):
             
         except Exception as e:
             self.logger.error(f"Error playing movie in label: {e}")
-            self._show_video_placeholder_in_label(label_widget, "Video Error")
 
     def _stop_current_video(self):
-        """
-        Stop any currently playing video and clean up display references.
-        
-        Note: This only stops playback and clears display references, 
-        but keeps QMovie objects intact for reuse.
-        """
-        try:
-            if self.current_movie:
-                self.current_movie.stop()
-                # Reset to beginning for next play
-                self.current_movie.jumpToFrame(0)
-                # Don't set current_movie to None - keep reference for tracking
-                
-            if self.current_video_widget:
-                # Clear the movie from the label but don't destroy the widget reference
-                self.current_video_widget.setMovie(None)
-                self.current_video_widget.clear()
-                # Don't set current_video_widget to None - keep for tracking
-                
-            if self.video_timer:
-                self.video_timer.stop()
-                self.video_timer = None
-                
-            # Only clear the current references, don't destroy the objects
-            self.current_movie = None
-            self.current_video_widget = None
-                
-        except Exception as e:
-            self.logger.error(f"Error stopping current video: {e}")
+        """Stop currently playing video and clear references."""
+        if self.current_movie:
+            self.current_movie.stop()
+            self.current_movie.jumpToFrame(0)
+        if self.current_video_widget:
+            self.current_video_widget.setMovie(None)
+            self.current_video_widget.clear()
+        if self.video_timer:
+            self.video_timer.stop()
+            self.video_timer = None
+        self.current_movie = None
+        self.current_video_widget = None
 
-    def _show_video_placeholder(self, step_number):
-        """
-        Show placeholder when video is not available.
-        
-        Args:
-            step_number (int): Step number for placeholder text
-        """
-        if step_number == 1 and self.step1Gif:
-            self._show_video_placeholder_in_label(self.step1Gif, f"Step {step_number} Instructions\n(Video not available)")
-        elif step_number == 2 and self.step2Gif:
-            self._show_video_placeholder_in_label(self.step2Gif, f"Step {step_number} Instructions\n(Video not available)")
 
-    def _show_video_placeholder_in_label(self, label_widget, text):
-        """
-        Show placeholder text in video label.
-        
-        Args:
-            label_widget (QLabel): Label widget to show placeholder in
-            text (str): Placeholder text to display
-        """
-        try:
-            label_widget.setText(text)
-            label_widget.setStyleSheet("""
-                QLabel {
-                    background-color: rgb(60, 60, 60);
-                    border: 2px solid rgb(100, 100, 100);
-                    border-radius: 5px;
-                    color: white;
-                    font-size: 12px;
-                    text-align: center;
-                }
-            """)
-        except Exception as e:
-            self.logger.error(f"Error showing video placeholder: {e}")
+
+
+
+    def _release_video_resources(self):
+        """Release all video resources from memory."""
+        for movie in self._video_movies.values():
+            movie.stop()
+        self._video_movies.clear()
+
+
 
     # ==================== WIZARD LIFECYCLE AND NAVIGATION ====================
         self.logger.info("CameraToolOffsetCalibration initialized successfully")
@@ -897,6 +862,10 @@ class CameraToolOffsetCalibration(QWidget):
         elif index in [self.STEP_POSITION_T0_COURSE, self.STEP_POSITION_T0_FINE, 
                        self.STEP_POSITION_T1_COURSE, self.STEP_POSITION_T1_FINE]:
             # Steps 3-6: Positioning steps
+            # Release video resources since they're no longer needed after step 2
+            if index == self.STEP_POSITION_T0_COURSE:  # Only do this on first positioning step
+                self._release_video_resources()
+                self.logger.debug("Released video resources - no longer needed after step 2")
             self._setup_positioning_step(index)
             
         elif index == self.STEP_RESULTS:
@@ -1855,13 +1824,8 @@ Please restart the calibration process."""
             # Core resource cleanup only - no goto_step call
             self._cleanup_core_resources()
             
-            # Stop video playback but don't destroy QMovie objects (so they can be reused)
-            if hasattr(self, 'step1_movie') and self.step1_movie:
-                self.step1_movie.stop()
-                # Don't set to None - keep QMovie objects for reuse
-            if hasattr(self, 'step2_movie') and self.step2_movie:
-                self.step2_movie.stop() 
-                # Don't set to None - keep QMovie objects for reuse
+            # Release video resources from memory when exiting
+            self._release_video_resources()
             
             # Reset state variables only - no wizard restart
             self._reset_state_variables()

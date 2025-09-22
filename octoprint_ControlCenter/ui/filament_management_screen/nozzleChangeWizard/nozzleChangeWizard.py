@@ -172,17 +172,22 @@ class NozzleChangeWizard(QWidget):
 		# Start at step 1
 		self.goto_step(self.STEP_INTRO)
 
-		# Preload GIFs from resources and hook page-change playback
+		# Preload videos from resources and hook page-change playback (unified terminology)
 		self._resource_dir = os.path.join(os.path.dirname(__file__), "resources")
-		# (page_index, target_label, file_name)
-		self._gif_specs = [
+		# (page_index, target_label, file_name) - standardized to match CameraToolOffsetCalibration
+		self._video_specs = [
 			(1, self.step2Gif, "1_Cover Removal .gif"),
 			(2, self.step3Gif, "2_Nozzle Removal.gif"),
 			(3, self.step4Gif, "3_Nozzle Install.gif"),
 			(5, self.step6Gif, "4_Cover Install.gif"),
 		]
-		self._gif_movies = {}  # page_index -> QMovie
-		self._load_step_gifs_safe()
+		self._video_movies = {}  # page_index -> QMovie (unified naming)
+		
+		# Video playback state tracking (unified with CameraToolOffsetCalibration)
+		self.current_video_widget = None
+		self.current_movie = None  # Currently playing QMovie object
+		
+		self._load_step_videos_safe()
 		if self.stackedWidget:
 			self.stackedWidget.currentChanged.connect(self._on_page_changed)
 			# Initialize playback for current page
@@ -335,11 +340,12 @@ class NozzleChangeWizard(QWidget):
 			# If we previously disconnected in step 2 and haven't reconnected, reconnect now
 			if self._octoprint_was_disconnected and not self._octoprint_reconnected:
 				self._connect_printer_soft()
+			# Clean up video resources (unified cleanup)
+			self._release_video_resources()
 			# Return to the filament management screen if available
 			self.main_window.filament_management_screen.show_material_nozzle_screen()
 			# Reset to step 1 for the next open
 			self.goto_step(0)
-			self._stop_all_gifs()
 		except Exception as e:
 			self.logger.error(f"Error cancelling nozzle change wizard: {e}")
 			dialog.WarningOk(self, f"Error cancelling Nozzle Change Wizard: {e}", overlay=True)
@@ -354,7 +360,7 @@ class NozzleChangeWizard(QWidget):
 			self.main_window.filament_management_screen.show_material_nozzle_screen()
 			# Reset to step 1 ready for next open
 			self.goto_step(0)
-			self._stop_all_gifs()
+			self._stop_all_videos()
 		except Exception as e:
 			self.logger.error(f"Error finishing nozzle change wizard: {e}")
 
@@ -414,50 +420,142 @@ class NozzleChangeWizard(QWidget):
 
 	# (preflight and motion handled via changeNozzle() called from setup)
 
-	# ----- Media helpers --------------------------------------------------
-	def _load_step_gifs_safe(self):
-		"""Create QMovies for each step GIF and attach to their labels."""
-		try:
-			self._gif_movies.clear()
-			for page_idx, label, fname in self._gif_specs:
-				if not label or not fname:
-					continue
-				path = os.path.join(self._resource_dir, fname)
-				movie = QtGui.QMovie(path)
-				if not movie.isValid():
-					self.logger.debug(f"GIF not valid or missing: {path}")
-					continue
-				movie.setCacheMode(QtGui.QMovie.CacheAll)
-				label.setMovie(movie)
-				self._gif_movies[page_idx] = movie
-		except Exception as e:
-			self.logger.debug(f"GIFs not loaded: {e}")
+	# ----- Video helpers --------------------------------------------------
+	def _load_step_videos_safe(self):
+		"""Initialize video storage for lazy loading."""
+		self._video_movies.clear()
+		self.logger.debug(f"Initialized video system with {len(self._video_specs)} video specifications")
 
-	def _stop_all_gifs(self):
-		"""Stop all loaded GIF movies."""
-		for movie in list(self._gif_movies.values()):
+	def _find_video_label(self, step_number):
+		"""Find the label widget for a given step number."""
+		for spec_step_number, label, _ in self._video_specs:
+			if spec_step_number == step_number:
+				return label
+		return None
+
+	def _ensure_video_loaded(self, step_number):
+		"""
+		Load video on-demand for the specified step.
+		
+		Args:
+			step_number (int): Step number to ensure video is loaded for
+			
+		Returns:
+			QMovie: Loaded QMovie object if successful, None otherwise
+		"""
+		if step_number in self._video_movies:
+			return self._video_movies[step_number]
+			
+		try:
+			for spec_step_number, label, fname in self._video_specs:
+				if spec_step_number == step_number and label and fname:
+					video_path = os.path.join(self._resource_dir, fname)
+					
+					if not os.path.exists(video_path):
+						self.logger.warning(f"Video file not found for step {step_number}: {video_path}")
+						return None
+					
+					movie = QtGui.QMovie(video_path)
+					if not movie.isValid():
+						self.logger.warning(f"Video not valid for step {step_number}: {video_path}")
+						return None
+					
+					movie.setCacheMode(QtGui.QMovie.CacheNone)
+					self._video_movies[step_number] = movie
+					self.logger.info(f"Video loaded on-demand for step {step_number}: {fname}")
+					return movie
+		except Exception as e:
+			self.logger.error(f"Error loading video for step {step_number}: {e}")
+		return None
+
+	def _stop_all_videos(self):
+		"""Stop all loaded video movies (unified system)."""
+		for movie in list(self._video_movies.values()):
 			try:
 				movie.stop()
 			except Exception:
 				pass
 
-	def _play_gif_for_page(self, page_idx: int, restart: bool = True):
-		"""Start the GIF for a given page index; optionally restart from frame 0."""
-		movie = self._gif_movies.get(page_idx)
-		if not movie:
-			return
+	def _stop_current_video(self):
+		"""Stop currently playing video and clear references."""
+		if self.current_movie and self.current_movie.state() != QtGui.QMovie.NotRunning:
+			self.current_movie.stop()
+		if self.current_video_widget:
+			self.current_video_widget.setMovie(None)
+			self.current_video_widget.clear()
+		self.current_movie = None
+		self.current_video_widget = None
+
+	def _release_video_resources(self):
+		"""Release all video resources from memory."""
+		self._stop_current_video()
+		self._stop_all_videos()
+		self._video_movies.clear()
+
+
+
+	def _play_step_video(self, step_number):
+		"""
+		Play instructional video for the specified step.
+		
+		Args:
+			step_number (int): Step number to play video for
+		"""
 		try:
-			if restart:
+			movie = self._ensure_video_loaded(step_number)
+			if not movie:
+				self.logger.warning(f"Could not load video for step {step_number}")
+				return
+			
+			label_widget = self._find_video_label(step_number)
+			if label_widget and movie:
+				self._play_movie_in_label(movie, label_widget)
+				self.logger.info(f"Playing step {step_number} instructional video")
+			else:
+				self.logger.warning(f"Video components not ready for step {step_number}")
+				
+		except Exception as e:
+			self.logger.error(f"Error playing step {step_number} video: {e}")
+
+	# Removed redundant _play_page_video alias - use _play_step_video directly
+
+	def _play_movie_in_label(self, movie, label_widget):
+		"""
+		Play QMovie in the specified label widget (unified with CameraToolOffsetCalibration).
+		
+		Args:
+			movie (QMovie): QMovie object to play
+			label_widget (QLabel): Label widget to display video in
+		"""
+		try:
+			# Stop any existing video using unified current video tracking
+			self._stop_current_video()
+			
+			# Ensure movie is in stopped state before starting (fixes replay issues)
+			if movie.state() != QtGui.QMovie.NotRunning:
 				movie.stop()
+			
+			# Jump to start of animation for proper replay
+			movie.jumpToFrame(0)
+			
+			# Set up the movie in the label with unified tracking
+			label_widget.setMovie(movie)
+			self.current_movie = movie
+			self.current_video_widget = label_widget
+			
+			# Start playing the movie
 			movie.start()
-		except Exception:
-			pass
+			
+			self.logger.info(f"Started playing video in {label_widget.objectName()}")
+			
+		except Exception as e:
+			self.logger.debug(f"Error playing movie in label: {e}")
 
 	def _on_page_changed(self, idx: int):
-		"""Keep only the current page's GIF playing for clarity and performance."""
+		"""Play video for the current page."""
 		try:
-			self._stop_all_gifs()
-			self._play_gif_for_page(idx, restart=True)
+			self._stop_all_videos()
+			self._play_step_video(idx)
 		except Exception:
 			pass
 

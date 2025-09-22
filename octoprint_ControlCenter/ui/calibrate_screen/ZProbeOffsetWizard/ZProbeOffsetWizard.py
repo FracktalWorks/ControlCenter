@@ -1027,6 +1027,7 @@ class ZProbeOffsetWizard(QWidget):
             
             if os.path.exists(gif_path):
                 self.current_movie = QMovie(gif_path)
+                self.current_movie.setCacheMode(QMovie.CacheNone)  # Avoid loading entire GIF into memory
                 self.step1Gif.setMovie(self.current_movie)
                 self.current_movie.start()
                 self.logger.info("Started playing calibration video")

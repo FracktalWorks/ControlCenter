@@ -114,6 +114,7 @@ class IdexLevelCalibration(QWidget):
             self.movie1 = QtGui.QMovie(
                 os.path.join(os.path.dirname(__file__), "resources", "Nozzlelevel1.gif")
             )
+            self.movie1.setCacheMode(QtGui.QMovie.CacheNone)  # Avoid loading entire GIF into memory
             self.NozzleLevel1.setMovie(self.movie1)
             self.movie1.start()
         except Exception as e:
@@ -142,6 +143,7 @@ class IdexLevelCalibration(QWidget):
             self.movie2 = QtGui.QMovie(
                 os.path.join(os.path.dirname(__file__), "resources", "CalibrationPoint1.gif")
             )
+            self.movie2.setCacheMode(QtGui.QMovie.CacheNone)  # Avoid loading entire GIF into memory
             self.CalibrationPoint1.setMovie(self.movie2)
             self.movie2.start()
         except Exception as e:
@@ -171,6 +173,7 @@ class IdexLevelCalibration(QWidget):
             self.movie3 = QtGui.QMovie(
                 os.path.join(os.path.dirname(__file__), "resources", "CalibrationPoint2.gif")
             )
+            self.movie3.setCacheMode(QtGui.QMovie.CacheNone)  # Avoid loading entire GIF into memory
             self.CalibrationPoint2.setMovie(self.movie3)
             self.movie3.start()
         except Exception as e:
@@ -203,6 +206,7 @@ class IdexLevelCalibration(QWidget):
                 self.logger.error(f"IDEX Calibration GIF missing: {gif_path}")
             else:
                 self.movie4 = QtGui.QMovie(gif_path)
+                self.movie4.setCacheMode(QtGui.QMovie.CacheNone)  # Avoid loading entire GIF into memory
                 self.CalibrationPoint3.setMovie(self.movie4)
                 self.movie4.start()
         except Exception as e:
@@ -229,6 +233,7 @@ class IdexLevelCalibration(QWidget):
                 self.logger.error(f"IDEX Calibration GIF missing: {gif_path}")
             else:
                 self.movie5 = QtGui.QMovie(gif_path)
+                self.movie5.setCacheMode(QtGui.QMovie.CacheNone)  # Avoid loading entire GIF into memory
                 self.NozzleLevel2.setMovie(self.movie5)
                 self.movie5.start()
         except Exception as e:
