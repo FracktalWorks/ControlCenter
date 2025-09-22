@@ -10,6 +10,7 @@ import re
 import json
 import subprocess
 import sys
+import time
 from typing import List, Dict, Optional, Any
 
 try:
@@ -750,9 +751,54 @@ class PrinterConfigManager:
             config_path = self.printer_cfg_path
             
         try:
-            return os.path.exists(config_path) and os.path.getsize(config_path) > 0
+            # Basic checks: file exists and has content
+            if not os.path.exists(config_path) or os.path.getsize(config_path) == 0:
+                return False
+            
+            # Additional validation for Klipper config files
+            return self._validate_klipper_config_structure(config_path)
+            
         except Exception as e:
             logger.error(f"Error checking config validity: {e}")
+            return False
+    
+    def _validate_klipper_config_structure(self, config_path: str) -> bool:
+        """Validate basic Klipper configuration file structure.
+        
+        Args:
+            config_path: Path to the configuration file to validate
+            
+        Returns:
+            True if the config has basic valid structure, False otherwise
+        """
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Check for basic Klipper config structure
+            # At minimum, a valid config should have some section headers [xxx]
+            has_sections = '[' in content and ']' in content
+            
+            # Check it's not just whitespace or comments
+            non_comment_lines = [line.strip() for line in content.split('\n') 
+                               if line.strip() and not line.strip().startswith('#')]
+            has_content = len(non_comment_lines) > 0
+            
+            # Check for common Klipper corruption indicators
+            has_null_bytes = '\x00' in content
+            has_binary_data = any(ord(char) > 127 for char in content[:1000])  # Check first 1KB
+            
+            is_valid = has_sections and has_content and not has_null_bytes and not has_binary_data
+            
+            if not is_valid:
+                logger.debug(f"Config validation failed for {config_path}: "
+                           f"has_sections={has_sections}, has_content={has_content}, "
+                           f"has_null_bytes={has_null_bytes}, has_binary_data={has_binary_data}")
+            
+            return is_valid
+            
+        except Exception as e:
+            logger.warning(f"Error validating config structure for {config_path}: {e}")
             return False
     
     def get_backup_files(self, pattern: str = None) -> List[str]:
@@ -766,8 +812,45 @@ class PrinterConfigManager:
             logger.error(f"Error getting backup files: {e}")
             return []
     
+    def get_valid_backup_files(self, pattern: str = None) -> List[str]:
+        """Get list of valid backup configuration files.
+        
+        This method checks each backup file for validity and returns only
+        the valid ones, sorted by date (newest first).
+        
+        Args:
+            pattern: Glob pattern for backup files. If None, uses default backup pattern.
+            
+        Returns:
+            List of paths to valid backup files, sorted newest first
+        """
+        if pattern is None:
+            pattern = self.backup_pattern
+            
+        try:
+            all_backups = self.get_backup_files(pattern)
+            valid_backups = []
+            
+            for backup_file in all_backups:
+                if self.is_config_valid(backup_file):
+                    valid_backups.append(backup_file)
+                else:
+                    logger.debug(f"Invalid backup file skipped: {backup_file}")
+            
+            logger.info(f"Found {len(valid_backups)} valid backup files out of {len(all_backups)} total")
+            return valid_backups
+            
+        except Exception as e:
+            logger.error(f"Error getting valid backup files: {e}")
+            return []
+    
     def restore_backup_config(self, config_path: str = None, backup_pattern: str = None) -> bool:
-        """Restore configuration from the most recent backup."""
+        """Restore configuration from the most recent valid backup.
+        
+        This method iterates through backup files (sorted by date, newest first)
+        and restores from the first valid backup found. This ensures that if
+        recent backups are corrupted, older valid backups can still be used.
+        """
         if config_path is None:
             config_path = self.printer_cfg_path
         if backup_pattern is None:
@@ -778,14 +861,47 @@ class PrinterConfigManager:
             if not backups:
                 logger.warning("No backup files found")
                 return False
+            
+            logger.info(f"Found {len(backups)} backup files, checking for validity...")
+            
+            # Iterate through backups to find the latest valid one
+            for i, backup_file in enumerate(backups):
+                logger.debug(f"Checking backup {i+1}/{len(backups)}: {backup_file}")
                 
-            latest_backup = backups[0]
-            shutil.copy2(latest_backup, config_path)
-            logger.info(f"Restored config from backup: {latest_backup}")
-            return True
+                # Validate the backup file
+                if self.is_config_valid(backup_file):
+                    logger.info(f"Found valid backup: {backup_file}")
+                    try:
+                        # Create a backup of current config before restoring (if it exists)
+                        if os.path.exists(config_path):
+                            backup_current = f"{config_path}.pre-restore-{int(time.time())}"
+                            shutil.copy2(config_path, backup_current)
+                            logger.debug(f"Backed up current config to: {backup_current}")
+                        
+                        # Restore from the valid backup
+                        shutil.copy2(backup_file, config_path)
+                        logger.info(f"Successfully restored config from backup: {backup_file}")
+                        
+                        # Verify the restoration was successful
+                        if self.is_config_valid(config_path):
+                            logger.info("Backup restoration completed and verified")
+                            return True
+                        else:
+                            logger.error("Restored config is invalid, restoration failed")
+                            return False
+                            
+                    except Exception as e:
+                        logger.error(f"Error restoring from backup {backup_file}: {e}")
+                        continue
+                else:
+                    logger.warning(f"Backup file is invalid: {backup_file}")
+                    
+            # If we get here, no valid backup was found
+            logger.error("No valid backup files found for restoration")
+            return False
             
         except Exception as e:
-            logger.error(f"Error restoring backup: {e}")
+            logger.error(f"Error in backup restoration process: {e}")
             return False
     
     def cleanup_old_backups(self, keep: int = 5, backup_pattern: str = None) -> None:
@@ -1014,3 +1130,11 @@ def get_current_config_version() -> Optional[str]:
 def get_firmware_config_version() -> Optional[str]:
     """Get version of firmware template printer.cfg."""
     return get_printer_config_manager().get_firmware_config_version()
+
+def get_valid_backup_files(pattern: str = None) -> List[str]:
+    """Get list of valid backup configuration files."""
+    return get_printer_config_manager().get_valid_backup_files(pattern)
+
+def restore_backup_config(config_path: str = None, backup_pattern: str = None) -> bool:
+    """Restore configuration from the most recent valid backup."""
+    return get_printer_config_manager().restore_backup_config(config_path, backup_pattern)
