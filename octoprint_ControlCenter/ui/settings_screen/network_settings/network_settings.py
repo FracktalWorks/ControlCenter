@@ -1,5 +1,5 @@
 import os
-import os
+import subprocess
 from PyQt5 import QtGui, QtCore
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -62,6 +62,7 @@ class NetworkSettings(QWidget):
         self.staticIPSettingsDoneButton = self.findChild(QPushButton, "staticIPSettingsDoneButton")
         self.wifiSettingsDoneButton = self.findChild(QPushButton, "wifiSettingsDoneButton")
         self.deleteStaticIPSettingsButton = self.findChild(QPushButton, "deleteStaticIPSettingsButton")
+        self.clearNetworkSettingsButton = self.findChild(QPushButton, "clearNetworkSettingsButton")
 
         # Keyboard buttons
         self.staticIPKeyboardButton = self.findChild(QPushButton, "staticIPKeyboardButton")
@@ -99,11 +100,12 @@ class NetworkSettings(QWidget):
             self.networkInfoButton, self.configureStaticIPButton,
             self.configureWifiButton, self.staticIPSettingsDoneButton,
             self.wifiSettingsDoneButton, self.deleteStaticIPSettingsButton,
-            self.staticIPKeyboardButton, self.staticIPGatewayKeyboardButton,
-            self.staticIPNameServerKeyboardButton, self.wifiSettingsSSIDKeyboardButton,
-            self.stackedWidget, self.networkSettingsPage, self.networkInfoPage,
-            self.staticIPSettingsPage, self.wifiSettingsPage, self.QRCodeLabel,
-            self.hostname, self.wifiAp, self.wifiIp, self.lanIp, self.wifiMac, self.lanMac,
+            self.clearNetworkSettingsButton, self.staticIPKeyboardButton,
+            self.staticIPGatewayKeyboardButton, self.staticIPNameServerKeyboardButton, 
+            self.wifiSettingsSSIDKeyboardButton, self.stackedWidget, 
+            self.networkSettingsPage, self.networkInfoPage, self.staticIPSettingsPage, 
+            self.wifiSettingsPage, self.QRCodeLabel, self.hostname, self.wifiAp, 
+            self.wifiIp, self.lanIp, self.wifiMac, self.lanMac,
             self.wifiSettingsComboBox, self.staticIPComboBox
         ]
 
@@ -158,6 +160,7 @@ class NetworkSettings(QWidget):
         self.configureWifiButton.clicked.connect(self.wifiSettings)
         self.staticIPSettingsDoneButton.clicked.connect(self.staticIPSaveStaticNetworkInfo)
         self.wifiSettingsDoneButton.clicked.connect(self.acceptWifiSettings)
+        self.clearNetworkSettingsButton.clicked.connect(self.clearNetworkSettings)
         self.hiddenCheckBox.stateChanged.connect(self.togglePasswordVisibility)
 
         # Set the default page in stacked widget
@@ -464,6 +467,96 @@ class NetworkSettings(QWidget):
         self.logger.info("Cancel Network Settings button clicked")
         self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
         self.logger.info("Returned to network settings page after cancel")
+
+    def clearNetworkSettings(self):
+        """Clear all network settings and restore to default configuration."""
+        self.logger.info("Clear network settings button clicked")
+        
+        # Show confirmation dialog
+        result = dialog.WarningYesNo(
+            self,
+            "Are you sure you want to restore all network settings to default?\n\n"
+            "This will:\n"
+            "• Reset WiFi configuration to factory defaults\n"
+            "• Remove all static IP settings\n"
+            "• Restore DHCP configuration\n"
+            "• Require network reconfiguration after restart\n\n"
+            "The system may need to be restarted for changes to take effect.",
+            fontSize=12,
+            overlay=True
+        )
+        
+        if result:  # User clicked Yes
+            try:
+                self.logger.info("User confirmed network settings reset")
+                
+                # Determine config directory path relative to this file
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                # Navigate up to octoprint_ControlCenter directory, then to config
+                config_dir = os.path.join(current_dir, "..", "..", "..", "config")
+                config_dir = os.path.abspath(config_dir)
+                
+                self.logger.info(f"Using config directory: {config_dir}")
+                
+                # Restore dhcpcd.conf
+                dhcpcd_source = os.path.join(config_dir, "dhcpcd.conf")
+                dhcpcd_cmd = ["sudo", "cp", "-f", dhcpcd_source, "/etc/dhcpcd.conf"]
+                self.logger.info(f"Executing: {' '.join(dhcpcd_cmd)}")
+                dhcpcd_result = subprocess.run(dhcpcd_cmd, capture_output=True, text=True)
+                
+                # Restore wpa_supplicant.conf
+                wpa_source = os.path.join(config_dir, "wpa_supplicant.conf")  
+                wpa_cmd = ["sudo", "cp", "-f", wpa_source, "/etc/wpa_supplicant/wpa_supplicant.conf"]
+                self.logger.info(f"Executing: {' '.join(wpa_cmd)}")
+                wpa_result = subprocess.run(wpa_cmd, capture_output=True, text=True)
+                
+                if dhcpcd_result.returncode == 0 and wpa_result.returncode == 0:
+                    # Success dialog
+                    dialog.SuccessOk(
+                        self,
+                        "Network settings have been successfully restored to default.\n\n"
+                        "Please restart the system for changes to take effect.\n"
+                        "After restart, you can reconfigure your network settings.",
+                        fontSize=12,
+                        overlay=True
+                    )
+                    self.logger.info("Network settings successfully restored to default")
+                    
+                    # Return to main network settings page
+                    self.stackedWidget.setCurrentWidget(self.networkSettingsPage)
+                    
+                else:
+                    # Error dialog with better error information
+                    error_msg = "Failed to restore network settings.\n\n"
+                    if dhcpcd_result.returncode != 0:
+                        error_msg += f"dhcpcd error: {dhcpcd_result.stderr}\n"
+                    if wpa_result.returncode != 0:
+                        error_msg += f"wpa_supplicant error: {wpa_result.stderr}\n"
+                    error_msg += "\nPlease check system permissions and try again."
+                    
+                    dialog.ErrorOk(
+                        self,
+                        error_msg,
+                        fontSize=12,
+                        overlay=True
+                    )
+                    self.logger.error(f"Failed to restore network settings. dhcpcd return code: {dhcpcd_result.returncode}, wpa return code: {wpa_result.returncode}")
+                    if dhcpcd_result.stderr:
+                        self.logger.error(f"dhcpcd stderr: {dhcpcd_result.stderr}")
+                    if wpa_result.stderr:
+                        self.logger.error(f"wpa stderr: {wpa_result.stderr}")
+                    
+            except Exception as e:
+                self.logger.error(f"Exception during network settings reset: {e}")
+                dialog.ErrorOk(
+                    self,
+                    f"An error occurred while restoring network settings:\n\n{str(e)}\n\n"
+                    "Please check the system logs for more details.",
+                    fontSize=12,
+                    overlay=True
+                )
+        else:
+            self.logger.info("User cancelled network settings reset")
 
     def go_back_to_settings_screen(self):
         """Return to the main settings screen."""

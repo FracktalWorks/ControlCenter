@@ -35,7 +35,7 @@
        <x>0</x>
        <y>0</y>
        <width>801</width>
-       <height>100</height>
+       <height>81</height>
       </rect>
      </property>
      <property name="minimumSize">
@@ -89,9 +89,9 @@ QPushButton:focus {
      <property name="geometry">
       <rect>
        <x>0</x>
-       <y>200</y>
+       <y>160</y>
        <width>801</width>
-       <height>100</height>
+       <height>81</height>
       </rect>
      </property>
      <property name="minimumSize">
@@ -213,9 +213,9 @@ QPushButton:default {
      <property name="geometry">
       <rect>
        <x>0</x>
-       <y>100</y>
+       <y>80</y>
        <width>801</width>
-       <height>100</height>
+       <height>81</height>
       </rect>
      </property>
      <property name="minimumSize">
@@ -257,6 +257,62 @@ QPushButton:focus {
      </property>
      <property name="text">
       <string>Configure WiFi</string>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>40</width>
+       <height>40</height>
+      </size>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="clearNetworkSettingsButton">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>240</y>
+       <width>801</width>
+       <height>81</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>70</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>Gotham</family>
+       <pointsize>16</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QPushButton {
+     border: 1px solid rgb(87, 87, 87);
+	background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, stop:0 rgba(180, 180, 180, 255), stop:1 rgba(255, 255, 255, 255));
+
+
+}
+
+QPushButton:pressed {
+    background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                      stop: 0 #dadbde, stop: 1 #f6f7fa);
+}
+
+QPushButton:flat {
+    border: none; /* no border for a flat push button */
+}
+
+QPushButton:default {
+    border-color: navy; /* make the default button prominent */
+}
+
+QPushButton:focus {
+	outline: none;
+}</string>
+     </property>
+     <property name="text">
+      <string>Clear Network Settings</string>
      </property>
      <property name="iconSize">
       <size>

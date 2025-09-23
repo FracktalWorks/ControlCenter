@@ -594,7 +594,8 @@ class ControlScreen(QWidget):
             # Update model preference (persists)
             self.main_window.printer_model.set_filament_runout_pref(enabled, persist=True)
             # Apply immediate state depending on current print status
-            self.main_window.controller.apply_filament_sensor_state()
+            if self.printer_model.printer_status in ["Printing", "Paused"]:
+                self.main_window.controller.apply_filament_sensor_state()
         except Exception as e:
             logger.error(f"Error in ControlScreen.toggleFilamentRunout: {e}")
             dialog.WarningOk(self, f"Error in ControlScreen.toggleFilamentRunout: {e}", overlay=True)
@@ -605,7 +606,8 @@ class ControlScreen(QWidget):
         try:
             enabled = self.toggleFilamentJamButton.isChecked()
             self.main_window.printer_model.set_filament_jam_pref(enabled, persist=True)
-            self.main_window.controller.apply_filament_sensor_state()
+            if self.main_window.printer_model.printer_status in ["Printing", "Paused"]:
+                self.main_window.controller.apply_filament_sensor_state()
         except Exception as e:
             logger.error(f"Error in ControlScreen.toggleFilamentJam: {e}")
             dialog.WarningOk(self, f"Error in ControlScreen.toggleFilamentJam: {e}", overlay=True)
