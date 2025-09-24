@@ -650,12 +650,14 @@ class MainController:
     def onPrintStarted(self, event):
         try:
             self.logger.info("MainController.onPrintStarted invoked")
-            self.logger.debug(f"PrintStarted event data: {event}")
             
             # Check GCODE compatibility if enabled and we have file information
-            # According to OctoPrint docs, PrintStarted event contains: name, path, origin, size, owner, user
+            # According to OctoPrint docs, PrintStarted event structure is: {'type': 'PrintStarted', 'payload': {...}}
             if (self.printer_model.print_compatibility_check_enabled and event):
-                filename = event.get('name')  # Direct access to filename from event payload
+                # Extract filename from the correct event structure
+                filename = None
+                if isinstance(event, dict) and 'payload' in event:
+                    filename = event['payload'].get('name')
                 
                 if filename:
                     self.logger.info(f"Validating GCODE compatibility for file: {filename}")
