@@ -512,11 +512,31 @@ class MainController:
 
     def filamentRunoutSensorTriggered(self, tool):
         self.logger.info(f"Filament runout sensor triggered for tool: {tool}")
-        # Future: pause print / prompt user
+        try:
+            if not self.dialogShown:
+                self.dialogShown = True
+                dialog.WarningOk(
+                    self.main_window, 
+                    f"Filament runout detected on {tool.upper()}!\n\nPrint has been paused. Please load new filament and resume printing.",
+                    overlay=True
+                )
+                self.dialogShown = False
+        except Exception as e:
+            self.logger.error(f"Error showing filament runout dialog: {e}")
 
     def filamentJamSensorTriggered(self, tool):
         self.logger.info(f"Filament jam sensor triggered for tool: {tool}")
-        # Future: pause / recovery logic
+        try:
+            if not self.dialogShown:
+                self.dialogShown = True
+                dialog.WarningOk(
+                    self.main_window,
+                    f"Filament jam detected on {tool.upper()}!\n\nPrint has been paused. Please clear the jam and resume printing.",
+                    overlay=True
+                )
+                self.dialogShown = False
+        except Exception as e:
+            self.logger.error(f"Error showing filament jam dialog: {e}")
 
     def onFilamentRunoutState(self, sensor, state):
         self.logger.info(f"Filament runout state changed: {sensor} is {'present' if state else 'not present'}")
