@@ -687,6 +687,8 @@ class MainController:
         self.logger.info("MainController.onStartupCompleted started")
         if self.octoprint_client:
             try:
+                self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S=0')
+                self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S=0')
                 # Reload printer configuration from Klipper after connection is established
                 self.printer_model.reload_printer_configuration()
                 
@@ -702,8 +704,6 @@ class MainController:
                 except Exception as e:
                     self.logger.error(f"Unexpected error checking print failure: {e}")
                 try:
-                    self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S=0')
-                    self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S=0')
                     self.sync_print_restore_settings()
                 except Exception as e:
                     self.logger.warning(f"Failed applying initial filament sensor state: {e}")

@@ -361,12 +361,12 @@ class OctoPrintWebSocket(QThread):
                     for item in data["current"]["messages"]:
                         self.logger.debug(f"Processing message: {item}")
                         
-                        if 'Filament Runout' in item:  # "Filament Runout on T0/T1"
+                        if 'Filament Runout Detected ' in item:  # "Filament Runout on T0/T1"
                             tool = item[item.index('T') + 1:].split(' ', 1)[0]
                             self.logger.info(f"Filament runout triggered on tool {tool}")
                             self.filament_runout_sensor_triggered_signal.emit(tool)
 
-                        if 'Filament Jam' in item:  # "Filament Jam on T0/T1"
+                        if 'Filament Jam Detected ' in item:  # "Filament Jam on T0/T1"
                             tool = item[item.index('T') + 1:].split(' ', 1)[0]
                             self.logger.info(f"Filament jam triggered on tool {tool}")
                             self.filament_jam_sensor_triggered_signal.emit(tool)
