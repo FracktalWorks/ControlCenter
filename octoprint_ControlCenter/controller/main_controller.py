@@ -144,6 +144,7 @@ class MainController:
         self.logger = get_logger(__name__)
         self.logger.info("Initializing MainController")
         self.filamentTriggerDialogShown = False
+        self.startup_completed = False  # Track if startup initialization has been completed
         self.printer_model = PrinterModel()
         self.octoprint_client = None
         self.main_window = MainWindow(controller=self, printer_model=self.printer_model)
@@ -254,7 +255,9 @@ class MainController:
         # Probe accuracy results signal for MVP architecture
         self.octoprint_websocket.probe_accuracy_signal.connect(self.printer_model.handle_probe_accuracy_result)
         # Controller signal wiring
-        self.octoprint_websocket.connected_signal.connect(self.onWebSocketConnected)
+        self.octoprint_websocket.connected_signal.connect(self.onPrinterConnected)
+        # Connect to printer model status updates to detect first "Operational" status during startup
+        self.printer_model.status_updated.connect(self.onPrinterStatusUpdated)
         self.octoprint_websocket.filament_runout_sensor_triggered_signal.connect(self.filamentRunoutSensorTriggered)
         self.octoprint_websocket.filament_jam_sensor_triggered_signal.connect(self.filamentJamSensorTriggered)
         self.printer_model.filament_runout_state.connect(self.onFilamentRunoutState)
@@ -267,35 +270,6 @@ class MainController:
         self.octoprint_websocket.print_paused_signal.connect(self.onPrintPaused)
         self.octoprint_websocket.print_complete_signal.connect(self.onPrintCompleted)
 
-
-    def onWebSocketConnected(self):
-        """Respond to websocket connection with status sync & sensor setup."""
-        self.logger.info("MainController.onWebSocketConnected started")
-        if self.octoprint_client:
-            try:
-                # Reload printer configuration from Klipper after connection is established
-                self.printer_model.reload_printer_configuration()
-                
-                status_response = self.octoprint_client.gcode(command='status')
-                if status_response:
-                    self.logger.debug(f"Printer status response: {status_response}")
-                try:
-                    response = self.octoprint_client.isFailureDetected()
-                    if response.get("canRestore"):
-                        self.printRestoreMessageBox(response.get("file"))
-                except (KeyError, TypeError, AttributeError) as e:
-                    self.logger.warning(f"Failed to check for print failure: {e}")
-                except Exception as e:
-                    self.logger.error(f"Unexpected error checking print failure: {e}")
-                try:
-                    self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S=0')
-                    self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S=0')
-                    self.sync_print_restore_settings()
-                except Exception as e:
-                    self.logger.warning(f"Failed applying initial filament sensor state: {e}")
-            except Exception as e:
-                self.logger.error(f"Error in MainController.onWebSocketConnected: {e}")
-                dialog.WarningOk(self.main_window, f"Error in MainController.onWebSocketConnected: {e}", overlay=True)
 
     def checkKlipperPrinterCFG(self):
         """Validate printer.cfg; attempt restore or cleanup backups."""
@@ -686,6 +660,56 @@ class MainController:
             return True
             
         return False
+
+    def onPrinterConnected(self):
+        """Handle printer connection event (placeholder for future use).
+        
+        Note: This function is currently not used as it can miss the connection
+        event if the printer is already connected when the websocket starts.
+        The actual startup logic is handled in onStartupCompleted() which is triggered
+        when the printer status first changes to "Operational".
+        """
+        self.logger.info("MainController.onPrinterConnected - placeholder for future use")
+        pass
+
+    def onPrinterStatusUpdated(self, status):
+        """Handle printer status updates and trigger startup logic on first 'Operational' status."""
+        try:
+            if not self.startup_completed and status == "Operational":
+                self.logger.info("Printer status changed to 'Operational' for the first time - triggering startup")
+                self.startup_completed = True
+                self.onStartupCompleted()
+        except Exception as e:
+            self.logger.error(f"Error in onPrinterStatusUpdated: {e}")
+
+    def onStartupCompleted(self):
+        """Handle startup operations when printer first becomes operational."""
+        self.logger.info("MainController.onStartupCompleted started")
+        if self.octoprint_client:
+            try:
+                # Reload printer configuration from Klipper after connection is established
+                self.printer_model.reload_printer_configuration()
+                
+                status_response = self.octoprint_client.gcode(command='status')
+                if status_response:
+                    self.logger.debug(f"Printer status response: {status_response}")
+                try:
+                    response = self.octoprint_client.isFailureDetected()
+                    if response.get("canRestore"):
+                        self.printRestoreMessageBox(response.get("file"))
+                except (KeyError, TypeError, AttributeError) as e:
+                    self.logger.warning(f"Failed to check for print failure: {e}")
+                except Exception as e:
+                    self.logger.error(f"Unexpected error checking print failure: {e}")
+                try:
+                    self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S=0')
+                    self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S=0')
+                    self.sync_print_restore_settings()
+                except Exception as e:
+                    self.logger.warning(f"Failed applying initial filament sensor state: {e}")
+            except Exception as e:
+                self.logger.error(f"Error in MainController.onStartupCompleted: {e}")
+                dialog.WarningOk(self.main_window, f"Error in MainController.onStartupCompleted: {e}", overlay=True)
 
     def onPrintStarted(self, event):
         try:
