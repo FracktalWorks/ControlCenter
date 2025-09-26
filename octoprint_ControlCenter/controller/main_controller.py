@@ -143,7 +143,7 @@ class MainController:
         """Initialize controller state, model and main window."""
         self.logger = get_logger(__name__)
         self.logger.info("Initializing MainController")
-        self.dialogShown = False
+        self.filamentTriggerDialogShown = False
         self.printer_model = PrinterModel()
         self.octoprint_client = None
         self.main_window = MainWindow(controller=self, printer_model=self.printer_model)
@@ -513,28 +513,48 @@ class MainController:
     def filamentRunoutSensorTriggered(self, tool):
         self.logger.info(f"Filament runout sensor triggered for tool: {tool}")
         try:
-            if not self.dialogShown:
-                self.dialogShown = True
+            # Only respond if printer is actively printing and sensor preference is enabled
+            if self.printer_model.printer_status != "Printing":
+                self.logger.debug(f"Ignoring filament runout trigger - printer not printing (status: {self.printer_model.printer_status})")
+                return
+                
+            if not getattr(self.printer_model, 'filament_runout_sensor_persistent_state', False):
+                self.logger.debug("Ignoring filament runout trigger - sensor preference disabled")
+                return
+            
+            self.octoprint_client.pausePrint()
+            if not self.filamentTriggerDialogShown:
+                self.filamentTriggerDialogShown = True
                 dialog.WarningOk(
                     self.main_window, 
                     f"Filament runout detected on {tool.upper()}!\n\nPrint has been paused. Please load new filament and resume printing.",
                     overlay=True
                 )
-                self.dialogShown = False
+                self.filamentTriggerDialogShown = False
         except Exception as e:
             self.logger.error(f"Error showing filament runout dialog: {e}")
 
     def filamentJamSensorTriggered(self, tool):
         self.logger.info(f"Filament jam sensor triggered for tool: {tool}")
         try:
-            if not self.dialogShown:
-                self.dialogShown = True
+            # Only respond if printer is actively printing and sensor preference is enabled
+            if self.printer_model.printer_status != "Printing":
+                self.logger.debug(f"Ignoring filament jam trigger - printer not printing (status: {self.printer_model.printer_status})")
+                return
+                
+            if not getattr(self.printer_model, 'filament_jam_sensor_persistent_state', False):
+                self.logger.debug("Ignoring filament jam trigger - sensor preference disabled")
+                return
+            
+            self.octoprint_client.pausePrint()
+            if not self.filamentTriggerDialogShown:
+                self.filamentTriggerDialogShown = True
                 dialog.WarningOk(
                     self.main_window,
                     f"Filament jam detected on {tool.upper()}!\n\nPrint has been paused. Please clear the jam and resume printing.",
                     overlay=True
                 )
-                self.dialogShown = False
+                self.filamentTriggerDialogShown = False
         except Exception as e:
             self.logger.error(f"Error showing filament jam dialog: {e}")
 
@@ -810,23 +830,23 @@ class MainController:
                             self.octoprint_client.connectPrinter(port="VIRTUAL", baudrate=115200)
                         self.octoprint_client.gcode(command='FIRMWARE_RESTART')
                         self.octoprint_client.gcode(command='RESTART')
-                        if not self.dialogShown:
-                            self.dialogShown = True
+                        if not self.filamentTriggerDialogShown:
+                            self.filamentTriggerDialogShown = True
                             if dialog.WarningOk(self.main_window, cleaned_msg + ", Cancelling Print.", overlay=overlay):
-                                self.dialogShown = False
+                                self.filamentTriggerDialogShown = False
                         self.logger.error("CRITICAL ERROR SHUTDOWN DONE")
                     else:
-                        if not self.dialogShown:
-                            self.dialogShown = True
+                        if not self.filamentTriggerDialogShown:
+                            self.filamentTriggerDialogShown = True
                             self.octoprint_client.gcode(command='FIRMWARE_RESTART')
                             self.octoprint_client.gcode(command='RESTART')
                             if dialog.WarningOk(self.main_window, cleaned_msg, overlay=overlay):
-                                self.dialogShown = False
+                                self.filamentTriggerDialogShown = False
                 else:
-                    if not self.dialogShown:
-                        self.dialogShown = True
+                    if not self.filamentTriggerDialogShown:
+                        self.filamentTriggerDialogShown = True
                         if dialog.WarningOk(self.main_window, cleaned_msg, overlay=overlay):
-                            self.dialogShown = False
+                            self.filamentTriggerDialogShown = False
             except Exception as e:
                 self.logger.error(f"Error in MainController.showPrinterError: {e}")
                 dialog.WarningOk(self.main_window, f"Error in MainController.showPrinterError: {e}", overlay=True)

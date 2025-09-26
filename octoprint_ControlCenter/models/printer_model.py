@@ -26,9 +26,6 @@ class PrinterModel(QObject):
     z_probe_offset_updated = pyqtSignal(str)  # ! done
     tool_offset_data = pyqtSignal(str)  # done
     printer_error_signal = pyqtSignal(str)  # done
-    filament_sensor_triggered = pyqtSignal(str)  # done
-    filament_runout_sensor_triggered = pyqtSignal(str)
-    filament_jam_sensor_triggered = pyqtSignal(str)
     filament_runout_state = pyqtSignal(str, bool)
     z_probing_failed = pyqtSignal()  # done
     update_started_signal = pyqtSignal('PyQt_PyObject')
@@ -409,27 +406,6 @@ class PrinterModel(QObject):
         except Exception as e:
             self.logger.error("Error in PrinterModel.setToolOffset: {}".format(e))
             dialog.WarningOk(self, "Error in PrinterModel.setToolOffset: {}".format(e), overlay=True)
-
-    def filamentSensorHandler(self, data):
-        """
-        Handles legacy filament sensor trigger events.
-        :param data: Data from the filament sensor.
-        """
-        self.filament_sensor_triggered.emit(data)
-
-    def filamentRunoutSensorTriggered(self, tool):
-        """
-        Handles filament runout sensor triggered events.
-        :param tool: Tool identifier.
-        """
-        self.filament_runout_sensor_triggered.emit(tool)
-
-    def filamentJamSensorTriggered(self, tool):
-        """
-        Handles filament jam sensor triggered events.
-        :param tool: Tool identifier.
-        """
-        self.filament_jam_sensor_triggered.emit(tool)
 
     def filamentRunoutState(self, sensor, present):
         """
