@@ -570,7 +570,7 @@ class CameraToolOffsetCalibration(QWidget):
         
         # Video configuration (step_number, target_label_name, filename) - matches NozzleChangeWizard pattern
         self._video_specs = [
-            (1, "step1Gif", "1_Nozzle Cleaning .gif"),      # Clean nozzles instruction video
+            (1, "step1Gif", "1_Nozzle Cleaning.gif"),      # Clean nozzles instruction video
             (2, "step2Gif", "2_Camera Placement.gif"),      # Camera connection instruction video
         ]
 
@@ -728,7 +728,9 @@ class CameraToolOffsetCalibration(QWidget):
             if label_widget:
                 self._play_movie_in_label(movie, label_widget)
 
-    # Removed redundant _play_page_video alias - use _play_step_video directly    def _play_movie_in_label(self, movie, label_widget):
+    # Removed redundant _play_page_video alias - use _play_step_video directly
+
+    def _play_movie_in_label(self, movie, label_widget):
         """
         Play QMovie in the specified label widget.
         
@@ -737,6 +739,11 @@ class CameraToolOffsetCalibration(QWidget):
             label_widget (QLabel): Label widget to display video in
         """
         try:
+            # Validate inputs
+            if not movie or not label_widget:
+                self.logger.warning("Invalid movie or label widget provided")
+                return
+                
             # Stop any existing video
             self._stop_current_video()
             
@@ -755,7 +762,7 @@ class CameraToolOffsetCalibration(QWidget):
             # Start playing the movie
             movie.start()
             
-            self.logger.info(f"Started playing GIF in {label_widget.objectName()}")
+            self.logger.info(f"Started playing video in {label_widget.objectName()}")
             
         except Exception as e:
             self.logger.error(f"Error playing movie in label: {e}")
