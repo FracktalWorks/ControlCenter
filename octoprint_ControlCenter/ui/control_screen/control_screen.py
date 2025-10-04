@@ -594,7 +594,7 @@ class ControlScreen(QWidget):
             # Update model preference (persists)
             self.main_window.printer_model.set_filament_runout_pref(enabled, persist=True)
             # Apply immediate state depending on current print status
-            if self.printer_model.printer_status in ["Printing", "Paused"]:
+            if self.main_window.printer_model.printer_status in ["Printing", "Paused"]:
                 self.main_window.controller.apply_filament_sensor_state()
         except Exception as e:
             logger.error(f"Error in ControlScreen.toggleFilamentRunout: {e}")
