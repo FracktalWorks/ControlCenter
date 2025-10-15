@@ -3,6 +3,7 @@ import os
 import requests
 import json
 import base64
+from urllib.parse import quote
 from utils.logger import get_logger
 logger = get_logger(__name__)
 
@@ -59,7 +60,9 @@ class octoprintAPI:
         headers = {'X-Api-Key': self.apiKey}
         if location:
             location = self._prepend_local(location)
-            url = 'http://' + self.ip + '/api/files/{}'.format(location)
+            # Properly encode the URL to handle spaces and special characters
+            encoded_location = quote(location, safe='/')
+            url = 'http://' + self.ip + '/api/files/{}'.format(encoded_location)
         else:
             url = 'http://' + self.ip + '/api/files'
             
@@ -118,7 +121,9 @@ class octoprintAPI:
             with self._file_tuple(file) as file_tuple:
                 files = {'file': file_tuple}
                 payload = {'select': str(select).lower(), 'print': str(prnt).lower()}
-                url = 'http://' + self.ip + '/api/files/{}'.format(location)
+                # Properly encode the location to handle spaces and special characters
+                encoded_location = quote(location, safe='/')
+                url = 'http://' + self.ip + '/api/files/{}'.format(encoded_location)
                 headers = {'X-Api-Key': self.apiKey}
                 
                 response = requests.post(url, files=files, data=payload, headers=headers)
@@ -164,7 +169,9 @@ class octoprintAPI:
 
         with self._file_tuple_png(file) as file_tuple:
             files = {'file': file_tuple}
-            url = 'http://' + self.ip + '/api/files/{}'.format(location)
+            # Properly encode the location to handle spaces and special characters
+            encoded_location = quote(location, safe='/')
+            url = 'http://' + self.ip + '/api/files/{}'.format(encoded_location)
             headers = {'X-Api-Key': self.apiKey}
             response = requests.post(url, files=files, headers=headers)
             temp = response.json()
@@ -178,13 +185,23 @@ class octoprintAPI:
         """
         logger.info(f"Deleting file: {location}")
         location = self._prepend_local(location)
-        url = 'http://' + self.ip + '/api/files/{}'.format(location)
+        # Properly encode the URL to handle spaces and special characters
+        encoded_location = quote(location, safe='/')
+        url = 'http://' + self.ip + '/api/files/{}'.format(encoded_location)
         headers = {'content-type': 'application/json', 'X-Api-Key': self.apiKey}
         
         try:
             response = requests.delete(url, headers=headers)
             response.raise_for_status()
             logger.info(f"Successfully deleted file: {location}")
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                logger.warning(f"File {location} not found (404), may have been already deleted")
+                # Don't raise the exception for 404 errors since the end goal is achieved
+                return
+            else:
+                logger.error(f"Failed to delete file {location}: {str(e)}")
+                raise
         except Exception as e:
             logger.error(f"Failed to delete file {location}: {str(e)}")
             raise
@@ -198,12 +215,16 @@ class octoprintAPI:
         """
         location = self._prepend_local(location)
         payload = {'command': 'select', 'print': prnt}
-        url = 'http://' + self.ip + '/api/files/{}'.format(location)
+        # Properly encode the URL to handle spaces and special characters
+        encoded_location = quote(location, safe='/')
+        url = 'http://' + self.ip + '/api/files/{}'.format(encoded_location)
         headers = {'content-type': 'application/json', 'X-Api-Key': self.apiKey}
         requests.post(url, data=json.dumps(payload), headers=headers)
 
     def getImage(self, name):
-        url = 'http://' + self.ip + '/downloads/files/local/' + name
+        # Properly encode the filename to handle spaces and special characters
+        encoded_name = quote(name, safe='')
+        url = 'http://' + self.ip + '/downloads/files/local/' + encoded_name
         headers = {'X-Api-Key': self.apiKey}
         response = requests.get(url, headers=headers, stream=True)
         if response.status_code == 200:
@@ -225,7 +246,9 @@ class octoprintAPI:
         Returns dictionary with nozzle_t0, nozzle_t1, material_t0, material_t1 or False if extraction fails
         """
         logger.debug(f"Extracting GCODE metadata from: {name}")
-        url = 'http://' + self.ip + '/downloads/files/local/' + name
+        # Properly encode the filename to handle spaces and special characters
+        encoded_name = quote(name, safe='')
+        url = 'http://' + self.ip + '/downloads/files/local/' + encoded_name
         headers = {'X-Api-Key': self.apiKey}
         
         try:

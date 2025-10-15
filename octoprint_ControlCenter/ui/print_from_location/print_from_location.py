@@ -338,11 +338,33 @@ class PrintFromLocation(QWidget):
         """
         self.logger.info("PrintFromLocation.deleteItem started")
         try:
-            self.octoprint_client.deleteFile(self.fileListWidgetLocal.currentItem().text())
-            self.octoprint_client.deleteFile(
-                self.fileListWidgetLocal.currentItem().text().replace(".gcode", ".png"))
-            # delete PNG also
+            filename = self.fileListWidgetLocal.currentItem().text()
+            self.logger.info(f"Attempting to delete file: {filename}")
+            
+            # Delete the main gcode file
+            try:
+                self.octoprint_client.deleteFile(filename)
+                self.logger.info(f"Successfully deleted main file: {filename}")
+            except Exception as e:
+                if "404" in str(e):
+                    self.logger.warning(f"File {filename} not found, may have been already deleted")
+                else:
+                    raise e
+            
+            # Delete associated PNG file if it exists
+            png_filename = filename.replace(".gcode", ".png")
+            try:
+                self.octoprint_client.deleteFile(png_filename)
+                self.logger.info(f"Successfully deleted PNG file: {png_filename}")
+            except Exception as e:
+                if "404" in str(e):
+                    self.logger.warning(f"PNG file {png_filename} not found, skipping")
+                else:
+                    self.logger.warning(f"Failed to delete PNG file {png_filename}: {e}")
+            
+            # Refresh the file list
             self.fileListLocal()
+            
         except Exception as e:
             self.logger.error("Error in PrintFromLocation.deleteItem: {}".format(e))
             dialog.WarningOk(self, "Error in PrintFromLocation.deleteItem: {}".format(e), overlay=True)
