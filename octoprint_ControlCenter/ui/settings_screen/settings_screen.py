@@ -8,7 +8,7 @@ from PyQt5 import uic
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QVBoxLayout, QScrollArea
 from PyQt5.QtGui import QFont
 from utils import dialog
-from utils.helpers import check_ui_elements
+from utils.helpers import check_ui_elements, run_async
 from utils.logger import get_logger
 from utils.dialog import WarningYesNo, WarningOk
 
@@ -290,7 +290,20 @@ class SettingsScreen(QWidget):
 
     def save_logs_to_usb(self):
         """Save OctoPrint and Klipper logs to connected USB drive."""
+        from PyQt5.QtWidgets import QApplication
+        from PyQt5.QtCore import QTimer
+        
         self.logger.info("Save logs to USB initiated")
+        
+        # Show loading dialog - will be shown and hidden properly
+        loading_dialog = dialog.LoadingDialog(
+            self,
+            "Saving logs to USB drive...\n\nPlease wait, this may take a moment."
+        )
+        
+        # Give the dialog time to render before blocking operations
+        QApplication.processEvents()
+        QApplication.processEvents()  # Double process to ensure rendering
         
         try:
             # Check if USB drive is connected and accessible
@@ -299,11 +312,13 @@ class SettingsScreen(QWidget):
             # First check if mount point exists
             if not os.path.exists(usb_path):
                 self.logger.warning("USB mount point not found")
+                loading_dialog.hide()
+                del loading_dialog
+                QApplication.processEvents()
                 dialog.WarningOk(
                     self,
                     "USB drive not detected!\n\n"
-                    "Please insert a USB drive and try again.",
-                    overlay=True
+                    "Please insert a USB drive and try again."
                 )
                 return
             
@@ -313,11 +328,13 @@ class SettingsScreen(QWidget):
                 subprocess.check_output(["ls", usb_path], stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError:
                 self.logger.warning("USB drive not accessible")
+                loading_dialog.hide()
+                del loading_dialog
+                QApplication.processEvents()
                 dialog.WarningOk(
                     self,
                     "USB drive not accessible!\n\n"
-                    "Please ensure the USB drive is properly connected and try again.",
-                    overlay=True
+                    "Please ensure the USB drive is properly connected and try again."
                 )
                 return
                 
@@ -330,11 +347,13 @@ class SettingsScreen(QWidget):
                 self.logger.info(f"Created logs directory: {logs_dir}")
             except Exception as e:
                 self.logger.error(f"Failed to create logs directory: {e}")
+                loading_dialog.hide()
+                del loading_dialog
+                QApplication.processEvents()
                 dialog.WarningOk(
                     self,
                     f"Failed to create logs directory on USB:\n{e}\n\n"
-                    "The USB drive may be read-only or full.",
-                    overlay=True
+                    "The USB drive may be read-only or full."
                 )
                 return
             
@@ -346,9 +365,7 @@ class SettingsScreen(QWidget):
                 # Current Klipper log
                 "/tmp/klippy.log",
                 # Alternative Klipper log location
-                os.path.expanduser("~/printer_data/logs/klippy.log"),
-                # OctoPrint logs directory
-                os.path.expanduser("~/.octoprint/logs")
+                "/home/pi/.octoprint/logs"
             ]
             
             for log_path in log_paths:
@@ -406,7 +423,12 @@ class SettingsScreen(QWidget):
             except Exception as e:
                 self.logger.error(f"Failed to create summary file: {e}")
             
-            # Show success message
+            # Hide and delete loading dialog before showing results
+            loading_dialog.hide()
+            del loading_dialog
+            QApplication.processEvents()
+            
+            # Show success message (NO OVERLAY to prevent UI blocking)
             if copied_files:
                 message = (
                     f"Successfully saved logs to USB drive!\n\n"
@@ -417,24 +439,28 @@ class SettingsScreen(QWidget):
                     message += f"Files skipped: {len(skipped_files)}\n"
                     message += "\nSee log_collection_summary.txt for details."
                 
-                dialog.WarningOk(self, message, overlay=True)
+                dialog.WarningOk(self, message)
                 self.logger.info(f"Log collection completed successfully. {len(copied_files)} files copied.")
             else:
                 dialog.WarningOk(
                     self,
                     "No log files were found to copy.\n\n"
                     "This may indicate that the log paths are different or logs haven't been created yet.\n"
-                    "Check log_collection_summary.txt on the USB drive for details.",
-                    overlay=True
+                    "Check log_collection_summary.txt on the USB drive for details."
                 )
                 self.logger.warning("No log files found to copy")
                 
         except Exception as e:
             self.logger.error(f"Error in save_logs_to_usb: {e}")
+            try:
+                loading_dialog.hide()
+                del loading_dialog
+            except:
+                pass
+            QApplication.processEvents()
             dialog.WarningOk(
                 self,
-                f"Error saving logs to USB:\n{e}",
-                overlay=True
+                f"Error saving logs to USB:\n{e}"
             )
 
     def _initialize_sub_screens(self):

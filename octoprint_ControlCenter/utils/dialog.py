@@ -190,6 +190,18 @@ class SelfCenteringMessageBox(QtWidgets.QMessageBox):
         """Hide the dialog and its overlay."""
         super(SelfCenteringMessageBox, self).hide()
         self.overlay.hide()
+    
+    def close(self):
+        """Close the dialog and ensure overlay is hidden."""
+        self.overlay.hide()
+        self.overlay.close()
+        return super(SelfCenteringMessageBox, self).close()
+    
+    def done(self, result):
+        """Override done to ensure overlay is cleaned up when dialog is dismissed."""
+        self.overlay.hide()
+        self.overlay.close()
+        super(SelfCenteringMessageBox, self).done(result)
 
     def showOverlay(self, overlay):
         """Enable or disable the overlay when the dialog is shown.
@@ -358,3 +370,27 @@ def RetryCancel(parent, text, **kwargs):
         return "retry"
     else:
         return "cancel"
+
+
+def LoadingDialog(parent, text, **kwargs):
+    """Show a buttonless loading dialog that must be manually closed.
+    
+    Args:
+        parent: Parent widget.
+        text: Message text to display.
+        **kwargs: Optional parameters (fontSize, icon, overlay, etc.)
+    
+    Returns:
+        SelfCenteringMessageBox: The dialog instance (call .hide() or .close() to dismiss).
+    """
+    # Remove any buttons and create a non-modal dialog
+    # CRITICAL: Set overlay to False to avoid UI blocking issues
+    kwargs['buttons'] = QtWidgets.QMessageBox.NoButton
+    kwargs['overlay'] = False  # Don't use overlay for loading dialog
+    
+    msgbox = dialog(parent, text, **kwargs)
+    
+    # Make it non-blocking so code can continue
+    msgbox.setModal(False)
+    
+    return msgbox
