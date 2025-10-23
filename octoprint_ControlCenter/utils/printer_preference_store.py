@@ -26,8 +26,8 @@ DEFAULT_STATE = {
     },
     # Persistent user preferences (extendable)
     "preferences": {
-        "filament_runout_enabled": False,
-        "filament_jam_enabled": False,
+        "filament_runout_enabled": True,
+        "filament_jam_enabled": True,
         "print_compatibility_check_enabled": True,  # Default to enabled
         "print_restore_enabled": True,  # Default to enabled
         "auto_resume_enabled": False,  # Default to disabled
