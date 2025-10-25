@@ -127,7 +127,7 @@ class ThreadConnectionCheck(QtCore.QThread):
             self.progress_signal.emit(95, "Connection check completed")
             self.loaded_signal.emit()
 
-class MainController:
+class MainController(QtCore.QObject):
 
     """Main controller for the OctoPrint Control Center application.
     
@@ -135,12 +135,16 @@ class MainController:
     initialization, error recovery, and websocket communications.
     """
 
+    # Define signals
+    klipper_error_signal = QtCore.pyqtSignal(str)  # Signal to show error dialog from main thread
+
     # =========================================================================
     # SECTION: Initialization / Startup Lifecycle
     # =========================================================================
 
     def __init__(self):
         """Initialize controller state, model and main window."""
+        super(MainController, self).__init__()
         self.logger = get_logger(__name__)
         self.logger.info("Initializing MainController")
         self.filamentTriggerDialogShown = False
@@ -148,6 +152,11 @@ class MainController:
         self.printer_model = PrinterModel()
         self.octoprint_client = None
         self.main_window = MainWindow(controller=self, printer_model=self.printer_model)
+        self.klipper_status_refresh_running = False  # Track if STATUS refresh is already running
+        self.startup_time = time.time()  # Track when the controller was initialized
+        
+        # Connect signal to slot for showing Klipper error dialog in main thread
+        self.klipper_error_signal.connect(self.showKlipperErrorDialog)
 
     def start(self):
         """Kick off application startup and async connectivity check."""
@@ -258,6 +267,8 @@ class MainController:
         self.octoprint_websocket.connected_signal.connect(self.onPrinterConnected)
         # Connect to printer model status updates to detect first "Operational" status during startup
         self.printer_model.status_updated.connect(self.onPrinterStatusUpdated)
+        # Connect to klipper state changes to monitor for unhealthy states
+        self.printer_model.klipper_state_changed.connect(self.onKlipperStateChanged)
         self.octoprint_websocket.filament_runout_sensor_triggered_signal.connect(self.filamentRunoutSensorTriggered)
         self.octoprint_websocket.filament_jam_sensor_triggered_signal.connect(self.filamentJamSensorTriggered)
         self.printer_model.filament_runout_state.connect(self.onFilamentRunoutState)
@@ -682,6 +693,114 @@ class MainController:
         except Exception as e:
             self.logger.error(f"Error in onPrinterStatusUpdated: {e}")
 
+    def onKlipperStateChanged(self, state):
+        """Handle Klipper state changes and trigger STATUS refresh if state is unhealthy."""
+        try:
+            valid_states = ['ready', 'operational', 'idle', 'unknown']
+            self.logger.info(f"Klipper state changed to: {state}")
+            
+            # Check if at least 60 seconds have passed since startup
+            time_since_startup = time.time() - self.startup_time
+            
+            if time_since_startup < 60:
+                self.logger.info(f"Ignoring unhealthy Klipper state during startup grace period ({int(time_since_startup)}s elapsed, need 60s)")
+                return
+            
+            # Check if state is not in valid states and refresh is not already running
+            if state.lower() not in valid_states and not self.klipper_status_refresh_running:
+                self.logger.warning(f"Klipper state '{state}' is not healthy, triggering STATUS refresh")
+                self.refresh_klipper_status()
+        except Exception as e:
+            self.logger.error(f"Error in onKlipperStateChanged: {e}")
+
+    def showKlipperErrorDialog(self, error_msg):
+        """
+        Show Klipper error dialog in the main GUI thread.
+        This is a slot connected to klipper_error_signal for thread-safe dialog display.
+        
+        Args:
+            error_msg: The error message to display
+        """
+        try:
+            self.logger.info("Showing Klipper error dialog in main thread")
+            dialog.WarningOk(self.main_window, error_msg, overlay=False)
+        except Exception as e:
+            self.logger.error(f"Error showing Klipper error dialog: {e}")
+
+    @run_async
+    def refresh_klipper_status(self):
+        """
+        Asynchronously send STATUS gcode to OctoPrint to refresh Klipper state.
+        Sends FIRMWARE_RESTART before each STATUS attempt, waits 10 seconds, then sends STATUS.
+        Repeats up to 5 times until Klipper state becomes valid.
+        Shows error dialog if state remains unhealthy after all attempts.
+        """
+        if not self.octoprint_client:
+            self.logger.warning("Cannot refresh Klipper status - OctoPrint client not initialized")
+            return
+        
+        try:
+            self.klipper_status_refresh_running = True
+            valid_states = ['ready', 'operational', 'idle', 'unknown']
+            self.logger.info("Starting Klipper STATUS refresh cycle (up to 5 attempts)")
+            
+            state_recovered = False
+            final_state = 'unknown'
+            
+            for attempt in range(1, 6):
+                try:
+                    # Send FIRMWARE_RESTART before each attempt
+                    self.logger.info(f"Attempt {attempt}/5: Sending FIRMWARE_RESTART command")
+                    self.octoprint_client.gcode(command='FIRMWARE_RESTART')
+                    
+                    # Wait 10 seconds for Klipper to restart
+                    self.logger.info(f"Waiting 10 seconds for Klipper to restart...")
+                    time.sleep(10)
+                    
+                    # Now send STATUS command
+                    self.logger.debug(f"Sending STATUS command (attempt {attempt}/5)")
+                    self.octoprint_client.gcode(command='STATUS')
+                    
+                    # Wait a moment for status to be processed
+                    time.sleep(2)
+                    
+                    # Check if Klipper state is now valid
+                    current_state = getattr(self.printer_model, 'klipper_state', 'unknown')
+                    self.logger.debug(f"Current Klipper state after attempt {attempt}: {current_state}")
+                    
+                    if current_state.lower() in valid_states:
+                        self.logger.info(f"Klipper state recovered to '{current_state}' after {attempt} attempt(s)")
+                        state_recovered = True
+                        final_state = current_state
+                        break
+                    else:
+                        self.logger.warning(f"Klipper state still unhealthy: '{current_state}'")
+                        final_state = current_state
+                        
+                except Exception as e:
+                    self.logger.error(f"Error during recovery attempt {attempt}/5: {e}")
+                    # Continue trying even if one attempt fails
+            
+            self.logger.info("Completed Klipper STATUS refresh cycle")
+            
+            # Emit signal if state is still unhealthy after all attempts
+            # The signal will be handled in the main thread to show the dialog safely
+            if not state_recovered:
+                self.logger.error(f"Klipper state '{final_state}' remains unhealthy after 5 refresh attempts")
+                error_msg = (
+                    f"Klipper Connection Error\n\n"
+                    f"The printer's Klipper firmware is reporting an unhealthy state: '{final_state}'\n\n"
+                    f"Attempted automatic recovery but the issue persists.\n\n"
+                    f"Please check the OctoPrint Web UI for detailed error messages and debug information."
+                )
+                # Emit signal to show dialog in main thread (thread-safe)
+                self.klipper_error_signal.emit(error_msg)
+                    
+        except Exception as e:
+            self.logger.error(f"Error in refresh_klipper_status: {e}")
+        finally:
+            self.klipper_status_refresh_running = False
+
     def onStartupCompleted(self):
         """Handle startup operations when printer first becomes operational."""
         self.logger.info("MainController.onStartupCompleted started")
@@ -761,6 +880,10 @@ class MainController:
             
             # Apply filament sensor state if print continues
             self.apply_filament_sensor_state()
+            
+            # Navigate to home screen when print starts
+            self.logger.info("Navigating to home screen after print started")
+            self.main_window.switch_to_home_screen()
             
         except Exception as e:
             self.logger.error(f"Error in onPrintStarted: {e}")
