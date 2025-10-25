@@ -52,6 +52,39 @@ except ImportError:
     try:
         # For Raspberry Pi - use prebuilt package to avoid long compilation
         print("Installing OpenCV using apt (prebuilt package)...")
+        
+        # Fix sources.list for older Raspberry Pi systems (Buster only)
+        # This is required for OpenCV installation on older RPi models
+        # Newer versions (Bullseye, Bookworm) don't need this
+        try:
+            # Check if running on Buster
+            try:
+                with open('/etc/os-release', 'r') as f:
+                    os_info = f.read()
+                is_buster = 'buster' in os_info.lower()
+            except FileNotFoundError:
+                # If can't read os-release, assume it might be needed
+                is_buster = True
+            
+            if is_buster:
+                print("Detected Buster - configuring apt sources for Raspberry Pi...")
+                sources_line = "deb http://archive.raspberrypi.org/debian/ buster main"
+                # Check if the line already exists, if not add it
+                check_result = subprocess.run(['grep', '-Fxq', sources_line, '/etc/apt/sources.list'], 
+                                             capture_output=True)
+                if check_result.returncode != 0:
+                    # Line doesn't exist, add it
+                    subprocess.check_call(['sudo', 'tee', '-a', '/etc/apt/sources.list'], 
+                                         input=f'\n{sources_line}\n'.encode(), 
+                                         stdout=subprocess.DEVNULL)
+                    print("✓ Raspberry Pi apt sources added to sources.list")
+                else:
+                    print("✓ Raspberry Pi apt sources already configured")
+            else:
+                print("Not running Buster - skipping sources.list modification")
+        except (subprocess.CalledProcessError, FileNotFoundError, PermissionError) as e:
+            print(f"Warning: Could not update sources.list (may not be needed): {e}")
+        
         subprocess.check_call(['sudo', 'apt', 'update'])
         subprocess.check_call(['sudo', 'apt', 'install', '-y', 'python3-opencv'])
         import cv2
