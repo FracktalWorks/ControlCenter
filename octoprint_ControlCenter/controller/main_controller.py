@@ -1024,3 +1024,16 @@ class MainController(QtCore.QObject):
         except Exception as e:
             self.logger.error(f"Error in MainController.coolDownAction: {e}")
             dialog.WarningOk(self.main_window, f"Error in MainController.coolDownAction: {e}", overlay=True)
+
+    def cleanup(self):
+        """Cleanup resources when shutting down the application"""
+        self.logger.info("MainController cleanup started")
+        try:
+            # Stop websocket connection properly
+            if hasattr(self, 'octoprint_websocket') and self.octoprint_websocket:
+                self.logger.info("Stopping WebSocket connection...")
+                self.octoprint_websocket.stop_websocket()
+                
+            self.logger.info("MainController cleanup completed")
+        except Exception as e:
+            self.logger.error(f"Error during MainController cleanup: {e}")
