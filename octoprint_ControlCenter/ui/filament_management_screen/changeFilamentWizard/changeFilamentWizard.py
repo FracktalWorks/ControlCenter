@@ -151,14 +151,16 @@ class ChangeFilamentWizard(QWidget):
         # Install event filters on this widget and its children to track user activity
         self._install_inactivity_event_filters()
 
-    def showEvent(self, event):
-        """On show, reset to landing page to ensure a known state."""
-        super().showEvent(event)
-        try:
-            self.changeFilament()
-            self.logger.debug("Reset stacked widget to changeFilamentPage on show")
-        except Exception as e:
-            self.logger.error(f"Error resetting to changeFilamentPage: {e}")
+
+	# Redundantly called buy setup(), so commenting out
+    # def showEvent(self, event):
+    #     """On show, reset to landing page to ensure a known state."""
+    #     super().showEvent(event)
+    #     try:
+    #         self.changeFilament()
+    #         self.logger.debug("Reset stacked widget to changeFilamentPage on show")
+    #     except Exception as e:
+    #         self.logger.error(f"Error resetting to changeFilamentPage: {e}")
 
     def changeFilament(self):
         """Initialize landing page and populate material options.   
@@ -383,9 +385,9 @@ class ChangeFilamentWizard(QWidget):
             self._start_inactivity_timer()
             while self.stackedWidget.currentWidget() == self.changeFilamentLoadPage:
                 self.octoprint_client.gcode("G91")
-                self.octoprint_client.gcode("G1 E5 F500")
+                self.octoprint_client.gcode("G1 E5 F100")
                 self.octoprint_client.gcode("G90")
-                time.sleep(self.calcExtrudeTime(5, 500))
+                time.sleep(self.calcExtrudeTime(5, 100))
         except Exception as e:
             logger.error(f"Error in ChangeFilament.changeFilamentLoadFunction: {e}")
             dialog.WarningOk(self, f"Error in ChangeFilament.changeFilamentLoadFunction: {e}", overlay=True)
@@ -410,7 +412,7 @@ class ChangeFilamentWizard(QWidget):
                     break
             self.logger.debug("Initial extrusion steps done; entering continuous purge loop")
             while self.stackedWidget.currentWidget() == self.changeFilamentExtrudePage:
-                feed = 300 if self.changeFilamentComboBox.currentText() == TPU_MATERIAL_NAME else 600
+                feed = 200 if self.changeFilamentComboBox.currentText() == TPU_MATERIAL_NAME else 400
                 self.octoprint_client.gcode("G91")
                 self.octoprint_client.gcode(f"G1 E20 F{feed}")
                 self.octoprint_client.gcode("G90")

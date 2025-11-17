@@ -194,19 +194,20 @@ class NozzleChangeWizard(QWidget):
 			self._on_page_changed(self.stackedWidget.currentIndex())
 
 	# ----- Qt events -----------------------------------------------------
-	def showEvent(self, event):  # noqa: N802 (Qt naming)
-		"""Reset the wizard UI to Step 1 each time the widget is shown.
+	# Redundantly called buy setup(), so commenting out
+	# def showEvent(self, event):  # noqa: N802 (Qt naming)
+	# 	"""Reset the wizard UI to Step 1 each time the widget is shown.
 
-		Keep this method light (avoid doing work here); initialization runs in
-		`setup()`/`changeNozzle()` and movement helpers.
-		"""
-		super().showEvent(event)
-		# Match ChangeFilamentWizard: keep showEvent light and only reset the UI
-		try:
-			self.changeNozzle()
-			self.logger.debug("Reset stacked widget to step 1 on show")
-		except Exception as e:
-			self.logger.warning(f"Error resetting wizard on show: {e}")
+	# 	Keep this method light (avoid doing work here); initialization runs in
+	# 	`setup()`/`changeNozzle()` and movement helpers.
+	# 	"""
+	# 	super().showEvent(event)
+	# 	# Match ChangeFilamentWizard: keep showEvent light and only reset the UI
+	# 	try:
+	# 		self.changeNozzle()
+	# 		self.logger.debug("Reset stacked widget to step 1 on show")
+	# 	except Exception as e:
+	# 		self.logger.warning(f"Error resetting wizard on show: {e}")
 
 	def changeNozzle(self):
 		"""Initialize and prepare the nozzle change flow (called from `setup`).
