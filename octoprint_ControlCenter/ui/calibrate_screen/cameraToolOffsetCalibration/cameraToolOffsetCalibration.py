@@ -1274,7 +1274,7 @@ class CameraToolOffsetCalibration(QWidget):
             self._on_camera_connection_failed()
 
     def find_available_camera(self):
-        """Find the first available USB camera index (prioritizing USB over CSI)."""
+        """Find the first available USB camera index using v4l2-ctl to detect USB devices."""
         if not OPENCV_AVAILABLE:
             return None
         
@@ -1284,7 +1284,18 @@ class CameraToolOffsetCalibration(QWidget):
         # Force cleanup any existing camera resources first
         self._ensure_camera_cleanup_before_search()
         
-        # Check indices 1-5 first (USB cameras typically start at 1 if CSI is at 0)
+        # First try using v4l2-ctl to intelligently detect USB camera
+        usb_camera_index = self._find_usb_camera_with_v4l2()
+        if usb_camera_index is not None:
+            self.logger.info(f"Found USB camera at index {usb_camera_index} using v4l2-ctl")
+            # Verify it works with OpenCV
+            if self._test_camera_index(usb_camera_index):
+                return usb_camera_index
+            else:
+                self.logger.warning(f"USB camera at index {usb_camera_index} detected by v4l2-ctl but failed OpenCV test")
+        
+        # Fallback: Check indices 1-5 first (USB cameras typically start at 1 if CSI is at 0)
+        self.logger.info("Falling back to sequential camera index search")
         for i in range(1, 6):
             if self._test_camera_index(i):
                 return i
@@ -1294,6 +1305,82 @@ class CameraToolOffsetCalibration(QWidget):
             return 0
             
         return None
+
+    def _find_usb_camera_with_v4l2(self):
+        """
+        Use v4l2-ctl to find USB camera device and return its index.
+        
+        Returns:
+            int or None: Camera index if USB camera found, None otherwise
+        """
+        try:
+            import subprocess
+            import re
+            
+            # Run v4l2-ctl --list-devices to get device information
+            result = subprocess.run(
+                ['v4l2-ctl', '--list-devices'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode != 0:
+                self.logger.warning(f"v4l2-ctl command failed with return code {result.returncode}")
+                return None
+            
+            output = result.stdout
+            self.logger.debug(f"v4l2-ctl output:\n{output}")
+            
+            # Parse output to find USB camera
+            # Look for lines containing "usb-" which indicates USB device
+            # Example: "HD Camera: HD Camera (usb-fe980000.usb-1.1):"
+            lines = output.split('\n')
+            usb_device_section = False
+            video_devices = []
+            
+            for line in lines:
+                # Check if this line indicates a USB device
+                if 'usb-' in line.lower():
+                    usb_device_section = True
+                    video_devices = []  # Reset for new device section
+                    self.logger.debug(f"Found USB device section: {line}")
+                # Check if we hit a new device section (not USB)
+                elif line and not line.startswith('\t') and not line.startswith(' '):
+                    # New device section started
+                    if usb_device_section and video_devices:
+                        # We were in USB section and found devices, use the first one
+                        break
+                    usb_device_section = False
+                    video_devices = []
+                # If in USB device section, collect video device paths
+                elif usb_device_section and line.strip().startswith('/dev/video'):
+                    device_path = line.strip()
+                    video_devices.append(device_path)
+                    self.logger.debug(f"Found video device in USB section: {device_path}")
+            
+            # Extract camera index from the first USB video device
+            if video_devices:
+                first_device = video_devices[0]
+                # Extract number from /dev/videoN
+                match = re.search(r'/dev/video(\d+)', first_device)
+                if match:
+                    camera_index = int(match.group(1))
+                    self.logger.info(f"Detected USB camera at /dev/video{camera_index}")
+                    return camera_index
+            
+            self.logger.warning("No USB camera found in v4l2-ctl output")
+            return None
+            
+        except subprocess.TimeoutExpired:
+            self.logger.warning("v4l2-ctl command timed out")
+            return None
+        except FileNotFoundError:
+            self.logger.warning("v4l2-ctl command not found - install v4l-utils package")
+            return None
+        except Exception as e:
+            self.logger.error(f"Error running v4l2-ctl to find USB camera: {e}")
+            return None
 
     def _ensure_camera_cleanup_before_search(self):
         """Ensure any existing camera resources are fully cleaned up before searching."""
