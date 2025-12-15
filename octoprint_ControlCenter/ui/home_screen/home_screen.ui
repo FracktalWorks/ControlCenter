@@ -549,7 +549,7 @@ color: White;
 background-color: rgb(255, 255, 255,0);</string>
                  </property>
                  <property name="text">
-                  <string>RingHeater</string>
+                  <string>Ring</string>
                  </property>
                 </widget>
                </item>
