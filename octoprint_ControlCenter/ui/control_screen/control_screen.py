@@ -161,10 +161,10 @@ class ControlScreen(QWidget):
         self.moveYPButton.clicked.connect(lambda: self.octoprint_client.jog(y=self.step, speed=2000))
         self.moveYMButton.clicked.connect(lambda: self.octoprint_client.jog(y=-self.step, speed=2000))
         self.motorOffButton.clicked.connect(lambda: self.octoprint_client.gcode(command='M18'))
-        self.homeXYButton.clicked.connect(lambda: self.octoprint_client.home(['x', 'y']))
+        self.homeXYButton.clicked.connect(self.homeXYAndSync)
         self.moveZMButton.clicked.connect(lambda: self.octoprint_client.jog(z=-self.step, speed=2000))
         self.moveZPButton.clicked.connect(lambda: self.octoprint_client.jog(z=self.step, speed=2000))
-        self.homeZButton.clicked.connect(lambda: self.octoprint_client.home(['z']))
+        self.homeZButton.clicked.connect(self.homeZAndSync)
         self.toolToggleMotionButton.clicked.connect(self.selectToolMotion)
         self.extruderButton.clicked.connect(lambda: self.octoprint_client.extrude(self.step))
         self.retractButton.clicked.connect(lambda: self.octoprint_client.extrude(-self.step))
@@ -797,3 +797,44 @@ class ControlScreen(QWidget):
                 
         except Exception as e:
             self.logger.error(f"Error applying scrollbar styling: {e}", exc_info=True)
+
+    def homeXYAndSync(self):
+        """Home XY and sync tool state - assumes homing switches to T0"""
+        try:
+            self.logger.info("Homing XY and syncing tool state...")
+            
+            # Do the homing
+            self.octoprint_client.home(['x', 'y'])
+            
+            # For dual nozzle printers, homing typically switches to T0
+            # So we force sync to T0 after a short delay
+            if is_dual_nozzle_printer():
+                QtCore.QTimer.singleShot(2000, lambda: self.syncToT0AfterHoming())
+                
+        except Exception as e:
+            self.logger.error(f"Error in homeXYAndSync: {e}")
+
+    def homeZAndSync(self):
+        """Home Z and sync tool state - assumes homing switches to T0"""
+        try:
+            self.logger.info("Homing Z and syncing tool state...")
+            
+            # Do the homing
+            self.octoprint_client.home(['z'])
+            
+            # For dual nozzle printers, homing typically switches to T0
+            # So we force sync to T0 after a short delay
+            if is_dual_nozzle_printer():
+                QtCore.QTimer.singleShot(1500, lambda: self.syncToT0AfterHoming())
+                
+        except Exception as e:
+            self.logger.error(f"Error in homeZAndSync: {e}")
+
+    def syncToT0AfterHoming(self):
+        """Force sync UI to T0 after homing (since homing typically switches to T0)"""
+        try:
+            self.logger.info("Syncing UI to T0 after homing operation")
+            # Directly update the UI to reflect T0 as active
+            self.setActiveExtruder(0)
+        except Exception as e:
+            self.logger.error(f"Error syncing to T0 after homing: {e}")
