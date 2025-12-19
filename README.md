@@ -1,4 +1,4 @@
-# PyQt 3D Printer Application
+# PyQt 3D Printer Application 
 
 This project is a PyQt application designed for controlling a 3D printer via a touchscreen interface. It connects to an OctoPrint instance using the OctoPrint client API, providing an intuitive user experience for managing print jobs and monitoring printer status.
 
@@ -164,3 +164,4 @@ Contributions are welcome! Please open an issue or submit a pull request for any
 - https://developer.mantidproject.org/MVPTutorial/Presenter.html MVP Example
 - https://developer.mantidproject.org/MVPTutorial/Mocking.html mocking/automatic testing
 
+# forked from cc
