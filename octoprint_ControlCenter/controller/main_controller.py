@@ -184,12 +184,16 @@ class MainController(QtCore.QObject):
         try:
             self.updateLoadingProgress(96, "Initializing client...")
             self.octoprint_client = octoprint_singleton.get_client()
-            self.updateLoadingProgress(97, "Loading user interface...")
+            
+            # IMPORTANT: Validate/restore printer.cfg BEFORE loading UI
+            # This ensures UI configuration is read from valid config
+            self.updateLoadingProgress(97, "Validating printer configuration...")
+            self._ensure_valid_printer_config()
+            
+            self.updateLoadingProgress(98, "Loading user interface...")
             self.main_window.loadUI(minimalUI=False)
-            self.updateLoadingProgress(98, "Initializing websocket connection...")
+            self.updateLoadingProgress(99, "Initializing websocket connection...")
             self.initialize_websocket()
-            self.updateLoadingProgress(99, "Checking Klipper configuration...")
-            self.checkKlipperPrinterCFG()
             # Check for firmware updates during startup if enabled
             self.check_firmware_update()
             self.updateLoadingProgress(100, "Startup complete!")
@@ -197,6 +201,34 @@ class MainController(QtCore.QObject):
         except Exception as e:
             self.logger.error(f"Error during startup success handling: {e}")
             self.handleStartupError()
+
+    def _ensure_valid_printer_config(self):
+        """Validate printer.cfg and restore from backup if corrupted.
+        
+        This must run BEFORE loading UI to ensure correct nozzle configuration.
+        """
+        try:
+            from utils.printer_config_manager import get_printer_config_manager
+            manager = get_printer_config_manager()
+            
+            if not manager.is_config_valid():
+                self.logger.error("Printer Config File Corrupted or Not Found, Attempting to restore Backup")
+                if manager.restore_backup_config():
+                    self.logger.info("Printer Config File Restored from backup before UI load")
+                else:
+                    self.logger.error("Failed to restore printer config from backup")
+                    dialog.WarningOk(
+                        self.main_window, 
+                        "Printer Config File corrupted and no valid backup found.\n"
+                        "Contact Fracktal support or raise a ticket at care.fracktal.in",
+                        overlay=True
+                    )
+            else:
+                self.logger.info("Printer Config File validated OK")
+                manager.cleanup_old_backups()
+                
+        except Exception as e:
+            self.logger.error(f"Error validating printer config: {e}")
 
     def handleVirtualFallback(self, message):
         """Show dialog if physical Klipper connection failed and virtual printer used."""
@@ -283,7 +315,14 @@ class MainController(QtCore.QObject):
 
 
     def checkKlipperPrinterCFG(self):
-        """Validate printer.cfg; attempt restore or cleanup backups."""
+        """Validate printer.cfg; attempt restore or cleanup backups.
+        
+        Note: Primary validation now happens in _ensure_valid_printer_config() 
+        during startup BEFORE UI loads. This method is kept for:
+        1. Post-print restore scenarios
+        2. Manual checks from UI
+        3. Print cancellation if config corrupted during print
+        """
         if not self.octoprint_client:
             return
         try:
@@ -292,6 +331,8 @@ class MainController(QtCore.QObject):
                 self.logger.error("Printer Config File Corrupted or Not Found, Attempting to restore Backup")
                 if manager.restore_backup_config():
                     self.logger.info("Printer Config File Restored from backup")
+                    # Reload printer configuration after restore
+                    self.printer_model.reload_printer_configuration()
                     return
                 dialog.WarningOk(self.main_window, "Printer Config File corrupted. Contact Fracktal support or raise a ticket at care.fracktal.in")
                 if self.printer_model.printer_status in ["Printing", "Paused"]:

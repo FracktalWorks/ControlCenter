@@ -38,6 +38,7 @@ class PrinterModel(QObject):
     # Signals for tool-bay state persistence and UI sync
     tool_bay_states_loaded = pyqtSignal(dict)      # {'tool0': {...}, 'tool1': {...}}
     tool_bay_state_changed = pyqtSignal(str, str, dict) # tool, bay, bay_state
+    active_material_bay_changed = pyqtSignal(str)  # 'A' or 'B' - for dual material bay printers
     # Signals for feed rate and flow rate updates
     feed_rate_updated = pyqtSignal(int)  # Feed rate percentage
     flow_rate_updated = pyqtSignal(int)  # Flow rate percentage
@@ -86,6 +87,12 @@ class PrinterModel(QObject):
         self.ptfeTubeLength = config.ptfeTubeLength
         self.machineBuildSize = config.machineBuildSize
         self.IS_DUAL_NOZZLE = config.IS_DUAL_NOZZLE
+        
+        # Dual Material Bay properties (Dragon 400 V2)
+        self.HAS_DUAL_MATERIAL_BAY = config.HAS_DUAL_MATERIAL_BAY
+        self.PTFE_BAY_BRANCH_LENGTH = config.PTFE_BAY_BRANCH_LENGTH
+        self.PTFE_TOTAL_RETRACT = config.PTFE_TOTAL_RETRACT
+        self.ACTIVE_MATERIAL_BAY = config.ACTIVE_MATERIAL_BAY
         # Klipper state cache
         self.klipper_state = "unknown"
         # Tool state persistence
@@ -95,7 +102,8 @@ class PrinterModel(QObject):
         # Nested per-bay structure per tool; defaults reflect current A/B mapping
         self.tools = {
             "tool0": {
-                "material_bay_a": {"filament": None, "status": "Unknown", "nozzle": "Unknown"}
+                "material_bay_a": {"filament": None, "status": "Unknown", "nozzle": "Unknown"},
+                "material_bay_b": {"filament": None, "status": "Unknown", "nozzle": "Unknown"}  # Bay B for dual material bay
             },
             "tool1": {
                 "material_bay_x": {"filament": None, "status": "Unknown", "nozzle": "Unknown"}
@@ -487,9 +495,69 @@ class PrinterModel(QObject):
     # Convenience getters for primary bays used by current UI
     def get_default_bay(self, tool: str) -> str:
         return "material_bay_a" if tool == "tool0" else "material_bay_x"
+    
+    def get_effective_bay(self, tool: str) -> str:
+        """Get the effective bay for a tool, respecting active bay for dual material bay printers.
+        
+        For tool0 on dual material bay printers: Returns the active bay ('material_bay_a' or 'material_bay_b')
+        For tool0 on regular printers: Returns 'material_bay_a'
+        For tool1: Returns 'material_bay_x'
+        """
+        if tool == "tool0" and self.has_dual_material_bay:
+            active = self.get_active_material_bay()  # 'A' or 'B'
+            return f"material_bay_{active.lower()}"
+        return self.get_default_bay(tool)
+    
     def get_bay_state(self, tool: str, bay: str = None) -> dict:
         bay = bay or self.get_default_bay(tool)
         return self.tools.get(tool, {}).get(bay, {"filament": None, "status": "Unknown", "nozzle": "Unknown"})
+
+    @property
+    def has_dual_material_bay(self) -> bool:
+        """Check if this is a dual material bay printer (Dragon 400 V2)."""
+        # Allow debug override for testing
+        if config.DEBUG_FORCE_DUAL_MATERIAL_BAY:
+            return True
+        return self.HAS_DUAL_MATERIAL_BAY
+
+    @property
+    def effective_tube_length(self) -> int:
+        """Get the effective PTFE tube length for filament load/unload operations.
+        
+        For dual material bay printers (Dragon 400 V2): Returns PTFE_TOTAL_RETRACT
+            which accounts for the Y-splitter geometry (960mm upstream + 350mm branch = 1310mm)
+        For regular printers: Returns standard ptfeTubeLength
+        """
+        if self.has_dual_material_bay:
+            return self.PTFE_TOTAL_RETRACT
+        return self.ptfeTubeLength
+
+    def get_all_bays_for_tool(self, tool: str) -> list:
+        """Get list of all material bays for a tool.
+        
+        For tool0 on dual material bay printers: ['material_bay_a', 'material_bay_b']
+        For tool0 on regular printers: ['material_bay_a']
+        For tool1: ['material_bay_x']
+        """
+        if tool == "tool0":
+            if self.has_dual_material_bay:
+                return ["material_bay_a", "material_bay_b"]
+            else:
+                return ["material_bay_a"]
+        elif tool == "tool1":
+            return ["material_bay_x"]
+        else:
+            return []
+
+    def get_active_material_bay(self) -> str:
+        """Get the currently active material bay ('A' or 'B') from preference store."""
+        return self._config_store.get_active_material_bay()
+
+    def set_active_material_bay(self, bay: str) -> None:
+        """Set the active material bay ('A' or 'B') and persist to preference store."""
+        self._config_store.set_active_material_bay(bay)
+        self.ACTIVE_MATERIAL_BAY = bay.upper()
+        self.active_material_bay_changed.emit(bay.upper())
 
     def get_current_tool_config(self):
         """
@@ -537,9 +605,16 @@ class PrinterModel(QObject):
                 self.machineBuildSize = config.machineBuildSize
                 self.IS_DUAL_NOZZLE = config.IS_DUAL_NOZZLE
                 
+                # Dual Material Bay properties
+                self.HAS_DUAL_MATERIAL_BAY = config.HAS_DUAL_MATERIAL_BAY
+                self.PTFE_BAY_BRANCH_LENGTH = config.PTFE_BAY_BRANCH_LENGTH
+                self.PTFE_TOTAL_RETRACT = config.PTFE_TOTAL_RETRACT
+                self.ACTIVE_MATERIAL_BAY = config.ACTIVE_MATERIAL_BAY
+                
                 self.logger.info("Successfully loaded printer configuration from Klipper")
                 self.logger.debug(f"Machine build size: {self.machineBuildSize}")
                 self.logger.debug(f"Dual nozzle: {self.IS_DUAL_NOZZLE}")
+                self.logger.debug(f"Dual material bay: {self.HAS_DUAL_MATERIAL_BAY}")
                 
                 # Emit signal with updated configuration
                 self.printer_config_updated.emit(self.get_printer_configuration())
@@ -562,6 +637,10 @@ class PrinterModel(QObject):
             'tool0PurgePosition': self.tool0PurgePosition,
             'tool1PurgePosition': self.tool1PurgePosition,
             'ptfeTubeLength': self.ptfeTubeLength,
-            'IS_DUAL_NOZZLE': self.IS_DUAL_NOZZLE
+            'IS_DUAL_NOZZLE': self.IS_DUAL_NOZZLE,
+            'HAS_DUAL_MATERIAL_BAY': self.HAS_DUAL_MATERIAL_BAY,
+            'PTFE_BAY_BRANCH_LENGTH': self.PTFE_BAY_BRANCH_LENGTH,
+            'PTFE_TOTAL_RETRACT': self.PTFE_TOTAL_RETRACT,
+            'ACTIVE_MATERIAL_BAY': self.ACTIVE_MATERIAL_BAY
             # Note: selected_printer_config removed - use get_current_printer_selection() instead
         }

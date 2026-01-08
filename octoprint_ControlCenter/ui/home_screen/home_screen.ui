@@ -136,6 +136,43 @@ background-color: rgba(255, 255, 255, 0);</string>
       </spacer>
      </item>
      <item alignment="Qt::AlignVCenter">
+      <widget class="QLabel" name="activeMaterialBayLabel">
+       <property name="font">
+        <font>
+         <family>Montserrat</family>
+         <pointsize>12</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: rgb(76, 175, 80);
+background-color: rgba(76, 175, 80, 30);
+padding: 2px 8px;
+border-radius: 4px;</string>
+       </property>
+       <property name="text">
+        <string>Bay A</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item alignment="Qt::AlignVCenter">
       <widget class="QLabel" name="ipStatus">
        <property name="font">
         <font>

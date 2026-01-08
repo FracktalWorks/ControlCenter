@@ -54,7 +54,15 @@ DEFAULT_MACHINE_BUILD_SIZE = {'X': 600, 'Y': 300, 'Z': 400}
 DEFAULT_TOOL0_PURGE_POSITION = {'X': -30, 'Y': -77}
 DEFAULT_TOOL1_PURGE_POSITION = {'X': 655, 'Y': -77}
 DEFAULT_PTFE_TUBE_LENGTH = 1500  # 2400 for 600x600, 1500 for 600x300 keep as multiples of 300 only
-DEFAULT_IS_DUAL_NOZZLE = True  # Set to False for single nozzle printers
+DEFAULT_IS_DUAL_NOZZLE = False  # Default to single nozzle (safer fallback if config can't be read)
+
+# Dual Material Bay Configuration (Dragon 400 V2)
+# Dual material bay = 2 extruder motors feeding into single nozzle via Y-splitter
+DEFAULT_HAS_DUAL_MATERIAL_BAY = False  # True only for Dragon 400 V2
+DEFAULT_PTFE_BAY_BRANCH_LENGTH = 350   # Length of each Y-splitter branch (mm)
+DEFAULT_PTFE_TOTAL_RETRACT = 1310      # Total retraction for bay swap: 960mm upstream + 350mm branch
+DEFAULT_ACTIVE_MATERIAL_BAY = 'A'      # Default active bay ('A' or 'B')
+DEBUG_FORCE_DUAL_MATERIAL_BAY = False  # Debug flag to force dual material bay UI on any printer
 
 # Dynamic printer configuration (loaded from Klipper at runtime)
 # These will be populated by load_printer_config_from_klipper()
@@ -64,6 +72,10 @@ tool0PurgePosition = DEFAULT_TOOL0_PURGE_POSITION.copy()
 tool1PurgePosition = DEFAULT_TOOL1_PURGE_POSITION.copy()
 ptfeTubeLength = DEFAULT_PTFE_TUBE_LENGTH
 IS_DUAL_NOZZLE = DEFAULT_IS_DUAL_NOZZLE
+HAS_DUAL_MATERIAL_BAY = DEFAULT_HAS_DUAL_MATERIAL_BAY
+PTFE_BAY_BRANCH_LENGTH = DEFAULT_PTFE_BAY_BRANCH_LENGTH
+PTFE_TOTAL_RETRACT = DEFAULT_PTFE_TOTAL_RETRACT
+ACTIVE_MATERIAL_BAY = DEFAULT_ACTIVE_MATERIAL_BAY
 
 
 def load_printer_config_from_klipper():
@@ -83,6 +95,7 @@ def load_printer_config_from_klipper():
             
         global calibrationPosition, machineBuildSize, tool0PurgePosition
         global tool1PurgePosition, ptfeTubeLength, IS_DUAL_NOZZLE
+        global HAS_DUAL_MATERIAL_BAY, PTFE_BAY_BRANCH_LENGTH, PTFE_TOTAL_RETRACT, ACTIVE_MATERIAL_BAY
         
         # Update global variables with extracted configuration
         if 'calibrationPosition' in config:
@@ -102,6 +115,18 @@ def load_printer_config_from_klipper():
             
         if 'IS_DUAL_NOZZLE' in config:
             IS_DUAL_NOZZLE = config['IS_DUAL_NOZZLE']
+            
+        if 'HAS_DUAL_MATERIAL_BAY' in config:
+            HAS_DUAL_MATERIAL_BAY = config['HAS_DUAL_MATERIAL_BAY']
+            
+        if 'PTFE_BAY_BRANCH_LENGTH' in config:
+            PTFE_BAY_BRANCH_LENGTH = config['PTFE_BAY_BRANCH_LENGTH']
+            
+        if 'PTFE_TOTAL_RETRACT' in config:
+            PTFE_TOTAL_RETRACT = config['PTFE_TOTAL_RETRACT']
+            
+        if 'ACTIVE_MATERIAL_BAY' in config:
+            ACTIVE_MATERIAL_BAY = config['ACTIVE_MATERIAL_BAY']
             
         return True
         
@@ -129,5 +154,9 @@ def get_printer_config():
         'tool0PurgePosition': tool0PurgePosition,
         'tool1PurgePosition': tool1PurgePosition,
         'ptfeTubeLength': ptfeTubeLength,
-        'IS_DUAL_NOZZLE': IS_DUAL_NOZZLE
+        'IS_DUAL_NOZZLE': IS_DUAL_NOZZLE,
+        'HAS_DUAL_MATERIAL_BAY': HAS_DUAL_MATERIAL_BAY,
+        'PTFE_BAY_BRANCH_LENGTH': PTFE_BAY_BRANCH_LENGTH,
+        'PTFE_TOTAL_RETRACT': PTFE_TOTAL_RETRACT,
+        'ACTIVE_MATERIAL_BAY': ACTIVE_MATERIAL_BAY
     }

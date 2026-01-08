@@ -489,8 +489,11 @@ class OctoPrintWebSocket(QThread):
                             try:
                                 self.logger.debug(f"Processing message: {item}")
                                 
-                                # Filament sensor messages
-                                if 'Filament Runout Detected ' in item:  # "Filament Runout on T0/T1"
+                                # Filament sensor messages (case-insensitive for robustness)
+                                # Standard format: "Filament Runout Detected on T0/T1"
+                                #                  "Filament Jam Detected on T0/T1"
+                                item_lower = item.lower()
+                                if 'filament runout detected on t' in item_lower:
                                     tool = item[item.index('T') + 1:].split(' ', 1)[0]
                                     self.logger.info(f"Filament runout triggered on tool {tool}")
                                     try:
@@ -498,7 +501,7 @@ class OctoPrintWebSocket(QThread):
                                     except Exception as e:
                                         self.logger.error(f"Error emitting filament_runout_sensor_triggered_signal: {e}")
 
-                                elif 'Filament Jam Detected ' in item:  # "Filament Jam on T0/T1"
+                                elif 'filament jam detected on t' in item_lower:
                                     tool = item[item.index('T') + 1:].split(' ', 1)[0]
                                     self.logger.info(f"Filament jam triggered on tool {tool}")
                                     try:
@@ -506,17 +509,18 @@ class OctoPrintWebSocket(QThread):
                                     except Exception as e:
                                         self.logger.error(f"Error emitting filament_jam_sensor_triggered_signal: {e}")
                                 
-                                elif 'filament detected' in item:
+                                # Filament insert/remove detection: "Filament Inserted on T0/T1"
+                                elif 'filament inserted on t' in item_lower:
                                     sensor = item[item.index('T') + 1:].split(' ', 1)[0]
-                                    self.logger.info(f"Filament detected in {sensor}")
+                                    self.logger.info(f"Filament inserted in T{sensor}")
                                     try:
                                         self.filament_runout_state_signal.emit(sensor, True)
                                     except Exception as e:
                                         self.logger.error(f"Error emitting filament_runout_state_signal: {e}")
                                 
-                                elif 'filament not detected' in item:
+                                elif 'filament not detected' in item_lower:
                                     sensor = item[item.index('T') + 1:].split(' ', 1)[0]
-                                    self.logger.info(f"Filament not Detected in {sensor}")
+                                    self.logger.info(f"Filament not detected in T{sensor}")
                                     try:
                                         self.filament_runout_state_signal.emit(sensor, False)
                                     except Exception as e:

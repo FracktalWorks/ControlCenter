@@ -351,6 +351,12 @@ class PrinterConfigManager:
             # Other settings
             'ptfeTubeLength': variables.get('ptfe_tube_length', 1500),
             'IS_DUAL_NOZZLE': bool(variables.get('is_dual_nozzle', 0)),
+            
+            # Dual Material Bay settings (Dragon 400 V2)
+            'HAS_DUAL_MATERIAL_BAY': bool(variables.get('has_dual_material_bay', 0)),
+            'PTFE_BAY_BRANCH_LENGTH': variables.get('ptfe_bay_branch_length', 350),
+            'PTFE_TOTAL_RETRACT': variables.get('ptfe_total_retract', 1310),
+            'ACTIVE_MATERIAL_BAY': variables.get('active_material_bay', 'A'),
         }
         
         # Calculate bed dimensions for backwards compatibility
