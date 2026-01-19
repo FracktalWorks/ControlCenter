@@ -29,15 +29,15 @@ file_name = ''
 
 filaments = [
     ("PLA", 190),
-    ("ABS", 220),
-    ("PETG", 220),
+    ("ABS", 230),
+    ("PETG", 230),
     ("PVA", 210),
-    ("TPU", 230),
-    ("Nylon", 220),
-    ("PC", 240),
+    ("TPU", 220),
+    ("Nylon", 270),
+    ("PC", 270),
     ("HIPS", 220),
     ("WoodFill", 220),
-    ("MetalFill", 200)
+    ("MetalFill", 215)
 ]
 
 filaments = OrderedDict(filaments)
