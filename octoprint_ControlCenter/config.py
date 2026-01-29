@@ -37,7 +37,11 @@ filaments = [
     ("PC", 270),
     ("HIPS", 220),
     ("WoodFill", 220),
-    ("MetalFill", 215)
+    ("MetalFill", 215),
+    ("ABS Carbon Fiber", 280),
+    ("Nylon 12 Carbon Fiber", 280),
+    ("PC Carbon Fiber", 300),
+    
 ]
 
 filaments = OrderedDict(filaments)
