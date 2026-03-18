@@ -14,7 +14,6 @@ import requests
 from PyQt5.QtCore import QThread, pyqtSignal
 
 from utils.logger import get_logger
-from utils.helpers import run_async
 from config import IGNORED_PRINTER_ERRORS
 
 
@@ -171,8 +170,10 @@ class OctoPrintWebSocket(QThread):
             self.logger.info(f"Reconnection attempt {self.reconnect_attempts}/{self.max_reconnect_attempts}")
             
             if self.reconnect_attempts > self.max_reconnect_attempts:
-                self.logger.error("Max reconnect attempts reached. Giving up.")
-                return
+                self.logger.warning("Max reconnect attempts reached. Waiting 30s before resetting counter and retrying.")
+                time.sleep(30)
+                self.reconnect_attempts = 1
+                self.logger.info("Reconnect counter reset, retrying...")
 
             # Properly terminate current thread if it's still running
             if self.isRunning():
@@ -342,7 +343,6 @@ class OctoPrintWebSocket(QThread):
         else:
             self.logger.debug("Reconnection already in progress, skipping")
 
-    @run_async
     def process(self, data):
         """
         Process data from the WebSocket
