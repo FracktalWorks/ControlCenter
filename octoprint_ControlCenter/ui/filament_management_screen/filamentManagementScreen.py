@@ -6,7 +6,11 @@ from PyQt5.QtCore import Qt
 from PyQt5 import uic
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
-from utils.printer_ui_config import apply_nozzle_config_to_screen
+from utils.printer_ui_config import (
+    apply_nozzle_config_to_screen, 
+    is_dual_material_bay_printer,
+    apply_dual_material_bay_config_to_screen
+)
 from utils import dialog
 from utils import styles
 import config
@@ -60,6 +64,25 @@ class filamentManagementScreen(QWidget):
         self.tool0MaterialBayAStateColor = self.findChild(QLabel, "tool0MaterialBayAStateColor")
         self.tool11MaterialBayXStateColor = self.findChild(QLabel, "tool11MaterialBayXStateColor")
 
+        # Bay B elements (for dual material bay printers like Dragon 400 V2)
+        self.tool0MaterialBayBLabel = self.findChild(QLabel, "tool0MaterialBayBLabel")
+        self.tool0MaterialBayBStateLabel = self.findChild(QLabel, "tool0MaterialBayBStateLabel")
+        self.tool0MaterialBayBStateColor = self.findChild(QLabel, "tool0MaterialBayBStateColor")
+        self.changeTool0MaterialBayB = self.findChild(QToolButton, "changeTool0MaterialBayB")
+        self.editTool0MaterialBayB = self.findChild(QPushButton, "editTool0MaterialBayB")
+        self.tool0MaterialBayBFrame = self.findChild(QWidget, "tool0MaterialBayBFrame")  # Frame container for Bay B
+        # Bay selection buttons (optional - may not exist in current UI)
+        self.tool0BayAButton = self.findChild(QPushButton, "tool0BayAButton")
+        self.tool0BayBButton = self.findChild(QPushButton, "tool0BayBButton")
+
+        # Filament path images (shows which bay is loaded)
+        self.tool0FilamentTubeImage = self.findChild(QLabel, "tool0FilamentTubeImage")
+        self.tool1FilamentTubeImage = self.findChild(QLabel, "tool0FilamentTubeImage_2")  # Tool1's image widget
+
+        # Material bay active indicators (for dual material bay printers)
+        self.materialBayActiveIndicatorA = self.findChild(QLabel, "materialBayActiveIndicatorA")
+        self.materialBayActiveIndicatorB = self.findChild(QLabel, "materialBayActiveIndicatorB")
+
         # Edit buttons
         self.editTool0MaterialBayA = self.findChild(QPushButton, "editTool0MaterialBayA")
         # UI now corrected to editTool1MaterialBayX as per user
@@ -87,11 +110,17 @@ class filamentManagementScreen(QWidget):
 
         # Connect buttons to their respective methods (no bay parameter anymore)
         self.changeTool0MaterialBayA.clicked.connect(
-            lambda: self.show_material_nozzle_screen(target_screen="filament_change", params={"tool": "tool0"})
+            lambda: self.show_material_nozzle_screen(target_screen="filament_change", params={"tool": "tool0", "bay": "material_bay_a"})
         )
         self.changeTool1MaterialBayX.clicked.connect(
-            lambda: self.show_material_nozzle_screen(target_screen="filament_change", params={"tool": "tool1"})
+            lambda: self.show_material_nozzle_screen(target_screen="filament_change", params={"tool": "tool1", "bay": "material_bay_x"})
         )
+
+        # Bay B filament change (dual material bay printers only)
+        if self.changeTool0MaterialBayB:
+            self.changeTool0MaterialBayB.clicked.connect(
+                lambda: self.show_material_nozzle_screen(target_screen="filament_change", params={"tool": "tool0", "bay": "material_bay_b"})
+            )
 
         self.changeTool0Button.clicked.connect(
             lambda: self.show_material_nozzle_screen(target_screen="nozzle_change", params={"tool": "tool0"})
@@ -102,9 +131,12 @@ class filamentManagementScreen(QWidget):
 
         # Edit handlers
         if self.editTool0MaterialBayA:
-            self.editTool0MaterialBayA.clicked.connect(lambda: self._open_edit_dialog("tool0"))
+            self.editTool0MaterialBayA.clicked.connect(lambda: self._open_edit_dialog("tool0", "material_bay_a"))
         if self.editTool1MaterialBayX:
-            self.editTool1MaterialBayX.clicked.connect(lambda: self._open_edit_dialog("tool1"))
+            self.editTool1MaterialBayX.clicked.connect(lambda: self._open_edit_dialog("tool1", "material_bay_x"))
+        # Bay B edit handler (dual material bay printers only)
+        if self.editTool0MaterialBayB:
+            self.editTool0MaterialBayB.clicked.connect(lambda: self._open_edit_dialog("tool0", "material_bay_b"))
 
         self.materialNozzleBackButton.clicked.connect(lambda: self.main_window.switch_to_menu_screen())
 
@@ -118,6 +150,8 @@ class filamentManagementScreen(QWidget):
             self.main_window.printer_model.tool_bay_state_changed.connect(self._on_tool_state_changed)
             # Also react to printer status to enable/disable change buttons
             self.main_window.printer_model.status_updated.connect(self._on_status_updated)
+            # React to active material bay changes (for dual material bay printers)
+            self.main_window.printer_model.active_material_bay_changed.connect(self._on_active_bay_changed)
         except Exception as e:
             self.logger.error(f"Failed connecting tool state signals: {e}")
         # Apply current state immediately in case the signal fired before this screen connected
@@ -136,8 +170,44 @@ class filamentManagementScreen(QWidget):
         self.apply_nozzle_configuration()
 
     def apply_nozzle_configuration(self):
-        """Hide dual nozzle elements for single nozzle configuration."""
+        """Hide dual nozzle elements for single nozzle configuration and
+        show/hide dual material bay elements based on printer type."""
         apply_nozzle_config_to_screen(self, 'filament_management_screen')
+        # Apply dual material bay configuration (shows Bay B elements for Dragon 400 V2)
+        apply_dual_material_bay_config_to_screen(self, 'filament_management_screen')
+        # Configure filament path image size based on printer type
+        self._configure_filament_path_image_size()
+        # Update filament path image based on printer type
+        self.update_filament_path_image()
+        # Update active bay indicators (for dual material bay printers)
+        self.update_active_bay_indicators()
+
+    def _configure_filament_path_image_size(self):
+        """Configure filament path image size based on printer type.
+        
+        For dual material bay printers, stretch the image horizontally
+        to align with both material bay container centers.
+        For single bay printers, keep default sizing.
+        """
+        try:
+            if not self.tool0FilamentTubeImage:
+                return
+            
+            if is_dual_material_bay_printer():
+                # Stretch image for dual material bay - wider to span both bays
+                self.tool0FilamentTubeImage.setMaximumSize(350, 60)
+                self.tool0FilamentTubeImage.setMinimumWidth(300)
+                # Remove margins to allow full stretch
+                self.tool0FilamentTubeImage.setStyleSheet("margin-left: 0px; margin-right: 0px;")
+                self.logger.debug("Configured filament path image for dual material bay (stretched)")
+            else:
+                # Single bay - keep original sizing
+                self.tool0FilamentTubeImage.setMaximumSize(200, 60)
+                self.tool0FilamentTubeImage.setStyleSheet("margin-left: 50px; margin-right: 50px;")
+                self.logger.debug("Configured filament path image for single bay (default)")
+                
+        except Exception as e:
+            self.logger.error(f"Error configuring filament path image size: {e}")
 
     def _on_status_updated(self, status: str):
         """Enable/disable change buttons based on printer status.
@@ -152,6 +222,11 @@ class filamentManagementScreen(QWidget):
         self.changeTool1Button.setDisabled(nozzle_disabled)
         self.changeTool0MaterialBayA.setDisabled(material_disabled)
         self.changeTool1MaterialBayX.setDisabled(material_disabled)
+        
+        # Bay B buttons (dual material bay printers only)
+        if self.changeTool0MaterialBayB:
+            self.changeTool0MaterialBayB.setDisabled(material_disabled)
+        # Note: Bay B shares nozzle with Bay A, no separate nozzle button
 
     def showEvent(self, event):
         """Reset to main_material_nozzle_page whenever this widget is shown from main window navigation."""
@@ -264,21 +339,40 @@ class filamentManagementScreen(QWidget):
             return styles.printer_status_blue
         return styles.printer_status_amber
 
-    def _apply_tool_ui(self, tool: str, data: dict):
+    def _apply_tool_ui(self, tool: str, data: dict, bay: str = None):
+        """Apply tool/bay state data to the UI elements.
+        
+        Args:
+            tool: Tool identifier ('tool0' or 'tool1')
+            data: Dict with 'filament', 'status', 'nozzle' keys
+            bay: Optional bay identifier ('material_bay_a', 'material_bay_b', 'material_bay_x')
+        """
         filament = data.get("filament") or "Unknown"
         status = data.get("status", "Unknown")
         display_filament = "-" if status == "Empty" else str(filament)
         nozzle = data.get("nozzle", "Unknown")
+        
         if tool == "tool0":
-            # Show currently loaded material on the button itself
-            if self.changeTool0MaterialBayA:
-                self.changeTool0MaterialBayA.setText(display_filament)
-            if self.tool0MaterialBayAStateLabel:
-                self.tool0MaterialBayAStateLabel.setText(str(status))
-            if self.tool0MaterialBayAStateColor:
-                self.tool0MaterialBayAStateColor.setStyleSheet(self._status_to_style(status))
-            if self.changeTool0Button:
-                self.changeTool0Button.setText("Unknown" if nozzle == "Unknown" or not nozzle else f"{nozzle} mm")
+            # Handle Bay A or default
+            if bay is None or bay == "material_bay_a":
+                if self.changeTool0MaterialBayA:
+                    self.changeTool0MaterialBayA.setText(display_filament)
+                if self.tool0MaterialBayAStateLabel:
+                    self.tool0MaterialBayAStateLabel.setText(str(status))
+                if self.tool0MaterialBayAStateColor:
+                    self.tool0MaterialBayAStateColor.setStyleSheet(self._status_to_style(status))
+                if self.changeTool0Button:
+                    self.changeTool0Button.setText("Unknown" if nozzle == "Unknown" or not nozzle else f"{nozzle} mm")
+            # Handle Bay B (dual material bay printers)
+            elif bay == "material_bay_b":
+                if self.changeTool0MaterialBayB:
+                    self.changeTool0MaterialBayB.setText(display_filament)
+                if self.tool0MaterialBayBStateLabel:
+                    self.tool0MaterialBayBStateLabel.setText(str(status))
+                if self.tool0MaterialBayBStateColor:
+                    self.tool0MaterialBayBStateColor.setStyleSheet(self._status_to_style(status))
+                # Bay B shares the same nozzle as Bay A (single nozzle dual material bay)
+                # No separate nozzle button for Bay B
         elif tool == "tool1":
             if self.changeTool1MaterialBayX:
                 self.changeTool1MaterialBayX.setText(display_filament)
@@ -292,29 +386,129 @@ class filamentManagementScreen(QWidget):
     def _on_tool_states_loaded(self, states: dict):
         # Use primary bays for current UI
         m = self.main_window.printer_model
-        t0 = m.get_bay_state("tool0")
-        t1 = m.get_bay_state("tool1")
-        self._apply_tool_ui("tool0", t0)
-        self._apply_tool_ui("tool1", t1)
+        t0 = m.get_bay_state("tool0", "material_bay_a")
+        t1 = m.get_bay_state("tool1", "material_bay_x")
+        self._apply_tool_ui("tool0", t0, "material_bay_a")
+        self._apply_tool_ui("tool1", t1, "material_bay_x")
+        
+        # Handle Bay B for dual material bay printers
+        if is_dual_material_bay_printer():
+            t0_bay_b = m.get_bay_state("tool0", "material_bay_b")
+            self._apply_tool_ui("tool0", t0_bay_b, "material_bay_b")
+        
+        # Update filament path image based on loaded states
+        self.update_filament_path_image()
+        # Update active bay indicators
+        self.update_active_bay_indicators()
 
     def _on_tool_state_changed(self, tool: str, bay: str, data: dict):
-        # For now, reflect only primary bay changes on screen
-        if bay == self.main_window.printer_model.get_default_bay(tool):
-            self._apply_tool_ui(tool, data)
+        # Reflect changes for all relevant bays
+        if tool == "tool0":
+            if bay in ("material_bay_a", "material_bay_b"):
+                self._apply_tool_ui(tool, data, bay)
+                # Update filament path image when bay state changes
+                self.update_filament_path_image()
+        elif tool == "tool1":
+            if bay == "material_bay_x":
+                self._apply_tool_ui(tool, data, bay)
+
+    def update_filament_path_image(self):
+        """Update filament path image based on printer config and bay states.
+        
+        For dual material bay printers (Dragon 400 V2):
+        - leftLoaded.png when Bay A is loaded
+        - rightLoaded.png when Bay B is loaded  
+        - noneLoaded.png when neither bay is loaded
+        
+        For single bay printers:
+        - singleLoaded.png always (default)
+        """
+        try:
+            if not self.tool0FilamentTubeImage:
+                return
+            
+            if is_dual_material_bay_printer():
+                # Dual material bay printer - show bay-specific image
+                model = self.main_window.printer_model
+                bay_a_state = model.get_bay_state("tool0", "material_bay_a")
+                bay_b_state = model.get_bay_state("tool0", "material_bay_b")
+                
+                bay_a_loaded = bay_a_state.get("status") == "Loaded"
+                bay_b_loaded = bay_b_state.get("status") == "Loaded"
+                
+                if bay_a_loaded:
+                    image_path = ":/Filament Paths/img/Filament Paths/leftLoaded.png"
+                elif bay_b_loaded:
+                    image_path = ":/Filament Paths/img/Filament Paths/rightLoaded.png"
+                else:
+                    image_path = ":/Filament Paths/img/Filament Paths/noneLoaded.png"
+                
+                self.logger.debug(f"Dual bay image: A={bay_a_loaded}, B={bay_b_loaded} -> {image_path}")
+            else:
+                # Single bay printer - always show singleLoaded
+                image_path = ":/Filament Paths/img/Filament Paths/singleLoaded.png"
+            
+            pixmap = QtGui.QPixmap(image_path)
+            if not pixmap.isNull():
+                self.tool0FilamentTubeImage.setPixmap(pixmap)
+            else:
+                self.logger.warning(f"Failed to load filament path image: {image_path}")
+                
+        except Exception as e:
+            self.logger.error(f"Error updating filament path image: {e}")
+
+    def _on_active_bay_changed(self, bay: str):
+        """Handle active material bay change signal."""
+        self.update_active_bay_indicators(bay)
+
+    def update_active_bay_indicators(self, active_bay: str = None):
+        """Update material bay active indicator colors.
+        
+        Args:
+            active_bay: 'A' or 'B'. If None, fetches from printer model.
+        """
+        try:
+            if not is_dual_material_bay_printer():
+                return
+            
+            if active_bay is None:
+                active_bay = self.main_window.printer_model.get_active_material_bay()
+            
+            active_style = "background-color: #4CAF50; border-radius: 6px;"  # Green
+            inactive_style = "background-color: #757575; border-radius: 6px;"  # Gray
+            
+            if self.materialBayActiveIndicatorA:
+                if active_bay == 'A':
+                    self.materialBayActiveIndicatorA.setStyleSheet(active_style)
+                else:
+                    self.materialBayActiveIndicatorA.setStyleSheet(inactive_style)
+            
+            if self.materialBayActiveIndicatorB:
+                if active_bay == 'B':
+                    self.materialBayActiveIndicatorB.setStyleSheet(active_style)
+                else:
+                    self.materialBayActiveIndicatorB.setStyleSheet(inactive_style)
+            
+            self.logger.debug(f"Updated active bay indicators: active={active_bay}")
+                
+        except Exception as e:
+            self.logger.error(f"Error updating active bay indicators: {e}")
 
     # --- New: Edit dialog to sync reality without wizard ---
-    def _open_edit_dialog(self, tool: str):
+    def _open_edit_dialog(self, tool: str, bay: str = None):
         model = self.main_window.printer_model
-        current = model.get_bay_state(tool)
+        # Use provided bay or fall back to default
+        if bay is None:
+            bay = model.get_default_bay(tool)
+        current = model.get_bay_state(tool, bay)
         filament_names = list(getattr(model, 'filaments', config.filaments).keys())
 
         dialog_widget = QDialog(self)
         dialog_widget.setObjectName("EditToolStateDialog")
-        # Title: Edit Tool * Material Bay ** (e.g., Tool 0, Bay A/X)
+        # Title: Edit Tool * Material Bay ** (e.g., Tool 0, Bay A/X/B)
         try:
-            default_bay = model.get_default_bay(tool)
-            if default_bay:
-                bay_letter = default_bay.split("_")[-1].upper()
+            if bay:
+                bay_letter = bay.split("_")[-1].upper()
             else:
                 bay_letter = "A" if tool == "tool0" else "X"
             tool_num = tool.replace("tool", "") if isinstance(tool, str) else str(tool)
@@ -475,6 +669,39 @@ class filamentManagementScreen(QWidget):
         form.addRow(lab_status, cb_status)
         form.addRow(lab_nozzle, cb_nozzle)
 
+        # Add active bay selector for dual material bay printers (tool0 only)
+        cb_active_bay = None
+        if is_dual_material_bay_printer() and tool == "tool0":
+            cb_active_bay = QComboBox(dialog_widget)
+            cb_active_bay.setFont(base_font)
+            try:
+                cb_active_bay.setMinimumWidth(220)
+            except Exception:
+                pass
+            try:
+                cb_active_bay.setStyleSheet("QComboBox { background-color: #ffffff; color: #000000; } QComboBox QAbstractItemView, QComboBox QListView { background-color: #ffffff; color: #000000; selection-background-color: #0078D7; selection-color: #ffffff; }")
+            except Exception:
+                pass
+            try:
+                lv_ab = QtWidgets.QListView(dialog_widget)
+                lv_ab.setFont(base_font)
+                lv_ab.setStyleSheet("QListView { background-color: #ffffff; color: #000000; } QListView::item:selected { background: #0078D7; color: #ffffff; }")
+                pal_list_ab = lv_ab.palette()
+                pal_list_ab.setColor(QtGui.QPalette.Base, QtGui.QColor("#ffffff"))
+                pal_list_ab.setColor(QtGui.QPalette.Text, QtGui.QColor("#000000"))
+                lv_ab.setPalette(pal_list_ab)
+                cb_active_bay.setView(lv_ab)
+            except Exception:
+                pass
+            cb_active_bay.addItem("Bay A")
+            cb_active_bay.addItem("Bay B")
+            current_active = model.get_active_material_bay()
+            cb_active_bay.setCurrentIndex(0 if current_active == 'A' else 1)
+            
+            lab_active_bay = QLabel("Active Bay", dialog_widget)
+            lab_active_bay.setFont(base_font)
+            form.addRow(lab_active_bay, cb_active_bay)
+
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, dialog_widget)
         try:
             buttons.setFont(base_font)
@@ -512,7 +739,37 @@ class filamentManagementScreen(QWidget):
             status = cb_status.currentText()
             nozzle = cb_nozzle.currentText()
             try:
-                model.update_tool_bay_state(tool, filament=filament, status=status, nozzle=nozzle, persist=True)
+                model.update_tool_bay_state(tool, bay=bay, filament=filament, status=status, nozzle=nozzle, persist=True)
+                
+                # For dual material bay printers, sync nozzle size across both bays
+                # since Bay A and Bay B share the same physical nozzle on tool0
+                if is_dual_material_bay_printer() and tool == "tool0":
+                    other_bay = "material_bay_b" if bay == "material_bay_a" else "material_bay_a"
+                    other_state = model.get_bay_state(tool, other_bay)
+                    # Only update nozzle, keep other fields unchanged
+                    model.update_tool_bay_state(
+                        tool, 
+                        bay=other_bay, 
+                        filament=other_state.get("filament"),
+                        status=other_state.get("status", "Unknown"),
+                        nozzle=nozzle,  # Sync nozzle size
+                        persist=True
+                    )
+                    self.logger.info(f"Synced nozzle size '{nozzle}' to {other_bay}")
+                
+                # Update active bay if changed (for dual material bay printers)
+                if cb_active_bay is not None:
+                    new_active_bay = 'A' if cb_active_bay.currentIndex() == 0 else 'B'
+                    current_active = model.get_active_material_bay()
+                    if new_active_bay != current_active:
+                        # Update the model (emits active_material_bay_changed signal for UI updates)
+                        model.set_active_material_bay(new_active_bay)
+                        # Send GCODE to sync Klipper firmware state
+                        try:
+                            self.octoprint_client.gcode(f"SYNC_MATERIAL_BAY BAY={new_active_bay}")
+                            self.logger.info(f"Changed active material bay to {new_active_bay} (firmware + UI)")
+                        except Exception as gcode_err:
+                            self.logger.error(f"Failed to sync active bay to Klipper: {gcode_err}")
             except Exception as e:
                 self.logger.error(f"Failed to set tool state: {e}")
 

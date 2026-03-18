@@ -858,6 +858,8 @@ class ZProbeOffsetWizard(QWidget):
         Apply the calculated probe offset and finish calibration.
         
         Applies M851 command with calculated offset and returns to main screen.
+        Uses restart_klipper_and_wait() to properly wait for Klipper to be ready
+        before navigating away, preventing transient MCU error dialogs.
         """
         try:
             if not hasattr(self, 'calculated_offset') or self.calculated_offset is None:
@@ -892,21 +894,43 @@ class ZProbeOffsetWizard(QWidget):
             
             self.logger.info(f"Probe offset {self.calculated_offset:.6f}mm applied and saved")
             
-            # Clean up and return to main screen (cleanup only, no restart)
+            # Clean up wizard state
             self.cleanup()
             
             # Turn off heating and home
             self.octoprint_client.gcode("M104 T0 S0")  # Turn off tool 0 heater
             self.octoprint_client.home(['x', 'y', 'z'])
-            self.octoprint_client.gcode("RESTART")
-
-            # Return to main calibration screen
-            if hasattr(self.main_window, 'calibrate_screen'):
-                self.main_window.calibrate_screen.show_calibrate_screen()
+            
+            # Use restart_klipper_and_wait instead of direct RESTART
+            self.main_window.controller.restart_klipper_and_wait(
+                on_complete=self._on_klipper_restart_complete,
+                timeout_seconds=30
+            )
             
         except Exception as e:
             self.logger.error(f"Error applying probe offset: {e}")
             self._show_error("Application Error", str(e))
+
+    def _on_klipper_restart_complete(self, success, message):
+        """
+        Callback when Klipper restart completes after applying probe offset.
+        
+        Args:
+            success: True if Klipper restarted successfully
+            message: Status message from the restart process
+        """
+        try:
+            if success:
+                self.logger.info(f"Klipper restart completed: {message}")
+            else:
+                self.logger.warning(f"Klipper restart issue: {message}")
+            
+            # Return to main calibration screen
+            if hasattr(self.main_window, 'calibrate_screen'):
+                self.main_window.calibrate_screen.show_calibrate_screen()
+                
+        except Exception as e:
+            self.logger.error(f"Error in _on_klipper_restart_complete: {e}")
 
     # ==================== TIMEOUT AND ERROR HANDLING ====================
 

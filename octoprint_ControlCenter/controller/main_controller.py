@@ -137,6 +137,7 @@ class MainController(QtCore.QObject):
 
     # Define signals
     klipper_error_signal = QtCore.pyqtSignal(str)  # Signal to show error dialog from main thread
+    klipper_restart_complete_signal = QtCore.pyqtSignal(bool, str)  # Signal emitted when Klipper restart completes (success, message)
 
     # =========================================================================
     # SECTION: Initialization / Startup Lifecycle
@@ -154,6 +155,13 @@ class MainController(QtCore.QObject):
         self.main_window = MainWindow(controller=self, printer_model=self.printer_model)
         self.klipper_status_refresh_running = False  # Track if STATUS refresh is already running
         self.startup_time = time.time()  # Track when the controller was initialized
+        
+        # Klipper restart grace period - suppresses transient MCU errors during intentional restarts
+        self._klipper_restart_in_progress = False
+        self._handling_critical_error = False  # Re-entrancy guard for showPrinterError
+        self._klipper_restart_grace_timer = QtCore.QTimer(self)
+        self._klipper_restart_grace_timer.setSingleShot(True)
+        self._klipper_restart_grace_timer.timeout.connect(self._end_klipper_restart_grace_period)
         
         # Connect signal to slot for showing Klipper error dialog in main thread
         self.klipper_error_signal.connect(self.showKlipperErrorDialog)
@@ -184,12 +192,16 @@ class MainController(QtCore.QObject):
         try:
             self.updateLoadingProgress(96, "Initializing client...")
             self.octoprint_client = octoprint_singleton.get_client()
-            self.updateLoadingProgress(97, "Loading user interface...")
+            
+            # IMPORTANT: Validate/restore printer.cfg BEFORE loading UI
+            # This ensures UI configuration is read from valid config
+            self.updateLoadingProgress(97, "Validating printer configuration...")
+            self._ensure_valid_printer_config()
+            
+            self.updateLoadingProgress(98, "Loading user interface...")
             self.main_window.loadUI(minimalUI=False)
-            self.updateLoadingProgress(98, "Initializing websocket connection...")
+            self.updateLoadingProgress(99, "Initializing websocket connection...")
             self.initialize_websocket()
-            self.updateLoadingProgress(99, "Checking Klipper configuration...")
-            self.checkKlipperPrinterCFG()
             # Check for firmware updates during startup if enabled
             self.check_firmware_update()
             self.updateLoadingProgress(100, "Startup complete!")
@@ -197,6 +209,34 @@ class MainController(QtCore.QObject):
         except Exception as e:
             self.logger.error(f"Error during startup success handling: {e}")
             self.handleStartupError()
+
+    def _ensure_valid_printer_config(self):
+        """Validate printer.cfg and restore from backup if corrupted.
+        
+        This must run BEFORE loading UI to ensure correct nozzle configuration.
+        """
+        try:
+            from utils.printer_config_manager import get_printer_config_manager
+            manager = get_printer_config_manager()
+            
+            if not manager.is_config_valid():
+                self.logger.error("Printer Config File Corrupted or Not Found, Attempting to restore Backup")
+                if manager.restore_backup_config():
+                    self.logger.info("Printer Config File Restored from backup before UI load")
+                else:
+                    self.logger.error("Failed to restore printer config from backup")
+                    dialog.WarningOk(
+                        self.main_window, 
+                        "Printer Config File corrupted and no valid backup found.\n"
+                        "Contact Fracktal support or raise a ticket at care.fracktal.in",
+                        overlay=True
+                    )
+            else:
+                self.logger.info("Printer Config File validated OK")
+                manager.cleanup_old_backups()
+                
+        except Exception as e:
+            self.logger.error(f"Error validating printer config: {e}")
 
     def handleVirtualFallback(self, message):
         """Show dialog if physical Klipper connection failed and virtual printer used."""
@@ -283,7 +323,14 @@ class MainController(QtCore.QObject):
 
 
     def checkKlipperPrinterCFG(self):
-        """Validate printer.cfg; attempt restore or cleanup backups."""
+        """Validate printer.cfg; attempt restore or cleanup backups.
+        
+        Note: Primary validation now happens in _ensure_valid_printer_config() 
+        during startup BEFORE UI loads. This method is kept for:
+        1. Post-print restore scenarios
+        2. Manual checks from UI
+        3. Print cancellation if config corrupted during print
+        """
         if not self.octoprint_client:
             return
         try:
@@ -292,6 +339,8 @@ class MainController(QtCore.QObject):
                 self.logger.error("Printer Config File Corrupted or Not Found, Attempting to restore Backup")
                 if manager.restore_backup_config():
                     self.logger.info("Printer Config File Restored from backup")
+                    # Reload printer configuration after restore
+                    self.printer_model.reload_printer_configuration()
                     return
                 dialog.WarningOk(self.main_window, "Printer Config File corrupted. Contact Fracktal support or raise a ticket at care.fracktal.in")
                 if self.printer_model.printer_status in ["Printing", "Paused"]:
@@ -429,6 +478,128 @@ class MainController(QtCore.QObject):
             self.logger.error(f"Error during printer restart: {e}")
             dialog.WarningOk(self.main_window, f"Error during restart: {e}", overlay=True)
             return False
+
+    # =========================================================================
+    # SECTION: Klipper Restart Utilities
+    # =========================================================================
+
+    def _end_klipper_restart_grace_period(self):
+        """End the Klipper restart grace period (called by timer)."""
+        self._klipper_restart_in_progress = False
+        self.logger.debug("Klipper restart grace period ended")
+
+    def restart_klipper_and_wait(self, on_complete=None, timeout_seconds=30, use_firmware_restart=False):
+        """
+        Restart Klipper and wait for it to become ready before calling the completion callback.
+        
+        This method provides a reusable way to restart Klipper after saving settings,
+        suppressing transient MCU reset errors during the restart process.
+        
+        Args:
+            on_complete: Optional callback function to call when restart completes.
+                        Called with (success: bool, message: str) arguments.
+                        If None, the klipper_restart_complete_signal is emitted instead.
+            timeout_seconds: Maximum time to wait for Klipper to become ready (default: 30).
+            use_firmware_restart: If True, use FIRMWARE_RESTART instead of RESTART (default: False).
+        
+        Usage:
+            # With callback:
+            self.main_window.controller.restart_klipper_and_wait(
+                on_complete=lambda success, msg: self.on_restart_done(success, msg)
+            )
+            
+            # With signal:
+            self.main_window.controller.klipper_restart_complete_signal.connect(self.on_restart_done)
+            self.main_window.controller.restart_klipper_and_wait()
+        """
+        try:
+            self.logger.info(f"Starting Klipper restart (firmware_restart={use_firmware_restart}, timeout={timeout_seconds}s)")
+            
+            # Enable grace period to suppress transient MCU errors
+            self._klipper_restart_in_progress = True
+            # Set a grace period timer that extends beyond the expected restart time
+            grace_period_ms = (timeout_seconds + 10) * 1000
+            self._klipper_restart_grace_timer.start(grace_period_ms)
+            
+            # Send restart command
+            restart_command = 'FIRMWARE_RESTART' if use_firmware_restart else 'RESTART'
+            self.octoprint_client.gcode(command=restart_command)
+            self.logger.info(f"Sent {restart_command} command")
+            
+            # Start async wait for Klipper ready
+            self._wait_for_klipper_ready_async(on_complete, timeout_seconds)
+            
+        except Exception as e:
+            self.logger.error(f"Error initiating Klipper restart: {e}")
+            self._klipper_restart_in_progress = False
+            self._klipper_restart_grace_timer.stop()
+            error_msg = f"Failed to restart Klipper: {e}"
+            if on_complete:
+                on_complete(False, error_msg)
+            else:
+                self.klipper_restart_complete_signal.emit(False, error_msg)
+
+    @run_async
+    def _wait_for_klipper_ready_async(self, on_complete, timeout_seconds):
+        """
+        Background thread that waits for Klipper to become ready after restart.
+        
+        Args:
+            on_complete: Callback function or None to use signal instead.
+            timeout_seconds: Maximum wait time.
+        """
+        deadline = time.time() + timeout_seconds
+        ready = False
+        final_state = 'unknown'
+        
+        self.logger.info(f"Waiting up to {timeout_seconds}s for Klipper to become ready...")
+        
+        # Wait for Klipper state to become 'ready'
+        while time.time() < deadline:
+            try:
+                current_state = getattr(self.printer_model, 'klipper_state', 'unknown')
+                final_state = current_state
+                
+                if current_state.lower() == 'ready':
+                    ready = True
+                    self.logger.info(f"Klipper is ready (took ~{timeout_seconds - (deadline - time.time()):.1f}s)")
+                    break
+                    
+                self.logger.debug(f"Klipper state: {current_state}, waiting...")
+                
+            except Exception as e:
+                self.logger.debug(f"Error checking Klipper state: {e}")
+            
+            time.sleep(1)
+        
+        # End grace period
+        self._klipper_restart_in_progress = False
+        self._klipper_restart_grace_timer.stop()
+        
+        # Prepare result
+        if ready:
+            success = True
+            message = "Klipper restart completed successfully"
+        else:
+            success = False
+            message = f"Klipper restart timed out (state: {final_state})"
+            self.logger.warning(message)
+        
+        # Notify completion on main thread
+        # Use default arguments in lambda to properly capture current values
+        if on_complete:
+            QtCore.QTimer.singleShot(0, lambda s=success, m=message: on_complete(s, m))
+        else:
+            QtCore.QTimer.singleShot(0, lambda s=success, m=message: self.klipper_restart_complete_signal.emit(s, m))
+
+    def is_klipper_restart_in_progress(self):
+        """
+        Check if a Klipper restart is currently in progress.
+        
+        Returns:
+            bool: True if restart is in progress (grace period active), False otherwise.
+        """
+        return self._klipper_restart_in_progress
 
     # =========================================================================
     # SECTION: Print Restore Management
@@ -706,6 +877,14 @@ class MainController(QtCore.QObject):
                 self.logger.info(f"Ignoring unhealthy Klipper state during startup grace period ({int(time_since_startup)}s elapsed, need 60s)")
                 return
             
+            # Never trigger automatic FIRMWARE_RESTART recovery during active prints.
+            # Sending FIRMWARE_RESTART while printing causes Klipper to emit
+            # "Printer is not ready", which showPrinterError treats as a critical
+            # error and cancels the print + sends M112.
+            if self.printer_model.printer_status in ["Printing", "Paused"]:
+                self.logger.warning(f"Klipper state '{state}' is unhealthy but printer is {self.printer_model.printer_status} - skipping automatic recovery to avoid disrupting print")
+                return
+
             # Check if state is not in valid states and refresh is not already running
             if state.lower() not in valid_states and not self.klipper_status_refresh_running:
                 self.logger.warning(f"Klipper state '{state}' is not healthy, triggering STATUS refresh")
@@ -741,6 +920,7 @@ class MainController(QtCore.QObject):
         
         try:
             self.klipper_status_refresh_running = True
+            self._klipper_restart_in_progress = True
             valid_states = ['ready', 'operational', 'idle', 'unknown']
             self.logger.info("Starting Klipper STATUS refresh cycle (up to 5 attempts)")
             
@@ -800,6 +980,7 @@ class MainController(QtCore.QObject):
             self.logger.error(f"Error in refresh_klipper_status: {e}")
         finally:
             self.klipper_status_refresh_running = False
+            self._klipper_restart_in_progress = False
 
     def onStartupCompleted(self):
         """Handle startup operations when printer first becomes operational."""
@@ -953,13 +1134,29 @@ class MainController(QtCore.QObject):
             cleaned_msg = cleaned_msg[1:].lstrip()
         self.logger.error(f"Printer error received: {msg}")
         self.logger.debug(f"Cleaned message for processing: {cleaned_msg}")
-        
+
+        # Re-entrancy guard: if we are already handling a critical error,
+        # suppress secondary errors (e.g., "Shutdown due to M112" from our own M112,
+        # or "Printer is not ready" from our own FIRMWARE_RESTART).
+        if self._handling_critical_error:
+            self.logger.debug(f"Suppressing re-entrant error during critical error handling: {cleaned_msg}")
+            return
+
+        # Suppress transient errors during intentional Klipper restarts
+        # (FIRMWARE_RESTART causes MCU reset errors and "Printer is not ready" transiently)
+        if self._klipper_restart_in_progress:
+            if ("Failed automated reset of MCU" in cleaned_msg
+                    or "MCU" in cleaned_msg
+                    or "Printer is not ready" in cleaned_msg):
+                self.logger.debug(f"Suppressing transient error during Klipper restart: {cleaned_msg}")
+                return
+
         # Check if this is a "Printer is not ready" error and printer is in expected states
         if "Printer is not ready" in cleaned_msg:
             if self.printer_model.printer_status not in ["Starting", "Printing", "Paused"]:
                 self.logger.debug(f"Suppressing 'Printer is not ready' error because printer status is '{self.printer_model.printer_status}'")
                 return
-        
+
         for ignore_item in IGNORED_PRINTER_ERRORS:
             if ignore_item in cleaned_msg:
                 self.logger.debug(f"Ignoring error message for UI display: {cleaned_msg}")
@@ -969,14 +1166,20 @@ class MainController(QtCore.QObject):
                 if any(error in cleaned_msg for error in CRITICAL_PRINTER_ERRORS):
                     self.logger.error("CRITICAL ERROR SHUTDOWN NEEDED")
                     if self.printer_model.printer_status in ["Starting", "Printing", "Paused"]:
-                        self.octoprint_client.cancelPrint()
-                        self.octoprint_client.gcode(command='M112')
+                        # Set re-entrancy guard before sending M112/FIRMWARE_RESTART
+                        # to suppress the cascade of errors they generate
+                        self._handling_critical_error = True
                         try:
-                            self.octoprint_client.connectPrinter(port="/tmp/printer", baudrate=115200)
-                        except Exception:
-                            self.octoprint_client.connectPrinter(port="VIRTUAL", baudrate=115200)
-                        self.octoprint_client.gcode(command='FIRMWARE_RESTART')
-                        self.octoprint_client.gcode(command='RESTART')
+                            self.octoprint_client.cancelPrint()
+                            self.octoprint_client.gcode(command='M112')
+                            try:
+                                self.octoprint_client.connectPrinter(port="/tmp/printer", baudrate=115200)
+                            except Exception:
+                                self.octoprint_client.connectPrinter(port="VIRTUAL", baudrate=115200)
+                            self.octoprint_client.gcode(command='FIRMWARE_RESTART')
+                            self.octoprint_client.gcode(command='RESTART')
+                        finally:
+                            self._handling_critical_error = False
                         if not self.filamentTriggerDialogShown:
                             self.filamentTriggerDialogShown = True
                             if dialog.WarningOk(self.main_window, cleaned_msg + ", Cancelling Print.", overlay=overlay):
@@ -995,6 +1198,7 @@ class MainController(QtCore.QObject):
                         if dialog.WarningOk(self.main_window, cleaned_msg, overlay=overlay):
                             self.filamentTriggerDialogShown = False
             except Exception as e:
+                self._handling_critical_error = False
                 self.logger.error(f"Error in MainController.showPrinterError: {e}")
                 dialog.WarningOk(self.main_window, f"Error in MainController.showPrinterError: {e}", overlay=True)
 

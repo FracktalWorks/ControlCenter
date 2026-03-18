@@ -18,12 +18,15 @@ DEFAULT_STATE = {
     "version": 1,
     "tools": {
         "tool0": {
-            "material_bay_a": {"filament": None, "status": "Unknown", "nozzle": "Unknown"}
+            "material_bay_a": {"filament": None, "status": "Unknown", "nozzle": "Unknown"},
+            "material_bay_b": {"filament": None, "status": "Unknown", "nozzle": "Unknown"}  # Bay B for dual material bay printers
         },
         "tool1": {
             "material_bay_x": {"filament": None, "status": "Unknown", "nozzle": "Unknown"}
         },
     },
+    # Active material bay for dual material bay printers (Dragon 400 V2)
+    "active_material_bay": "A",  # 'A' or 'B'
     # Persistent user preferences (extendable)
     "preferences": {
         "filament_runout_enabled": True,
@@ -240,6 +243,31 @@ class PrinterPreferenceStore:
         def list_tool_bays(self, tool: str):
             data = self.load_full()
             return list(data.get("tools", {}).get(tool, {}).keys())
+
+        # --- Active Material Bay API (Dragon 400 V2) --------------------------
+        def get_active_material_bay(self) -> str:
+            """Get the currently active material bay ('A' or 'B') for dual material bay printers."""
+            data = self.load_full()
+            return data.get("active_material_bay", "A")
+
+        def set_active_material_bay(self, bay: str) -> None:
+            """Set the active material bay ('A' or 'B') for dual material bay printers.
+            
+            Args:
+                bay: The bay to set as active ('A' or 'B')
+            """
+            bay = bay.upper()
+            if bay not in ('A', 'B'):
+                logger.warning(f"Invalid material bay '{bay}', defaulting to 'A'")
+                bay = 'A'
+            
+            with self._lock:
+                data = self.load_full()
+                if data.get("active_material_bay") != bay:
+                    data["active_material_bay"] = bay
+                    self._dirty = True
+                    if self._batch_depth == 0:
+                        self.save()
 
         # Note: All printer configuration now handled by printer_config_manager
         # Use get_current_printer_selection() and related functions from printer_config_manager

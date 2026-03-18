@@ -49,7 +49,7 @@ from PyQt5 import uic, QtCore
 from PyQt5.QtWidgets import QWidget, QPushButton, QStackedWidget, QComboBox, QProgressBar, QLabel
 from utils.helpers import check_ui_elements, run_async
 from utils.logger import get_logger
-from utils.printer_ui_config import is_dual_nozzle_printer, force_single_tool
+from utils.printer_ui_config import is_dual_nozzle_printer, force_single_tool, is_dual_material_bay_printer
 from utils import dialog
 
 # UI/logic constants
@@ -83,6 +83,7 @@ class ChangeFilamentWizard(QWidget):
         self.changeFilamentHeatingFlag = False
         self.loadFlag = None
         self.activeExtruder = 0  # Default to extruder 0
+        self.activeBay = None    # Active material bay (e.g., 'material_bay_a', 'material_bay_b')
 
         # Inactivity timer (5 minutes) to auto-cancel during async operations
         self.INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000
@@ -233,6 +234,14 @@ class ChangeFilamentWizard(QWidget):
         """Begin Load flow: jog to purge position, set temp (if material selected), and heat."""
         logger.info("changeFilament.loadFilament started - Updated one")
         try:
+            # Validate dual material bay operation (Y-splitter constraint)
+            is_valid, error_msg = self._validate_dual_bay_operation(is_load=True)
+            if not is_valid:
+                dialog.WarningOk(self, error_msg, overlay=True)
+                return
+            
+            # Sync correct extruder motor for dual material bay printers (no-op for others)
+            self._sync_material_bay()
             self._jog_to_purge_position()
             self.logger.debug("Jogging to purge position done")
             if self.changeFilamentComboBox.findText(LOADED_FILAMENT_LABEL) == -1:
@@ -254,6 +263,14 @@ class ChangeFilamentWizard(QWidget):
         """Begin Unload flow: jog to purge position, set temp (if material selected), and heat."""
         logger.info("changeFilament.unloadFilament started")
         try:
+            # Validate dual material bay operation
+            is_valid, error_msg = self._validate_dual_bay_operation(is_load=False)
+            if not is_valid:
+                dialog.WarningOk(self, error_msg, overlay=True)
+                return
+            
+            # Sync correct extruder motor for dual material bay printers (no-op for others)
+            self._sync_material_bay()
             self._jog_to_purge_position()
             if self.changeFilamentComboBox.findText(LOADED_FILAMENT_LABEL) == -1:
                 self._set_tool_temperature()
@@ -402,7 +419,9 @@ class ChangeFilamentWizard(QWidget):
             self.logger.debug("Entered extrusion loop to reach nozzle")
             self.stackedWidget.setCurrentWidget(self.changeFilamentExtrudePage)
             self._start_inactivity_timer()
-            for i in range(int(self.model.ptfeTubeLength / 150)):
+            # Use effective_tube_length which accounts for Y-splitter on dual material bay printers
+            tube_length = self.model.effective_tube_length
+            for i in range(int(tube_length / 150)):
                 self.octoprint_client.gcode("G91")
                 self.octoprint_client.gcode("G1 E150 F1500")
                 self.octoprint_client.gcode("G90")
@@ -442,7 +461,9 @@ class ChangeFilamentWizard(QWidget):
             self.octoprint_client.gcode("G1 E-150 F5000")
             time.sleep(self.calcExtrudeTime(150, 5000))
             self.octoprint_client.gcode("G90")
-            for _ in range(int(self.model.ptfeTubeLength / 150)):
+            # Use effective_tube_length which accounts for Y-splitter on dual material bay printers
+            tube_length = self.model.effective_tube_length
+            for _ in range(int(tube_length / 150)):
                 self.octoprint_client.gcode("G91")
                 self.octoprint_client.gcode("G1 E-150 F2000")
                 self.octoprint_client.gcode("G90")
@@ -479,10 +500,10 @@ class ChangeFilamentWizard(QWidget):
 
     # New setup API so filamentManagementScreen can pass which tool/bay opened the wizard
     def setup(self, params=None):
-        """Prepare and open the wizard for a specific tool if provided.
+        """Prepare and open the wizard for a specific tool/bay if provided.
 
         Params can be:
-            - dict with 'tool': e.g. {"tool": "tool0"} or {"tool": "tool1"}
+            - dict with 'tool' and optional 'bay': e.g. {"tool": "tool0", "bay": "material_bay_a"}
             - str: e.g. "tool0" (legacy)
             - None
         """
@@ -506,6 +527,16 @@ class ChangeFilamentWizard(QWidget):
                 except Exception:
                     # ignore malformed tool string
                     pass
+            
+            # Set active bay if provided, otherwise use default
+            bay = params.get('bay')
+            if bay:
+                self.activeBay = bay
+            else:
+                tool_key = f"tool{int(self.activeExtruder)}"
+                self.activeBay = self.model.get_default_bay(tool_key)
+            
+            logger.debug(f"ChangeFilament setup: tool={tool}, bay={self.activeBay}")
             self.changeFilament()
         except Exception as e:
             logger.error(f"Error in ChangeFilament.setup: {e}", exc_info=True)
@@ -520,7 +551,8 @@ class ChangeFilamentWizard(QWidget):
             if self.loadFlag is not None:
                 try:
                     tool_key = f"tool{int(self.activeExtruder)}"
-                    bay = self.main_window.printer_model.get_default_bay(tool_key)
+                    # Use the activeBay set during setup, or fall back to default
+                    bay = self.activeBay or self.main_window.printer_model.get_default_bay(tool_key)
                     # Determine selected filament name if any
                     selected = None
                     try:
@@ -534,6 +566,12 @@ class ChangeFilamentWizard(QWidget):
                     if bool(self.loadFlag):
                         # Loading: status Loaded; filament to selected (if provided), else unchanged
                         self.model.update_tool_bay_state(tool_key, bay=bay, filament=selected, status="Loaded", persist=True)
+                        # For dual material bay printers, also persist the active bay to Klipper
+                        if is_dual_material_bay_printer() and bay in ('material_bay_a', 'material_bay_b'):
+                            bay_letter = bay.split('_')[-1].upper()
+                            self.model.set_active_material_bay(bay_letter)
+                            self.octoprint_client.gcode("SAVE_ACTIVE_BAY")
+                            logger.info(f"Persisted active material bay '{bay_letter}' to Klipper")
                     else:
                         # Unloading: status Empty; filament cleared
                         self.model.update_tool_bay_state(tool_key, bay=bay, filament=None, status="Empty", persist=True)
@@ -544,8 +582,9 @@ class ChangeFilamentWizard(QWidget):
             self.stackedWidget.setCurrentWidget(self.changeFilamentPage)  # Stops retract and extruding loop as well
             self.main_window.filament_management_screen.show_material_nozzle_screen()
             self.changeFilamentHeatingFlag = False
-            # Reset the flag to avoid unintended reuse
+            # Reset the flags to avoid unintended reuse
             self.loadFlag = None
+            self.activeBay = None
         except Exception as e:
             logger.error(f"Error in ChangeFilament.changeFilamentDone: {e}")
             dialog.WarningOk(self, f"Error in ChangeFilament.changeFilamentDone: {e}", overlay=True)
@@ -572,3 +611,66 @@ class ChangeFilamentWizard(QWidget):
                 self.octoprint_client.setToolTemperature({tool_key: temp})
         except Exception as e:
             logger.error(f"Error setting tool temperature: {e}")
+
+    def _validate_dual_bay_operation(self, is_load: bool) -> tuple:
+        """Validate if the current bay operation is allowed for dual material bay printers.
+        
+        For Y-splitter architecture:
+        - Cannot load if other bay already has filament loaded
+        - Cannot unload from an empty bay
+        
+        Args:
+            is_load: True for load operation, False for unload
+            
+        Returns:
+            tuple: (is_valid, error_message)
+        """
+        if not is_dual_material_bay_printer():
+            return True, ""
+        
+        if not self.activeBay or self.activeBay not in ('material_bay_a', 'material_bay_b'):
+            return True, ""  # Not a dual bay operation
+        
+        tool_key = f"tool{int(self.activeExtruder)}"
+        current_bay = self.activeBay
+        other_bay = "material_bay_b" if current_bay == "material_bay_a" else "material_bay_a"
+        bay_letter = current_bay.split('_')[-1].upper()
+        other_letter = other_bay.split('_')[-1].upper()
+        
+        current_state = self.model.get_bay_state(tool_key, current_bay)
+        other_state = self.model.get_bay_state(tool_key, other_bay)
+        
+        if is_load:
+            # Check if current bay already has filament
+            if current_state.get("status") == "Loaded":
+                return False, f"Bay {bay_letter} already has filament loaded.\nPlease unload first."
+            # Check if other bay has filament (Y-splitter constraint)
+            if other_state.get("status") == "Loaded":
+                return False, f"Bay {other_letter} has filament loaded.\nPlease unload Bay {other_letter} before loading into Bay {bay_letter}."
+            return True, ""
+        else:
+            # Unload: check if current bay has filament to unload
+            if current_state.get("status") != "Loaded":
+                return False, f"Bay {bay_letter} has no filament to unload."
+            return True, ""
+
+    def _sync_material_bay(self):
+        """Sync the correct extruder motor for dual material bay printers.
+        
+        Only applies to Dragon 400 V2 with dual material bays.
+        For Twin Dragon, regular Dragon, and other printers, this is a no-op.
+        """
+        try:
+            if not is_dual_material_bay_printer():
+                return
+            
+            # Determine bay letter from activeBay (e.g., 'material_bay_a' -> 'A', 'material_bay_b' -> 'B')
+            if self.activeBay:
+                bay_letter = self.activeBay.split('_')[-1].upper()
+            else:
+                bay_letter = 'A'  # Default to Bay A
+            
+            logger.info(f"Syncing material bay {bay_letter} for dual material bay printer")
+            self.octoprint_client.gcode(f"SYNC_MATERIAL_BAY BAY={bay_letter}")
+        except Exception as e:
+            logger.error(f"Error syncing material bay: {e}")
