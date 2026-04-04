@@ -394,3 +394,140 @@ def LoadingDialog(parent, text, **kwargs):
     msgbox.setModal(False)
     
     return msgbox
+
+
+class InputShaperProgressDialog(QtWidgets.QDialog):
+    """Live-scrolling dialog that displays input shaper calibration progress.
+
+    Connects to ``printer_model.terminal_message_received`` and shows
+    relevant Klipper output in a scrollable text area.
+    """
+
+    # Keywords that indicate an input-shaper related terminal message
+    _RELEVANT_KEYWORDS = [
+        'testing frequency', 'shaper', 'calibrat', 'recommended',
+        'save_config', 'input shaper', 'smoothing', 'vibration',
+        'fitted', 'axis', 'accelerometer', 'resonance', 'writing raw',
+        'echo:',
+    ]
+
+    def __init__(self, parent=None, is_idex=False):
+        super().__init__(parent)
+        self.setWindowFlags(
+            QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint
+        )
+        self.setFixedSize(520, 420)
+        self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+
+        self._is_idex = is_idex
+        # IDEX: 3 axes (T0 X, T1 X, shared Y); Single: 2 axes (X, Y)
+        self._expected_axes = 3 if is_idex else 2
+        self._completed_axes = 0
+        self._overlay = Overlay(None)
+
+        # --- layout ---
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(16, 12, 16, 12)
+        layout.setSpacing(8)
+
+        self._title_label = QtWidgets.QLabel("Input Shaper Calibration")
+        self._title_label.setFont(font(14, bold=True))
+        self._title_label.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addWidget(self._title_label)
+
+        self._status_label = QtWidgets.QLabel("Initializing…")
+        self._status_label.setFont(font(10))
+        self._status_label.setWordWrap(True)
+        layout.addWidget(self._status_label)
+
+        self._log_text = QtWidgets.QTextEdit()
+        self._log_text.setReadOnly(True)
+        self._log_text.setFont(QtGui.QFont("Courier", 9))
+        self._log_text.setStyleSheet(
+            "QTextEdit { background-color: #1e1e1e; color: #d4d4d4; "
+            "border: 1px solid #555; border-radius: 4px; padding: 4px; }"
+        )
+        layout.addWidget(self._log_text, stretch=1)
+
+        self._close_button = QtWidgets.QPushButton("Close")
+        self._close_button.setEnabled(False)
+        self._close_button.setStyleSheet(
+            "QPushButton { border: 1px solid rgb(87,87,87); "
+            "background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0.188, "
+            "stop:0 rgba(180,180,180,255), stop:1 rgba(255,255,255,255)); "
+            "height: 50px; width: 120px; border-radius: 5px; font: 12pt 'Gotham'; } "
+            "QPushButton:pressed { background-color: qlineargradient(x1:0,y1:0,x2:0,y2:1, "
+            "stop:0 #dadbde, stop:1 #f6f7fa); } "
+            "QPushButton:disabled { color: #999; }"
+        )
+        self._close_button.clicked.connect(self.accept)
+        layout.addWidget(self._close_button, alignment=QtCore.Qt.AlignCenter)
+
+        self.setStyleSheet(
+            "InputShaperProgressDialog { background-color: rgb(240,240,240); "
+            "border: 2px solid rgb(87,87,87); border-radius: 10px; }"
+        )
+
+    # --- public helpers ---
+
+    def set_status(self, text):
+        self._status_label.setText(text)
+
+    def append_message(self, text):
+        self._log_text.append(text)
+        # auto-scroll
+        sb = self._log_text.verticalScrollBar()
+        sb.setValue(sb.maximum())
+
+    def mark_complete(self, success=True):
+        if success:
+            self._status_label.setText("Calibration complete. Printer will restart to apply settings.")
+        else:
+            self._status_label.setText("Calibration encountered an issue. Check the log above.")
+        self._close_button.setEnabled(True)
+
+    # --- terminal message handler ---
+
+    def on_terminal_message(self, message):
+        """Filter and display relevant input-shaper messages."""
+        msg_lower = message.lower()
+        if any(kw in msg_lower for kw in self._RELEVANT_KEYWORDS):
+            self.append_message(message.strip())
+
+        # Each SHAPER_CALIBRATE_BASE prints this after finishing one axis.
+        # Only mark complete once ALL expected axes are done (before SAVE_CONFIG restarts Klipper).
+        if 'the save_config command will update' in msg_lower:
+            self._completed_axes += 1
+            remaining = self._expected_axes - self._completed_axes
+            if remaining > 0:
+                self.set_status(
+                    f"Axis {self._completed_axes}/{self._expected_axes} done. "
+                    f"Calibrating next axis…"
+                )
+            else:
+                self.set_status("All axes calibrated! Saving configuration & restarting printer…")
+                self.mark_complete(success=True)
+
+    # --- overrides ---
+
+    def show(self):
+        self._overlay.show()
+        super().show()
+        # center on screen
+        screen = QtWidgets.QApplication.desktop().screenNumber(
+            QtWidgets.QApplication.desktop().cursor().pos()
+        )
+        center = QtWidgets.QApplication.desktop().screenGeometry(screen).center()
+        fg = self.frameGeometry()
+        fg.moveCenter(center)
+        self.move(fg.topLeft())
+
+    def done(self, result):
+        self._overlay.hide()
+        self._overlay.close()
+        super().done(result)
+
+    def closeEvent(self, event):
+        self._overlay.hide()
+        self._overlay.close()
+        super().closeEvent(event)

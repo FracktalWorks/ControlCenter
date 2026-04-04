@@ -61,6 +61,9 @@ class OctoPrintWebSocket(QThread):
     # Probe accuracy results signal for MVP architecture
     probe_accuracy_signal = pyqtSignal(str)  # Raw probe accuracy message string
 
+    # Terminal message signal - emits every raw terminal message for live monitoring
+    terminal_message_signal = pyqtSignal(str)
+
     def __init__(self, ip="0.0.0.0:5000", api_key=None):
         """
         Initialize the WebSocket client
@@ -488,6 +491,12 @@ class OctoPrintWebSocket(QThread):
                         for item in data["current"]["messages"]:
                             try:
                                 self.logger.debug(f"Processing message: {item}")
+                                
+                                # Emit raw terminal message for any listeners (e.g. input shaper progress)
+                                try:
+                                    self.terminal_message_signal.emit(item)
+                                except Exception as e:
+                                    self.logger.error(f"Error emitting terminal_message_signal: {e}")
                                 
                                 # Filament sensor messages (case-insensitive for robustness)
                                 # Standard format: "Filament Runout Detected on T0/T1"

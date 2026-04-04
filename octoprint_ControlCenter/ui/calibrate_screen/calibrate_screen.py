@@ -128,15 +128,48 @@ class CalibrateScreen(QWidget):
     def inputShaperCalibrate(self):
         self.logger.info("CalibrateScreen.inputShaperCalibrate started")
         try:
-            dialog.WarningOk(self, "Wait for all calibration movements to finish before proceeding.", overlay=True)
-            self.octoprint_client.gcode(command='G28')
-            self.octoprint_client.gcode(command='SHAPER_CALIBRATE')
-            self.octoprint_client.gcode(command='SAVE_CONFIG')
+            is_idex = self.main_window.printer_model.IS_DUAL_NOZZLE
+            model = self.main_window.printer_model
+
+            # Create progress dialog
+            progress = dialog.InputShaperProgressDialog(self, is_idex=is_idex)
+
+            # Wire terminal messages into the dialog
+            model.terminal_message_received.connect(progress.on_terminal_message)
+
+            # Build the command sequence
+            if is_idex:
+                progress.set_status("Homing → Calibrating T0 X, T1 X, and shared Y…")
+                commands = '\n'.join([
+                    'G28',
+                    'SHAPER_CALIBRATE',
+                    'SAVE_CONFIG',
+                ])
+            else:
+                progress.set_status("Homing → Calibrating X + Y…")
+                commands = '\n'.join([
+                    'G28',
+                    'SHAPER_CALIBRATE',
+                    'SAVE_CONFIG',
+                ])
+
+            # Queue all commands – they execute in order on the printer
+            self.octoprint_client.gcode(command=commands)
+
+            # Show the dialog (modal – runs nested event loop so signals are still delivered)
+            progress.show()
+            progress.exec_()
+
+            # Disconnect after dialog closes
+            try:
+                model.terminal_message_received.disconnect(progress.on_terminal_message)
+            except (TypeError, RuntimeError):
+                pass  # already disconnected or object deleted
 
         except Exception as e:
-            error_message = f"Error in inptuShaperCalibrate: {str(e)}"
+            error_message = f"Error in inputShaperCalibrate: {str(e)}"
             self.logger.error(error_message)
-            dialog.WarningOk(error_message, overlay=True)
+            dialog.WarningOk(self, error_message, overlay=True)
 
     def show_calibrate_screen(self, target_screen=None, tab=None):
         """Show a specific calibration screen or the main calibration page.

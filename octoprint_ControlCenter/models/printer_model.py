@@ -51,6 +51,9 @@ class PrinterModel(QObject):
     # Probe accuracy results for calibration wizards
     probe_accuracy_result_received = pyqtSignal(str, dict)  # (tool_name, probe_data)
 
+    # Terminal message relay for live monitoring (e.g., input shaper calibration)
+    terminal_message_received = pyqtSignal(str)  # raw terminal message string
+
     def __init__(self):
         super(PrinterModel, self).__init__()
         self.logger = get_logger(self.__class__.__name__)
@@ -400,6 +403,10 @@ class PrinterModel(QObject):
                 
         except Exception as e:
             self.logger.error(f"Error handling probe accuracy result: {e}")
+
+    def relay_terminal_message(self, message):
+        """Relay raw terminal messages to any listening UI components."""
+        self.terminal_message_received.emit(message)
 
     def setToolOffset(self, M218Data):
         """ Set the tool offsets from M218 response """

@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QLabel, QProgress
 from PyQt5 import QtGui, QtCore
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
-from utils.printer_ui_config import apply_nozzle_config_to_screen, is_dual_material_bay_printer
+from utils.printer_ui_config import apply_nozzle_config_to_screen
 from utils.styles import printer_status_green, printer_status_red, printer_status_amber
 from utils import dialog
 from utils import styles
@@ -76,7 +76,6 @@ class HomeScreen(QWidget):
         self.printerStatus = self.findChild(QLabel, "printerStatus")
         self.printerStatusColour = self.findChild(QLabel, "printerStatusColour")
         self.ipStatus = self.findChild(QLabel, "ipStatus")
-        self.activeMaterialBayLabel = self.findChild(QLabel, "activeMaterialBayLabel")
 
         # Print information
         self.fileName = self.findChild(QLabel, "fileName")
@@ -116,12 +115,6 @@ class HomeScreen(QWidget):
             self.main_window.printer_model.tool_bay_state_changed.connect(self.on_tool_state_changed)
         except Exception as e:
             self.logger.warning(f"Tool state signals not available: {e}")
-        
-        # Connect active material bay changed signal for dual material bay printers
-        try:
-            self.main_window.printer_model.active_material_bay_changed.connect(self.update_active_material_bay_display)
-        except Exception as e:
-            self.logger.warning(f"Active material bay signal not available: {e}")
 
         # Connect button signals to their handlers
         self.doorLockButton.clicked.connect(self.toggle_door_lock)
@@ -201,39 +194,10 @@ class HomeScreen(QWidget):
 
         # Apply nozzle configuration
         self.apply_nozzle_configuration()
-        
-        # Apply material bay configuration (show/hide active bay label)
-        self.apply_material_bay_configuration()
 
     def apply_nozzle_configuration(self):
         """Hide dual nozzle elements for single nozzle configuration."""
         apply_nozzle_config_to_screen(self, 'home_screen')
-    
-    def apply_material_bay_configuration(self):
-        """Show/hide active material bay label based on printer configuration."""
-        if self.activeMaterialBayLabel:
-            if is_dual_material_bay_printer():
-                # Show the label and initialize with current active bay
-                self.activeMaterialBayLabel.show()
-                try:
-                    active_bay = self.main_window.printer_model.get_active_material_bay()
-                    self.update_active_material_bay_display(active_bay)
-                except Exception as e:
-                    self.logger.warning(f"Could not get initial active material bay: {e}")
-                    self.activeMaterialBayLabel.setText("Bay A")
-            else:
-                # Hide the label for single material bay printers
-                self.activeMaterialBayLabel.hide()
-    
-    def update_active_material_bay_display(self, bay: str):
-        """Update the active material bay label in the title bar.
-        
-        Args:
-            bay: The active bay ('A' or 'B')
-        """
-        if self.activeMaterialBayLabel and is_dual_material_bay_printer():
-            self.activeMaterialBayLabel.setText(f"Bay {bay.upper()}")
-            self.logger.debug(f"Updated active material bay display to Bay {bay.upper()}")
 
     def updatePrinterStatus(self, status):
         """Update the status bar and enable/disable relevant buttons.
@@ -557,14 +521,11 @@ class HomeScreen(QWidget):
     # --- New slots for tool state reflection on HomeScreen ---
     def on_tool_states_loaded(self, states: dict):
         m = self.main_window.printer_model
-        # Use get_effective_bay to show active bay for dual material bay printers
-        self._apply_tool("tool0", m.get_bay_state("tool0", m.get_effective_bay("tool0")))
-        self._apply_tool("tool1", m.get_bay_state("tool1", m.get_effective_bay("tool1")))
+        self._apply_tool("tool0", m.get_bay_state("tool0"))
+        self._apply_tool("tool1", m.get_bay_state("tool1"))
 
     def on_tool_state_changed(self, tool: str, bay: str, data: dict):
-        # Update display if changed bay is the effective bay for this tool
-        # For dual material bay printers, this respects the active bay
-        if bay == self.main_window.printer_model.get_effective_bay(tool):
+        if bay == self.main_window.printer_model.get_default_bay(tool):
             self._apply_tool(tool, data)
 
     def _apply_tool(self, tool: str, data: dict):
