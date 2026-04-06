@@ -1,5 +1,6 @@
 import textwrap
 from utils import styles
+from utils.logger import get_logger
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
@@ -412,7 +413,10 @@ class InputShaperProgressDialog(QtWidgets.QDialog):
     ]
 
     def __init__(self, parent=None, is_idex=False):
-        super().__init__(parent)
+        # Use None as parent so the dialog is a top-level window (same pattern as SelfCenteringMessageBox)
+        super().__init__(None)
+        self._logger = get_logger('InputShaperProgressDialog')
+        self._logger.info(f"__init__: is_idex={is_idex}, parent={parent}")
         self.setWindowFlags(
             QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint
         )
@@ -467,6 +471,7 @@ class InputShaperProgressDialog(QtWidgets.QDialog):
             "InputShaperProgressDialog { background-color: rgb(240,240,240); "
             "border: 2px solid rgb(87,87,87); border-radius: 10px; }"
         )
+        self._logger.info("__init__ complete: dialog built successfully")
 
     # --- public helpers ---
 
@@ -493,12 +498,14 @@ class InputShaperProgressDialog(QtWidgets.QDialog):
         msg_lower = message.lower()
         if any(kw in msg_lower for kw in self._RELEVANT_KEYWORDS):
             self.append_message(message.strip())
+            self._logger.debug(f"Relevant message: {message.strip()[:100]}")
 
         # Each SHAPER_CALIBRATE_BASE prints this after finishing one axis.
         # Only mark complete once ALL expected axes are done (before SAVE_CONFIG restarts Klipper).
         if 'the save_config command will update' in msg_lower:
             self._completed_axes += 1
             remaining = self._expected_axes - self._completed_axes
+            self._logger.info(f"Axis completed: {self._completed_axes}/{self._expected_axes}")
             if remaining > 0:
                 self.set_status(
                     f"Axis {self._completed_axes}/{self._expected_axes} done. "
@@ -510,10 +517,8 @@ class InputShaperProgressDialog(QtWidgets.QDialog):
 
     # --- overrides ---
 
-    def show(self):
-        self._overlay.show()
-        super().show()
-        # center on screen
+    def _center_on_screen(self):
+        """Center the dialog on the active screen."""
         screen = QtWidgets.QApplication.desktop().screenNumber(
             QtWidgets.QApplication.desktop().cursor().pos()
         )
@@ -521,13 +526,35 @@ class InputShaperProgressDialog(QtWidgets.QDialog):
         fg = self.frameGeometry()
         fg.moveCenter(center)
         self.move(fg.topLeft())
+        self._logger.debug(f"Centered on screen {screen} at {fg.topLeft()}")
+
+    def show(self):
+        self._logger.info("show() called")
+        self._overlay.show()
+        super().show()
+        self._center_on_screen()
+        self.raise_()
+        self.activateWindow()
+        self._logger.info(f"show() complete: visible={self.isVisible()}, geometry={self.geometry()}")
+
+    def exec_(self):
+        """Show overlay, center, and run the modal event loop."""
+        self._logger.info("exec_() called")
+        self._overlay.show()
+        self._center_on_screen()
+        self.raise_()
+        self.activateWindow()
+        self._logger.info(f"exec_() entering event loop: visible={self.isVisible()}, geometry={self.geometry()}")
+        return super().exec_()
 
     def done(self, result):
+        self._logger.info(f"done() called with result={result}")
         self._overlay.hide()
         self._overlay.close()
         super().done(result)
 
     def closeEvent(self, event):
+        self._logger.info("closeEvent() called")
         self._overlay.hide()
         self._overlay.close()
         super().closeEvent(event)

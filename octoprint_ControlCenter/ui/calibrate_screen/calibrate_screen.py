@@ -130,12 +130,15 @@ class CalibrateScreen(QWidget):
         try:
             is_idex = self.main_window.printer_model.IS_DUAL_NOZZLE
             model = self.main_window.printer_model
+            self.logger.info(f"Input shaper: is_idex={is_idex}")
 
             # Create progress dialog
+            self.logger.debug("Creating InputShaperProgressDialog")
             progress = dialog.InputShaperProgressDialog(self, is_idex=is_idex)
 
             # Wire terminal messages into the dialog
             model.terminal_message_received.connect(progress.on_terminal_message)
+            self.logger.debug("Connected terminal_message_received to dialog")
 
             # Build the command sequence
             if is_idex:
@@ -154,11 +157,13 @@ class CalibrateScreen(QWidget):
                 ])
 
             # Queue all commands – they execute in order on the printer
+            self.logger.info(f"Sending gcode: G28 -> SHAPER_CALIBRATE -> SAVE_CONFIG")
             self.octoprint_client.gcode(command=commands)
 
-            # Show the dialog (modal – runs nested event loop so signals are still delivered)
-            progress.show()
+            # Run the modal dialog (exec_ shows overlay, centers, and runs event loop)
+            self.logger.debug("Opening progress dialog via exec_()")
             progress.exec_()
+            self.logger.info("Progress dialog closed")
 
             # Disconnect after dialog closes
             try:
@@ -168,7 +173,7 @@ class CalibrateScreen(QWidget):
 
         except Exception as e:
             error_message = f"Error in inputShaperCalibrate: {str(e)}"
-            self.logger.error(error_message)
+            self.logger.error(error_message, exc_info=True)
             dialog.WarningOk(self, error_message, overlay=True)
 
     def show_calibrate_screen(self, target_screen=None, tab=None):
