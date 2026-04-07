@@ -485,18 +485,27 @@ class OctoPrintWebSocket(QThread):
                 try:
                     self.logger.debug("Processing current state data...")
                     
+                    # Emit terminal log entries for live monitoring (e.g. input shaper dialog).
+                    # Use "logs" (raw serial: Recv:/Send: lines) rather than "messages"
+                    # because Klipper respond_info output (// …) reliably appears in logs
+                    # but may be absent from messages on some OctoPrint configurations.
+                    try:
+                        log_items = (data["current"].get("logs") or
+                                     data["current"].get("messages") or [])
+                        for log_entry in log_items:
+                            try:
+                                self.terminal_message_signal.emit(log_entry)
+                            except Exception as e:
+                                self.logger.error(f"Error emitting terminal_message_signal: {e}")
+                    except Exception as e:
+                        self.logger.error(f"Error processing logs for terminal relay: {e}")
+
                     # Process messages
                     if data["current"]["messages"]:
                         self.logger.debug(f"Processing {len(data['current']['messages'])} messages")
                         for item in data["current"]["messages"]:
                             try:
                                 self.logger.debug(f"Processing message: {item}")
-                                
-                                # Emit raw terminal message for any listeners (e.g. input shaper progress)
-                                try:
-                                    self.terminal_message_signal.emit(item)
-                                except Exception as e:
-                                    self.logger.error(f"Error emitting terminal_message_signal: {e}")
                                 
                                 # Filament sensor messages (case-insensitive for robustness)
                                 # Standard format: "Filament Runout Detected on T0/T1"

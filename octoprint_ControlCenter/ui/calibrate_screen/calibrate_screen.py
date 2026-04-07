@@ -127,6 +127,8 @@ class CalibrateScreen(QWidget):
 
     def inputShaperCalibrate(self):
         self.logger.info("CalibrateScreen.inputShaperCalibrate started")
+        progress = None
+        model = None
         try:
             is_idex = self.main_window.printer_model.IS_DUAL_NOZZLE
             model = self.main_window.printer_model
@@ -140,24 +142,21 @@ class CalibrateScreen(QWidget):
             model.terminal_message_received.connect(progress.on_terminal_message)
             self.logger.debug("Connected terminal_message_received to dialog")
 
-            # Build the command sequence
+            # Build the command sequence.
+            # For IDEX (dual_carriage) printers, SAVE_CONFIG must NOT be called after
+            # SHAPER_CALIBRATE.  klipper_IDEX raises a config error on restart when
+            # [input_shaper] parameters are written to the SAVE_CONFIG block while
+            # [dual_carriage] is enabled.  Values are applied immediately per-carriage
+            # by klipper_IDEX; persistence is handled separately via _persist_idex_input_shaper.
             if is_idex:
                 progress.set_status("Homing → Calibrating T0 X, T1 X, and shared Y…")
-                commands = '\n'.join([
-                    'G28',
-                    'SHAPER_CALIBRATE',
-                    'SAVE_CONFIG',
-                ])
+                commands = 'G28\nSHAPER_CALIBRATE'
+                self.logger.info("Sending gcode: G28 -> SHAPER_CALIBRATE (no SAVE_CONFIG for IDEX)")
             else:
                 progress.set_status("Homing → Calibrating X + Y…")
-                commands = '\n'.join([
-                    'G28',
-                    'SHAPER_CALIBRATE',
-                    'SAVE_CONFIG',
-                ])
+                commands = 'G28\nSHAPER_CALIBRATE\nSAVE_CONFIG'
+                self.logger.info("Sending gcode: G28 -> SHAPER_CALIBRATE -> SAVE_CONFIG")
 
-            # Queue all commands – they execute in order on the printer
-            self.logger.info(f"Sending gcode: G28 -> SHAPER_CALIBRATE -> SAVE_CONFIG")
             self.octoprint_client.gcode(command=commands)
 
             # Run the modal dialog (exec_ shows overlay, centers, and runs event loop)
@@ -165,16 +164,76 @@ class CalibrateScreen(QWidget):
             progress.exec_()
             self.logger.info("Progress dialog closed")
 
-            # Disconnect after dialog closes
-            try:
-                model.terminal_message_received.disconnect(progress.on_terminal_message)
-            except (TypeError, RuntimeError):
-                pass  # already disconnected or object deleted
-
         except Exception as e:
             error_message = f"Error in inputShaperCalibrate: {str(e)}"
             self.logger.error(error_message, exc_info=True)
             dialog.WarningOk(self, error_message, overlay=True)
+        finally:
+            # Always disconnect the terminal signal
+            if model is not None and progress is not None:
+                try:
+                    model.terminal_message_received.disconnect(progress.on_terminal_message)
+                except (TypeError, RuntimeError):
+                    pass  # already disconnected or object deleted
+
+        # For IDEX: save calibrated values to variables.cfg via SAVE_VARIABLE
+        # so they persist across restarts (same pattern as tool offsets).
+        if progress is not None and getattr(self.main_window.printer_model, 'IS_DUAL_NOZZLE', False):
+            self._persist_idex_input_shaper(progress)
+
+    def _persist_idex_input_shaper(self, progress):
+        """Persist IDEX input shaper calibration results via SAVE_VARIABLE.
+
+        Uses the same Klipper [save_variables] mechanism (variables.cfg) that
+        tool offsets and babystep_z already use.  Six variables are stored:
+            shaper_t0_x_type, shaper_t0_x_freq,
+            shaper_t1_x_type, shaper_t1_x_freq,
+            shaper_y_type,    shaper_y_freq
+
+        The STARTUP delayed_gcode in BASE_TWINDRAGON.cfg reads these variables
+        and applies them via SET_DUAL_CARRIAGE + SET_INPUT_SHAPER on boot.
+
+        A FIRMWARE_RESTART is issued after saving so the STARTUP macro runs
+        and applies the values immediately (matching single-nozzle behaviour
+        where SAVE_CONFIG triggers a restart).
+        """
+        try:
+            values = progress.get_calibrated_values()
+            self.logger.info(f"Persisting IDEX input shaper values: {values}")
+
+            t0_x = values.get('t0_x')
+            t1_x = values.get('t1_x')
+            y    = values.get('y')
+
+            if not all([t0_x, t1_x, y]):
+                self.logger.warning(
+                    f"Incomplete calibrated values – some axes may not have been parsed "
+                    f"from terminal output: {values}.  Values are still applied in-session."
+                )
+                return
+
+            # Issue SAVE_VARIABLE commands – same mechanism as M218 tool offsets.
+            # String values must be single-quoted for Klipper's SAVE_VARIABLE.
+            save_cmds = '\n'.join([
+                f"SAVE_VARIABLE VARIABLE=shaper_t0_x_type VALUE=\"'{t0_x['type']}'\"",
+                f"SAVE_VARIABLE VARIABLE=shaper_t0_x_freq VALUE={t0_x['freq']:.1f}",
+                f"SAVE_VARIABLE VARIABLE=shaper_t1_x_type VALUE=\"'{t1_x['type']}'\"",
+                f"SAVE_VARIABLE VARIABLE=shaper_t1_x_freq VALUE={t1_x['freq']:.1f}",
+                f"SAVE_VARIABLE VARIABLE=shaper_y_type VALUE=\"'{y['type']}'\"",
+                f"SAVE_VARIABLE VARIABLE=shaper_y_freq VALUE={y['freq']:.1f}",
+            ])
+            self.octoprint_client.gcode(command=save_cmds)
+            self.logger.info("SAVE_VARIABLE commands sent for IDEX input shaper values")
+
+            # Restart so the STARTUP delayed_gcode applies the saved values.
+            self.octoprint_client.gcode(command='FIRMWARE_RESTART')
+            self.logger.info("FIRMWARE_RESTART issued after IDEX input shaper persist")
+
+        except Exception as e:
+            self.logger.error(
+                f"Failed to persist IDEX input shaper values: {e}", exc_info=True
+            )
+            # Non-fatal: calibrated values are already applied for the current session
 
     def show_calibrate_screen(self, target_screen=None, tab=None):
         """Show a specific calibration screen or the main calibration page.

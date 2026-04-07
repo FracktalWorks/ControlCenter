@@ -1,3 +1,4 @@
+import re
 import textwrap
 from utils import styles
 from utils.logger import get_logger
@@ -401,16 +402,8 @@ class InputShaperProgressDialog(QtWidgets.QDialog):
     """Live-scrolling dialog that displays input shaper calibration progress.
 
     Connects to ``printer_model.terminal_message_received`` and shows
-    relevant Klipper output in a scrollable text area.
+    ALL terminal output in a scrollable text area while the dialog is active.
     """
-
-    # Keywords that indicate an input-shaper related terminal message
-    _RELEVANT_KEYWORDS = [
-        'testing frequency', 'shaper', 'calibrat', 'recommended',
-        'save_config', 'input shaper', 'smoothing', 'vibration',
-        'fitted', 'axis', 'accelerometer', 'resonance', 'writing raw',
-        'echo:',
-    ]
 
     def __init__(self, parent=None, is_idex=False):
         # Use None as parent so the dialog is a top-level window (same pattern as SelfCenteringMessageBox)
@@ -428,6 +421,9 @@ class InputShaperProgressDialog(QtWidgets.QDialog):
         self._expected_axes = 3 if is_idex else 2
         self._completed_axes = 0
         self._overlay = Overlay(None)
+        # IDEX: track which carriage/axis is currently being calibrated
+        self._current_calib_context = None  # 't0_x', 't1_x', or 'y'
+        self._calibrated_values = {}        # e.g. {'t0_x': {'type': 'mzv', 'freq': 55.6}, ...}
 
         # --- layout ---
         layout = QtWidgets.QVBoxLayout(self)
@@ -484,25 +480,105 @@ class InputShaperProgressDialog(QtWidgets.QDialog):
         sb = self._log_text.verticalScrollBar()
         sb.setValue(sb.maximum())
 
-    def mark_complete(self, success=True):
+    def get_calibrated_values(self):
+        """Return a copy of the calibrated IDEX shaper values, keyed by 't0_x', 't1_x', 'y'."""
+        return dict(self._calibrated_values)
+
+    def mark_complete(self, success=True, is_idex=False):
         if success:
-            self._status_label.setText("Calibration complete. Printer will restart to apply settings.")
+            if is_idex:
+                self._status_label.setText(
+                    "Calibration complete. Saving values & restarting printer…"
+                )
+            else:
+                self._status_label.setText("Calibration complete. Printer will restart to apply settings.")
+            # Auto-close after 5 seconds so the user can read the final status
+            QtCore.QTimer.singleShot(5000, self.accept)
         else:
             self._status_label.setText("Calibration encountered an issue. Check the log above.")
         self._close_button.setEnabled(True)
 
     # --- terminal message handler ---
 
+    @staticmethod
+    def _clean_terminal_line(raw):
+        """Strip serial-log prefixes so pattern matching works consistently.
+
+        OctoPrint ``current.logs`` entries look like::
+
+            Recv: // Recommended shaper_type_x = mzv, shaper_freq_x = 55.6 Hz
+            Send: SHAPER_CALIBRATE
+            Recv: ok T:200.0 /200.0 B:60.0 /60.0
+
+        We strip ``Recv: ``, ``Send: ``, and the Klipper ``// `` comment marker
+        so that downstream substring / regex checks work against the bare text.
+        """
+        line = raw.strip()
+        if line.startswith('Recv: '):
+            line = line[6:]
+        elif line.startswith('Send: '):
+            return None  # Sent commands are not useful for display / matching
+        # Strip Klipper info-response marker
+        if line.startswith('// '):
+            line = line[3:]
+        elif line.startswith('//'):
+            line = line[2:]
+        return line.strip()
+
+    _TEMP_RE = re.compile(
+        r'^ok\s*(T\d*:\s*[\d.]+|B:\s*[\d.]+)|^T\d*:\s*[\d.]+|^B:\s*[\d.]+'
+    )
+
     def on_terminal_message(self, message):
-        """Filter and display relevant input-shaper messages."""
-        msg_lower = message.lower()
-        if any(kw in msg_lower for kw in self._RELEVANT_KEYWORDS):
-            self.append_message(message.strip())
-            self._logger.debug(f"Relevant message: {message.strip()[:100]}")
+        """Display relevant terminal messages and detect calibration milestones."""
+        clean = self._clean_terminal_line(message)
+        if not clean or clean == 'ok':
+            return  # Skip empty acks / sent commands
+
+        # Filter noisy temperature polling lines
+        if self._TEMP_RE.match(clean):
+            return
+
+        msg_lower = clean.lower()
+
+        # Show the cleaned message in the log area
+        self.append_message(clean)
+
+        # For IDEX: track which carriage/axis context is being calibrated
+        # based on RESPOND messages emitted by the SHAPER_CALIBRATE macro wrapper.
+        if self._is_idex:
+            if 'calibrating t0 x' in msg_lower:
+                self._current_calib_context = 't0_x'
+                self._logger.debug("Calibration context → T0 X")
+            elif 'calibrating t1 x' in msg_lower:
+                self._current_calib_context = 't1_x'
+                self._logger.debug("Calibration context → T1 X")
+            elif 'calibrating shared y' in msg_lower:
+                self._current_calib_context = 'y'
+                self._logger.debug("Calibration context → shared Y")
+
+            # Extract recommended shaper type and frequency from Klipper output.
+            # resonance_tester.py emits:
+            #   "Recommended shaper_type_x = mzv, shaper_freq_x = 55.6 Hz"
+            m = re.search(
+                r'recommended shaper_type_\w+ = (\w+),\s*shaper_freq_\w+ = ([\d.]+) hz',
+                msg_lower
+            )
+            if m and self._current_calib_context:
+                shaper_type = m.group(1)      # lowercase, e.g. 'mzv', '2hump_ei'
+                shaper_freq = float(m.group(2))
+                self._calibrated_values[self._current_calib_context] = {
+                    'type': shaper_type,
+                    'freq': shaper_freq,
+                }
+                self._logger.info(
+                    f"Captured shaper for {self._current_calib_context}: "
+                    f"{shaper_type} @ {shaper_freq} Hz"
+                )
 
         # Each SHAPER_CALIBRATE_BASE prints this after finishing one axis.
-        # Only mark complete once ALL expected axes are done (before SAVE_CONFIG restarts Klipper).
-        if 'the save_config command will update' in msg_lower:
+        # Only mark complete once ALL expected axes are done.
+        if 'shaper calibration data written' in msg_lower:
             self._completed_axes += 1
             remaining = self._expected_axes - self._completed_axes
             self._logger.info(f"Axis completed: {self._completed_axes}/{self._expected_axes}")
@@ -512,8 +588,12 @@ class InputShaperProgressDialog(QtWidgets.QDialog):
                     f"Calibrating next axis…"
                 )
             else:
-                self.set_status("All axes calibrated! Saving configuration & restarting printer…")
-                self.mark_complete(success=True)
+                if self._is_idex:
+                    self.set_status("All axes calibrated! Applying values…")
+                    self.mark_complete(success=True, is_idex=True)
+                else:
+                    self.set_status("All axes calibrated! Saving configuration & restarting printer…")
+                    self.mark_complete(success=True)
 
     # --- overrides ---
 
