@@ -152,3 +152,87 @@ except TypeError:
 - Use `is_dual_nozzle_printer(self.main_window)` to branch logic
 - Check `variable_is_dual_nozzle` in the active `PRINTER_<NAME>.cfg`
 - The value comes from `PRINTER_VARIABLES` at startup, loaded into `config.IS_DUAL_NOZZLE`
+
+---
+
+## Stop-Start / Bandwidth Starvation (print_stall)
+
+### Symptoms
+- Printer pauses/stutters periodically during prints
+- OctoKlipper "Analyse Print Log" shows high bandwidth/host buffer usage
+- Even simple models (benchy) exhibit pauses
+- `print_stall > 0` in klippy.log Stats lines
+
+### Diagnostic Flow
+
+**1. Parse klippy.log Stats lines**
+```bash
+strings /home/pi/printer_data/logs/klippy.log | grep "Stats" | tail -30
+```
+
+Extract key metrics:
+```bash
+# print_stall values (should all be 0)
+strings ... | grep -oP 'print_stall=\K\d+' | sort -u
+
+# buffer_time range (should be 1.5-3.0, stable)
+strings ... | grep -oP 'buffer_time=\K[\d.]+' | sort -n | awk 'NR==1{print "Min:",$1} END{print "Max:",$1}'
+
+# gcodein stalls (consecutive identical values = stall)
+strings ... | grep -oP 'gcodein=\K\d+' | uniq -c | sort -rn | head -5
+```
+
+**2. Classify bottleneck**
+
+| Check | Healthy | Problem |
+|-------|---------|---------|
+| `mcu: bytes_retransmit` | 0 | USB cable/noise |
+| `mcu: tx_retries` | 0 | USB instability |
+| `gcodein` progression | Incrementing every line | OctoPrint send stall |
+| `buffer_time` | Stable 1.5-3.0 | Sawtooth = starvation |
+| `sysload` | < 1.0 | Pi CPU overload |
+| `memavail` | > 100MB | Pi memory pressure |
+
+**3. If USB clean + gcodein stalls → OctoPrint settings**
+
+The #1 cause: `autoreport_pos: False`. OctoPrint polls `M114` every ~10s, each poll blocks G-code sending for a round-trip (~100-500ms). This creates the classic buffer_time sawtooth.
+
+Fix in `config.yaml`:
+```yaml
+serial:
+  capabilities:
+    autoreport_pos: true        # Critical! Stops M114 polling
+  neverSendChecksum: true       # No *NN overhead on PTY
+  sendChecksumWithUnknownCommands: false
+  baudrate: 250000              # Higher virtual serial throughput
+```
+
+**4. If OctoPrint settings are correct → OS-level**
+
+Debian 12/13 kernels have aggressive power management defaults:
+- WiFi power save ON (iw dev wlan0 set power_save off)
+- USB autosuspend 2s (usbcore.autosuspend=-1 in cmdline)
+- No CPU isolation (add isolcpus=3 nohz_full=3 rcu_nocbs=3)
+- Default swappiness 60 (set to 1)
+- SCHED_OTHER for Klipper (set SCHED_FIFO 99 via systemd override)
+
+Full guide: `Documentation/RASPBERRY_PI_OS_OPTIMIZATION.md`
+
+**5. PTY baudrate**
+```bash
+sudo stty -F /dev/pts/0 921600
+```
+The kernel tty layer can throttle based on baudrate even on virtual PTYs. Set high for safety.
+
+### Quick Fix Checklist (in order)
+1. ✅ `autoreport_pos: True` in OctoPrint config.yaml
+2. ✅ `neverSendChecksum: True`
+3. ✅ `baudrate: 250000`
+4. ✅ `usbcore.autosuspend=-1` in kernel cmdline
+5. ✅ `isolcpus=3 nohz_full=3 rcu_nocbs=3` in kernel cmdline
+6. ✅ WiFi power save OFF (`iw dev wlan0 set power_save off`)
+7. ✅ Klipper SCHED_FIFO 99 + CPUAffinity=3 (systemd override)
+8. ✅ PTY stty 921600
+9. ✅ `vm.swappiness=1` + `kernel.sched_rt_runtime_us=-1` (sysctl)
+
+Reference: `Documentation/OCTOPRINT_SERIAL_OPTIMIZATION.md`

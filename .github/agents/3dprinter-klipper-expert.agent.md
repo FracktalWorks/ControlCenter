@@ -186,7 +186,51 @@ self.model.printer_config_updated.connect(self.on_config_updated)
 1. Identify printer model and symptom
 2. Examine `klipper.log` output if provided
 3. Work through checklists: mechanical -> electrical -> software
-4. Propose minimal config change + a test procedure to verify the fix
+4. **For stop-start/stuttering**: follow the bandwidth starvation diagnostic flow below
+5. Propose minimal config change + a test procedure to verify the fix
+
+### Stop-Start / Bandwidth Starvation Debugging
+
+When a printer stutters (stop-start motion, pauses during printing):
+
+**Step 1: Check klippy.log Stats lines**
+```bash
+strings /home/pi/printer_data/logs/klippy.log | grep "Stats" | tail -20
+```
+Parse: `print_stall=N`, `buffer_time=N.NNN`, `gcodein=N`
+- `print_stall > 0`: any stalls = octoprint can't feed gcode fast enough
+- `buffer_time` sawtooth (2.5→0.2→2.5 repeating): classic starvation pattern
+- `gcodein` stuck across consecutive lines: octoprint paused sending
+
+**Step 2: Classify the bottleneck**
+| Symptom | Bottleneck |
+|----------|-----------|
+| `mcu: bytes_retransmit > 0` or `tx_retries > 0` | USB hardware issue |
+| `gcodein` stalls + USB clean | OctoPrint can't send fast enough |
+| `sysload > 2.0` | Pi CPU overload |
+| `memavail < 50MB` | Pi memory pressure |
+
+**Step 3: If USB is clean → check OctoPrint serial settings**
+```bash
+python3 -c "import yaml; s=yaml.safe_load(open('/home/pi/.octoprint/config.yaml')).get('serial',{}); print(f'autoreport_pos: {s.get(\"capabilities\",{}).get(\"autoreport_pos\")}'); print(f'neverSendChecksum: {s.get(\"neverSendChecksum\")}'); print(f'baudrate: {s.get(\"baudrate\")}')"
+```
+Critical: `autoreport_pos: False` causes M114 polling every ~10s → blocks G-code sending → sawtooth!
+
+**Step 4: Check OS-level power management (Debian Trixie/Bookworm)**
+```bash
+cat /proc/cmdline | grep -o "isolcpus=\S*"     # Should have isolcpus
+cat /sys/module/usbcore/parameters/autosuspend   # Should be -1
+iw dev wlan0 get power_save                       # Should be: off
+cat /proc/sys/vm/swappiness                       # Should be 1
+```
+
+**Step 5: Apply fixes in order**
+1. OctoPrint: `autoreport_pos=True`, `neverSendChecksum=True`, `baudrate=250000`
+2. OS: `isolcpus`, `nohz_full`, `usbcore.autosuspend=-1`, WiFi PS off
+3. Klipper: `SCHED_FIFO 99`, `CPUAffinity=<isolated_core>`
+4. PTY: `stty -F /dev/pts/0 921600`
+
+Reference: `Documentation/RASPBERRY_PI_OS_OPTIMIZATION.md` and `Documentation/OCTOPRINT_SERIAL_OPTIMIZATION.md`
 
 ### For App Development Tasks
 1. Read the relevant existing screen/widget code before writing anything
