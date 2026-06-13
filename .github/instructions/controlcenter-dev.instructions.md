@@ -118,6 +118,52 @@ self.main_window.show_screen('calibrate')  # or whatever the method name is
 self.main_window.calibrate_screen.show_calibrate_screen()
 ```
 
+## Python Version Compatibility (CRITICAL)
+
+ControlCenter targets Raspberry Pi OS images from **Debian 10 Buster (Python 3.7)**
+through **Debian 13 Trixie (Python 3.13)**. Every code change MUST remain compatible
+across this entire range.
+
+### API Removals to Avoid (Python 3.12+ removed these)
+
+| ❌ Removed | ✅ Replacement (works on 3.7+) |
+|-----------|-------------------------------|
+| `configparser.SafeConfigParser()` | `configparser.ConfigParser()` |
+| `ConfigParser.readfp(f)` | `ConfigParser.read_file(f)` |
+| `imp` module | `importlib` |
+| `asyncio.coroutine` | `async def` |
+
+### Version-Dependent Code Pattern
+
+When a feature needs a newer Python stdlib (e.g., `functools.cache` from 3.9):
+```python
+import sys
+
+if sys.version_info >= (3, 9):
+    from functools import cache
+else:
+    from functools import lru_cache
+    def cache(func):
+        return lru_cache(maxsize=None)(func)
+```
+
+### Dependency Rules
+
+1. **New pip package that requires Python ≥3.9**: MUST be wrapped in `try/except ImportError`
+   with a documented fallback.
+2. **setup.py `plugin_requires`**: Never add a hard dependency that drops Python 3.7 support
+   without explicit approval.
+3. **Stdlib backports**: Prefer `try/except` import chains (try new → fall back to old)
+   over adding backport packages.
+
+### Quick Check
+```bash
+# Before merging, verify the package builds on Python 3.7 syntax:
+python3.7 -m py_compile octoprint_ControlCenter/**/*.py
+# Or run the full install test:
+python3.7 -m pip install --dry-run .
+```
+
 ## Required Imports (standard set for any new widget)
 ```python
 import os

@@ -44,3 +44,32 @@ TOOLHEADS_TD-01_TOOLHEAD0/1.cfg ← per-toolhead extruder/hotend config
 - UI resolution: always 800×480 with min/max constraints
 - Dual-nozzle check: `is_dual_nozzle_printer()` from `utils/printer_ui_config.py`
 - Signal/slot disconnect must be guarded against `TypeError` (already-disconnected)
+
+## Python Version Compatibility
+ControlCenter must remain **installable and runnable on Python 3.7 through 3.13+**.
+The oldest supported OS is Debian 10 Buster (Python 3.7); current printers run
+Debian 13 Trixie (Python 3.13). Always write code that works across this range.
+
+### Forbidden (removed in Python 3.12+)
+| Avoid | Use Instead |
+|--------|-------------|
+| `configparser.SafeConfigParser()` | `configparser.ConfigParser()` |
+| `parser.readfp(f)` | `parser.read_file(f)` |
+| `imp` module | `importlib` |
+| `typing.Mapping`/`Iterable` without `from __future__` | Use `collections.abc` |
+
+### Fallback Pattern for Newer-Python Features
+```python
+import sys
+if sys.version_info >= (3, 9):
+    from functools import cache
+else:
+    from functools import lru_cache
+    cache = lru_cache(maxsize=None)
+```
+
+### When Adding Dependencies
+- Any new pip package must be optional with a `try/except ImportError` fallback if it requires Python ≥3.9
+- Document the fallback path in code comments with the minimum Python version required
+- Test `pip install .` on Python 3.7 before merging any change to `setup.py` or `requirements.txt`
+- Never add a hard dependency that drops Python 3.7 support without explicit approval
