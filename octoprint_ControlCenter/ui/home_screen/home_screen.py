@@ -322,7 +322,7 @@ class HomeScreen(QWidget):
                 if file['progress']['completion'] is None:
                     self.printProgressBar.setValue(0)
                 else:
-                    self.printProgressBar.setValue(file['progress']['completion'])
+                    self.printProgressBar.setValue(int(file['progress']['completion']))
 
                 """
                 If image is available from server, set it, otherwise display default image.
@@ -372,11 +372,11 @@ class HomeScreen(QWidget):
                 self.tool0TempBar.setMaximum(300)
                 self.tool0TempBar.setStyleSheet(styles.bar_heater_cold)
             elif temperature['tool0Actual'] <= temperature['tool0Target']:
-                self.tool0TempBar.setMaximum(temperature['tool0Target'])
+                self.tool0TempBar.setMaximum(int(temperature['tool0Target']))
                 self.tool0TempBar.setStyleSheet(styles.bar_heater_heating)
             else:
-                self.tool0TempBar.setMaximum(temperature['tool0Actual'])
-            self.tool0TempBar.setValue(temperature['tool0Actual'])
+                self.tool0TempBar.setMaximum(int(temperature['tool0Actual']))
+            self.tool0TempBar.setValue(int(temperature['tool0Actual']))
             self.tool0ActualTemperature.setText(str(int(temperature['tool0Actual'])) + "°C")
             self.tool0TargetTemperature.setText(str(int(temperature['tool0Target'])) + "°C")
 
@@ -385,11 +385,11 @@ class HomeScreen(QWidget):
                 self.tool1TempBar.setMaximum(300)
                 self.tool1TempBar.setStyleSheet(styles.bar_heater_cold)
             elif temperature['tool1Actual'] <= temperature['tool1Target']:
-                self.tool1TempBar.setMaximum(temperature['tool1Target'])
+                self.tool1TempBar.setMaximum(int(temperature['tool1Target']))
                 self.tool1TempBar.setStyleSheet(styles.bar_heater_heating)
             else:
-                self.tool1TempBar.setMaximum(temperature['tool1Actual'])
-            self.tool1TempBar.setValue(temperature['tool1Actual'])
+                self.tool1TempBar.setMaximum(int(temperature['tool1Actual']))
+            self.tool1TempBar.setValue(int(temperature['tool1Actual']))
             self.tool1ActualTemperature.setText(str(int(temperature['tool1Actual'])) + "°C")
             self.tool1TargetTemperature.setText(str(int(temperature['tool1Target'])) + "°C")
 
@@ -398,11 +398,11 @@ class HomeScreen(QWidget):
                 self.bedTempBar.setMaximum(150)
                 self.bedTempBar.setStyleSheet(styles.bar_heater_cold)
             elif temperature['bedActual'] <= temperature['bedTarget']:
-                self.bedTempBar.setMaximum(temperature['bedTarget'])
+                self.bedTempBar.setMaximum(int(temperature['bedTarget']))
                 self.bedTempBar.setStyleSheet(styles.bar_heater_heating)
             else:
-                self.bedTempBar.setMaximum(temperature['bedActual'])
-            self.bedTempBar.setValue(temperature['bedActual'])
+                self.bedTempBar.setMaximum(int(temperature['bedActual']))
+            self.bedTempBar.setValue(int(temperature['bedActual']))
             self.bedActualTemperature.setText(str(int(temperature['bedActual'])) + "°C")
             self.bedTargetTemperature.setText(str(int(temperature['bedTarget'])) + "°C")
 
