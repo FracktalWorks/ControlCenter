@@ -1,1 +1,21 @@
-octoprint_ControlCenter/_version.py export-subst
+﻿octoprint_ControlCenter/_version.py export-subst
+
+# Normalize line endings: store as LF in repo, checkout as LF everywhere
+# Prevents Windows CRLF flipping files and causing false dirty states in versioneer
+* text=auto eol=lf
+*.py text eol=lf
+*.cfg text eol=lf
+*.md text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.txt text eol=lf
+*.sh text eol=lf
+*.conf text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.whl binary
