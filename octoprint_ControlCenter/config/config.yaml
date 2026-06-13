@@ -56,7 +56,7 @@ plugins:
     _config_version: 4
     configuration:
       confirm_reload: false
-      logpath: tmp/klippy.log
+      logpath: /home/pi/printer_data/logs/klippy.log
     connection:
       replace_connection_panel: false
   softwareupdate:
@@ -64,6 +64,13 @@ plugins:
     checks:
       ControlCenter:
         disabled: false
+        method: pip
+        pip: https://github.com/FracktalWorks/ControlCenter/archive/{target_version}.zip
+        prerelease: false
+        release_notes: https://github.com/FracktalWorks/ControlCenter/releases/tag/{target_version}
+        repo: ControlCenter
+        type: github_release
+        user: FracktalWorks
       pi_support:
         disabled: true
   tracking:
@@ -71,20 +78,24 @@ plugins:
     unique_id: bca9adfe-4139-4ffe-901d-071386764f1b
   virtual_printer:
     _config_version: 1
-    enabled: true
+    enabled: false
 printerProfiles:
   default: _default
 serial:
   additionalPorts:
   - /tmp/printer
   autoconnect: true
-  baudrate: 115200
+  baudrate: 250000
   blacklistedPorts:
   - /dev/ttyS*
   capabilities:
-    autoreport_pos: false
+    autoreport_pos: true
   disconnectOnErrors: false
   ignoreErrorsFromFirmware: true
+  neverSendChecksum: true
+  sendChecksumWithUnknownCommands: false
+  unknownCommandsNeedAck: false
+  supportResendsWithoutOk: true
   port: /tmp/printer
 server:
   commands:
@@ -92,7 +103,7 @@ server:
     systemRestartCommand: sudo reboot now
     systemShutdownCommand: sudo shutdown
   firstRun: false
-  host: 127.0.0.1
+  host: 0.0.0.0
   onlineCheck:
     enabled: true
   pluginBlacklist:
