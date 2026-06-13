@@ -362,9 +362,11 @@ class SettingsScreen(QWidget):
             
             # Define log file paths to copy
             log_paths = [
-                # Current Klipper log
+                # Modern Klipper log location (Klipper >= 0.10, printer_data layout)
+                "/home/pi/printer_data/logs/klippy.log",
+                # Legacy Klipper log location (older installs)
                 "/tmp/klippy.log",
-                # Alternative Klipper log location
+                # OctoPrint logs directory
                 "/home/pi/.octoprint/logs"
             ]
             
