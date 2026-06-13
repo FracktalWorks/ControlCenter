@@ -163,11 +163,19 @@ except TypeError:
 - Even simple models (benchy) exhibit pauses
 - `print_stall > 0` in klippy.log Stats lines
 
+> **klippy.log location**: Modern Klipper (printer_data layout) uses
+> `/home/pi/printer_data/logs/klippy.log`; legacy installs use `/tmp/klippy.log`.
+> OctoKlipper's `logpath` config must match whichever is active.
+> Auto-find: `find /home/pi -name 'klippy.log' 2>/dev/null | head -3`
+
 ### Diagnostic Flow
 
 **1. Parse klippy.log Stats lines**
 ```bash
+# Modern (most current printers)
 strings /home/pi/printer_data/logs/klippy.log | grep "Stats" | tail -30
+# Legacy fallback
+strings /tmp/klippy.log | grep "Stats" | tail -30
 ```
 
 Extract key metrics:

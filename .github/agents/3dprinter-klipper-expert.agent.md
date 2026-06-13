@@ -107,7 +107,10 @@ sense_resistor: 0.075
 5. **Filament sensors**: `[filament_switch_sensor]` vs `[filament_motion_sensor]`, debounce
 
 ### Software/Klipper Debugging Workflow
-1. Check `~/klipper.log` for full error context (not just the UI error message)
+1. Check Klipper log for full error context — **always check both locations**:
+   - Modern (Klipper ≥ 0.10 / printer_data layout): `/home/pi/printer_data/logs/klippy.log`
+   - Legacy (older installs): `/tmp/klippy.log`
+   - Auto-find: `find /home/pi -name 'klippy.log' 2>/dev/null | head -3`
 2. Use `DUMP_TMC STEPPER=<name>` to read driver registers live
 3. Use `GET_POSITION` / `QUERY_ENDSTOPS` for motion diagnostics
 4. Use `QUERY_FILAMENT_SENSOR SENSOR=<name>` for sensor state
@@ -184,7 +187,9 @@ self.model.printer_config_updated.connect(self.on_config_updated)
 
 ### For Debugging Tasks
 1. Identify printer model and symptom
-2. Examine `klipper.log` output if provided
+2. Examine Klipper log output if provided — **klippy.log can be in two places**:
+   - Modern: `/home/pi/printer_data/logs/klippy.log`
+   - Legacy: `/tmp/klippy.log`
 3. Work through checklists: mechanical -> electrical -> software
 4. **For stop-start/stuttering**: follow the bandwidth starvation diagnostic flow below
 5. Propose minimal config change + a test procedure to verify the fix
@@ -195,7 +200,12 @@ When a printer stutters (stop-start motion, pauses during printing):
 
 **Step 1: Check klippy.log Stats lines**
 ```bash
+# Modern Klipper (printer_data layout — most current printers)
 strings /home/pi/printer_data/logs/klippy.log | grep "Stats" | tail -20
+# Legacy Klipper (older installs)
+strings /tmp/klippy.log | grep "Stats" | tail -20
+# Auto-find if unsure
+KLIPPY=$(find /home/pi -name 'klippy.log' 2>/dev/null | head -1); strings $KLIPPY | grep "Stats" | tail -20
 ```
 Parse: `print_stall=N`, `buffer_time=N.NNN`, `gcodein=N`
 - `print_stall > 0`: any stalls = octoprint can't feed gcode fast enough
@@ -237,3 +247,48 @@ Reference: `Documentation/RASPBERRY_PI_OS_OPTIMIZATION.md` and `Documentation/OC
 2. Follow wizard patterns from `.github/instructions.md`
 3. Check `Documentation/` for relevant feature documentation
 4. Always verify: single-nozzle AND dual-nozzle code paths, error paths, disconnected-printer path
+
+### For Release Tasks
+
+When asked to create a release, always follow this procedure. A release requires
+BOTH a git tag AND a GitHub Release — a tag alone is NOT sufficient and will
+not appear on the Releases page.
+
+**1. Determine version number**: Run `git tag --sort=-v:refname` and inspect the
+latest tags. The convention is:
+- Bug fixes / small patches → increment PATCH: `1.1` → `1.1.1`
+- New features / significant changes → increment MINOR: `1.1` → `1.2`
+- Breaking changes → increment MAJOR: `1.x` → `2.0`
+When uncertain, default to a PATCH bump.
+
+**2. Commit and tag**:
+```powershell
+git add <files>
+git commit -m "fix: <short description>" -m "- <detail 1>" -m "- <detail 2>"
+git tag -a <VERSION> -m "<VERSION>: <short summary>"
+git push origin production --follow-tags
+```
+
+**3. Create the GitHub Release** (CRITICAL — this is the step that was previously missed):
+```powershell
+gh release create <VERSION> `
+  --repo FracktalWorks/ControlCenter `
+  --title "<VERSION>" `
+  --notes "## <Category>
+
+- **<Bold highlight>**: <Description>.
+- **<Bold highlight>**: <Description>.
+
+**Full Changelog**: https://github.com/FracktalWorks/ControlCenter/compare/<PREVIOUS_TAG>...<VERSION>"
+```
+
+**4. Verify**:
+```powershell
+gh release view <VERSION> --repo FracktalWorks/ControlCenter
+```
+
+The OctoPrint plugin manager installs from:
+```
+https://github.com/FracktalWorks/ControlCenter/archive/refs/tags/<VERSION>.zip
+```
+This archive is auto-generated when the tag is pushed.
