@@ -4,7 +4,7 @@ import os
 from PyQt5 import uic
 from PyQt5 import QtGui, QtCore
 from PyQt5.QtGui import QPalette, QColor
-from PyQt5.QtWidgets import QWidget, QPushButton, QSpinBox, QTabWidget, QToolButton
+from PyQt5.QtWidgets import QWidget, QPushButton, QSpinBox, QTabWidget, QToolButton, QLabel
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
 from utils.printer_ui_config import apply_nozzle_config_to_screen, is_dual_nozzle_printer
@@ -73,6 +73,11 @@ class ControlScreen(QWidget):
         self.toolTempSpinBox = self.findChild(QSpinBox, "toolTempSpinBox")
         self.setToolTempButton = self.findChild(QPushButton, "setToolTempButton")
         self.bedTempSpinBox = self.findChild(QSpinBox, "bedTempSpinBox")
+        self.bedLabel = self.findChild(QLabel, "bedLabel")
+        self.bedLabel_2 = self.findChild(QLabel, "bedLabel_2")
+        self.bedChamberToggleButton = self.findChild(QPushButton, "bedChamberToggleButton")
+        # Tracks whether the bed set controls target the bed or the chamber heater
+        self._bed_chamber_mode = "bed"
         self.setBedTempButton = self.findChild(QPushButton, "setBedTempButton")
         self.toolToggleTemperatureButton = self.findChild(QPushButton, "toolToggleTemperatureButton")
         self.tool180PreheatButton = self.findChild(QPushButton, "tool180PreheatButton")
@@ -145,12 +150,21 @@ class ControlScreen(QWidget):
         self.fanOffButton.clicked.connect(lambda: self.octoprint_client.gcode(command='M107'))
         self.cooldownButton.clicked.connect(self.coolDownAction)
         self.setToolTempButton.clicked.connect(self.setToolTemp)
-        self.setBedTempButton.clicked.connect(lambda: self.octoprint_client.setBedTemperature(self.bedTempSpinBox.value()))
+        self.setBedTempButton.clicked.connect(self.setBedOrChamberTemp)
         self.bed60PreheatButton.clicked.connect(lambda: self.preheatBedTemp(60))
         self.bed100PreheatButton.clicked.connect(lambda: self.preheatBedTemp(100))
         self.tool180PreheatButton.clicked.connect(lambda: self.preheatToolTemp(180))
         self.tool250PreheatButton.clicked.connect(lambda: self.preheatToolTemp(250))
         self.toolToggleTemperatureButton.clicked.connect(self.selectToolTemperature)
+
+        # The bed/chamber toggle button switches which heater the set controls target
+        if self.bedChamberToggleButton:
+            self.bedChamberToggleButton.clicked.connect(
+                lambda checked: self.toggleBedChamber(checked))
+            icons_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'resources', 'img', 'icons')
+            black_icon_path = os.path.join(icons_dir, 'bed-black.png')
+            if os.path.exists(black_icon_path):
+                self.bedChamberToggleButton.setIcon(QtGui.QIcon(QtGui.QPixmap(black_icon_path)))
 
         # Motion Buttons Signal Connections
         self.step1mmButton.clicked.connect(lambda: self.setStep(1))
@@ -269,9 +283,12 @@ class ControlScreen(QWidget):
             if hasattr(self.main_window.printer_model, 'current_flow_rate'):
                 self.flowRateSpinBox.setValue(self.main_window.printer_model.current_flow_rate)
             
-            # Update bed temperature (always use bed target)
-            bed_target = self.main_window.printer_model.temperatures.get('bedTarget', 0)
-            self.bedTempSpinBox.setValue(bed_target)
+            # Update bed/chamber temperature based on selected mode
+            if getattr(self, '_bed_chamber_mode', 'bed') == 'chamber':
+                temp_target = self.main_window.printer_model.temperatures.get('chamberTarget', 0) or 0
+            else:
+                temp_target = self.main_window.printer_model.temperatures.get('bedTarget', 0) or 0
+            self.bedTempSpinBox.setValue(temp_target)
             
             # Update tool temperature based on active tool and nozzle configuration
             if is_dual_nozzle_printer():
@@ -329,6 +346,7 @@ class ControlScreen(QWidget):
         logger.info("ControlScreen.coolDownAction started")
         try:
             self.octoprint_client.gcode(command='M107')
+            self.octoprint_client.gcode(command='M141 S0')
             self.octoprint_client.setToolTemperature({"tool0": 0, "tool1": 0})
             # octopiclient.setToolTemperature({"tool0": 0})
             self.octoprint_client.setBedTemperature(0)
@@ -378,6 +396,61 @@ class ControlScreen(QWidget):
             logger.error("Error in ControlScreen.setToolTemp: {}".format(e))
             dialog.WarningOk(self, "Error in ControlScreen.setToolTemp: {}".format(e), overlay=True)
 
+    def toggleBedChamber(self, checked=None):
+        """
+        Switches the bed temperature controls between the bed and the chamber heater
+        """
+        logger.info("ControlScreen.toggleBedChamber started")
+        try:
+            if checked is None:
+                checked = not (self._bed_chamber_mode == "chamber")
+            icons_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'resources', 'img', 'icons')
+            if checked:
+                self._bed_chamber_mode = "chamber"
+                self.bedLabel_2.setText("Chamber")
+                self.bedTempSpinBox.setMaximum(160)
+                self.bedTempSpinBox.setValue(
+                    int(self.main_window.printer_model.temperatures.get('chamberTarget', 0) or 0))
+                icon_path = os.path.join(icons_dir, 'chamber-heater.png')
+                if os.path.exists(icon_path):
+                    self.bedLabel.setPixmap(QtGui.QPixmap(icon_path))
+                black_icon_path = os.path.join(icons_dir, 'chamber-heater-black.png')
+                if os.path.exists(black_icon_path):
+                    self.bedChamberToggleButton.setIcon(QtGui.QIcon(QtGui.QPixmap(black_icon_path)))
+            else:
+                self._bed_chamber_mode = "bed"
+                self.bedLabel_2.setText("Bed")
+                self.bedTempSpinBox.setMaximum(150)
+                self.bedTempSpinBox.setValue(
+                    int(self.main_window.printer_model.temperatures.get('bedTarget', 0) or 0))
+                icon_path = os.path.join(icons_dir, 'bed.png')
+                if os.path.exists(icon_path):
+                    self.bedLabel.setPixmap(QtGui.QPixmap(icon_path))
+                black_icon_path = os.path.join(icons_dir, 'bed-black.png')
+                if os.path.exists(black_icon_path):
+                    self.bedChamberToggleButton.setIcon(QtGui.QIcon(QtGui.QPixmap(black_icon_path)))
+            if self.bedChamberToggleButton and self.bedChamberToggleButton.isChecked() != checked:
+                self.bedChamberToggleButton.setChecked(checked)
+            self.logger.info("Temperature control switched to {}".format(self._bed_chamber_mode))
+        except Exception as e:
+            logger.error("Error in ControlScreen.toggleBedChamber: {}".format(e))
+            dialog.WarningOk(self, "Error in ControlScreen.toggleBedChamber: {}".format(e), overlay=True)
+
+    def setBedOrChamberTemp(self):
+        """
+        Sets the temperature of the bed or the chamber heater depending on toggle state
+        """
+        logger.info("ControlScreen.setBedOrChamberTemp started")
+        try:
+            value = self.bedTempSpinBox.value()
+            if self._bed_chamber_mode == "chamber":
+                self.octoprint_client.gcode(command='M141 S' + str(value))
+            else:
+                self.octoprint_client.setBedTemperature(value)
+        except Exception as e:
+            logger.error("Error in ControlScreen.setBedOrChamberTemp: {}".format(e))
+            dialog.WarningOk(self, "Error in ControlScreen.setBedOrChamberTemp: {}".format(e), overlay=True)
+
     def preheatBedTemp(self, temp):
         """
         Preheats the bed to the given temperature
@@ -385,7 +458,10 @@ class ControlScreen(QWidget):
         """
         logger.info("ControlScreen.preheatBedTemp started")
         try:
-            self.octoprint_client.gcode(command='M140 S' + str(temp))
+            if self._bed_chamber_mode == "chamber":
+                self.octoprint_client.gcode(command='M141 S' + str(temp))
+            else:
+                self.octoprint_client.gcode(command='M140 S' + str(temp))
             self.bedTempSpinBox.setProperty("value", temp)
         except Exception as e:
             logger.error("Error in ControlScreen.preheatBedTemp: {}".format(e))

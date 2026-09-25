@@ -88,7 +88,7 @@ class ZProbeOffsetWizard(QWidget):
     TOTAL_STEPS = 4
     
     # Timeout configuration
-    PROBE_TIMEOUT_SECONDS = 30  # Timeout for probe operations
+    PROBE_TIMEOUT_SECONDS = 200  # Timeout for probe operations
     POSITION_TIMEOUT_SECONDS = 5  # Timeout for M114 position recording
     
     # Quality thresholds for probe standard deviation (mm)
@@ -922,6 +922,14 @@ class ZProbeOffsetWizard(QWidget):
         try:
             if success:
                 self.logger.info(f"Klipper restart completed: {message}")
+                # Home the axes now that Klipper is ready again - the restart
+                # cleared the homed state, so the printer must be re-homed
+                # before it can be used.
+                try:
+                    self.octoprint_client.home(['x', 'y', 'z'])
+                    self.logger.info("Homing axes after Klipper restart")
+                except Exception as e:
+                    self.logger.error(f"Error homing axes after Klipper restart: {e}")
             else:
                 self.logger.warning(f"Klipper restart issue: {message}")
             

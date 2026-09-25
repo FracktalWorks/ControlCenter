@@ -189,19 +189,41 @@ class CameraThread(QThread):
                 self.cap = None
                 time.sleep(0.5)  # Give V4L2 more time for cleanup
             
-            # Try to connect with V4L2 backend first for better Linux support
+            # Candidate indices: the configured one first, then any other UVC
+            # cameras. USB cameras re-enumerate under new indexes after a USB
+            # drop, so the configured index may no longer be valid.
+            candidate_indices = [self.camera_index]
             try:
-                self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
-                if not self.cap.isOpened():
-                    # Fall back to default backend
-                    self.cap = cv2.VideoCapture(self.camera_index)
-            except (AttributeError, Exception):
-                # OpenCV without V4L2 support or other error
-                self.cap = cv2.VideoCapture(self.camera_index)
+                for n in range(0, 8):
+                    driver_path = "/sys/class/video4linux/video%d/device/driver" % n
+                    if os.path.basename(os.path.realpath(driver_path)) == "uvcvideo":
+                        if n not in candidate_indices:
+                            candidate_indices.append(n)
+            except Exception:
+                pass
             
-            if not self.cap.isOpened():
+            # Try to connect with V4L2 backend first for better Linux support
+            cap = None
+            for idx in candidate_indices:
+                try:
+                    cap = cv2.VideoCapture(idx, cv2.CAP_V4L2)
+                except (AttributeError, Exception):
+                    cap = cv2.VideoCapture(idx)
+                if cap.isOpened():
+                    self.camera_index = idx
+                    self.cap = cap
+                    break
+                try:
+                    cap.release()
+                except Exception:
+                    pass
+                cap = None
+                time.sleep(0.2)
+            
+            if not cap or not cap.isOpened():
                 self.connectionError.emit(f"USB camera {self.camera_index} not found or in use")
                 return False
+            self.cap = cap
             
             # Give camera more time to initialize (important for V4L2)
             time.sleep(0.5)
@@ -273,6 +295,7 @@ class CameraThread(QThread):
             
         self.running = True
         frame_count = 0
+        consecutive_failures = 0
         
         try:
             while self.running:
@@ -289,6 +312,7 @@ class CameraThread(QThread):
                             break
                             
                         if ret and frame is not None:
+                            consecutive_failures = 0
                             try:
                                 # Basic safety checks for OpenCV 3.2.0 on Pi
                                 if frame.size == 0 or not self.running:
@@ -340,12 +364,50 @@ class CameraThread(QThread):
                                 frame_count += 1
                                 if frame_count % 30 == 0 and self.running:  # Log every 30 frames only, and only if still running
                                     print(f"Frame processing error: {e}")
+                        else:
+                            # Frame read failed - the camera may have dropped off
+                            # the USB bus (URB errors / re-enumeration). Attempt
+                            # recovery instead of silently freezing the feed.
+                            consecutive_failures += 1
+                            if consecutive_failures >= 10 and self.running:
+                                print("Camera stream lost - attempting to reconnect...")
+                                try:
+                                    if self.cap:
+                                        self.cap.release()
+                                    self.cap = None
+                                except Exception:
+                                    pass
+                                time.sleep(2)
+                                if self.try_connect():
+                                    consecutive_failures = 0
+                                    print("Camera stream recovered")
+                                else:
+                                    if self.running:
+                                        self.connectionError.emit("Camera stream lost - unable to reconnect")
+                                    break
                         
                     except Exception as e:
-                        # Handle camera read errors
+                        # Handle camera read errors - attempt recovery instead of
+                        # exiting immediately (USB cameras often recover after
+                        # re-enumeration)
                         if self.running:  # Only log if we're supposed to be running
                             print(f"Camera read error: {e}")
-                        break  # Exit loop on camera errors
+                        consecutive_failures += 1
+                        if consecutive_failures >= 3 and self.running:
+                            try:
+                                if self.cap:
+                                    self.cap.release()
+                                self.cap = None
+                            except Exception:
+                                pass
+                            time.sleep(2)
+                            if self.try_connect():
+                                consecutive_failures = 0
+                                print("Camera stream recovered after read error")
+                            else:
+                                if self.running:
+                                    self.connectionError.emit("Camera stream lost - unable to reconnect")
+                                break
                         
                     # Controlled frame rate with safety - check running flag before sleep
                     if self.running:
@@ -1300,10 +1362,13 @@ class CameraToolOffsetCalibration(QWidget):
             if self._test_camera_index(i):
                 return i
         
-        # If no cameras found at 1+, check index 0 but assume it might be CSI
-        if self._test_camera_index(0):
+        # Only accept index 0 if it is a real UVC camera. The virtual MMAL
+        # 'camera0' service can serve a few stale frames and then stall,
+        # which freezes the camera feed.
+        if self._is_uvc_device(0) and self._test_camera_index(0):
             return 0
             
+        self.logger.warning("No usable camera found (USB camera may be disconnected)")
         return None
 
     def _find_usb_camera_with_v4l2(self):
@@ -1403,6 +1468,20 @@ class CameraToolOffsetCalibration(QWidget):
             
         except Exception as e:
             self.logger.warning(f"Error during camera cleanup before search: {e}")
+
+    def _is_uvc_device(self, index):
+        """
+        Check whether /dev/videoN is a real USB UVC camera.
+        
+        The virtual MMAL 'camera0' service also registers /dev/video0 and can
+        provide a few frames before stalling - which freezes the wizard's feed.
+        UVC cameras are identified by their driver symlink (uvcvideo).
+        """
+        try:
+            driver_path = "/sys/class/video4linux/video%d/device/driver" % index
+            return os.path.basename(os.path.realpath(driver_path)) == "uvcvideo"
+        except Exception:
+            return False
 
     def _test_camera_index(self, index):
         """Test if a camera at the given index is accessible with enhanced V4L2 handling."""
@@ -1897,6 +1976,15 @@ Please restart the calibration process."""
             self.octoprint_client.gcode("M500")
             
             self.logger.info(f"Applied tool offsets - X: {x_offset}, Y: {y_offset}")
+            
+            # Home all axes so the printer returns to a known position after
+            # calibration. M218 saves to variables.cfg and M500 uses
+            # SAVE_CONFIG NO_RESTART=1, so no restart is needed - just re-home.
+            try:
+                self.octoprint_client.home(['x', 'y', 'z'])
+                self.logger.info("Homing axes after applying tool offsets")
+            except Exception as home_error:
+                self.logger.error(f"Error homing after applying tool offsets: {home_error}")
             
             dialog.InfoOk(self, f"Tool offsets applied successfully!\nX: {x_offset:.3f}mm\nY: {y_offset:.3f}mm")
             

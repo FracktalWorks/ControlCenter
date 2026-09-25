@@ -311,6 +311,10 @@ class PrinterModel(QObject):
             temp_data['bedActual'] = 0
         if temp_data['bedTarget'] is None:
             temp_data['bedTarget'] = 0
+        if temp_data.get('chamberActual') is None:
+            temp_data['chamberActual'] = 0
+        if temp_data.get('chamberTarget') is None:
+            temp_data['chamberTarget'] = 0
         self.temperatures = temp_data
         self.temperatures_updated.emit(temp_data)
 

@@ -530,41 +530,95 @@ class MainController(QtCore.QObject):
             self.octoprint_client.gcode(command=restart_command)
             self.logger.info(f"Sent {restart_command} command")
             
+            # Completion is delivered via klipper_restart_complete_signal so that
+            # it is marshalled onto the main thread safely. Do NOT use
+            # QTimer.singleShot from the worker thread (see _wait_for_klipper_ready_async).
+            if on_complete:
+                def _completion_wrapper(success, message, _cb=on_complete):
+                    try:
+                        self.klipper_restart_complete_signal.disconnect(_completion_wrapper)
+                    except TypeError:
+                        pass
+                    _cb(success, message)
+
+                self.klipper_restart_complete_signal.connect(_completion_wrapper)
+
             # Start async wait for Klipper ready
-            self._wait_for_klipper_ready_async(on_complete, timeout_seconds)
+            self._wait_for_klipper_ready_async(timeout_seconds)
             
         except Exception as e:
             self.logger.error(f"Error initiating Klipper restart: {e}")
             self._klipper_restart_in_progress = False
             self._klipper_restart_grace_timer.stop()
             error_msg = f"Failed to restart Klipper: {e}"
+            self.klipper_restart_complete_signal.emit(False, error_msg)
+
+    def wait_for_klipper_ready(self, on_complete=None, timeout_seconds=30):
+        """
+        Wait for Klipper to become ready WITHOUT sending a restart command.
+
+        Used after actions that trigger their own restart (e.g. SAVE_CONFIG or
+        FIRMWARE_RESTART issued by a wizard) when the caller only needs to know
+        when the printer is ready again - typically to re-home the axes.
+
+        Args:
+            on_complete: Optional callback called with (success, message).
+            timeout_seconds: Maximum time to wait for Klipper to become ready.
+        """
+        try:
+            self.logger.info(
+                f"Waiting up to {timeout_seconds}s for Klipper to become ready (no restart issued)"
+            )
             if on_complete:
-                on_complete(False, error_msg)
-            else:
-                self.klipper_restart_complete_signal.emit(False, error_msg)
+                def _completion_wrapper(success, message, _cb=on_complete):
+                    try:
+                        self.klipper_restart_complete_signal.disconnect(_completion_wrapper)
+                    except TypeError:
+                        pass
+                    _cb(success, message)
+
+                self.klipper_restart_complete_signal.connect(_completion_wrapper)
+
+            self._wait_for_klipper_ready_async(timeout_seconds)
+        except Exception as e:
+            self.logger.error(f"Error waiting for Klipper ready: {e}")
+            self.klipper_restart_complete_signal.emit(False, f"Failed to wait for Klipper ready: {e}")
 
     @run_async
-    def _wait_for_klipper_ready_async(self, on_complete, timeout_seconds):
+    def _wait_for_klipper_ready_async(self, timeout_seconds):
         """
         Background thread that waits for Klipper to become ready after restart.
-        
+
+        Completion is reported through klipper_restart_complete_signal. Emitting
+        this signal from the worker thread is safe: Qt queues the delivery to the
+        main thread. QTimer.singleShot must NOT be used here - this thread has no
+        Qt event loop, so the timer would never fire and the UI would remain stuck.
+
         Args:
-            on_complete: Callback function or None to use signal instead.
             timeout_seconds: Maximum wait time.
         """
         deadline = time.time() + timeout_seconds
         ready = False
         final_state = 'unknown'
+        # Do not trust a 'ready' state that predates the restart; also give
+        # OctoPrint a few seconds to register the disconnect before trusting
+        # its REST state.
+        saw_nonready = False
+        rest_fallback_time = time.time() + 5.0
         
         self.logger.info(f"Waiting up to {timeout_seconds}s for Klipper to become ready...")
         
         # Wait for Klipper state to become 'ready'
         while time.time() < deadline:
+            # Fast path: Klipper state from the WebSocket (only accepted after a
+            # non-ready state was observed so a stale pre-restart 'ready' is ignored)
             try:
                 current_state = getattr(self.printer_model, 'klipper_state', 'unknown')
                 final_state = current_state
                 
-                if current_state.lower() == 'ready':
+                if current_state.lower() != 'ready':
+                    saw_nonready = True
+                elif saw_nonready and time.time() >= rest_fallback_time:
                     ready = True
                     self.logger.info(f"Klipper is ready (took ~{timeout_seconds - (deadline - time.time()):.1f}s)")
                     break
@@ -573,6 +627,23 @@ class MainController(QtCore.QObject):
                 
             except Exception as e:
                 self.logger.debug(f"Error checking Klipper state: {e}")
+
+            # Fallback: OctoPrint REST printer state. This works even when the
+            # Klipper plugin does not relay state messages over the WebSocket.
+            if not ready and time.time() >= rest_fallback_time:
+                try:
+                    state_info, status_code = self.octoprint_client.getPrinterState()
+                    if status_code == 200 and isinstance(state_info, dict):
+                        state = state_info.get('state', {}) or {}
+                        text = state.get('text', '') or ''
+                        flags = state.get('flags', {}) or {}
+                        if flags.get('ready') and flags.get('operational'):
+                            ready = True
+                            final_state = text or 'ready'
+                            self.logger.info(f"Klipper ready via OctoPrint state: '{final_state}'")
+                            break
+                except Exception as e:
+                    self.logger.debug(f"Error checking OctoPrint printer state: {e}")
             
             time.sleep(1)
         
@@ -589,12 +660,10 @@ class MainController(QtCore.QObject):
             message = f"Klipper restart timed out (state: {final_state})"
             self.logger.warning(message)
         
-        # Notify completion on main thread
-        # Use default arguments in lambda to properly capture current values
-        if on_complete:
-            QtCore.QTimer.singleShot(0, lambda s=success, m=message: on_complete(s, m))
-        else:
-            QtCore.QTimer.singleShot(0, lambda s=success, m=message: self.klipper_restart_complete_signal.emit(s, m))
+        # Notify completion via signal - safe cross-thread delivery to the main
+        # thread (queued connection). Any on_complete callback passed to
+        # restart_klipper_and_wait is connected to this signal beforehand.
+        self.klipper_restart_complete_signal.emit(success, message)
 
     def is_klipper_restart_in_progress(self):
         """

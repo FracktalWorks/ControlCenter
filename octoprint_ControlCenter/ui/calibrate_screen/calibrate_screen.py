@@ -181,6 +181,23 @@ class CalibrateScreen(QWidget):
         if progress is not None and getattr(self.main_window.printer_model, 'IS_DUAL_NOZZLE', False):
             self._persist_idex_input_shaper(progress)
 
+        # Home the axes once the printer is ready again. SAVE_CONFIG (single
+        # nozzle) and FIRMWARE_RESTART (IDEX) both restart Klipper, which
+        # clears the homed state - so re-home to leave the printer usable.
+        if progress is not None and getattr(progress, '_completed', False):
+            self.logger.info("Input shaper calibration completed - waiting for Klipper ready, then homing")
+            try:
+                controller = getattr(self.main_window, 'controller', None)
+                if controller is not None:
+                    controller.wait_for_klipper_ready(
+                        on_complete=self._on_input_shaper_restart_complete,
+                        timeout_seconds=30
+                    )
+                else:
+                    self.octoprint_client.home(['x', 'y', 'z'])
+            except Exception as e:
+                self.logger.error(f"Failed to schedule homing after input shaper calibration: {e}")
+
     def _persist_idex_input_shaper(self, progress):
         """Persist IDEX input shaper calibration results via SAVE_VARIABLE.
 
@@ -234,6 +251,27 @@ class CalibrateScreen(QWidget):
                 f"Failed to persist IDEX input shaper values: {e}", exc_info=True
             )
             # Non-fatal: calibrated values are already applied for the current session
+
+    def _on_input_shaper_restart_complete(self, success, message):
+        """
+        Home the axes after the input shaper calibration restart completes.
+
+        Args:
+            success: True if Klipper became ready again
+            message: Status message from the wait process
+        """
+        try:
+            if success:
+                self.logger.info(f"Input shaper restart completed: {message}")
+                try:
+                    self.octoprint_client.home(['x', 'y', 'z'])
+                    self.logger.info("Homed axes after input shaper calibration")
+                except Exception as e:
+                    self.logger.error(f"Error homing axes after input shaper calibration: {e}")
+            else:
+                self.logger.warning(f"Input shaper restart issue: {message}")
+        except Exception as e:
+            self.logger.error(f"Error in _on_input_shaper_restart_complete: {e}")
 
     def show_calibrate_screen(self, target_screen=None, tab=None):
         """Show a specific calibration screen or the main calibration page.

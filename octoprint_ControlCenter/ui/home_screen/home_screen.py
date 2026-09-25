@@ -72,6 +72,12 @@ class HomeScreen(QWidget):
         self.bedActualTemperature = self.findChild(QLabel, "bedActualTemperature")
         self.bedTempBar = self.findChild(QProgressBar, "bedTempBar")
 
+        # Temperature displays - Chamber
+        self.chamberTargetTemperature = self.findChild(QLabel, "chamberTargetTemperature")
+        self.chamberActualTemperature = self.findChild(QLabel, "chamberActualTemperature")
+        self.chamberTempBar = self.findChild(QProgressBar, "chamberTempBar")
+        self.chamberLabel = self.findChild(QLabel, "chamberLabel")
+
         # Status components
         self.printerStatus = self.findChild(QLabel, "printerStatus")
         self.printerStatusColour = self.findChild(QLabel, "printerStatusColour")
@@ -95,6 +101,7 @@ class HomeScreen(QWidget):
             self.tool0TargetTemperature, self.tool0ActualTemperature, self.tool0TempBar, self.tool0Label,
             self.tool1TargetTemperature, self.tool1ActualTemperature, self.tool1TempBar, self.tool1Label,
             self.bedTargetTemperature, self.bedActualTemperature, self.bedTempBar,
+            self.chamberTargetTemperature, self.chamberActualTemperature, self.chamberTempBar, self.chamberLabel,
             self.printerStatus, self.printerStatusColour, self.ipStatus,
             self.fileName, self.printTime, self.timeLeft, self.printProgressBar, self.printPreviewMain,
             self.feedRateLabel, self.flowRateLabel
@@ -143,6 +150,19 @@ class HomeScreen(QWidget):
         self.bedActualTemperature.setText("0°C")
         self.bedTargetTemperature.setText("0°C")
         self.bedTempBar.setValue(0)
+
+        self.chamberActualTemperature.setText("0°C")
+        self.chamberTargetTemperature.setText("0°C")
+        self.chamberTempBar.setValue(0)
+
+        # Load the chamber heater icon at runtime from the shipped resources
+        try:
+            icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                                     'resources', 'img', 'icons', 'chamber-heater.png')
+            if os.path.exists(icon_path):
+                self.chamberLabel.setPixmap(QtGui.QPixmap(icon_path))
+        except Exception as e:
+            self.logger.warning(f"Could not load chamber icon: {e}")
 
         # Update print info
         self.fileName.setText(self.current_file)
@@ -405,6 +425,19 @@ class HomeScreen(QWidget):
             self.bedTempBar.setValue(int(temperature['bedActual']))
             self.bedActualTemperature.setText(str(int(temperature['bedActual'])) + "°C")
             self.bedTargetTemperature.setText(str(int(temperature['bedTarget'])) + "°C")
+
+            # Update chamber temperature
+            chamber_actual = temperature.get('chamberActual') or 0
+            chamber_target = temperature.get('chamberTarget') or 0
+            if chamber_target == 0:
+                self.chamberTempBar.setMaximum(160)
+                self.chamberTempBar.setStyleSheet(styles.bar_heater_cold)
+            else:
+                self.chamberTempBar.setMaximum(int(max(chamber_target, 160)))
+                self.chamberTempBar.setStyleSheet(styles.bar_heater_heating)
+            self.chamberTempBar.setValue(int(chamber_actual))
+            self.chamberActualTemperature.setText(str(int(chamber_actual)) + "°C")
+            self.chamberTargetTemperature.setText(str(int(chamber_target)) + "°C")
 
         except (KeyError, TypeError, ValueError) as e:
             self.logger.warning(f"Error updating temperature display: {e}")

@@ -75,7 +75,7 @@ class ZtoolOffsetWizard(QWidget):
     TOTAL_STEPS = 2
     
     # Timeout configuration
-    PROBE_TIMEOUT_SECONDS = 30  # Timeout for probe operations
+    PROBE_TIMEOUT_SECONDS = 200  # Timeout for probe operations
     
     # Quality thresholds for probe standard deviation (mm)
     QUALITY_EXCELLENT = 0.01

@@ -495,6 +495,13 @@ class OctoPrintWebSocket(QThread):
                         for log_entry in log_items:
                             try:
                                 self.terminal_message_signal.emit(log_entry)
+                                # Probe accuracy results reliably appear in the raw
+                                # serial log lines (// probe accuracy results: ...).
+                                # Handle them here as a fallback because the Klipper
+                                # plugin may not relay them on some OctoPrint setups.
+                                if 'probe accuracy results' in log_entry.lower():
+                                    self.logger.info(f"Probe accuracy results detected in logs: {log_entry.strip()}")
+                                    self.probe_accuracy_signal.emit(log_entry.strip())
                             except Exception as e:
                                 self.logger.error(f"Error emitting terminal_message_signal: {e}")
                     except Exception as e:
@@ -663,6 +670,15 @@ class OctoPrintWebSocket(QThread):
                                     except Exception as e:
                                         self.logger.error(f"Error emitting z_probe_offset_signal: {e}")
                                     
+                                # Probe accuracy results (reliable fallback for the
+                                # Klipper plugin path, which may not relay messages)
+                                elif 'probe accuracy results' in item_lower:
+                                    self.logger.info(f"Probe accuracy results detected: {item.strip()}")
+                                    try:
+                                        self.probe_accuracy_signal.emit(item.strip())
+                                    except Exception as e:
+                                        self.logger.error(f"Error emitting probe_accuracy_signal: {e}")
+
                                 # Probing failed messages
                                 elif 'PROBING_FAILED' in item:
                                     self.logger.warning("Z probing failed!")
@@ -682,7 +698,8 @@ class OctoPrintWebSocket(QThread):
                             except Exception as e:
                                 self.logger.error(f"Error processing message '{item}': {e}")
 
-                        # Note: Probe accuracy results are now handled in Klipper plugin section above
+                        # Note: Probe accuracy results are handled both in the
+                        # Klipper plugin section above and in the messages/logs above
 
                 except Exception as e:
                     self.logger.error(f"Error processing current state data: {e}")
@@ -737,7 +754,9 @@ class OctoPrintWebSocket(QThread):
                                 'tool1Actual': temp(data, "tool1", "actual"),
                                 'tool1Target': temp(data, "tool1", "target"),
                                 'bedActual': temp(data, "bed", "actual"),
-                                'bedTarget': temp(data, "bed", "target")
+                                'bedTarget': temp(data, "bed", "target"),
+                                'chamberActual': temp(data, "chamber", "actual"),
+                                'chamberTarget': temp(data, "chamber", "target")
                             }
                             self.logger.debug(f"Temperature update: Tool0: {temperatures['tool0Actual']}°C/{temperatures['tool0Target']}°C, "
                                             f"Tool1: {temperatures['tool1Actual']}°C/{temperatures['tool1Target']}°C, "

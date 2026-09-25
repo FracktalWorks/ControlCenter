@@ -417,6 +417,7 @@ class InputShaperProgressDialog(QtWidgets.QDialog):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         self._is_idex = is_idex
+        self._completed = False
         # IDEX: 3 axes (T0 X, T1 X, shared Y); Single: 2 axes (X, Y)
         self._expected_axes = 3 if is_idex else 2
         self._completed_axes = 0
@@ -486,6 +487,7 @@ class InputShaperProgressDialog(QtWidgets.QDialog):
 
     def mark_complete(self, success=True, is_idex=False):
         if success:
+            self._completed = True
             if is_idex:
                 self._status_label.setText(
                     "Calibration complete. Saving values & restarting printer…"

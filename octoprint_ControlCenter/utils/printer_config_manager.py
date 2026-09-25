@@ -121,6 +121,8 @@ class PrinterConfigManager:
             display_name = printer_name.replace("_", " ").title()
             if display_name.startswith("Twindragon"):
                 display_name = display_name.replace("Twindragon", "Twin Dragon")
+            # Keep all-caps acronym suffixes as-is (e.g. TWINDRAGON_400_HT -> Twin Dragon 400 HT)
+            display_name = re.sub(r'\bHt\b', 'HT', display_name)
             return display_name
         
         # Fallback to simple conversion
@@ -414,7 +416,14 @@ class PrinterConfigManager:
     def update_octoprint_printer_profile(self, printer_name: str) -> bool:
         """Update OctoPrint printer profile with printer-specific settings."""
         try:
+            # Prefer a printer-specific profile template when one ships with the
+            # app (e.g. TWINDRAGON_400_HT.profile), otherwise fall back to the
+            # generic _default.profile template.
             source_profile = os.path.join(self.config_path, '_default.profile')
+            specific_profile = os.path.join(self.config_path, f"{printer_name}.profile")
+            if os.path.exists(specific_profile):
+                source_profile = specific_profile
+
             dest_profile = os.path.join(self.octoprint_config_path, 'printerProfiles', '_default.profile')
             
             if not os.path.exists(source_profile):
@@ -614,7 +623,17 @@ class PrinterConfigManager:
             # Update the include statement to point to the selected printer
             template_lines = template_content.split('\n')
             updated_lines = []
-            
+
+            # Safety check: the selected printer must exist in the template's
+            # include list. Without this, the update would comment out every
+            # include and leave the printer with no active profile.
+            if not any(f'PRINTER_{selected_printer}.cfg' in line for line in template_lines):
+                logger.error(
+                    f"Selected printer {selected_printer} not found in template includes; "
+                    f"refusing to update printer.cfg"
+                )
+                return False
+
             # Process template content, updating printer includes
             for line in template_lines:
                 if 'PRINTER_' in line and '.cfg' in line:
