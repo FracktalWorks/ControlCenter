@@ -63,6 +63,46 @@ DUAL_MATERIAL_BAY_ONLY_ELEMENTS = {
     ]
 }
 
+# Printers (printer.cfg include names) that have a chamber heater
+CHAMBER_HEATER_PRINTERS = {'TWINDRAGON_400_HT'}
+
+# UI elements that should only be shown for chamber heater printers
+CHAMBER_HEATER_ELEMENTS = {
+    'home_screen': [
+        'chamberLabel', 'chamberTextLabel', 'chamberTargetTemperature',
+        'chamberTempBar', 'chamberActualTemperature'
+    ],
+    'control_screen': [
+        'bedChamberToggleButton'
+    ]
+}
+
+def has_chamber_heater():
+    """Check if the selected printer profile has a chamber heater (Twin Dragon 400 HT only)."""
+    try:
+        from utils.printer_config_manager import get_current_printer_selection
+        return get_current_printer_selection() in CHAMBER_HEATER_PRINTERS
+    except Exception as e:
+        logger.error(f"Error checking chamber heater support: {e}")
+        return False
+
+def apply_chamber_heater_config_to_screen(widget, screen_name):
+    """
+    Show chamber heater elements for chamber heater printers, hide them otherwise.
+
+    Args:
+        widget: The screen widget
+        screen_name: Name of the screen for element lookup
+    """
+    visible = has_chamber_heater()
+    for element_name in CHAMBER_HEATER_ELEMENTS.get(screen_name, []):
+        element = getattr(widget, element_name, None)
+        if element:
+            try:
+                element.setVisible(visible)
+            except Exception as e:
+                logger.error(f"Error setting visibility of element {element_name}: {e}")
+
 def hide_dual_nozzle_elements(widget, element_names):
     """
     Hide specified UI elements if printer is configured for single nozzle.

@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QWidget, QToolButton, QPushButton, QLabel, QProgress
 from PyQt5 import QtGui, QtCore
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
-from utils.printer_ui_config import apply_nozzle_config_to_screen, is_dual_material_bay_printer
+from utils.printer_ui_config import apply_nozzle_config_to_screen, is_dual_material_bay_printer, apply_chamber_heater_config_to_screen
 from utils.styles import printer_status_green, printer_status_red, printer_status_amber
 from utils import dialog
 from utils import styles
@@ -228,6 +228,8 @@ class HomeScreen(QWidget):
     def apply_nozzle_configuration(self):
         """Hide dual nozzle elements for single nozzle configuration."""
         apply_nozzle_config_to_screen(self, 'home_screen')
+        # Chamber heater display is exclusive to the Twin Dragon 400 HT
+        apply_chamber_heater_config_to_screen(self, 'home_screen')
 
     def apply_material_bay_configuration(self):
         """Show/hide active material bay label based on printer configuration."""

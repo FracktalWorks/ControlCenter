@@ -7,7 +7,7 @@ from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import QWidget, QPushButton, QSpinBox, QTabWidget, QToolButton, QLabel
 from utils.helpers import check_ui_elements
 from utils.logger import get_logger
-from utils.printer_ui_config import apply_nozzle_config_to_screen, is_dual_nozzle_printer
+from utils.printer_ui_config import apply_nozzle_config_to_screen, is_dual_nozzle_printer, apply_chamber_heater_config_to_screen, has_chamber_heater
 from utils import dialog
 
 try:
@@ -306,6 +306,8 @@ class ControlScreen(QWidget):
     def apply_nozzle_configuration(self):
         """Hide dual nozzle elements and apply styling for single nozzle configuration."""
         apply_nozzle_config_to_screen(self, 'control_screen')
+        # Bed/chamber toggle is exclusive to the Twin Dragon 400 HT
+        apply_chamber_heater_config_to_screen(self, 'control_screen')
         
         # Apply border radius styling for single nozzle mode
         if not is_dual_nozzle_printer():
@@ -346,7 +348,8 @@ class ControlScreen(QWidget):
         logger.info("ControlScreen.coolDownAction started")
         try:
             self.octoprint_client.gcode(command='M107')
-            self.octoprint_client.gcode(command='M141 S0')
+            if has_chamber_heater():
+                self.octoprint_client.gcode(command='M141 S0')
             self.octoprint_client.setToolTemperature({"tool0": 0, "tool1": 0})
             # octopiclient.setToolTemperature({"tool0": 0})
             self.octoprint_client.setBedTemperature(0)
