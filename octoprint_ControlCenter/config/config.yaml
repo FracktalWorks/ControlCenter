@@ -95,7 +95,7 @@ serial:
   neverSendChecksum: true
   sendChecksumWithUnknownCommands: false
   unknownCommandsNeedAck: false
-  supportResendsWithoutOk: true
+  supportResendsWithoutOk: never
   port: /tmp/printer
 server:
   commands:
@@ -110,27 +110,29 @@ server:
     enabled: true
   secretKey: AJI25uCwfpnkfxvKhd4oPs60GKkcrUfr
   seenWizards:
-    backup: null
-    corewizard: 4
-    tracking: null
+    backup: ''
+    corewizard: '4'
+    tracking: ''
 system:
   actions:
   - action: streamon
     command: sudo systemctl start webcamd
-    confirm: false
+    confirm: ''
     name: Start video stream
   - action: streamoff
     command: sudo systemctl stop webcamd
-    confirm: false
+    confirm: ''
     name: Stop video stream
 temperature:
   profiles:
   - bed: 100
-    chamber: null
+    chamber: 0
+    filament: 0
     extruder: 210
     name: ABS
   - bed: 60
-    chamber: null
+    chamber: 0
+    filament: 0
     extruder: 180
     name: PLA
 webcam:
