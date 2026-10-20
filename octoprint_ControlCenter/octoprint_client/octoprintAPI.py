@@ -547,7 +547,7 @@ class octoprintAPI:
         history argument. The amount of returned history data points can be
         limited using the limit argument.
         """
-        url = 'http://' + self.ip + '/api/tool'
+        url = 'http://' + self.ip + '/api/printer/tool'
         headers = {'X-Api-Key': self.apiKey}
         payload = {"history": history, "limit": limit}
         response = requests.get(url, params=payload, headers=headers)
@@ -564,7 +564,7 @@ class octoprintAPI:
         history argument. The amount of returned history data points can be
         limited using the limit argument.
         """
-        url = 'http://' + self.ip + '/api/bed'
+        url = 'http://' + self.ip + '/api/printer/bed'
         headers = {'X-Api-Key': self.apiKey}
         payload = {"history": history, "limit": limit}
         response = requests.get(url, params=payload, headers=headers)

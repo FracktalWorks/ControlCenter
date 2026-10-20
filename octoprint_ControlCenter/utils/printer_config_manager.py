@@ -393,6 +393,19 @@ class PrinterConfigManager:
             with open(source_config, 'r') as f:
                 config_data = yaml.safe_load(f)
                 
+            # Keep this printer's own secrets: the template carries the legacy fleet-wide
+            # api key / secretKey, which must not overwrite per-printer values.
+            try:
+                if os.path.exists(dest_config):
+                    with open(dest_config, 'r') as f:
+                        existing = yaml.safe_load(f) or {}
+                    for section, key in (('api', 'key'), ('server', 'secretKey')):
+                        value = (existing.get(section) or {}).get(key)
+                        if value:
+                            config_data.setdefault(section, {})[key] = value
+            except Exception as e:
+                logger.warning(f"Could not preserve existing OctoPrint secrets: {e}")
+
             # Update appearance name with current printer
             if 'appearance' not in config_data:
                 config_data['appearance'] = {}
@@ -484,6 +497,10 @@ class PrinterConfigManager:
                 source = os.path.join(self.config_path, source_file)
                 if os.path.exists(source):
                     try:
+                        if dest_path == '/etc/dhcpcd.conf' and not shutil.which('dhcpcd'):
+                            # Debian 13 images use NetworkManager; a stray dhcpcd.conf is dead weight
+                            logger.info("dhcpcd not installed, skipping dhcpcd.conf")
+                            continue
                         if dest_path.startswith('/etc/'):
                             # System files need sudo
                             os.system(f'sudo cp -f "{source}" "{dest_path}"')

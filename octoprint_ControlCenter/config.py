@@ -28,7 +28,36 @@ from collections import OrderedDict
 
 # Configuration settings
 ip = '0.0.0.0'
-apiKey = 'B508534ED20348F090B4D0AD637D3660'   
+
+# Legacy fleet-wide key: what every printer used before per-printer keys. Kept only as the
+# last-resort fallback so OLD printers (OctoPrint 1.7.x, config.yaml with this key) keep working.
+_LEGACY_API_KEY = 'B508534ED20348F090B4D0AD637D3660'
+
+
+def _resolve_api_key():
+    """API key for the local OctoPrint: $OCTOPRINT_API_KEY, else api.key from
+    <basedir>/config.yaml (basedir = $OCTOPRINT_BASEDIR or ~/.octoprint), else the legacy key.
+
+    New printers get a unique key generated at install time (fracktal/install-octoprint.sh in the
+    OctoPrint fork), so the key must be read from OctoPrint's own config, never hardcoded.
+    """
+    import os
+    key = os.environ.get('OCTOPRINT_API_KEY', '').strip()
+    if key:
+        return key
+    basedir = os.environ.get('OCTOPRINT_BASEDIR') or os.path.join(os.path.expanduser('~'), '.octoprint')
+    try:
+        import yaml
+        with open(os.path.join(basedir, 'config.yaml'), 'r') as f:
+            key = ((yaml.safe_load(f) or {}).get('api') or {}).get('key') or ''
+        if str(key).strip():
+            return str(key).strip()
+    except Exception:
+        pass
+    return _LEGACY_API_KEY
+
+
+apiKey = _resolve_api_key()
 
 # Screen resolution settings
 SCREEN_WIDTH = 800
