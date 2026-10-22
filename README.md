@@ -1,3 +1,8 @@
+> **New-generation printers (Debian 13, OctoPrint NextGen 1.11.x):** use branch `feat/octoprint-1.11-compat` until it is
+> released as 1.1.8. It reads OctoPrint's API key from `~/.octoprint/config.yaml` (each printer has its own), uses the 1.11
+> API endpoints, and leaves the X session to `fw-touchui.service` when `/etc/fw/touchui-managed` exists. Release 1.1.7
+> does not work with NextGen printers. Installation and boot-to-UI: `agent-3dprinter-expert/docs/DEPLOYMENT.md`.
+
 # PyQt 3D Printer Application
 
 This project is a PyQt application designed for controlling a 3D printer via a touchscreen interface. It connects to an OctoPrint instance using the OctoPrint client API, providing an intuitive user experience for managing print jobs and monitoring printer status.
