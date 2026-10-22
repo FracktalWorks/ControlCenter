@@ -166,6 +166,20 @@ class MainController(QtCore.QObject):
         # Connect signal to slot for showing Klipper error dialog in main thread
         self.klipper_error_signal.connect(self.showKlipperErrorDialog)
 
+    def _write_api_key_to_octoprint_config(self, path, key):
+        """Set api.key in OctoPrint's config.yaml to `key` and hand the files back to pi (sudo cp left them root-owned,
+        which stops OctoPrint, running as pi, from saving its settings)."""
+        try:
+            import yaml
+            with open(path, 'r') as f:
+                data = yaml.safe_load(f) or {}
+            data.setdefault('api', {})['key'] = key
+            subprocess.run(["sudo", "tee", path], input=yaml.safe_dump(data, default_flow_style=False),
+                           text=True, stdout=subprocess.DEVNULL, check=True)
+        except Exception as e:
+            self.logger.error(f"Could not restore the API key in {path}: {e}")
+        subprocess.run(["sudo", "chown", "pi:pi", path, os.path.join(os.path.dirname(path), "users.yaml")], check=False)
+
     def start(self):
         """Kick off application startup and async connectivity check."""
         self.logger.info("Starting application")
@@ -259,6 +273,9 @@ class MainController(QtCore.QObject):
                     subprocess.run(["sudo", "rm", "-rf", "/home/pi/.octoprint/config.yaml"], check=True)
                     subprocess.run(["sudo", "cp", "-f", "config/users.yaml", "/home/pi/.octoprint/users.yaml"], check=True)
                     subprocess.run(["sudo", "cp", "-f", "config/config.yaml", "/home/pi/.octoprint/config.yaml"], check=True)
+                    # The template carries the legacy fleet key; put back the key this UI is using so it can
+                    # still talk to OctoPrint after the restart (printers on the NextGen image have unique keys).
+                    self._write_api_key_to_octoprint_config("/home/pi/.octoprint/config.yaml", apiKey)
                 except subprocess.CalledProcessError as e:
                     self.logger.error(f"Failed to restore failsafe settings: {e}")
                     dialog.WarningOk(self.main_window, f"Failed to restore settings: {e}", overlay=True)

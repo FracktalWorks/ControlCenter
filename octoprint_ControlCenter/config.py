@@ -45,15 +45,18 @@ def _resolve_api_key():
     key = os.environ.get('OCTOPRINT_API_KEY', '').strip()
     if key:
         return key
-    basedir = os.environ.get('OCTOPRINT_BASEDIR') or os.path.join(os.path.expanduser('~'), '.octoprint')
-    try:
-        import yaml
-        with open(os.path.join(basedir, 'config.yaml'), 'r') as f:
-            key = ((yaml.safe_load(f) or {}).get('api') or {}).get('key') or ''
-        if str(key).strip():
-            return str(key).strip()
-    except Exception:
-        pass
+    # ~ is /root when the UI runs under sudo (older units), so also look in pi's home.
+    candidates = [os.environ.get('OCTOPRINT_BASEDIR'), os.path.join(os.path.expanduser('~'), '.octoprint'),
+                  '/home/pi/.octoprint']
+    for basedir in [c for c in candidates if c]:
+        try:
+            import yaml
+            with open(os.path.join(basedir, 'config.yaml'), 'r') as f:
+                key = ((yaml.safe_load(f) or {}).get('api') or {}).get('key') or ''
+            if str(key).strip():
+                return str(key).strip()
+        except Exception:
+            continue
     return _LEGACY_API_KEY
 
 
