@@ -54,6 +54,11 @@ class ControlCenter(octoprint.plugin.StartupPlugin):
     
     def _check_and_update_xinit_file(self):
         """Check and update the xinit file with the correct path to main.py"""
+        # Images that start the touch UI through fw-touchui.service (base-image/touchui) own the X session:
+        # rewriting the global xinitrc would fail on the read-only root and restart X behind the service's back.
+        if os.path.exists("/etc/fw/touchui-managed"):
+            self._logger.info("Touch UI is managed by fw-touchui.service; not touching /etc/X11/xinit/xinitrc")
+            return
         xinit_file = "/etc/X11/xinit/xinitrc"
         
         try:
