@@ -22,7 +22,7 @@ extruder:
     - 0.0
   sharedNozzle: false
 heatedBed: true
-heatedChamber: false
+heatedChamber: true
 id: _default
 model: Fracktal Works Series
 name: Twin Dragon 400 HT

@@ -8,6 +8,7 @@ import shutil
 import glob
 import re
 import json
+import socket
 import subprocess
 import sys
 import time
@@ -378,7 +379,54 @@ class PrinterConfigManager:
     # ========================================================================
     # OCTOPRINT CONFIGURATION MANAGEMENT
     # ========================================================================
-    
+
+    @staticmethod
+    def _get_lan_ip() -> Optional[str]:
+        """Best-effort LAN IP of this printer. No packets are sent."""
+        probe = None
+        try:
+            probe = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            probe.settimeout(0.5)
+            probe.connect(('10.255.255.255', 1))
+            ip = probe.getsockname()[0]
+            if ip and not ip.startswith('127.'):
+                return ip
+        except Exception as e:
+            logger.debug("Could not determine LAN IP via route probe: {}".format(e))
+        finally:
+            if probe is not None:
+                probe.close()
+        return None
+
+    def _apply_webcam_endpoints(self, config_data: Dict[str, Any]) -> None:
+        """
+        Point OctoPrint at the MJPEG server on :8080 using absolute URLs.
+
+        The camera is served by fw-webcam straight on port 8080. These images have
+        no reverse proxy, so the OctoPi-style relative '/webcam/?action=stream'
+        resolves against OctoPrint's own origin (:5000) and returns 404. The stream
+        must therefore use the printer's LAN IP so remote browsers can reach it.
+        """
+        snapshot = 'http://127.0.0.1:8080/?action=snapshot'
+        lan_ip = self._get_lan_ip()
+        if lan_ip:
+            stream = 'http://{}:8080/?action=stream'.format(lan_ip)
+        else:
+            logger.warning("LAN IP unknown - falling back to loopback for webcam stream URL")
+            stream = 'http://127.0.0.1:8080/?action=stream'
+
+        webcam = config_data.setdefault('webcam', {})
+        webcam['stream'] = stream
+        webcam['snapshot'] = snapshot
+        webcam.setdefault('streamRatio', '4:3')
+
+        # classicwebcam reads plugins.classicwebcam; the legacy webcam: section above
+        # only seeds it via a one-time migration, which already ran on existing installs.
+        classic = config_data.setdefault('plugins', {}).setdefault('classicwebcam', {})
+        classic['stream'] = stream
+        classic['snapshot'] = snapshot
+        classic.setdefault('streamRatio', '4:3')
+
     def update_octoprint_config(self, printer_name: str) -> bool:
         """Update OctoPrint config.yaml with printer-specific settings."""
         try:
@@ -411,7 +459,9 @@ class PrinterConfigManager:
                 config_data['appearance'] = {}
                 
             config_data['appearance']['name'] = self.get_printer_display_name(printer_name)
-            
+
+            self._apply_webcam_endpoints(config_data)
+
             # Ensure destination directory exists
             os.makedirs(os.path.dirname(dest_config), exist_ok=True)
             

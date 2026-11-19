@@ -138,5 +138,5 @@ temperature:
 webcam:
   ffmpeg: /usr/bin/ffmpeg
   snapshot: http://127.0.0.1:8080/?action=snapshot
-  stream: /webcam/?action=stream
+  stream: http://127.0.0.1:8080/?action=stream
   streamRatio: '4:3'
