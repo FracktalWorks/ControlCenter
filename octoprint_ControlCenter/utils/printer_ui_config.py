@@ -78,10 +78,15 @@ CHAMBER_HEATER_ELEMENTS = {
 }
 
 def has_chamber_heater():
-    """Check if the selected printer profile has a chamber heater (Twin Dragon 400 HT only)."""
+    """Check whether the active printer configuration has a chamber heater."""
     try:
-        from utils.printer_config_manager import get_current_printer_selection
-        return get_current_printer_selection() in CHAMBER_HEATER_PRINTERS
+        from utils.printer_config_manager import (
+            get_current_printer_selection, get_printer_config_manager)
+        if get_current_printer_selection() in CHAMBER_HEATER_PRINTERS:
+            return True
+        # Also ask the Klipper config itself, so a printer that gains a chamber
+        # heater is picked up without editing this module.
+        return get_printer_config_manager().printer_has_chamber_heater()
     except Exception as e:
         logger.error(f"Error checking chamber heater support: {e}")
         return False

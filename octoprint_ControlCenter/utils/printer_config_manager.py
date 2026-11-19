@@ -427,6 +427,51 @@ class PrinterConfigManager:
         classic['snapshot'] = snapshot
         classic.setdefault('streamRatio', '4:3')
 
+    def _config_includes_chamber_heater(self, cfg_path: str, depth: int = 0) -> bool:
+        """Recursively check a Klipper config (and its [include]s) for a chamber heater."""
+        if depth > 2 or not os.path.isfile(cfg_path):
+            return False
+        try:
+            with open(cfg_path, 'r', errors='replace') as f:
+                lines = f.readlines()
+        except OSError as e:
+            logger.warning("Could not read {}: {}".format(cfg_path, e))
+            return False
+        for raw in lines:
+            line = raw.strip()
+            if not line or line.startswith('#'):
+                continue
+            if re.match(r'^\[heater_generic\s+Chamber\]', line, re.IGNORECASE):
+                return True
+            match = re.match(r'^\[include\s+([^\]]+)\]', line)
+            if match:
+                target = os.path.join(os.path.dirname(cfg_path), match.group(1).strip())
+                if self._config_includes_chamber_heater(target, depth + 1):
+                    return True
+        return False
+
+    def printer_has_chamber_heater(self, printer_name: Optional[str] = None) -> bool:
+        """
+        True when the active printer configuration actually loads a chamber heater.
+
+        Derived from the Klipper config rather than a static profile flag so the
+        deployed OctoPrint profile cannot drift out of sync with the hardware.
+        A stale template previously reset heatedChamber to False on every deploy,
+        which removed the chamber temperature from OctoPrint and the touch UI.
+        """
+        try:
+            candidates = [self.printer_cfg_path]
+            selected = printer_name or self.get_current_printer_selection()
+            if selected:
+                candidates.append(
+                    os.path.join(self.config_path, 'PRINTER_{}.cfg'.format(selected)))
+            for candidate in candidates:
+                if candidate and self._config_includes_chamber_heater(candidate):
+                    return True
+        except Exception as e:
+            logger.error("Error detecting chamber heater: {}".format(e))
+        return False
+
     def update_octoprint_config(self, printer_name: str) -> bool:
         """Update OctoPrint config.yaml with printer-specific settings."""
         try:
@@ -517,7 +562,11 @@ class PrinterConfigManager:
                 profile_data['extruder']['offsets'] = [
                     [0.0, 0.0]
                 ]
-                    
+
+            # Chamber heater presence comes from the Klipper config, never from the
+            # template, so a stale profile flag cannot hide the chamber again.
+            profile_data['heatedChamber'] = self.printer_has_chamber_heater(printer_name)
+
             # Ensure destination directory exists
             os.makedirs(os.path.dirname(dest_profile), exist_ok=True)
             
