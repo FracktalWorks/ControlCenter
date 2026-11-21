@@ -153,19 +153,47 @@ OctoPrint `system.actions`; uploaded helper files were deleted.
 
 ---
 
+## Webcam feed and IP changes
+
+The webcam is served by `fw-webcam` directly on `:8080`; there is no reverse
+proxy, so OctoPrint's webcam URL must be absolute (`http://<LAN-IP>:8080/...`).
+Two problems were fixed:
+
+* The 19 Nov deploy ran while WiFi was being reconfigured. `_get_lan_ip()` failed
+  and `_apply_webcam_endpoints()` **wrote `127.0.0.1`**, which is only reachable
+  from the Pi itself — remote browsers saw no feed. It now keeps the previously
+  configured endpoints when the IP cannot be determined.
+* A DHCP change left the old IP in OctoPrint until someone redeployed. Writing
+  `config.yaml` externally does not update a running OctoPrint (settings are held
+  in memory), so `refresh_webcam_endpoints()` now POSTs to
+  `http://127.0.0.1:5000/api/settings`, which updates memory *and* the file.
+
+`refresh_webcam_endpoints()` runs:
+
+| Trigger | Location |
+|---------|----------|
+| Every application start (after Klipper is operational) | `MainController.onStartupCompleted` |
+| WiFi change | `NetworkSettings.wifiReconnectResult` → `refreshWebcamEndpoints()` |
+| Static IP change (eth0/wlan0) | `NetworkSettings.staticIPReconnectResult` → `refreshWebcamEndpoints()` |
+
+Verified on the unit: setting the URL to a bogus `10.99.99.99` and running the
+refresh restored `http://172.29.228.66:8080/?action=stream`, and a restart of
+`fw-touchui` logged `OctoPrint webcam endpoints updated for IP 172.29.228.66`.
+OctoPrint mirrors the value into `webcam.webcams[0]` and the legacy
+`webcam.streamUrl`, so the UI, snapshot and stream all use the same URL.
+
+---
+
 ## Follow-up
 
-1. The two 19 Nov commits plus this one are still local-only; a release is needed
+1. The two 19 Nov commits plus these are still local-only; a release is needed
    to ship the guard to other units (they run 1.1.8 without it).
-2. Webcam URLs are `http://127.0.0.1:8080/...` — the 19 Nov deploy fell back to
-   loopback while WiFi was being reconfigured. Local UI is fine, remote browser
-   streaming needs a re-deploy with the LAN IP.
-3. Network Settings screen raises `Image.__init__() got an unexpected keyword
+2. Network Settings screen raises `Image.__init__() got an unexpected keyword
    argument 'qrcode_modules'` (QR widget vs. installed `qrcode` API).
-4. `/home/pi/oprint` still contains an obsolete copy of ControlCenter; it is not
+3. `/home/pi/oprint` still contains an obsolete copy of ControlCenter; it is not
    used by `fw-touchui` (which runs from the OctoPrint venv) but should be removed
    to avoid future confusion.
-5. OctoPrint 1.11 deprecates the global API key (removed in 1.13); ControlCenter
+4. OctoPrint 1.11 deprecates the global API key (removed in 1.13); ControlCenter
    falls back to it on this unit.
 
 ---

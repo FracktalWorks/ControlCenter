@@ -12,6 +12,7 @@ import socket
 import subprocess
 import sys
 import time
+import urllib.request
 from typing import List, Dict, Optional, Any
 
 try:
@@ -426,32 +427,83 @@ class PrinterConfigManager:
 
     def _apply_webcam_endpoints(self, config_data: Dict[str, Any]) -> None:
         """
-        Point OctoPrint at the MJPEG server on :8080 using absolute URLs.
+        Point OctoPrint at the MJPEG server on :8080 using absolute LAN URLs.
 
         The camera is served by fw-webcam straight on port 8080. These images have
         no reverse proxy, so the OctoPi-style relative '/webcam/?action=stream'
         resolves against OctoPrint's own origin (:5000) and returns 404. The stream
         must therefore use the printer's LAN IP so remote browsers can reach it.
+
+        When the LAN IP cannot be determined the previously configured endpoints are
+        kept: writing loopback would remove the feed for every remote browser.
         """
-        snapshot = 'http://127.0.0.1:8080/?action=snapshot'
         lan_ip = self._get_lan_ip()
+        webcam = config_data.setdefault('webcam', {})
+        # classicwebcam reads plugins.classicwebcam; the legacy webcam: section above
+        # only seeds it via a one-time migration, which already ran on existing installs.
+        classic = config_data.setdefault('plugins', {}).setdefault('classicwebcam', {})
+        previous_stream = classic.get('stream') or webcam.get('stream')
+        previous_snapshot = classic.get('snapshot') or webcam.get('snapshot')
+
         if lan_ip:
             stream = 'http://{}:8080/?action=stream'.format(lan_ip)
+            snapshot = 'http://{}:8080/?action=snapshot'.format(lan_ip)
         else:
-            logger.warning("LAN IP unknown - falling back to loopback for webcam stream URL")
-            stream = 'http://127.0.0.1:8080/?action=stream'
+            logger.warning("LAN IP unknown - keeping existing webcam endpoints")
+            stream = previous_stream or 'http://127.0.0.1:8080/?action=stream'
+            snapshot = previous_snapshot or 'http://127.0.0.1:8080/?action=snapshot'
 
-        webcam = config_data.setdefault('webcam', {})
         webcam['stream'] = stream
         webcam['snapshot'] = snapshot
         webcam.setdefault('streamRatio', '4:3')
 
-        # classicwebcam reads plugins.classicwebcam; the legacy webcam: section above
-        # only seeds it via a one-time migration, which already ran on existing installs.
-        classic = config_data.setdefault('plugins', {}).setdefault('classicwebcam', {})
         classic['stream'] = stream
         classic['snapshot'] = snapshot
         classic.setdefault('streamRatio', '4:3')
+
+    def refresh_webcam_endpoints(self, timeout: float = 5.0) -> bool:
+        """
+        Repoint OctoPrint's webcam at this printer's current LAN IP.
+
+        OctoPrint keeps its settings in memory, so editing config.yaml externally
+        does not affect the running server. Going through the settings API updates
+        memory and the persisted file, so the stream keeps working after a DHCP
+        address change without restarting OctoPrint.
+        """
+        lan_ip = self._get_lan_ip()
+        if not lan_ip:
+            logger.warning("LAN IP unknown - leaving OctoPrint webcam endpoints unchanged")
+            return False
+
+        try:
+            from config import apiKey
+        except ImportError:
+            apiKey = None
+        if not apiKey:
+            logger.warning("OctoPrint API key unavailable - cannot refresh webcam endpoints")
+            return False
+
+        stream = 'http://{}:8080/?action=stream'.format(lan_ip)
+        snapshot = 'http://{}:8080/?action=snapshot'.format(lan_ip)
+        payload = json.dumps({'plugins': {'classicwebcam': {
+            'stream': stream,
+            'snapshot': snapshot,
+            'streamRatio': '4:3',
+        }}}).encode('utf-8')
+        request = urllib.request.Request(
+            'http://127.0.0.1:5000/api/settings',
+            data=payload,
+            headers={'Content-Type': 'application/json', 'X-Api-Key': apiKey})
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                if response.status == 200:
+                    logger.info("OctoPrint webcam endpoints updated for IP {}".format(lan_ip))
+                    return True
+                logger.warning("OctoPrint rejected webcam endpoint update: HTTP {}".format(
+                    response.status))
+        except Exception as e:
+            logger.error("Could not update OctoPrint webcam endpoints: {}".format(e))
+        return False
 
     def _config_includes_chamber_heater(self, cfg_path: str, depth: int = 0) -> bool:
         """Recursively check a Klipper config (and its [include]s) for a chamber heater."""

@@ -335,12 +335,21 @@ class NetworkSettings(QWidget):
                 self.wifiMessageBox.setText('Connected, IP: ' + x)
                 self.wifiMessageBox.setStandardButtons(QtWidgets.QMessageBox.Ok)
                 self.mainSettingsWidget.main_window.home_screen.ipStatus.setText(x)  # sets the IP addr. in the status bar
+                self.refreshWebcamEndpoints()
 
             else:
                 self.wifiMessageBox.setText("Not able to connect to WiFi")
         except Exception as e:
             self.logger.error("Error in NetworkSettings.wifiReconnectResult: {}".format(e))
             dialog.WarningOk(self, "Error in NetworkSettings.wifiReconnectResult: {}".format(e), overlay=True)
+
+    def refreshWebcamEndpoints(self):
+        """Keep OctoPrint's webcam URL in step with the printer's (possibly new) IP."""
+        try:
+            from utils.printer_config_manager import get_printer_config_manager
+            get_printer_config_manager().refresh_webcam_endpoints()
+        except Exception as e:
+            self.logger.warning("Could not refresh webcam endpoints: {}".format(e))
 
     def togglePasswordVisibility(self, state):
         """
@@ -447,6 +456,7 @@ class NetworkSettings(QWidget):
             if x is not None:
                 self.staticIPMessageBox.setLocalIcon('success.png')
                 self.staticIPMessageBox.setText('Connected, IP: ' + x)
+                self.refreshWebcamEndpoints()
             else:
 
                 self.staticIPMessageBox.setText("Not able to set Static IP")

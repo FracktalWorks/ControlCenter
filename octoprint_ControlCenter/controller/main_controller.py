@@ -1077,6 +1077,12 @@ class MainController(QtCore.QObject):
         self.logger.info("MainController.onStartupCompleted started")
         if self.octoprint_client:
             try:
+                # Keep the OctoPrint webcam URL pointing at the current LAN IP
+                try:
+                    from utils.printer_config_manager import get_printer_config_manager
+                    get_printer_config_manager().refresh_webcam_endpoints()
+                except Exception as e:
+                    self.logger.warning(f"Could not refresh webcam endpoints: {e}")
                 self.octoprint_client.gcode(command='SET_FILAMENT_RUNOUT_SENSOR S=0')
                 self.octoprint_client.gcode(command='SET_FILAMENT_JAM_SENSOR S=0')
                 # Reload printer configuration from Klipper after connection is established
