@@ -63,8 +63,21 @@ FIRMWARE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "firmwa
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config")
 PRINTER_CFG_PATH = '/home/pi/printer.cfg'
 KLIPPER_CONFIG_PATH = '/home/pi/'
+PRINTER_DATA_CONFIG_PATH = '/home/pi/printer_data/config'
 OCTOPRINT_CONFIG_PATH = '/home/pi/.octoprint/'
 BACKUP_CFG_PATTERN = '/home/pi/printer-*.cfg'
+
+# Patterns used to reject a printer.cfg that would halt Klipper. A config whose
+# board UUIDs are missing/foreign, or whose pins reference an MCU that has no
+# [mcu <name>] section, must never reach the printer.
+_MCU_SECTION_RE = re.compile(r'^\[mcu(?:\s+([^\]]+))?\]\s*$', re.M)
+_MCU_UUID_RE = re.compile(r'^\s*canbus_uuid\s*:\s*(\S+)', re.M)
+_MCU_SERIAL_RE = re.compile(r'^\s*serial\s*:\s*\S+', re.M)
+_CANBUS_UUID_RE = re.compile(r'^[0-9a-fA-F]{12}$')
+_CHIP_PIN_RE = re.compile(
+    r'^\s*[A-Za-z0-9_]*pin[A-Za-z0-9_]*\s*:\s*[!^~]*\s*([A-Za-z][A-Za-z0-9_]*)\s*:\s*'
+    r'(?:gpio\d+|[Pp][A-Z]\d+)\b', re.M)
+_INCLUDE_RE = re.compile(r'^\s*\[include\s+([^\]]+)\]', re.M)
 
 # Fallback values when configuration cannot be read
 FALLBACK_CONFIG = {
@@ -83,10 +96,23 @@ class PrinterConfigManager:
     def __init__(self):
         self.firmware_path = FIRMWARE_PATH
         self.config_path = CONFIG_PATH
-        self.printer_cfg_path = PRINTER_CFG_PATH
-        self.klipper_config_path = KLIPPER_CONFIG_PATH
+        self.klipper_config_path = self.resolve_klipper_config_path()
+        self.printer_cfg_path = os.path.join(self.klipper_config_path, 'printer.cfg')
         self.octoprint_config_path = OCTOPRINT_CONFIG_PATH
-        self.backup_pattern = BACKUP_CFG_PATTERN
+        self.backup_pattern = os.path.join(self.klipper_config_path, 'printer-*.cfg')
+
+    @staticmethod
+    def resolve_klipper_config_path() -> str:
+        """Directory Klipper actually loads its config from.
+
+        Current images keep the live printer.cfg in printer_data/config; older
+        images use /home/pi directly. Writing to the wrong directory silently
+        has no effect on Klipper.
+        """
+        live_cfg = os.path.join(PRINTER_DATA_CONFIG_PATH, 'printer.cfg')
+        if os.path.isdir(PRINTER_DATA_CONFIG_PATH) and os.path.exists(live_cfg):
+            return PRINTER_DATA_CONFIG_PATH
+        return KLIPPER_CONFIG_PATH
 
     # ========================================================================
     # PRINTER DISCOVERY AND MANAGEMENT
@@ -820,6 +846,21 @@ class PrinterConfigManager:
                 final_content += "\n\n" + existing_save_config_section
                 logger.info("Appended preserved SAVE_CONFIG section")
                     
+            # Never write a config Klipper would reject. Losing the preserved MCU
+            # block is what left printers halted with "Unknown pin chip name" or
+            # with another machine's canbus_uuid values.
+            if preserve_mcu and os.path.exists(dest_path) and not existing_mcu_section:
+                logger.error(
+                    f"MCU configuration could not be preserved from {dest_path}; refusing to "
+                    f"deploy template (board canbus_uuid values would be overwritten)")
+                return False
+
+            mcu_ok, mcu_reason = self.validate_mcu_configuration(final_content, os.path.dirname(dest_path))
+            if not mcu_ok:
+                logger.error(
+                    f"Refusing to write {dest_path}: {mcu_reason}. Existing configuration left untouched.")
+                return False
+
             # Write the updated content
             with open(dest_path, 'w') as f:
                 f.write(final_content)
@@ -887,6 +928,64 @@ class PrinterConfigManager:
     # BACKUP AND RECOVERY OPERATIONS
     # ========================================================================
     
+    @staticmethod
+    def _mcu_sections(config_text: str) -> Dict[str, str]:
+        """Map MCU name ('' for the mainboard) to the text of its section."""
+        matches = list(_MCU_SECTION_RE.finditer(config_text))
+        sections = {}
+        for index, match in enumerate(matches):
+            end = matches[index + 1].start() if index + 1 < len(matches) else len(config_text)
+            sections[(match.group(1) or '').strip()] = config_text[match.end():end]
+        return sections
+
+    def _collect_config_text(self, base_dir: str, config_text: str, depth: int = 0) -> str:
+        """Return config_text plus every [include] file resolved against base_dir."""
+        if depth > 5:
+            return config_text
+        chunks = [config_text]
+        for include in _INCLUDE_RE.findall(config_text):
+            include_path = os.path.join(base_dir, include.strip())
+            if not os.path.isfile(include_path):
+                logger.warning(f"Include not found while validating config: {include_path}")
+                continue
+            try:
+                with open(include_path, 'r') as include_file:
+                    chunks.append(self._collect_config_text(base_dir, include_file.read(), depth + 1))
+            except Exception as e:
+                logger.warning(f"Could not read include {include_path}: {e}")
+        return "\n".join(chunks)
+
+    def validate_mcu_configuration(self, config_text: str, base_dir: str = None) -> tuple:
+        """Validate the MCU definitions of a composed printer.cfg.
+
+        Catches the failure modes that halt Klipper: a missing [mcu] section, a
+        placeholder/foreign canbus_uuid, or pins referencing an MCU that has no
+        [mcu <name>] section anywhere in the include chain.
+
+        Returns:
+            (is_valid, reason) tuple
+        """
+        base_dir = base_dir or self.klipper_config_path
+        sections = self._mcu_sections(config_text)
+        if '' not in sections:
+            return False, "no [mcu] section"
+
+        for name, section_text in sections.items():
+            label = '[mcu {}]'.format(name) if name else '[mcu]'
+            uuid_match = _MCU_UUID_RE.search(section_text)
+            if uuid_match:
+                if not _CANBUS_UUID_RE.match(uuid_match.group(1)):
+                    return False, "{} has an invalid canbus_uuid '{}'".format(label, uuid_match.group(1))
+            elif not _MCU_SERIAL_RE.search(section_text):
+                return False, "{} has neither canbus_uuid nor serial".format(label)
+
+        referenced = set(_CHIP_PIN_RE.findall(self._collect_config_text(base_dir, config_text)))
+        referenced.discard('mcu')
+        missing = sorted(referenced.difference(sections.keys()))
+        if missing:
+            return False, "pins reference undefined MCU(s): {}".format(", ".join(missing))
+        return True, ""
+
     def is_config_valid(self, config_path: str = None) -> bool:
         """Check if configuration file is valid."""
         if config_path is None:
@@ -931,6 +1030,11 @@ class PrinterConfigManager:
             has_binary_data = any(ord(char) > 127 for char in content[:1000])  # Check first 1KB
             
             is_valid = has_sections and has_content and not has_null_bytes and not has_binary_data
+
+            if is_valid:
+                is_valid, mcu_reason = self.validate_mcu_configuration(content, os.path.dirname(config_path))
+                if not is_valid:
+                    logger.error(f"Config {config_path} rejected: {mcu_reason}")
             
             if not is_valid:
                 logger.debug(f"Config validation failed for {config_path}: "
