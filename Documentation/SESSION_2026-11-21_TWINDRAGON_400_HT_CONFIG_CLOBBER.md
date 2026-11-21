@@ -226,6 +226,41 @@ all passing on the unit).
 
 ---
 
+## Timelapse recording
+
+**Symptom:** the Timelapse tab showed *"Take note that timelapse configuration is
+disabled while your printer is printing"* and nothing was ever recorded.
+
+**Root cause:** the live `webcam.timelapse` config was `type: off`, and ControlCenter's
+`config/config.yaml` template had **no timelapse block at all** — so every deploy
+(`update_octoprint_config`) rewrote `config.yaml` and erased the timelapse configuration.
+OctoPrint 1.11 also does not persist `webcam.timelapse` when it is set through the
+generic settings API, so only `POST /api/timelapse` (or the config file itself) keeps it.
+
+**Fixes:**
+
+| Change | Where |
+|--------|-------|
+| Template ships `timelapseEnabled: true` and `type: zchange` (fps 25, render after success) | [config/config.yaml](../octoprint_ControlCenter/config/config.yaml) |
+| `update_octoprint_config()` preserves the live `webcam.timelapse` / `timelapseEnabled` instead of resetting them to template defaults | [utils/printer_config_manager.py](../octoprint_ControlCenter/utils/printer_config_manager.py) |
+| Unit configured via `POST /api/timelapse` and persisted to `~/.octoprint/config.yaml` | printer |
+| Removed the misleading banner from the Timelapse tab | printer `octoprint/templates/tabs/timelapse.jinja2` (backup `.pre-fix-20261121`) |
+
+The timelapse *form fields* stay read-only during a print (OctoPrint design — changing
+the mode mid-print discards the running capture). Recording itself now starts with every
+print: one frame per layer change, rendered to MP4 after a successful print.
+
+**Verified:** after an OctoPrint restart `GET /api/timelapse` still reports
+`type: zchange`; the web UI renders the Timelapse tab without the banner; ffmpeg captures
+from the snapshot URL on the printer (`SNAPSHOT OK`, 67 KB JPEG); 12 tests pass on the
+unit (including two new ones proving a config deploy keeps the timelapse settings).
+
+> The banner removal edits an OctoPrint core template; a future OctoPrint upgrade will
+> restore the original file. The recording configuration itself lives in `config.yaml`
+> and is re-applied by the ControlCenter template.
+
+---
+
 ## Follow-up
 
 1. The two 19 Nov commits plus these are still local-only; a release is needed

@@ -8,7 +8,9 @@ removed the feed for every remote browser (and never recovered until redeploymen
 """
 
 import os
+import shutil
 import sys
+import tempfile
 import unittest
 
 # Add the octoprint_ControlCenter directory to the Python path
@@ -63,6 +65,65 @@ class WebcamEndpointTest(unittest.TestCase):
     def test_refresh_does_nothing_without_lan_ip(self):
         self.manager._get_lan_ip = lambda: None
         self.assertFalse(self.manager.refresh_webcam_endpoints())
+
+
+class OctoPrintConfigDeployTest(unittest.TestCase):
+    """Deploying config.yaml must not reset the timelapse recording configuration."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp(prefix='op-config-')
+        templates = os.path.join(self.temp_dir, 'templates')
+        octoprint = os.path.join(self.temp_dir, 'octoprint')
+        os.makedirs(templates)
+        os.makedirs(octoprint)
+        self.dest = os.path.join(octoprint, 'config.yaml')
+
+        with open(os.path.join(templates, 'config.yaml'), 'w') as handle:
+            yaml.safe_dump({
+                'webcam': {
+                    'ffmpeg': '/usr/bin/ffmpeg',
+                    'timelapseEnabled': True,
+                    'timelapse': {'type': 'zchange', 'fps': 25},
+                }
+            }, handle)
+
+        self.manager = PrinterConfigManager()
+        self.manager.config_path = templates
+        self.manager.octoprint_config_path = octoprint
+        self.manager.firmware_path = templates
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def _deploy(self):
+        self.assertTrue(self.manager.update_octoprint_config('TWINDRAGON_400_HT'))
+        with open(self.dest, 'r') as handle:
+            return yaml.safe_load(handle)
+
+    def test_deploy_preserves_live_timelapse(self):
+        with open(self.dest, 'w') as handle:
+            yaml.safe_dump({
+                'api': {'key': 'ABCDEF0123456789'},
+                'webcam': {
+                    'timelapseEnabled': True,
+                    'timelapse': {'type': 'timed', 'fps': 30,
+                                  'options': {'interval': 30}},
+                },
+            }, handle)
+
+        deployed = self._deploy()
+
+        self.assertEqual(deployed['webcam']['timelapse']['type'], 'timed')
+        self.assertEqual(deployed['webcam']['timelapse']['options']['interval'], 30)
+        self.assertEqual(deployed['api']['key'], 'ABCDEF0123456789')
+
+    def test_template_timelapse_used_when_none_configured(self):
+        with open(self.dest, 'w') as handle:
+            yaml.safe_dump({'webcam': {'ffmpeg': '/usr/bin/ffmpeg'}}, handle)
+
+        deployed = self._deploy()
+
+        self.assertEqual(deployed['webcam']['timelapse']['type'], 'zchange')
 
 
 if __name__ == '__main__':

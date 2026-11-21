@@ -575,6 +575,13 @@ class PrinterConfigManager:
                         value = (existing.get(section) or {}).get(key)
                         if value:
                             config_data.setdefault(section, {})[key] = value
+                    # Timelapse recording is configured per printer; a deploy must not
+                    # reset it to the template defaults (that silently turned it off).
+                    existing_webcam = existing.get('webcam') or {}
+                    if existing_webcam.get('timelapse'):
+                        config_data.setdefault('webcam', {})['timelapse'] = existing_webcam['timelapse']
+                    if 'timelapseEnabled' in existing_webcam:
+                        config_data.setdefault('webcam', {})['timelapseEnabled'] = existing_webcam['timelapseEnabled']
             except Exception as e:
                 logger.warning(f"Could not preserve existing OctoPrint secrets: {e}")
 

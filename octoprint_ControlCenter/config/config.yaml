@@ -140,3 +140,11 @@ webcam:
   snapshot: http://127.0.0.1:8080/?action=snapshot
   stream: http://127.0.0.1:8080/?action=stream
   streamRatio: '4:3'
+  timelapseEnabled: true
+  timelapse:
+    type: zchange
+    fps: 25
+    postRoll: 0
+    renderAfterPrint: success
+    options:
+      retractionZHop: 0.0
