@@ -958,12 +958,17 @@ class MainController(QtCore.QObject):
         """Handle Klipper state changes and trigger STATUS refresh if state is unhealthy."""
         try:
             valid_states = ['ready', 'operational', 'idle', 'unknown']
+            # A shutdown/error is never a startup transient - it is exactly what an
+            # emergency stop (M112) produces, and ignoring it leaves the printer
+            # offline until someone reconnects by hand.
+            terminal_states = ('shutdown', 'error')
+            state_lower = (state or '').lower()
             self.logger.info(f"Klipper state changed to: {state}")
             
             # Check if at least 60 seconds have passed since startup
             time_since_startup = time.time() - self.startup_time
             
-            if time_since_startup < 60:
+            if time_since_startup < 60 and state_lower not in terminal_states:
                 self.logger.info(f"Ignoring unhealthy Klipper state during startup grace period ({int(time_since_startup)}s elapsed, need 60s)")
                 return
             
@@ -971,12 +976,15 @@ class MainController(QtCore.QObject):
             # Sending FIRMWARE_RESTART while printing causes Klipper to emit
             # "Printer is not ready", which showPrinterError treats as a critical
             # error and cancels the print + sends M112.
-            if self.printer_model.printer_status in ["Printing", "Paused"]:
+            # A terminated Klipper cannot finish the print anyway, so shutdown/error
+            # states still get recovered.
+            if (self.printer_model.printer_status in ["Printing", "Paused"]
+                    and state_lower not in terminal_states):
                 self.logger.warning(f"Klipper state '{state}' is unhealthy but printer is {self.printer_model.printer_status} - skipping automatic recovery to avoid disrupting print")
                 return
 
             # Check if state is not in valid states and refresh is not already running
-            if state.lower() not in valid_states and not self.klipper_status_refresh_running:
+            if state_lower not in valid_states and not self.klipper_status_refresh_running:
                 self.logger.warning(f"Klipper state '{state}' is not healthy, triggering STATUS refresh")
                 self.refresh_klipper_status()
         except Exception as e:
@@ -995,6 +1003,41 @@ class MainController(QtCore.QObject):
             dialog.WarningOk(self.main_window, error_msg, overlay=False)
         except Exception as e:
             self.logger.error(f"Error showing Klipper error dialog: {e}")
+
+    def _ensure_serial_connection(self, timeout: int = 30) -> bool:
+        """Reconnect OctoPrint to Klipper after an emergency stop closed the port.
+
+        OctoPrint force-sends M112 and drops the serial connection whenever an
+        emergency stop is triggered. G-code sent afterwards is discarded, so the
+        recovery cycle has to re-open the port before it can restart Klipper.
+        """
+        try:
+            settings = self.octoprint_client.getPrinterConnectionSettings() or {}
+            current = settings.get('current') or {}
+            options = settings.get('options') or {}
+            live_states = ('Operational', 'Printing', 'Paused', 'Pausing', 'Resuming',
+                           'Finishing', 'Starting', 'Connecting', 'Detecting serial connection',
+                           'Opening serial connection', 'Connected')
+
+            if current.get('state') in live_states:
+                return True
+
+            port = current.get('port') or options.get('portPreference') or '/tmp/printer'
+            baudrate = current.get('baudrate') or options.get('baudratePreference') or 250000
+            self.logger.info(f"Reconnecting to printer on {port} @ {baudrate}")
+            self.octoprint_client.connectPrinter(port=port, baudrate=baudrate)
+
+            for _ in range(max(1, timeout // 2)):
+                time.sleep(2)
+                settings = self.octoprint_client.getPrinterConnectionSettings() or {}
+                state = (settings.get('current') or {}).get('state')
+                if state in live_states:
+                    self.logger.info(f"Printer connection restored (state: {state})")
+                    return True
+            self.logger.warning(f"Printer did not reconnect within {timeout}s")
+        except Exception as e:
+            self.logger.error(f"Error reconnecting to printer: {e}")
+        return False
 
     @run_async
     def refresh_klipper_status(self):
@@ -1019,6 +1062,13 @@ class MainController(QtCore.QObject):
             
             for attempt in range(1, 6):
                 try:
+                    # An emergency stop (M112) makes OctoPrint drop the serial
+                    # connection, so FIRMWARE_RESTART cannot reach Klipper until
+                    # the port is open again. Reconnect before every attempt.
+                    if not self._ensure_serial_connection():
+                        self.logger.warning(f"Attempt {attempt}/5: printer connection unavailable, retrying")
+                        continue
+
                     # Send FIRMWARE_RESTART before each attempt
                     self.logger.info(f"Attempt {attempt}/5: Sending FIRMWARE_RESTART command")
                     self.octoprint_client.gcode(command='FIRMWARE_RESTART')

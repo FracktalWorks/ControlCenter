@@ -246,11 +246,18 @@ class SettingsScreen(QWidget):
                                    "Are you sure you want to restore machine state to factory defaults?\nWarning: Doing so will also reset printer profiles, WiFi & Ethernet config.",
                                    overlay=True):
                 
-                # Get current printer selection to restore appropriate configs
+                # Get current printer selection to restore appropriate configs.
+                # Never guess: a hard-coded fallback model used to rewrite the
+                # unit with another machine's profile and configuration.
                 current_printer = get_current_printer_selection()
                 if not current_printer:
-                    current_printer = "DRAGON_400"  # Default fallback
-                    self.logger.warning(f"No current printer found, using default: {current_printer}")
+                    self.logger.error("Cannot determine active printer model - aborting factory restore")
+                    dialog.WarningOk(
+                        self,
+                        "Could not determine the printer model from printer.cfg.\n"
+                        "Factory defaults were not restored.",
+                        overlay=True)
+                    return
                 
                 self.logger.info(f"Restoring factory defaults for printer: {current_printer}")
                 

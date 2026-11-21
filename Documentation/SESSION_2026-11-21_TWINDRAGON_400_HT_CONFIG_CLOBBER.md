@@ -184,6 +184,48 @@ OctoPrint mirrors the value into `webcam.webcams[0]` and the legacy
 
 ---
 
+## Emergency stop recovery (M112)
+
+**Symptom:** after an emergency stop the touch UI ended up with the printer offline,
+and the unit could come back configured as a different machine model.
+
+**Two defects were found and fixed:**
+
+1. OctoPrint force-sends `M112` and **drops the serial connection**
+   (`Changing monitoring state from "Operational" to "Offline after error"`).
+   `refresh_klipper_status()` then sent `FIRMWARE_RESTART` five times into a closed
+   port. Nothing reconnected OctoPrint, so the printer stayed offline until someone
+   reconnected by hand or re-selected the model.
+2. A `shutdown` arriving inside the 60 s startup grace period was ignored completely
+   (`Ignoring unhealthy Klipper state during startup grace period`), so an e-stop
+   shortly after boot was never handled at all.
+
+**Fixes:**
+
+| Change | Effect |
+|--------|--------|
+| `_ensure_serial_connection()` in `MainController` | Re-opens the serial port (saved `port`/`baudrate` preferences, default `/tmp/printer` @ 250000) before each recovery attempt |
+| `shutdown` / `error` treated as terminal states | Bypass the startup grace period and the mid-print guard — a terminated Klipper cannot finish a print anyway |
+| Factory restore guard | No more hard-coded `"DRAGON_400"` fallback; the restore aborts when the active model cannot be determined |
+| `restore_backup_config()` model check | A backup whose `[include PRINTER_*.cfg]` differs from the active model is skipped |
+
+**Verified on the unit:** `M112` sent 7 s after application start →
+
+```
+Reconnecting to printer on /tmp/printer @ 250000
+Printer connection restored (state: Operational)
+Attempt 1/5: Sending FIRMWARE_RESTART command
+Klipper state recovered to 'ready' after 1 attempt(s)
+```
+
+Recovery took 14 s. `printer.cfg` kept `[include PRINTER_TWINDRAGON_400_HT.cfg]` and
+all three `canbus_uuid` values, and the OctoPrint profile stayed "Twin Dragon 400 HT".
+
+Regression test: `test_printer_config_validation.BackupModelGuardTest` (7 tests total,
+all passing on the unit).
+
+---
+
 ## Follow-up
 
 1. The two 19 Nov commits plus these are still local-only; a release is needed

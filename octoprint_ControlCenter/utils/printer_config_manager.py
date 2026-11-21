@@ -180,11 +180,12 @@ class PrinterConfigManager:
     # PRINTER.CFG PARSING AND MANAGEMENT
     # ========================================================================
     
-    def get_current_printer_selection(self) -> Optional[str]:
-        """Get the currently active printer configuration from printer.cfg."""
+    def get_current_printer_selection(self, config_path: str = None) -> Optional[str]:
+        """Get the active printer configuration from printer.cfg (or a backup file)."""
+        path = config_path or self.printer_cfg_path
         try:
-            if os.path.exists(self.printer_cfg_path):
-                with open(self.printer_cfg_path, 'r') as f:
+            if os.path.exists(path):
+                with open(path, 'r') as f:
                     content = f.read()
                     
                 # Look for active include statements
@@ -1161,6 +1162,11 @@ class PrinterConfigManager:
                 return False
             
             logger.info(f"Found {len(backups)} backup files, checking for validity...")
+
+            # A backup of another printer model must never be restored over this unit
+            current_model = self.get_current_printer_selection()
+            if current_model:
+                logger.info(f"Restoring only backups for the active printer model: {current_model}")
             
             # Iterate through backups to find the latest valid one
             for i, backup_file in enumerate(backups):
@@ -1168,6 +1174,12 @@ class PrinterConfigManager:
                 
                 # Validate the backup file
                 if self.is_config_valid(backup_file):
+                    backup_model = self.get_current_printer_selection(backup_file)
+                    if current_model and backup_model and backup_model != current_model:
+                        logger.warning(
+                            f"Skipping backup for a different printer model: {backup_file} "
+                            f"({backup_model} != {current_model})")
+                        continue
                     logger.info(f"Found valid backup: {backup_file}")
                     try:
                         # Create a backup of current config before restoring (if it exists)
